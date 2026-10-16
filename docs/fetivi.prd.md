@@ -1,9 +1,9 @@
 # Fetivi: Product Requirements Document
 
-**Status:** draft for architecture planning · **Date:** 2026-10-15 · **Owner:** Frane Kuzmanić
+**Status:** ratified; architecture in `docs/fetivi.architecture.md`, spike results in `docs/spikes.md` · **Date:** 2026-10-16 · **Owner:** Frane Kuzmanić
 **Thesis:** Development of a Digital AI Assistant for Guests in Short-Term Accommodation Using the Model Context Protocol (MCP)
 
-This document states *what* Fetivi is and *why* it is being built. It does not decide *how*. Engineering decisions (stack, data model, security boundaries, project structure) belong to the architecture plan, with the exceptions listed in section 11, which were settled during planning and bind the architecture.
+This document states *what* Fetivi is and *why* it is being built. It does not decide *how*. Engineering decisions (stack, data model, security boundaries, project structure) belong to the architecture plan (`docs/fetivi.architecture.md`), with the exceptions listed in section 11, which were settled during planning and bind the architecture.
 
 Sources, in order of authority: `master-thesis.md` (thesis title and description; every requirement in it must be met), the planning decisions log (four grilling sessions plus one re-validation session, 2026-10-13 to 2026-10-15), `GLOSSARY.md` (domain terms, used exactly), and the original vision notes. Research files under `.scratch/research/` are evidence, not decisions.
 
@@ -196,9 +196,9 @@ One back-office web app with Host and Admin roles; host parts mobile-first. The 
 - Providers and Offers: deals, availability mode, response window, payment mode, cancellation policy, which guest contact details the Provider receives; Provider payment onboarding links; missed-window and failure alerts.
 - Property approval, host accounts (suspend, delete), usage caps.
 
-### 6.7 The proof slice (sequencing recommendation, not a cut)
+### 6.7 The proof slice (sequencing, not a cut)
 
-Recommended in planning, not yet accepted by Frane: build the thesis core end to end first, then layer everything else. The thesis core is the thinnest line that proves both hypotheses:
+Accepted by Frane on 2026-10-15: build the thesis core end to end first, then layer everything else. The thesis core is the thinnest line that proves both hypotheses:
 
 1. A guest enters a Stay PIN and asks about the unit; answers come only from host data entered in the back office.
 2. The guest asks for a recommendation; it comes from the curated catalog, personalised by About me and Stay dates.
@@ -231,7 +231,7 @@ Outcome-shaped, each with a target and a measurement. Pilot targets marked **pro
 | Task success on about 40 scripted guest scenarios | V1 within a pre-set margin of V0 (margin TBD, fixed before the run) | Database end state per scenario |
 | Tool-selection accuracy and number of calls | V1 within margin of V0 | Trace comparison per scenario |
 | Tokens and latency per turn, including the MCP hop | Quantified; overhead reported, acceptability judged against guest-visible latency (threshold TBD) | Instrumentation on every turn |
-| Integration effort: add Ferryhopper, add a Provider adapter, swap LLM vendor | V1 cheaper than V0 on lines changed and hours | Logged during the work |
+| Integration effort: add Ferryhopper, add a Provider adapter, swap LLM vendor | V1 cheaper than V0 on lines changed and hours (to be re-framed before the run: the shared core makes some tasks equal in both builds; see architecture 4.5) | Logged during the work |
 | Security tests: cross-stay access via injected Offer text, ordering without confirmation, replayed order handles, wrong-audience tokens | All fail safely in V1 | Scripted attack scenarios |
 | Protocol conformance | Pass | MCP Inspector |
 | V2 capability coverage | Reported: which tasks a provider connector cannot carry (no elicitation) | Task list |
@@ -273,7 +273,7 @@ Product and thesis questions that remain open. The stack belongs to the architec
 
 - [ ] **Pilot thresholds and window.** Confirm or change the proposed targets in sections 4.1 and 7 and the pilot season window, and establish the host-messages-per-Stay baseline from Frane's past seasons.
 - [ ] **Evaluation margins.** Set the V1-versus-V0 success and latency margins before the evaluation runs.
-- [ ] **Build order.** Accept or change the recommended "thesis core first" sequencing (section 6.7).
+- [x] **Build order.** "Thesis core first" (section 6.7) accepted 2026-10-15.
 - [ ] **How Fetivi gets reservation data as a business** for customer hosts: calendar files only, the host's existing PMS, Hospitable Connect (Airbnb only), or Channex (Fetivi as channel manager). Recommended next steps, not yet accepted: ask about ten hosts which software they use; email Hospitable about Connect.
 - [ ] **Travel-agency licensing.** Under the Croatian tourism services act only a registered travel agency may broker or reserve excursions and transport, even without handling payment; tickets and goods are unaffected. Recommended, not accepted: ask the Ministry of Tourism for a written opinion on commission-only platforms, then register as an online travel agency or partner with a local agency. Does not change the build.
 - [ ] **Host services legal gates.** Paid transfers by private renters and sale of homemade spirits are restricted; Frane will regulate these later. No gates for now.
@@ -301,7 +301,7 @@ These were settled by Frane during planning. They are repeated here so the archi
 - **Fetivi is its own MCP host.** The chat backend runs the MCP clients; the LLM sees tools through ordinary tool calling. A third-party provider connector is not the core (tools only, public servers needed, client invisible).
 - **Four first-party servers in one deployment, plus one external:** `stay` (unit record as a resource, host message draft tool, time-gated arrival details), `local` (catalog search, events, weather, transport, allowlisted web fallback that logs curation gaps), `services` (Offers, availability, Orders, cancellations; write tools with elicitation; Provider adapters for live, allotment and on request live inside it), `trip` (day plan and About me, private to the space), and Ferryhopper (external, read-only, untrusted output, tool list pinned). Reason, as corrected in re-validation: one trust policy and a narrow token per server; the split does not by itself keep Provider text away from private data, because both meet in the model's context.
 - **Per-guest scoping:** per conversation, a short-lived token per server (audience that server, subject the guest's space, claims for Stay, unit and destination, narrow scopes). Tools carry no guest, unit or Stay identifiers. Tool lists vary by situation (no `services` write tools outside a destination unless the host has own services; read-only plus "manage existing Orders" scopes after checkout). About 15 to 20 tools, loaded up front.
-- **Boundary enforcement:** ownership checks in every tool against token claims; approved-action binding (a confirmation completes the stored pending Order, never parameters the model re-sends); egress only to allowlisted destinations, the host message being the only free-text outbound after the guest taps Send; the prompt receives an authorized guest projection of the unit record.
+- **Boundary enforcement:** ownership checks in every tool against token claims; approved-action binding (a confirmation completes the stored pending Order, never parameters the model re-sends); egress only to allowlisted destinations, with two outbound payloads that carry model-shaped text: the host message (free text, only after the guest taps Send) and the web fallback query (constrained to topic keywords and a place name, never private data); the prompt receives an authorized guest projection of the unit record.
 - **Rendering:** first-party tools return structured content and the host renders Fetivi's own components, reused in the tabs; external servers' UI (Ferryhopper widgets) renders as MCP Apps through the official app bridge in a sandboxed iframe on a separate origin.
 - **Payments:** Stripe Connect direct charges with the Provider as merchant of record and Fetivi's commission as an application fee; authorize, confirm, capture with a 30-minute checkout hold; Stripe-hosted checkout only. Idempotency with external systems (payment idempotency keys, Fetivi's reference sent to Provider systems) is an architecture detail.
 - **Order idempotency:** the `services` server is idempotent on the order handle.

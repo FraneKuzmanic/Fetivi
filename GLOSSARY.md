@@ -16,7 +16,7 @@ _Avoid_: Order type
 Where an Order is in its lifecycle: from awaiting confirmation through confirming or pending provider, to confirmed, declined, expired or failed, and finally cancelled or completed. Independent of Payment status.
 
 **Payment status**:
-Where an Order's money is: none (paid to the provider directly), authorized, captured, voided, refund pending, refunded or failed. A payment is captured only after the Order is confirmed.
+Where an Order's money is: none (paid to the provider directly, or not yet authorized for a pay-online Order), authorized, captured, voided, refund pending, refunded or failed. A payment is captured only after the Order is confirmed.
 
 **Offer**:
 A service a Provider or host makes available to guests, with its category, availability mode, payment mode and cancellation policy.
