@@ -1,0 +1,17 @@
+{
+  "name": "@fetivi/mcp-servers",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "node --env-file-if-exists=.env --import tsx --watch src/index.ts",
+    "start": "node --env-file-if-exists=.env --import tsx src/index.ts"
+  },
+  "dependencies": {
+    "@fetivi/egress": "workspace:*",
+    "@modelcontextprotocol/fastify": "2.0.1",
+    "@modelcontextprotocol/server": "2.3.1",
+    "fastify": "5.12.7",
+    "zod": "4.6.7"
+  }
+}

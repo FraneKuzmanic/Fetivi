@@ -1,0 +1,30 @@
+{
+  "name": "fetivi",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm --filter @fetivi/domain db:migrate",
+    "db:generate": "pnpm --filter @fetivi/domain db:generate",
+    "typecheck": "tsc --noEmit -p tsconfig.json && pnpm -r typecheck",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "validate": "pnpm db:up && pnpm typecheck && pnpm lint && pnpm test",
+    "dev": "pnpm -r --parallel --filter ./apps/* dev"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/node": "24.19.2",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

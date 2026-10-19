@@ -1,0 +1,55 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "includes": [
+      "packages/**",
+      "apps/**",
+      "biome.json",
+      "package.json",
+      "tsconfig.json",
+      "tsconfig.base.json",
+      "vitest.config.ts",
+      "docker-compose.yml",
+      "!**/drizzle/meta"
+    ]
+  },
+  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "javascript": { "formatter": { "quoteStyle": "single", "semicolons": "always" } },
+  "linter": {
+    "rules": {
+      "preset": "recommended",
+      "style": {
+        "noRestrictedGlobals": {
+          "level": "error",
+          "options": {
+            "deniedGlobals": {
+              "fetch": "Server code fetches only through createEgress() from @fetivi/egress."
+            }
+          }
+        },
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "undici": "Use @fetivi/egress.",
+              "node:http": "Use @fetivi/egress.",
+              "node:https": "Use @fetivi/egress.",
+              "http": "Use @fetivi/egress.",
+              "https": "Use @fetivi/egress.",
+              "axios": "Use @fetivi/egress."
+            }
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/egress/**", "apps/guest-web/**", "apps/backoffice-web/**"],
+      "linter": {
+        "rules": { "style": { "noRestrictedGlobals": "off", "noRestrictedImports": "off" } }
+      }
+    }
+  ]
+}
