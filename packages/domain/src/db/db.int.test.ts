@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestDatabase, type TestDatabase } from '../testing';
@@ -51,10 +53,12 @@ describe('test database', () => {
     }
   });
 
-  it('records the applied migration', async () => {
+  it('applies every migration in the journal', async () => {
+    const journalPath = fileURLToPath(new URL('../../drizzle/meta/_journal.json', import.meta.url));
+    const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: unknown[] };
     const result = await testDb.db.execute<{ n: number }>(
       sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
     );
-    expect(result.rows[0]?.n).toBe(1);
+    expect(result.rows[0]?.n).toBe(journal.entries.length);
   });
 });

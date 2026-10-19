@@ -1,13 +1,15 @@
+import { createConsoleMailer, createDb } from '@fetivi/domain';
 import { buildApp } from './app';
 import { loadConfig } from './config';
 
 const config = loadConfig();
-const app = buildApp();
+const { db, pool } = createDb(config.DATABASE_URL);
+const app = buildApp({ db, mailer: createConsoleMailer(), webOrigin: config.WEB_ORIGIN });
 
 await app.listen({ host: config.HOST, port: config.PORT });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
-    void app.close();
+    void app.close().then(() => pool.end());
   });
 }

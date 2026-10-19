@@ -8,6 +8,13 @@
       "when": 1792417843817,
       "tag": "0000_extensions",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792421817593,
+      "tag": "0001_fat_madelyne_pryor",
+      "breakpoints": true
     }
   ]
 }
