@@ -1,4 +1,4 @@
-import { accounts, sessions } from '@fetivi/domain';
+import { accounts, loginAttempts, sessions } from '@fetivi/domain';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -9,6 +9,7 @@ import {
   PASSWORD,
   post,
   signUpVerifiedHost,
+  TEST_ORIGIN,
   type TestApp,
   tokenFrom,
 } from '../testing';
@@ -169,6 +170,31 @@ describe('login', () => {
 
     t.clock.advance(15 * 60 * 1000 + 1);
     expect((await attempt(PASSWORD)).statusCode).toBe(200);
+  });
+
+  it('throttles by the forwarded client address only when the proxy is trusted', async () => {
+    const failFrom = async (app: TestApp, email: string) => {
+      await app.app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        headers: { origin: TEST_ORIGIN, 'x-forwarded-for': '203.0.113.7' },
+        payload: { email, password: 'wrong password' },
+      });
+      const [row] = await app.db
+        .select({ ip: loginAttempts.ip })
+        .from(loginAttempts)
+        .where(eq(loginAttempts.email, email));
+      return row?.ip;
+    };
+
+    expect(await failFrom(t, 'untrusted@example.test')).toBe('127.0.0.1');
+
+    const behindProxy = await createTestApp({ trustProxy: 'loopback' });
+    try {
+      expect(await failFrom(behindProxy, 'trusted@example.test')).toBe('203.0.113.7');
+    } finally {
+      await behindProxy.close();
+    }
   });
 
   it('rotates the session when logging in with a session cookie', async () => {

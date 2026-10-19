@@ -78,16 +78,19 @@ export async function adminRoutes(app: FastifyInstance, deps: AdminDeps): Promis
   app.post('/api/admin/act-as', admin, async (request) => {
     const principal = principalOf(request);
     const host = await findHost(ActAsBody.parse(request.body).hostId);
-    await setActingAs(db, principal.sessionId, host.id);
     // The start record; the audit hook only logs once the session is already acting.
-    await db.insert(actAsAudit).values({
-      adminId: principal.account.id,
-      hostId: host.id,
-      hostEmail: host.email,
-      method: 'POST',
-      route: '/api/admin/act-as',
-      statusCode: 200,
-      createdAt: deps.now(),
+    // One transaction, so the session never acts without it.
+    await db.transaction(async (tx) => {
+      await tx.insert(actAsAudit).values({
+        adminId: principal.account.id,
+        hostId: host.id,
+        hostEmail: host.email,
+        method: 'POST',
+        route: '/api/admin/act-as',
+        statusCode: 200,
+        createdAt: deps.now(),
+      });
+      await setActingAs(tx, principal.sessionId, host.id);
     });
     return toMe({ ...principal, actingAs: { id: host.id, email: host.email } });
   });

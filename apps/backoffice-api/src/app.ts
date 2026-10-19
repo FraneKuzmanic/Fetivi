@@ -12,10 +12,12 @@ export interface AppDeps {
   webOrigin: string;
   now?: () => Date;
   logger?: boolean;
+  /** Proxy addresses whose X-Forwarded-For is believed (e.g. 'loopback'); unset trusts none. */
+  trustProxy?: string | undefined;
 }
 
 export function buildApp(deps: AppDeps) {
-  const app = Fastify({ logger: deps.logger ?? true });
+  const app = Fastify({ logger: deps.logger ?? true, trustProxy: deps.trustProxy ?? false });
   const now = deps.now ?? (() => new Date());
   const { db, mailer, webOrigin } = deps;
 

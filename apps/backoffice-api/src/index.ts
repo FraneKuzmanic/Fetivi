@@ -4,7 +4,12 @@ import { loadConfig } from './config';
 
 const config = loadConfig();
 const { db, pool } = createDb(config.DATABASE_URL);
-const app = buildApp({ db, mailer: createConsoleMailer(), webOrigin: config.WEB_ORIGIN });
+const app = buildApp({
+  db,
+  mailer: createConsoleMailer(),
+  webOrigin: config.WEB_ORIGIN,
+  trustProxy: config.TRUST_PROXY,
+});
 
 await app.listen({ host: config.HOST, port: config.PORT });
 

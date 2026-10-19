@@ -230,6 +230,17 @@ describe('suspend and delete', () => {
 
 // Last: it drops the audit table of this file's database.
 describe('audit before write', () => {
+  it('does not start acting when the start record cannot be written', async () => {
+    await t.db.execute(sql`alter table act_as_audit rename to act_as_audit_off`);
+    try {
+      const r = await post(t.app, '/api/admin/act-as', { hostId: hostA.id }, adminCookie);
+      expect(r.statusCode).toBe(500);
+    } finally {
+      await t.db.execute(sql`alter table act_as_audit_off rename to act_as_audit`);
+    }
+    expect((await get(t.app, '/api/auth/me', adminCookie)).json().actingAs).toBeNull();
+  });
+
   it('fails the request without running the handler when the audit insert fails', async () => {
     await post(t.app, '/api/admin/act-as', { hostId: hostA.id }, adminCookie);
     await t.db.execute(sql`drop table act_as_audit`);

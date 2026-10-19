@@ -17,7 +17,9 @@ export interface TestApp {
 }
 
 /** A back-office app on its own test database, with an in-memory inbox and a movable clock. */
-export async function createTestApp(options: { extraRoutes?: FastifyPluginAsync } = {}) {
+export async function createTestApp(
+  options: { extraRoutes?: FastifyPluginAsync; trustProxy?: string } = {},
+) {
   const testDb = await createTestDatabase();
   const mailer = createMemoryMailer();
   let current = new Date('2026-10-19T10:00:00Z').getTime();
@@ -33,6 +35,7 @@ export async function createTestApp(options: { extraRoutes?: FastifyPluginAsync 
     webOrigin: TEST_ORIGIN,
     now: clock.now,
     logger: false,
+    trustProxy: options.trustProxy,
   });
   if (options.extraRoutes) app.register(options.extraRoutes);
   await app.ready();

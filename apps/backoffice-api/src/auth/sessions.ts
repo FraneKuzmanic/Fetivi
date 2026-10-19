@@ -97,6 +97,10 @@ export async function deleteSessionsOf(db: Executor, accountId: string): Promise
   await db.delete(sessions).where(eq(sessions.accountId, accountId));
 }
 
-export async function setActingAs(db: Db, sessionId: string, hostId: string | null): Promise<void> {
+export async function setActingAs(
+  db: Executor,
+  sessionId: string,
+  hostId: string | null,
+): Promise<void> {
   await db.update(sessions).set({ actingAsHostId: hostId }).where(eq(sessions.id, sessionId));
 }
