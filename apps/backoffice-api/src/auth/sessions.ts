@@ -1,9 +1,8 @@
 import type { CookieSerializeOptions } from '@fastify/cookie';
-import { accounts, type Db, type Executor, sessions } from '@fetivi/domain';
+import { accounts, type Db, type Executor, hashToken, newToken, sessions } from '@fetivi/domain';
 import { eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { Principal } from './access';
-import { hashToken, newToken } from './tokens';
 
 export const SESSION_COOKIE = '__Host-fetivi_session';
 

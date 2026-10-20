@@ -6,5 +6,6 @@ export * from './info-blocks';
 export * from './offers';
 export * from './properties';
 export * from './sessions';
+export * from './spaces';
 export * from './stays';
 export * from './translations';

@@ -2,6 +2,7 @@ import { and, eq, gt } from 'drizzle-orm';
 import { type Db, type Executor, pgCode } from '../db/client';
 import { accounts } from '../db/schema/accounts';
 import { properties, units } from '../db/schema/properties';
+import { spaces } from '../db/schema/spaces';
 import { type StayRow, stays } from '../db/schema/stays';
 import type { GuestLanguage } from '../property/vocabulary';
 import type { CivilDate } from '../time';
@@ -204,6 +205,10 @@ export async function updateStay(
         .where(eq(stays.id, stayId))
         .returning();
       if (!row) throw new StayRuleError('not-found');
+      await tx
+        .update(spaces)
+        .set({ closedAt: row.activeUntil, updatedAt: now })
+        .where(eq(spaces.stayId, stayId));
       return row;
     }),
   );
@@ -236,9 +241,11 @@ export async function refreshStayTimes(
       ),
     );
   for (const row of rows) {
+    const times = stayTimes(row, row.timezone, row.releaseDaysBefore);
+    await tx.update(stays).set(times).where(eq(stays.id, row.id));
     await tx
-      .update(stays)
-      .set(stayTimes(row, row.timezone, row.releaseDaysBefore))
-      .where(eq(stays.id, row.id));
+      .update(spaces)
+      .set({ closedAt: times.activeUntil, updatedAt: now })
+      .where(eq(spaces.stayId, row.id));
   }
 }

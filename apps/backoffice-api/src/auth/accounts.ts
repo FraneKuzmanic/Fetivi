@@ -1,4 +1,12 @@
-import { accounts, accountTokens, type Db, type Executor, type Mailer } from '@fetivi/domain';
+import {
+  accounts,
+  accountTokens,
+  type Db,
+  type Executor,
+  hashToken,
+  type Mailer,
+  newToken,
+} from '@fetivi/domain';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { HttpError } from '../http-error';
@@ -6,7 +14,6 @@ import type { Principal } from './access';
 import { hashPassword, verifyAgainstDummy, verifyPassword } from './passwords';
 import { createSession, deleteSessionsOf } from './sessions';
 import { clearFailures, isThrottled, recordFailure } from './throttle';
-import { hashToken, newToken } from './tokens';
 
 export const VERIFY_TTL_MS = 24 * 60 * 60 * 1000;
 export const RESET_TTL_MS = 60 * 60 * 1000;

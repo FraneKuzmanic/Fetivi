@@ -94,3 +94,7 @@ A Stay from its registration until the end of its checkout day in the Property's
 **Hand-over message**:
 The copy-ready text a Host sends a guest party with the Unit's link and the PIN, never the PIN inside the link, in one of the seven guest languages.
 _Avoid_: Invitation, welcome message
+
+**Space**:
+One device's private world inside a Stay, opened by entering the Stay's PIN on that device; a new PIN entry always opens a new, empty Space. It closes at the end of the Stay's checkout day.
+_Avoid_: Session, account, profile
