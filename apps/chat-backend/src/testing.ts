@@ -3,15 +3,20 @@ import { accounts, type Db, properties, registerStay, units } from '@fetivi/doma
 import { createTestDatabase, type TestDatabase } from '@fetivi/domain/testing';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { buildApp } from './app';
+import { loadSigningKey } from './tokens/keys';
+import type { TokenConfig } from './tokens/mint';
 
 export const APP_TEST_ORIGIN = 'http://app.test';
 export const START = new Date('2026-10-19T10:00:00Z');
+export const TEST_ISSUER = 'http://chat.test';
+export const TEST_MCP_BASE = 'http://mcp.test';
 
 export interface TestApp {
   app: FastifyInstance;
   db: Db;
   testDb: TestDatabase;
   clock: { now: () => Date; advance: (ms: number) => void };
+  tokens: TokenConfig;
   close: () => Promise<void>;
 }
 
@@ -25,12 +30,18 @@ export async function createTestApp(options: { trustProxy?: string } = {}): Prom
       current += ms;
     },
   };
+  const tokens: TokenConfig = {
+    key: await loadSigningKey(undefined),
+    issuer: TEST_ISSUER,
+    mcpBaseUrl: TEST_MCP_BASE,
+  };
   const app = buildApp({
     db: testDb.db,
     appOrigin: APP_TEST_ORIGIN,
     now: clock.now,
     logger: false,
     trustProxy: options.trustProxy,
+    tokens,
   });
   await app.ready();
   return {
@@ -38,6 +49,7 @@ export async function createTestApp(options: { trustProxy?: string } = {}): Prom
     db: testDb.db,
     testDb,
     clock,
+    tokens,
     close: async () => {
       await app.close();
       await testDb.drop();

@@ -2,10 +2,12 @@ import { createDb } from '@fetivi/domain';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { loadConfig } from './config';
+import { loadSigningKey } from './tokens/keys';
 
 // The pg pool connects lazily, so no database is needed for these tests.
 const { db, pool } = createDb('postgres://unused@127.0.0.1:1/x');
-const deps = { db, appOrigin: 'http://app.test', logger: false };
+const tokens = { key: await loadSigningKey(undefined), issuer: 'http://x', mcpBaseUrl: 'http://y' };
+const deps = { db, appOrigin: 'http://app.test', logger: false, tokens };
 
 afterAll(async () => {
   await pool.end();
@@ -55,6 +57,8 @@ describe('chat-backend', () => {
       PORT: 3000,
       DATABASE_URL: 'postgres://fetivi:fetivi@127.0.0.1:5433/fetivi',
       APP_ORIGIN: 'http://localhost:5173',
+      GUEST_TOKEN_ISSUER: 'http://localhost:3000',
+      MCP_PUBLIC_URL: 'http://localhost:3002',
     });
   });
 

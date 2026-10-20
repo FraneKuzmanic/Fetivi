@@ -1,10 +1,20 @@
 import { createDb } from '@fetivi/domain';
 import { buildApp } from './app';
 import { loadConfig } from './config';
+import { loadSigningKey } from './tokens/keys';
 
 const config = loadConfig();
 const { db, pool } = createDb(config.DATABASE_URL);
-const app = buildApp({ db, appOrigin: config.APP_ORIGIN, trustProxy: config.TRUST_PROXY });
+const key = await loadSigningKey(config.GUEST_TOKEN_PRIVATE_KEY);
+const app = buildApp({
+  db,
+  appOrigin: config.APP_ORIGIN,
+  trustProxy: config.TRUST_PROXY,
+  tokens: { key, issuer: config.GUEST_TOKEN_ISSUER, mcpBaseUrl: config.MCP_PUBLIC_URL },
+});
+if (key.ephemeral) {
+  app.log.warn('GUEST_TOKEN_PRIVATE_KEY is not set: guest tokens use a key made for this process');
+}
 
 await app.listen({ host: config.HOST, port: config.PORT });
 

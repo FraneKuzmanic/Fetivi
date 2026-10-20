@@ -3,6 +3,8 @@ import Fastify from 'fastify';
 import { registerAccess } from './access/plugin';
 import { accessRoutes } from './access/routes';
 import { registerErrorHandler } from './http-error';
+import type { TokenConfig } from './tokens/mint';
+import { tokenRoutes } from './tokens/routes';
 
 export interface AppDeps {
   db: Db;
@@ -12,6 +14,8 @@ export interface AppDeps {
   logger?: boolean;
   /** Proxy addresses whose X-Forwarded-For is believed (e.g. 'loopback'); unset trusts none. */
   trustProxy?: string | undefined;
+  /** Guest token signing for the MCP servers; its public key is served as the JWKS. */
+  tokens: TokenConfig;
 }
 
 export function buildApp(deps: AppDeps) {
@@ -24,5 +28,6 @@ export function buildApp(deps: AppDeps) {
 
   app.get('/health', async () => ({ status: 'ok', service: 'chat-backend' }));
   app.register(accessRoutes, { db, now });
+  app.register(tokenRoutes, { key: deps.tokens.key });
   return app;
 }

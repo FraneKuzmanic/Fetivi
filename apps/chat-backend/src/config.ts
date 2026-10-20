@@ -1,14 +1,26 @@
 import { z } from 'zod';
 
-const schema = z.object({
-  HOST: z.string().default('127.0.0.1'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  DATABASE_URL: z.string().default('postgres://fetivi:fetivi@127.0.0.1:5433/fetivi'),
-  /** The origin the guest SPA is served from; write requests must carry it. */
-  APP_ORIGIN: z.url().default('http://localhost:5173'),
-  /** Set behind Caddy (e.g. 'loopback') so PIN throttling sees the real client address. */
-  TRUST_PROXY: z.string().optional(),
-});
+const schema = z
+  .object({
+    HOST: z.string().default('127.0.0.1'),
+    PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+    DATABASE_URL: z.string().default('postgres://fetivi:fetivi@127.0.0.1:5433/fetivi'),
+    /** The origin the guest SPA is served from; write requests must carry it. */
+    APP_ORIGIN: z.url().default('http://localhost:5173'),
+    /** Set behind Caddy (e.g. 'loopback') so PIN throttling sees the real client address. */
+    TRUST_PROXY: z.string().optional(),
+    NODE_ENV: z.string().optional(),
+    /** PKCS8 PEM of the P-256 key guest tokens are signed with; required in production. */
+    GUEST_TOKEN_PRIVATE_KEY: z.string().optional(),
+    /** The `iss` of guest tokens. */
+    GUEST_TOKEN_ISSUER: z.url().default('http://localhost:3000'),
+    /** Base of the MCP servers' canonical URLs, the token audiences (production https://mcp.<domain>). */
+    MCP_PUBLIC_URL: z.url().default('http://localhost:3002'),
+  })
+  .refine((c) => c.NODE_ENV !== 'production' || Boolean(c.GUEST_TOKEN_PRIVATE_KEY), {
+    message: 'GUEST_TOKEN_PRIVATE_KEY is required in production',
+    path: ['GUEST_TOKEN_PRIVATE_KEY'],
+  });
 
 export type Config = z.infer<typeof schema>;
 

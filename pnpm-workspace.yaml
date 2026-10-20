@@ -3,3 +3,5 @@ packages:
   - 'apps/*'
 allowBuilds:
   esbuild: true
+  # Its postinstall only installs client folders in a source checkout; a no-op as a dependency.
+  '@modelcontextprotocol/inspector': false

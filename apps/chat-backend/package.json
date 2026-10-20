@@ -13,6 +13,7 @@
     "@fetivi/egress": "workspace:*",
     "drizzle-orm": "0.45.4",
     "fastify": "5.12.7",
+    "jose": "6.2.12",
     "zod": "4.6.7"
   }
 }

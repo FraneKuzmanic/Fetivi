@@ -98,3 +98,11 @@ _Avoid_: Invitation, welcome message
 **Space**:
 One device's private world inside a Stay, opened by entering the Stay's PIN on that device; a new PIN entry always opens a new, empty Space. It closes at the end of the Stay's checkout day.
 _Avoid_: Session, account, profile
+
+**Situation**:
+Where a Space stands at a given moment — before arrival, in the Stay, or after checkout, inside or outside a Destination, with or without the Host's own Offers — which decides the scopes its tokens carry.
+_Avoid_: context, state
+
+**Guest projection**:
+The part of a Unit's record a guest may see at a given moment, in the guest's language: no private Host fields, and arrival details and codes only from the release time.
+_Avoid_: guest view, public record
