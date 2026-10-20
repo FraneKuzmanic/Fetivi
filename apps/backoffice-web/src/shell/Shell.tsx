@@ -2,6 +2,7 @@ import {
   Buildings,
   ClipboardText,
   type Icon,
+  MapTrifold,
   SealCheck,
   SignOut,
   UsersThree,
@@ -25,6 +26,7 @@ function navItems(me: Me): NavItem[] {
     return [
       { to: '/', label: 'Hosts', icon: UsersThree, prefixes: [] },
       { to: '/admin/approvals', label: 'Approvals', icon: SealCheck, prefixes: [] },
+      { to: '/admin/catalog', label: 'Catalog', icon: MapTrifold, prefixes: ['/admin/catalog'] },
       { to: '/admin/audit', label: 'Audit', icon: ClipboardText, prefixes: [] },
     ];
   }

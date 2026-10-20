@@ -1,10 +1,13 @@
+import type { TranslationStatus } from '@fetivi/domain/vocabulary';
 import { useEffect, useRef } from 'react';
-import type { Block } from '../../api';
 
 const INTERVAL_MS = 5000;
 
-/** Reloads every 5 s while any block is still translating, so its status updates without a reload. */
-export function usePendingRefresh(blocks: readonly Block[], refresh: () => Promise<void>) {
+/** Reloads every 5 s while any item is still translating, so its status updates without a reload. */
+export function usePendingRefresh(
+  blocks: readonly { translation: { status: TranslationStatus } }[],
+  refresh: () => Promise<void>,
+) {
   const pending = blocks.some((b) => b.translation.status === 'pending');
   const latest = useRef(refresh);
   latest.current = refresh;

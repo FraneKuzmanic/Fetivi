@@ -3,7 +3,10 @@ import { type SQLChunk, sql } from 'drizzle-orm';
 import type { Db as BossDb, PgBoss, Queue } from 'pg-boss';
 import type { Executor } from '../db/client';
 
-export const QUEUES = { translateBlock: 'translate-block' } as const;
+export const QUEUES = {
+  translateBlock: 'translate-block',
+  translateCatalogRecord: 'translate-catalog-record',
+} as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
 export const EVENTS = { unitProjectionInvalidated: 'unit-projection-invalidated' } as const;
@@ -11,6 +14,12 @@ export const EVENTS = { unitProjectionInvalidated: 'unit-projection-invalidated'
 export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   // pg-boss retries cover crashes and DB errors; model failures end as a visible 'failed' status.
   translateBlock: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 600 },
+  translateCatalogRecord: {
+    retryLimit: 2,
+    retryDelay: 30,
+    retryBackoff: true,
+    expireInSeconds: 600,
+  },
 };
 
 /**

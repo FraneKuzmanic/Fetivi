@@ -17,14 +17,14 @@ import { z } from 'zod';
 // (architecture §4.3). Strict objects: a body can never carry hostId, approvedAt, qrSlug or revision.
 
 /** A required single-line string, such as a name or title. */
-const line = (max: number) =>
+export const line = (max: number) =>
   z
     .string()
     .transform((s) => stripMarkup(s, { singleLine: true }))
     .pipe(z.string().min(1).max(max));
 
 /** An optional string; empty after stripping means null (cleared). */
-const optionalText = (max: number, options: { singleLine?: boolean } = {}) =>
+export const optionalText = (max: number, options: { singleLine?: boolean } = {}) =>
   z
     .string()
     .transform((s) => stripMarkup(s, options))
@@ -32,23 +32,23 @@ const optionalText = (max: number, options: { singleLine?: boolean } = {}) =>
     .transform((s) => (s === '' ? null : s))
     .nullable();
 
-const optionalLine = (max: number) => optionalText(max, { singleLine: true });
+export const optionalLine = (max: number) => optionalText(max, { singleLine: true });
 
 const PHONE = /^\+?[0-9 ()/-]{6,32}$/;
-const phone = z
+export const phone = z
   .string()
   .transform((s) => stripMarkup(s, { singleLine: true }))
   .pipe(z.union([z.literal(''), z.string().max(LIMITS.phone).regex(PHONE)]))
   .transform((s) => (s === '' ? null : s))
   .nullable();
 
-const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
-const hhmm = z.string().regex(HHMM).nullable();
+export const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+export const hhmm = z.string().regex(HHMM).nullable();
 
 /** An IANA region name such as Europe/Zagreb; Luxon alone also accepts offsets like +01:00 and EST. */
 const REGION_ZONE = /^[A-Z][A-Za-z_]+(\/[A-Z][A-Za-z0-9_+-]*)+$/;
 
-const zone = z.string().refine((value) => {
+export const zone = z.string().refine((value) => {
   if (!REGION_ZONE.test(value)) return false;
   try {
     assertValidZone(value);
@@ -58,7 +58,7 @@ const zone = z.string().refine((value) => {
   }
 });
 
-const latLng = z
+export const latLng = z
   .object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
   .nullable();
 

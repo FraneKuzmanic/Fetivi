@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { ApprovalsPage } from './admin/ApprovalsPage';
+import { DestinationPage, NewDestinationPage } from './admin/catalog/DestinationPage';
+import { DestinationsPage } from './admin/catalog/DestinationsPage';
+import { NewRecordPage, RecordPage } from './admin/catalog/RecordPage';
 import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 import { LoginPage } from './auth/LoginPage';
 import { ResetPasswordPage } from './auth/ResetPasswordPage';
@@ -82,6 +85,46 @@ export function App() {
           element={
             <Page area="admin">
               <ApprovalsPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/catalog"
+          element={
+            <Page area="admin">
+              <DestinationsPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/catalog/destinations/new"
+          element={
+            <Page area="admin">
+              <NewDestinationPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/catalog/destinations/:id"
+          element={
+            <Page area="admin">
+              <DestinationPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/catalog/destinations/:id/new/:kind"
+          element={
+            <Page area="admin">
+              <NewRecordPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/catalog/records/:id"
+          element={
+            <Page area="admin">
+              <RecordPage />
             </Page>
           }
         />

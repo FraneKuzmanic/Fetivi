@@ -1,4 +1,12 @@
 import type {
+  CatalogKind,
+  ImageSource,
+  PlaceCategory,
+  SourceField,
+  StalenessStatus,
+  TransportMode,
+} from '@fetivi/domain/catalog-vocabulary';
+import type {
   Amenity,
   BedType,
   BlockCategory,
@@ -136,4 +144,74 @@ export const TRANSLATION_ORIGIN_LABELS: Record<TranslationOrigin, string> = {
   source: 'Original',
   machine: 'Machine',
   host: 'Your correction',
+};
+
+export const CATALOG_KIND_LABELS: Record<CatalogKind, string> = {
+  place: 'Place',
+  event: 'Event',
+  transport_note: 'Transport note',
+  day_trip: 'Day trip',
+};
+
+export const PLACE_CATEGORY_LABELS: Record<PlaceCategory, string> = {
+  beach: 'Beach',
+  restaurant: 'Restaurant',
+  cafe_bar: 'Café or bar',
+  sight: 'Sight',
+  nature: 'Nature',
+  activity: 'Activity',
+  shop: 'Shop',
+  nightlife: 'Nightlife',
+};
+
+export const TRANSPORT_MODE_LABELS: Record<TransportMode, string> = {
+  ferry: 'Ferry',
+  catamaran: 'Catamaran',
+  bus: 'Bus',
+  boat_taxi: 'Boat taxi',
+  taxi: 'Taxi',
+  train: 'Train',
+  other: 'Other',
+};
+
+export const IMAGE_SOURCE_LABELS: Record<ImageSource, string> = {
+  own_photo: 'Own photo',
+  venue_permission: 'Venue photo (with permission)',
+  wikimedia_commons: 'Wikimedia Commons',
+};
+
+export const STALENESS_LABELS: Record<StalenessStatus, string> = {
+  fresh: 'Fresh',
+  stale: 'Past its budget',
+  never_verified: 'Never verified',
+  expired: 'Ended',
+};
+
+export const SOURCE_FIELD_LABELS: Record<SourceField, string> = {
+  title: 'Title',
+  description: 'Description',
+  placeCategory: 'Category',
+  location: 'Location',
+  address: 'Address',
+  phone: 'Phone',
+  websiteUrl: 'Website',
+  venueName: 'Venue',
+  startsAt: 'Start',
+  endsAt: 'End',
+  transportMode: 'Mode',
+  links: 'Links',
+  travelMinutes: 'Travel time',
+  seasons: 'Seasons',
+  openingHours: 'Opening hours',
+};
+
+/** ISO weekdays, Monday first. */
+export const WEEKDAY_LABELS: Record<number, string> = {
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
+  7: 'Sunday',
 };

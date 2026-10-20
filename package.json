@@ -11,6 +11,7 @@
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @fetivi/domain db:migrate",
     "db:generate": "pnpm --filter @fetivi/domain db:generate",
+    "db:seed": "pnpm --filter @fetivi/domain db:seed",
     "typecheck": "tsc --noEmit -p tsconfig.json && pnpm -r typecheck",
     "lint": "biome check .",
     "format": "biome check --write .",

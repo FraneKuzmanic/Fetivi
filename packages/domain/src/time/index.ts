@@ -49,3 +49,26 @@ export function arrivalReleaseAt(checkIn: CivilDate, zone: string, daysBefore = 
   }
   return shiftDays(checkIn, -daysBefore, zone);
 }
+
+const LOCAL_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const LOCAL_FORMAT = "yyyy-LL-dd'T'HH:mm";
+
+/** 'YYYY-MM-DDTHH:mm' as wall-clock time in `zone` → the instant. Throws on a bad value or a DST gap. */
+export function fromLocalDateTime(local: string, zone: string): Date {
+  assertValidZone(zone);
+  if (!LOCAL_DATETIME.test(local)) {
+    throw new InvalidTimeInputError(`Not a local date-time (YYYY-MM-DDTHH:mm): ${local}`);
+  }
+  const parsed = DateTime.fromISO(local, { zone });
+  // Luxon moves a time in a spring-forward gap; a changed wall-clock value means it did not exist.
+  if (!parsed.isValid || parsed.toFormat(LOCAL_FORMAT) !== local) {
+    throw new InvalidTimeInputError(`Invalid or non-existent local time: ${local}`);
+  }
+  return parsed.toJSDate();
+}
+
+/** The instant as 'YYYY-MM-DDTHH:mm' wall-clock time in `zone`. */
+export function toLocalDateTime(instant: Date, zone: string): string {
+  assertValidZone(zone);
+  return DateTime.fromJSDate(instant, { zone }).toFormat(LOCAL_FORMAT);
+}

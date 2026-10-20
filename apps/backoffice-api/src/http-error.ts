@@ -16,7 +16,8 @@ export type ErrorCode =
   | 'email-taken'
   | 'not-approved'
   | 'stale-revision'
-  | 'translation-not-failed';
+  | 'translation-not-failed'
+  | 'destination-not-empty';
 
 export class HttpError extends Error {
   override name = 'HttpError';

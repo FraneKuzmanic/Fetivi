@@ -27,7 +27,14 @@ describe('backoffice-web App', () => {
   });
 
   it('waits for the session before showing a protected page', () => {
-    for (const path of ['/', '/properties/new', '/units/x', '/admin/approvals']) {
+    for (const path of [
+      '/',
+      '/properties/new',
+      '/units/x',
+      '/admin/approvals',
+      '/admin/catalog',
+      '/admin/catalog/records/x',
+    ]) {
       expect(render(path)).toContain('Loading');
     }
   });

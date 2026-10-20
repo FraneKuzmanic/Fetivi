@@ -30,6 +30,25 @@ The revision of an Info block guests see; it moves forward only when all seven l
 A Unit's permanent guest link, issued once the admin approves its Property and printed as a QR code.
 _Avoid_: Invite link, booking link
 
+## Local knowledge
+
+**Destination**:
+An area, a centre plus a radius, with one shared catalog. Its time zone is the one event times are entered in.
+_Avoid_: Region, city
+
+**Catalog record**:
+A place, event, transport note or day trip in a Destination's catalog, kept by the admin, with a verification date and a source URL per field. Its title and description are translated like an Info block.
+_Avoid_: Listing, POI
+
+**Place category**:
+The classification of a place: beach, restaurant, café or bar, sight, nature, activity, shop or nightlife. It is not the Offer **Category**.
+
+**Verification date**:
+When the admin last checked every field of a Catalog record; one date for the whole record.
+
+**Staleness budget**:
+How long after its Verification date a Catalog record stays trustworthy, set per Place category or kind. Events have none; they end.
+
 ## Services
 
 **Order**:

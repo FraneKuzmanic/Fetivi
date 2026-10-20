@@ -13,8 +13,8 @@ import {
   type TranslationOrigin,
   type TranslationStatus,
 } from '../property/vocabulary';
+import { collectTranslations } from './collect';
 import type { TranslationModel } from './model';
-import type { TranslationOutputData } from './prompt';
 import { type BlockText, checkStructure } from './structure';
 
 // The state rules of ticket 04: the one place that moves a block's translation status and its
@@ -100,26 +100,6 @@ async function publish(tx: Executor, deps: TranslationDeps, block: BlockRow) {
   await emitInvalidated(tx, deps.queue, block);
 }
 
-interface Collected extends BlockText {
-  origin: TranslationOrigin;
-}
-
-/** The slots of `output` among `wanted` that keep the source's structure. */
-function passing(
-  source: BlockText,
-  output: TranslationOutputData,
-  wanted: readonly GuestLanguage[],
-): Map<GuestLanguage, Collected> {
-  const found = new Map<GuestLanguage, Collected>();
-  for (const language of wanted) {
-    const slot = output.translations[language];
-    if (checkStructure(source, slot).length === 0) {
-      found.set(language, { title: slot.title, body: slot.body, origin: 'machine' });
-    }
-  }
-  return found;
-}
-
 export type TranslationRunResult = 'published' | 'failed' | 'discarded';
 
 /** The translate-block job. Never throws for model failures: they end as a visible status. */
@@ -141,22 +121,9 @@ export async function runTranslation(
 
   // The model calls run outside any transaction: one takes up to 86 s.
   const source: BlockText = { title: block.title, body: block.body };
-  const collected = new Map<GuestLanguage, Collected>();
-  let sourceLanguage = block.sourceLanguage;
-  if (need.length > 0) {
-    const first = await model.translate(source);
-    if (!first.ok) return markFailed(deps, block, first.error);
-    sourceLanguage = first.output.source_language;
-    const missing = () => need.filter((l) => l !== sourceLanguage && !collected.has(l));
-    for (const [l, t] of passing(source, first.output, missing())) collected.set(l, t);
-    if (missing().length > 0) {
-      // One retry; only the languages still missing are taken from it.
-      const second = await model.translate(source);
-      if (second.ok) {
-        for (const [l, t] of passing(source, second.output, missing())) collected.set(l, t);
-      }
-    }
-  }
+  const result = await collectTranslations(model, source, need, block.sourceLanguage);
+  if (!result.ok) return markFailed(deps, block, result.error);
+  const { sourceLanguage, collected } = result;
 
   return db.transaction(async (tx) => {
     const current = await lockBlock(tx, blockId);

@@ -15,6 +15,7 @@ const MESSAGES: Record<string, string> = {
   'not-approved': 'The property must be approved before the QR code is issued.',
   'stale-revision': 'The text changed while you were editing. Reload and try again.',
   'translation-not-failed': 'This translation is not in a failed state.',
+  'destination-not-empty': "Delete this destination's records first.",
 };
 
 export function messageFor(code: string): string {

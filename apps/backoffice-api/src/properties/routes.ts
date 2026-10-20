@@ -80,7 +80,7 @@ const TRANSLATION_ERROR_STATUS: Record<TranslationRuleError['code'], number> = {
 };
 
 /** Runs a translation operation, turning its rule errors into HTTP errors. */
-async function withTranslationErrors<T>(run: () => Promise<T>): Promise<T> {
+export async function withTranslationErrors<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
   } catch (error) {

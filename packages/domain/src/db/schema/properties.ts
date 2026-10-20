@@ -24,7 +24,7 @@ export const parkingType = pgEnum('parking_type', PARKING_TYPES);
  * A WGS 84 point, x = longitude, y = latitude. Drizzle's own `geometry()` drops the SRID from
  * both the column type and the values it writes, so the column would accept any SRID.
  */
-const wgs84Point = customType<{ data: { x: number; y: number }; driverData: string }>({
+export const wgs84Point = customType<{ data: { x: number; y: number }; driverData: string }>({
   dataType: () => 'geometry(point, 4326)',
   toDriver: ({ x, y }) => `SRID=4326;POINT(${x} ${y})`,
   fromDriver: (value) => {

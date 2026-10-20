@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   arrivalReleaseAt,
   endOfCheckoutDay,
+  fromLocalDateTime,
   InvalidTimeInputError,
   startOfCivilDay,
+  toLocalDateTime,
 } from './index';
 
 const ZG = 'Europe/Zagreb';
@@ -71,5 +73,24 @@ describe('civil-day helpers', () => {
       process.env.TZ = 'America/New_York';
       expect(endOfCheckoutDay('2026-10-25', ZG).toISOString()).toBe('2026-10-25T23:00:00.000Z');
     });
+  });
+});
+
+describe('local date-time helpers', () => {
+  it.each([
+    ['summer', '2027-07-01T20:00', '2027-07-01T18:00:00.000Z'],
+    ['winter', '2027-01-15T09:30', '2027-01-15T08:30:00.000Z'],
+  ])('round-trips a %s time in Zagreb', (_name, local, iso) => {
+    const instant = fromLocalDateTime(local, ZG);
+    expect(instant.toISOString()).toBe(iso);
+    expect(toLocalDateTime(instant, ZG)).toBe(local);
+  });
+
+  it.each([
+    ['a time in the spring-forward gap', '2027-03-28T02:30'],
+    ['a malformed value', '2027-07-01 20:00'],
+    ['an impossible date', '2027-02-30T10:00'],
+  ])('rejects %s', (_name, local) => {
+    expect(() => fromLocalDateTime(local, ZG)).toThrow(InvalidTimeInputError);
   });
 });

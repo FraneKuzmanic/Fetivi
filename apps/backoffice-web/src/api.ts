@@ -1,4 +1,12 @@
 import type {
+  CatalogKind,
+  ImageSource,
+  PlaceCategory,
+  SourceField,
+  StalenessStatus,
+  TransportMode,
+} from '@fetivi/domain/catalog-vocabulary';
+import type {
   Amenity,
   Bed,
   BlockCategory,
@@ -300,4 +308,194 @@ export const host = {
   retryTranslation: (id: string) =>
     post<{ view: TranslationsView }>(`/api/host/blocks/${id}/translations/retry`),
   qrUrl: (unitId: string, format: 'svg' | 'png') => `/api/host/units/${unitId}/qr?format=${format}`,
+};
+
+// --- Catalog (admin) -----------------------------------------------------------------------------
+
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+export interface Destination {
+  id: string;
+  name: string;
+  centre: LatLng;
+  radiusKm: number;
+  timezone: string;
+  recordCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DestinationInput {
+  name: string;
+  centre: LatLng;
+  radiusKm: number;
+  timezone: string;
+}
+
+export interface Staleness {
+  status: StalenessStatus;
+  staleAt: string | null;
+}
+
+export interface CatalogRecordSummary {
+  id: string;
+  destinationId: string;
+  kind: CatalogKind;
+  placeCategory: PlaceCategory | null;
+  title: string;
+  verifiedAt: string | null;
+  staleness: Staleness;
+  translation: {
+    status: TranslationStatus;
+    error: TranslationError | null;
+    revision: number;
+    publishedRevision: number | null;
+  };
+  /** Local 'YYYY-MM-DDTHH:mm' in the destination's zone; events only. */
+  startsAt: string | null;
+  endsAt: string | null;
+}
+
+/** 'MM-DD' to 'MM-DD'; may wrap the new year. */
+export interface Season {
+  from: string;
+  to: string;
+}
+
+export interface OpeningHours {
+  /** 1 = Monday … 7 = Sunday. */
+  weekday: number;
+  opens: string;
+  closes: string;
+  validFrom: string | null;
+  validTo: string | null;
+}
+
+export interface PlaceImage {
+  url: string;
+  source: ImageSource;
+  licence: string | null;
+  attribution: string | null;
+  sourcePageUrl: string | null;
+}
+
+export interface CatalogLink {
+  label: string;
+  url: string;
+}
+
+export type FieldSources = Partial<Record<SourceField, string>>;
+
+export interface CatalogRecord extends CatalogRecordSummary {
+  destination: { id: string; name: string; timezone: string };
+  description: string;
+  location: LatLng | null;
+  address: string | null;
+  phone: string | null;
+  websiteUrl: string | null;
+  venueName: string | null;
+  transportMode: TransportMode | null;
+  links: CatalogLink[];
+  travelMinutes: number | null;
+  fieldSources: FieldSources;
+  /** Null for the seed or a deleted account. */
+  verifiedByEmail: string | null;
+  seasons: Season[];
+  openingHours: OpeningHours[];
+  images: PlaceImage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface RecordText {
+  title: string;
+  description: string;
+  fieldSources?: FieldSources;
+}
+
+export type CatalogRecordInput =
+  | (RecordText & {
+      kind: 'place';
+      placeCategory: PlaceCategory;
+      location: LatLng;
+      address?: string | null;
+      phone?: string | null;
+      websiteUrl?: string | null;
+    })
+  | (RecordText & {
+      kind: 'event';
+      startsAt: string;
+      endsAt: string;
+      location?: LatLng | null;
+      venueName?: string | null;
+      websiteUrl?: string | null;
+    })
+  | (RecordText & { kind: 'transport_note'; transportMode: TransportMode; links?: CatalogLink[] })
+  | (RecordText & {
+      kind: 'day_trip';
+      travelMinutes: number;
+      location?: LatLng | null;
+      websiteUrl?: string | null;
+    });
+
+/** Any subset of the record's own fields; never its kind. */
+export type CatalogRecordPatch = Partial<{
+  title: string;
+  description: string;
+  placeCategory: PlaceCategory;
+  location: LatLng | null;
+  address: string | null;
+  phone: string | null;
+  websiteUrl: string | null;
+  venueName: string | null;
+  startsAt: string;
+  endsAt: string;
+  transportMode: TransportMode;
+  links: CatalogLink[];
+  travelMinutes: number;
+  fieldSources: FieldSources;
+}>;
+
+export interface CatalogTranslationsView {
+  recordId: string;
+  revision: number;
+  publishedRevision: number | null;
+  status: TranslationStatus;
+  error: TranslationError | null;
+  sourceLanguage: SourceLanguage | null;
+  languages: {
+    language: GuestLanguage;
+    current: { title: string; body: string; origin: TranslationOrigin; updatedAt: string } | null;
+  }[];
+}
+
+const record = (id: string) => `/api/admin/catalog/records/${id}`;
+
+export const catalog = {
+  destinations: () => api<{ destinations: Destination[] }>('/api/admin/destinations'),
+  createDestination: (body: DestinationInput) => post<Destination>('/api/admin/destinations', body),
+  destination: (id: string) => api<Destination>(`/api/admin/destinations/${id}`),
+  updateDestination: (id: string, body: Partial<DestinationInput>) =>
+    patch<Destination>(`/api/admin/destinations/${id}`, body),
+  deleteDestination: (id: string) => remove(`/api/admin/destinations/${id}`),
+  records: (destinationId: string) =>
+    api<{ records: CatalogRecordSummary[] }>(`/api/admin/destinations/${destinationId}/records`),
+  createRecord: (destinationId: string, body: CatalogRecordInput) =>
+    post<CatalogRecord>(`/api/admin/destinations/${destinationId}/records`, body),
+  record: (id: string) => api<CatalogRecord>(record(id)),
+  updateRecord: (id: string, body: CatalogRecordPatch) => patch<CatalogRecord>(record(id), body),
+  deleteRecord: (id: string) => remove(record(id)),
+  setSeasons: (id: string, seasons: Season[]) =>
+    put<CatalogRecord>(`${record(id)}/seasons`, { seasons }),
+  setOpeningHours: (id: string, hours: OpeningHours[]) =>
+    put<CatalogRecord>(`${record(id)}/opening-hours`, { hours }),
+  setImages: (id: string, images: PlaceImage[]) =>
+    put<CatalogRecord>(`${record(id)}/images`, { images }),
+  verify: (id: string) => post<CatalogRecord>(`${record(id)}/verify`),
+  translations: (id: string) => api<CatalogTranslationsView>(`${record(id)}/translations`),
+  retryTranslation: (id: string) =>
+    post<{ view: CatalogTranslationsView }>(`${record(id)}/translations/retry`),
 };

@@ -1,3 +1,4 @@
+export * from './catalog';
 export * from './db/client';
 export * from './db/migrate';
 export * from './db/schema';
