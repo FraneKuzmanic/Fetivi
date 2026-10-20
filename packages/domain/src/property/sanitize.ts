@@ -18,8 +18,15 @@ function removeControl(s: string): string {
   return out;
 }
 
+/** Repeats until nothing changes: removing an inner tag can join the pieces of an outer one. */
 function removeHtml(s: string): string {
-  return s.replace(COMMENT, '').replace(SCRIPT_OR_STYLE, '').replace(TAG, '');
+  let previous: string;
+  let text = s;
+  do {
+    previous = text;
+    text = text.replace(COMMENT, '').replace(SCRIPT_OR_STYLE, '').replace(TAG, '');
+  } while (text !== previous);
+  return text;
 }
 
 /** For Markdown block bodies: removes HTML and control characters, keeps Markdown and newlines. */

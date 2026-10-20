@@ -207,7 +207,7 @@ export function PropertyPage() {
         </Section>
 
         {CORE_SECTIONS.map((section) => {
-          const isArrival = section.title === 'Arrival and access';
+          const isArrival = section.id === 'arrival';
           const keys: (keyof Draft)[] = isArrival
             ? [...section.fields, 'buildingDoorCode']
             : [...section.fields];

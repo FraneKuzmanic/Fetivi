@@ -380,6 +380,9 @@ describe('input', () => {
       { checkInTime: '25:00' },
       { hostPhone: 'call me' },
       { timezone: 'Mars/Base' },
+      { timezone: '+01:00' },
+      { timezone: 'EST' },
+      { timezone: 'europe/zagreb' },
       { location: { lat: 91, lng: 0 } },
       { name: '' },
       { name: 'x'.repeat(121) },
@@ -395,6 +398,11 @@ describe('input', () => {
       hostA.cookie,
     );
     expect(ok.json()).toMatchObject({ checkInTime: '15:00', hostPhone: '+385 91 234 5678' });
+    for (const timezone of ['Europe/Rome', 'America/Argentina/Salta', 'Etc/GMT-1']) {
+      expect((await patch(t.app, url, { timezone }, hostA.cookie)).json()).toMatchObject({
+        timezone,
+      });
+    }
   });
 
   it('defaults the arrival release to 1 day and accepts 0 to 7', async () => {

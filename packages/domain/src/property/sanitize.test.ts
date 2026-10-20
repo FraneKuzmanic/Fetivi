@@ -9,6 +9,12 @@ describe('stripMarkup', () => {
     expect(stripMarkup('<img src=x onerror="alert(1)">ok')).toBe('ok');
   });
 
+  it('removes tags rebuilt from nested markup', () => {
+    expect(stripMarkup('<<b>img src=x onerror=alert(1)>')).toBe('');
+    expect(stripMarkup('a<scr<b>ipt>alert(1)</scr<b>ipt>b')).toBe('ab');
+    expect(stripMarkup('<!<!---->-- x -->ok')).toBe('ok');
+  });
+
   it('removes control characters but keeps tabs and newlines', () => {
     expect(stripMarkup('a\u0000b\u0007c\u001bd\te\nf')).toBe('abcd\te\nf');
   });

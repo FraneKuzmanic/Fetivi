@@ -45,7 +45,11 @@ const phone = z
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const hhmm = z.string().regex(HHMM).nullable();
 
+/** An IANA region name such as Europe/Zagreb; Luxon alone also accepts offsets like +01:00 and EST. */
+const REGION_ZONE = /^[A-Z][A-Za-z_]+(\/[A-Z][A-Za-z0-9_+-]*)+$/;
+
 const zone = z.string().refine((value) => {
+  if (!REGION_ZONE.test(value)) return false;
   try {
     assertValidZone(value);
     return true;

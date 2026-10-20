@@ -6,12 +6,14 @@ import { CHECK_IN_METHOD_LABELS, CORE_FIELD_LABELS, PARKING_LABELS } from '../fo
 type CoreKey = keyof CoreValues;
 
 /** The shared core fields, grouped as both editors show them. */
-export const CORE_SECTIONS: { title: string; fields: readonly CoreKey[] }[] = [
+export const CORE_SECTIONS: { id: string; title: string; fields: readonly CoreKey[] }[] = [
   {
+    id: 'arrival',
     title: 'Arrival and access',
     fields: ['checkInTime', 'checkoutTime', 'checkInMethod', 'accessInstructions'],
   },
   {
+    id: 'house-rules',
     title: 'House rules',
     fields: [
       'petsAllowed',
@@ -22,9 +24,13 @@ export const CORE_SECTIONS: { title: string; fields: readonly CoreKey[] }[] = [
       'houseRulesNotes',
     ],
   },
-  { title: 'Parking', fields: ['parkingType', 'parkingNotes'] },
-  { title: 'Contacts', fields: ['hostPhone', 'emergencyContactName', 'emergencyContactPhone'] },
-  { title: 'Licence', fields: ['licenceNumber'] },
+  { id: 'parking', title: 'Parking', fields: ['parkingType', 'parkingNotes'] },
+  {
+    id: 'contacts',
+    title: 'Contacts',
+    fields: ['hostPhone', 'emergencyContactName', 'emergencyContactPhone'],
+  },
+  { id: 'licence', title: 'Licence', fields: ['licenceNumber'] },
 ];
 
 const TIMES = new Set<CoreKey>(['checkInTime', 'checkoutTime', 'quietHoursFrom', 'quietHoursTo']);

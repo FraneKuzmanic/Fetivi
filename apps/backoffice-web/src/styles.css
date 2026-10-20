@@ -759,8 +759,9 @@ button svg,
   border-radius: var(--radius-sm);
 }
 
-.inline-form {
+.panel > .inline-form {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 12px;
