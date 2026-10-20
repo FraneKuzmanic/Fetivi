@@ -30,7 +30,7 @@ const optionalUrl = z
   .pipe(z.url({ protocol: /^https$/ }).nullable())
   .nullable();
 
-const markdown = z
+export const markdown = z
   .string()
   .transform(stripMarkdownHtml)
   .pipe(z.string().min(1).max(LIMITS.blockBody));
@@ -148,7 +148,7 @@ export const SeasonsBody = z.strictObject({
     .max(CATALOG_LIMITS.seasonsPerRecord),
 });
 
-const civilDate = z
+export const civilDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .refine((value) => {

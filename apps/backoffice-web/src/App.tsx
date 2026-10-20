@@ -4,6 +4,9 @@ import { ApprovalsPage } from './admin/ApprovalsPage';
 import { DestinationPage, NewDestinationPage } from './admin/catalog/DestinationPage';
 import { DestinationsPage } from './admin/catalog/DestinationsPage';
 import { NewRecordPage, RecordPage } from './admin/catalog/RecordPage';
+import { NewOfferPage, OfferPage } from './admin/providers/OfferPage';
+import { NewProviderPage, ProviderPage } from './admin/providers/ProviderPage';
+import { ProvidersPage } from './admin/providers/ProvidersPage';
 import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 import { LoginPage } from './auth/LoginPage';
 import { ResetPasswordPage } from './auth/ResetPasswordPage';
@@ -125,6 +128,46 @@ export function App() {
           element={
             <Page area="admin">
               <RecordPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/providers"
+          element={
+            <Page area="admin">
+              <ProvidersPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/providers/new"
+          element={
+            <Page area="admin">
+              <NewProviderPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/providers/:id"
+          element={
+            <Page area="admin">
+              <ProviderPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/providers/:id/offers/new"
+          element={
+            <Page area="admin">
+              <NewOfferPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/offers/:id"
+          element={
+            <Page area="admin">
+              <OfferPage />
             </Page>
           }
         />

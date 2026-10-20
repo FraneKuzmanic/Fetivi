@@ -16,6 +16,9 @@ const MESSAGES: Record<string, string> = {
   'stale-revision': 'The text changed while you were editing. Reload and try again.',
   'translation-not-failed': 'This translation is not in a failed state.',
   'destination-not-empty': "Delete this destination's records first.",
+  'provider-has-offers': "Delete this Provider's Offers first.",
+  'offer-has-slots': 'Delete the allotment slots first.',
+  'seats-taken': 'Some seats are already taken.',
 };
 
 export function messageFor(code: string): string {

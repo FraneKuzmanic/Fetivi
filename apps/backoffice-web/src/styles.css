@@ -1112,3 +1112,143 @@ button svg,
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* --- Providers and Offers ----------------------------------------------------------------- */
+
+@media (min-width: 700px) {
+  .table.providers-table .row-link,
+  .table.providers-table .table-head {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.4fr) minmax(0, 1fr) 6rem;
+  }
+}
+
+.translation-label {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.slots h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.slots-bulk {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.weekdays {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+
+.weekdays legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.slot-time {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* Stacked on a phone: start on its own line, then seats, left and delete. */
+.slot-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "start start start"
+    "capacity left delete";
+  gap: 8px 16px;
+  align-items: end;
+  padding: 12px 16px;
+}
+
+.slot-row > strong {
+  grid-area: start;
+}
+
+.slot-capacity {
+  grid-area: capacity;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.slot-capacity .field {
+  width: 6rem;
+}
+
+.slot-capacity .field-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.slot-left {
+  grid-area: left;
+  align-self: center;
+}
+
+.slot-row > .icon-button {
+  grid-area: delete;
+}
+
+.slot-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.slot-head {
+  display: none;
+}
+
+@media (min-width: 700px) {
+  .slot-row {
+    grid-template-columns: minmax(0, 1fr) 13rem 5rem var(--tap);
+    grid-template-areas: "start capacity left delete";
+    align-items: center;
+  }
+
+  .slot-head {
+    display: grid;
+    padding: 10px 16px;
+    background: var(--gray-50);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-500);
+  }
+
+  .slot-head > :first-child {
+    grid-area: start;
+  }
+
+  .slot-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

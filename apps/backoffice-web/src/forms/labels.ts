@@ -7,6 +7,15 @@ import type {
   TransportMode,
 } from '@fetivi/domain/catalog-vocabulary';
 import type {
+  AdapterKind,
+  AvailabilityMode,
+  ContactFields,
+  OfferCategory,
+  OrderKind,
+  PaymentMode,
+  PriceUnit,
+} from '@fetivi/domain/offer-vocabulary';
+import type {
   Amenity,
   BedType,
   BlockCategory,
@@ -214,4 +223,59 @@ export const WEEKDAY_LABELS: Record<number, string> = {
   5: 'Friday',
   6: 'Saturday',
   7: 'Sunday',
+};
+
+export const ORDER_KIND_LABELS: Record<OrderKind, string> = {
+  booking: 'Booking',
+  ticket: 'Ticket',
+  purchase: 'Purchase',
+  request: 'Request',
+};
+
+/** The Offer's Category; not the place category. */
+export const OFFER_CATEGORY_LABELS: Record<OfferCategory, string> = {
+  tour: 'Tour',
+  boat_trip: 'Boat trip',
+  dining_experience: 'Dining experience',
+  tasting: 'Tasting',
+  transfer: 'Transfer',
+  rental: 'Rental',
+  class: 'Class or workshop',
+  wellness: 'Wellness',
+  goods: 'Goods',
+  other: 'Other',
+};
+
+export const AVAILABILITY_MODE_LABELS: Record<AvailabilityMode, string> = {
+  live: "Live (Provider's booking system)",
+  allotment: 'Allotment (seats from the deal)',
+  on_request: 'On request (Provider accepts)',
+};
+
+/** Short forms for chips and lists. */
+export const AVAILABILITY_MODE_SHORT: Record<AvailabilityMode, string> = {
+  live: 'Live',
+  allotment: 'Allotment',
+  on_request: 'On request',
+};
+
+export const PAYMENT_MODE_LABELS: Record<PaymentMode, string> = {
+  direct: 'Pay the Provider directly',
+  online: 'Pay online',
+};
+
+export const CONTACT_FIELDS_LABELS: Record<ContactFields, string> = {
+  name: 'Name',
+  phone: 'Phone',
+  name_and_phone: 'Name and phone',
+};
+
+export const PRICE_UNIT_LABELS: Record<PriceUnit, string> = {
+  person: 'per person',
+  group: 'per group',
+  item: 'per item',
+};
+
+export const ADAPTER_KIND_LABELS: Record<AdapterKind, string> = {
+  bokun: 'Bókun',
 };

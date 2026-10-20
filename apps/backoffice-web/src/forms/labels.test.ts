@@ -7,6 +7,15 @@ import {
   TRANSPORT_MODES,
 } from '@fetivi/domain/catalog-vocabulary';
 import {
+  ADAPTER_KINDS,
+  AVAILABILITY_MODES,
+  CONTACT_FIELDS,
+  OFFER_CATEGORIES,
+  ORDER_KINDS,
+  PAYMENT_MODES,
+  PRICE_UNITS,
+} from '@fetivi/domain/offer-vocabulary';
+import {
   AMENITIES,
   BED_TYPES,
   BLOCK_CATEGORIES,
@@ -21,16 +30,24 @@ import {
 } from '@fetivi/domain/vocabulary';
 import { describe, expect, it } from 'vitest';
 import {
+  ADAPTER_KIND_LABELS,
   AMENITY_LABELS,
+  AVAILABILITY_MODE_LABELS,
+  AVAILABILITY_MODE_SHORT,
   BED_LABELS,
   CATALOG_KIND_LABELS,
   CATEGORY_LABELS,
   CHECK_IN_METHOD_LABELS,
+  CONTACT_FIELDS_LABELS,
   CORE_FIELD_LABELS,
   IMAGE_SOURCE_LABELS,
   LANGUAGE_LABELS,
+  OFFER_CATEGORY_LABELS,
+  ORDER_KIND_LABELS,
   PARKING_LABELS,
+  PAYMENT_MODE_LABELS,
   PLACE_CATEGORY_LABELS,
+  PRICE_UNIT_LABELS,
   SOURCE_FIELD_LABELS,
   STALENESS_LABELS,
   TRANSLATION_ERROR_LABELS,
@@ -63,6 +80,14 @@ describe('labels', () => {
     ['staleness statuses', STALENESS_STATUSES, STALENESS_LABELS],
     ['source fields', ALL_SOURCE_FIELDS, SOURCE_FIELD_LABELS],
     ['weekdays', [1, 2, 3, 4, 5, 6, 7], WEEKDAY_LABELS],
+    ['order kinds', ORDER_KINDS, ORDER_KIND_LABELS],
+    ['offer categories', OFFER_CATEGORIES, OFFER_CATEGORY_LABELS],
+    ['availability modes', AVAILABILITY_MODES, AVAILABILITY_MODE_LABELS],
+    ['availability modes (short)', AVAILABILITY_MODES, AVAILABILITY_MODE_SHORT],
+    ['payment modes', PAYMENT_MODES, PAYMENT_MODE_LABELS],
+    ['contact fields', CONTACT_FIELDS, CONTACT_FIELDS_LABELS],
+    ['price units', PRICE_UNITS, PRICE_UNIT_LABELS],
+    ['adapter kinds', ADAPTER_KINDS, ADAPTER_KIND_LABELS],
   ] as const)('names every value of %s', (_name, values, labels) => {
     for (const value of values) {
       expect((labels as Record<string, string>)[value]?.trim()).toBeTruthy();

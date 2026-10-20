@@ -3,6 +3,7 @@ export * from './amenities';
 export * from './audit';
 export * from './catalog';
 export * from './info-blocks';
+export * from './offers';
 export * from './properties';
 export * from './sessions';
 export * from './translations';

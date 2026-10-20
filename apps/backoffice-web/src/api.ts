@@ -7,6 +7,15 @@ import type {
   TransportMode,
 } from '@fetivi/domain/catalog-vocabulary';
 import type {
+  AdapterKind,
+  AvailabilityMode,
+  ContactFields,
+  OfferCategory,
+  OrderKind,
+  PaymentMode,
+  PriceUnit,
+} from '@fetivi/domain/offer-vocabulary';
+import type {
   Amenity,
   Bed,
   BlockCategory,
@@ -498,4 +507,180 @@ export const catalog = {
   translations: (id: string) => api<CatalogTranslationsView>(`${record(id)}/translations`),
   retryTranslation: (id: string) =>
     post<{ view: CatalogTranslationsView }>(`${record(id)}/translations/retry`),
+};
+
+// --- Providers and Offers (admin) ----------------------------------------------------------------
+
+export interface Provider {
+  id: string;
+  name: string;
+  email: string;
+  whatsappPhone: string | null;
+  taxNumber: string | null;
+  /** Basis points: 1250 = 12.5 %. */
+  commissionBp: number;
+  dealNotes: string | null;
+  stripeConnected: boolean;
+  active: boolean;
+  offerCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProviderInput {
+  name: string;
+  email: string;
+  whatsappPhone?: string | null;
+  taxNumber?: string | null;
+  commissionBp?: number;
+  dealNotes?: string | null;
+  active?: boolean;
+}
+
+export interface OfferSummary {
+  id: string;
+  providerId: string | null;
+  destination: { id: string; name: string } | null;
+  title: string;
+  category: OfferCategory;
+  orderKind: OrderKind;
+  availabilityMode: AvailabilityMode;
+  paymentMode: PaymentMode;
+  /** Cents; null only for requests. */
+  priceMinor: number | null;
+  currency: string;
+  priceUnit: PriceUnit;
+  active: boolean;
+  translation: {
+    status: TranslationStatus;
+    error: TranslationError | null;
+    revision: number;
+    publishedRevision: number | null;
+  };
+}
+
+export interface Offer extends OfferSummary {
+  provider: { id: string; name: string } | null;
+  /** The zone slot times and response hours are in. */
+  timezone: string;
+  description: string;
+  cancellationPolicy: string;
+  placeId: string | null;
+  place: { id: string; title: string } | null;
+  freeCancelHoursBefore: number;
+  refundPercentAfter: number;
+  responseWindowMinutes: number;
+  /** 'HH:MM'. */
+  responseHoursFrom: string;
+  responseHoursTo: string;
+  contactFields: ContactFields;
+  adapterKind: AdapterKind | null;
+  externalProductRef: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OfferFields {
+  placeId: string | null;
+  title: string;
+  description: string;
+  cancellationPolicy: string;
+  category: OfferCategory;
+  orderKind: OrderKind;
+  availabilityMode: AvailabilityMode;
+  paymentMode: PaymentMode;
+  priceMinor: number | null;
+  currency: string;
+  priceUnit: PriceUnit;
+  freeCancelHoursBefore: number;
+  refundPercentAfter: number;
+  responseWindowMinutes: number;
+  responseHoursFrom: string;
+  responseHoursTo: string;
+  contactFields: ContactFields;
+  adapterKind: AdapterKind | null;
+  externalProductRef: string | null;
+  active: boolean;
+}
+
+/** A create: the destination and the required fields; the API defaults the rest. */
+export type OfferInput = Partial<OfferFields> &
+  Pick<
+    OfferFields,
+    | 'title'
+    | 'description'
+    | 'cancellationPolicy'
+    | 'category'
+    | 'orderKind'
+    | 'availabilityMode'
+    | 'paymentMode'
+    | 'priceMinor'
+  > & { destinationId: string };
+
+/** Any subset of the Offer's own fields; never its destination or owner. */
+export type OfferPatch = Partial<OfferFields>;
+
+export interface AllotmentSlot {
+  id: string;
+  /** Local 'YYYY-MM-DDTHH:mm' in the Offer's zone. */
+  startsAt: string;
+  capacity: number;
+  remaining: number;
+}
+
+export interface SlotsBulkInput {
+  from: string;
+  to: string;
+  weekdays: number[];
+  times: string[];
+  capacity: number;
+}
+
+export interface OfferTranslationsView {
+  offerId: string;
+  revision: number;
+  publishedRevision: number | null;
+  status: TranslationStatus;
+  error: TranslationError | null;
+  sourceLanguage: SourceLanguage | null;
+  languages: {
+    language: GuestLanguage;
+    current: {
+      title: string;
+      body: string;
+      cancellationPolicy: string;
+      origin: TranslationOrigin;
+      updatedAt: string;
+    } | null;
+  }[];
+}
+
+const providerPath = (id: string) => `/api/admin/providers/${id}`;
+const offerPath = (id: string) => `/api/admin/offers/${id}`;
+
+export const providers = {
+  list: () => api<{ providers: Provider[] }>('/api/admin/providers'),
+  create: (body: ProviderInput) => post<Provider>('/api/admin/providers', body),
+  get: (id: string) => api<Provider>(providerPath(id)),
+  update: (id: string, body: Partial<ProviderInput>) => patch<Provider>(providerPath(id), body),
+  remove: (id: string) => remove(providerPath(id)),
+  offers: (providerId: string) =>
+    api<{ offers: OfferSummary[] }>(`${providerPath(providerId)}/offers`),
+  createOffer: (providerId: string, body: OfferInput) =>
+    post<Offer>(`${providerPath(providerId)}/offers`, body),
+  offer: (id: string) => api<Offer>(offerPath(id)),
+  updateOffer: (id: string, body: OfferPatch) => patch<Offer>(offerPath(id), body),
+  deleteOffer: (id: string) => remove(offerPath(id)),
+  slots: (offerId: string, past = false) =>
+    api<{ timezone: string; slots: AllotmentSlot[] }>(
+      `${offerPath(offerId)}/slots${past ? '?past=true' : ''}`,
+    ),
+  bulkSlots: (offerId: string, body: SlotsBulkInput) =>
+    post<{ created: number; skipped: number }>(`${offerPath(offerId)}/slots/bulk`, body),
+  setSlotCapacity: (slotId: string, capacity: number) =>
+    patch<AllotmentSlot>(`/api/admin/allotment-slots/${slotId}`, { capacity }),
+  deleteSlot: (slotId: string) => remove(`/api/admin/allotment-slots/${slotId}`),
+  translations: (id: string) => api<OfferTranslationsView>(`${offerPath(id)}/translations`),
+  retryTranslation: (id: string) =>
+    post<{ view: OfferTranslationsView }>(`${offerPath(id)}/translations/retry`),
 };

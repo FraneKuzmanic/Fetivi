@@ -43,6 +43,13 @@
       "when": 1792504624723,
       "tag": "0005_kind_luminals",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792511221919,
+      "tag": "0006_familiar_grandmaster",
+      "breakpoints": true
     }
   ]
 }

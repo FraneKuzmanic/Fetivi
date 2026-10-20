@@ -1,6 +1,7 @@
 import {
   Buildings,
   ClipboardText,
+  Handshake,
   type Icon,
   MapTrifold,
   SealCheck,
@@ -27,6 +28,12 @@ function navItems(me: Me): NavItem[] {
       { to: '/', label: 'Hosts', icon: UsersThree, prefixes: [] },
       { to: '/admin/approvals', label: 'Approvals', icon: SealCheck, prefixes: [] },
       { to: '/admin/catalog', label: 'Catalog', icon: MapTrifold, prefixes: ['/admin/catalog'] },
+      {
+        to: '/admin/providers',
+        label: 'Providers',
+        icon: Handshake,
+        prefixes: ['/admin/providers', '/admin/offers'],
+      },
       { to: '/admin/audit', label: 'Audit', icon: ClipboardText, prefixes: [] },
     ];
   }

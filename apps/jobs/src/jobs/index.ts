@@ -2,6 +2,7 @@ import type { TranslationJobDeps } from '@fetivi/domain';
 import type { JobDefinition } from '../runner';
 import { translateBlockJob } from './translate-block';
 import { translateCatalogRecordJob } from './translate-catalog-record';
+import { translateOfferJob } from './translate-offer';
 
 // Later tickets add calendar polling, response windows, holds, digests and retention.
 export function createJobs(deps: TranslationJobDeps): JobDefinition[] {
@@ -9,5 +10,6 @@ export function createJobs(deps: TranslationJobDeps): JobDefinition[] {
   return [
     translateBlockJob(deps) as JobDefinition,
     translateCatalogRecordJob(deps) as JobDefinition,
+    translateOfferJob(deps) as JobDefinition,
   ];
 }

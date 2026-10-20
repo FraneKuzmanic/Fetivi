@@ -6,6 +6,7 @@ import type { Executor } from '../db/client';
 export const QUEUES = {
   translateBlock: 'translate-block',
   translateCatalogRecord: 'translate-catalog-record',
+  translateOffer: 'translate-offer',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -20,6 +21,7 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
     retryBackoff: true,
     expireInSeconds: 600,
   },
+  translateOffer: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 600 },
 };
 
 /**
