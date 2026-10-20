@@ -10,7 +10,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node --env-file-if-exists=.env --import tsx src/db/migrate-cli.ts"
+    "db:migrate": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx src/db/migrate-cli.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.133.0",
