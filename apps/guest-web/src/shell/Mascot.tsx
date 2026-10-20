@@ -1,8 +1,7 @@
 import { type ReactNode, useId } from 'react';
 
-// Placeholder Fetivi after .scratch/design/references/mascot.jpg: a local Dalmatian man with an
-// orange moustache and beard in a blue-and-white striped shirt. The final artwork replaces this
-// one component.
+// Placeholder Fetivi: a local Dalmatian man with an orange moustache and beard in a
+// blue-and-white striped shirt. The final artwork replaces this one component.
 
 const INK = '#1a2c5b';
 const SKIN = '#f0dcc8';

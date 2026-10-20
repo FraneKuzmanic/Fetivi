@@ -1,5 +1,6 @@
 import type { GuestLanguage } from '@fetivi/domain/vocabulary';
 import { Translate } from '@phosphor-icons/react';
+import type { TFunction } from 'i18next';
 import { type FormEvent, type Ref, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, enterPin, type Space } from '../api';
@@ -11,10 +12,24 @@ export function formatWait(seconds: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-type Problem =
-  | { kind: 'wrong' | 'wait'; seconds: number }
-  | { kind: 'network' }
-  | { kind: 'not-found' };
+export type Problem = 'wrong' | 'wait' | 'network' | 'not-found';
+
+/** The message under the input. The wait counts down with `waitLeft` and goes when it ends. */
+export function pinMessage(t: TFunction, problem: Problem | null, waitLeft: number): string {
+  const wait = waitLeft > 0 ? t('pin.wait', { time: formatWait(waitLeft) }) : '';
+  switch (problem) {
+    case 'wrong':
+      return wait ? `${t('pin.wrong')} ${wait}` : t('pin.wrong');
+    case 'wait':
+      return wait;
+    case 'not-found':
+      return t('link.notFound');
+    case 'network':
+      return t('error.network');
+    default:
+      return '';
+  }
+}
 
 export function PinForm({
   slug,
@@ -34,10 +49,16 @@ export function PinForm({
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [waitLeft, setWaitLeft] = useState(0);
+  // Said once per attempt; the visible message then counts down without interrupting.
+  const [announcement, setAnnouncement] = useState('');
 
   useEffect(() => {
     if (waitLeft <= 0) return;
-    const timer = setTimeout(() => setWaitLeft((s) => s - 1), 1000);
+    const timer = setTimeout(() => {
+      setWaitLeft((s) => s - 1);
+      // The spoken wait is over too; leave no stale time for a screen reader to find.
+      if (waitLeft === 1) setAnnouncement('');
+    }, 1000);
     return () => clearTimeout(timer);
   }, [waitLeft]);
 
@@ -46,36 +67,26 @@ export function PinForm({
     if (pin.length !== 6 || busy || waitLeft > 0) return;
     setBusy(true);
     setProblem(null);
+    setAnnouncement('');
     try {
       onEntered(await enterPin(slug, pin, language));
     } catch (error) {
+      let next: Problem = 'network';
+      let seconds = 0;
       if (error instanceof ApiError && (error.status === 401 || error.status === 429)) {
-        const seconds = error.retryAfter ?? 0;
-        setWaitLeft(seconds);
-        if (error.status === 401) {
-          setProblem({ kind: 'wrong', seconds });
-          setPin('');
-        } else {
-          setProblem({ kind: 'wait', seconds });
-        }
+        seconds = error.retryAfter ?? 0;
+        next = error.status === 401 ? 'wrong' : 'wait';
+        if (error.status === 401) setPin('');
       } else if (error instanceof ApiError && error.status === 404) {
-        setProblem({ kind: 'not-found' });
-      } else {
-        setProblem({ kind: 'network' });
+        next = 'not-found';
       }
+      setWaitLeft(seconds);
+      setProblem(next);
+      setAnnouncement(pinMessage(t, next, seconds));
     } finally {
       setBusy(false);
     }
   }
-
-  // Announced once per attempt; the live countdown is on the button, hidden from screen readers.
-  const wait = (seconds: number) => t('pin.wait', { time: formatWait(seconds) });
-  let message = '';
-  if (problem?.kind === 'wrong') {
-    message = problem.seconds > 0 ? `${t('pin.wrong')} ${wait(problem.seconds)}` : t('pin.wrong');
-  } else if (problem?.kind === 'wait') message = wait(problem.seconds);
-  else if (problem?.kind === 'not-found') message = t('link.notFound');
-  else if (problem?.kind === 'network') message = t('error.network');
 
   return (
     <>
@@ -98,8 +109,11 @@ export function PinForm({
           aria-describedby="pin-message"
           onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
         />
-        <p id="pin-message" className="message" aria-live="polite">
-          {message}
+        <p id="pin-message" className="message">
+          {pinMessage(t, problem, waitLeft)}
+        </p>
+        <p className="visually-hidden" role="status">
+          {announcement}
         </p>
         <button
           type="submit"
@@ -107,7 +121,6 @@ export function PinForm({
           disabled={pin.length !== 6 || busy || waitLeft > 0}
         >
           {t('pin.submit')}
-          {waitLeft > 0 && <span aria-hidden="true">({formatWait(waitLeft)})</span>}
         </button>
       </form>
       <button type="button" className="text-button" onClick={onChangeLanguage}>

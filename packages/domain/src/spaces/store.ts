@@ -10,7 +10,7 @@ import { PIN_LIMITS } from './vocabulary';
 
 export class SpaceRuleError extends Error {
   override name = 'SpaceRuleError';
-  constructor(readonly code: 'not-found' | 'invalid-input') {
+  constructor(readonly code: 'not-found') {
     super(code);
   }
 }

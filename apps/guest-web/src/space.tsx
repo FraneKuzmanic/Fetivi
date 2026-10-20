@@ -7,6 +7,8 @@ import { isLanguage } from './i18n/browser-language';
 export type SpaceState =
   | { status: 'loading' }
   | { status: 'none' }
+  /** Loading the space failed for a reason other than "no space": the device may still have one. */
+  | { status: 'offline' }
   | { status: 'ready'; space: Space };
 
 /** What the unit link `/u/:slug` shows: the shell only for a space of that same unit. */
@@ -16,8 +18,8 @@ export function entryDecision(state: SpaceState, slug: string): 'loading' | 'she
 }
 
 /** What a tab route shows: nothing beyond the "open your link" screen without a space. */
-export function guardDecision(state: SpaceState): 'loading' | 'allow' | 'no-link' {
-  if (state.status === 'loading') return 'loading';
+export function guardDecision(state: SpaceState): 'loading' | 'allow' | 'no-link' | 'offline' {
+  if (state.status === 'loading' || state.status === 'offline') return state.status;
   return state.status === 'ready' ? 'allow' : 'no-link';
 }
 
@@ -43,8 +45,6 @@ export function storeLanguage(language: GuestLanguage): void {
 
 interface SpaceContextValue {
   state: SpaceState;
-  /** True when loading the space failed for a reason other than "no space". */
-  offline: boolean;
   setSpace: (space: Space) => void;
   /** Switches the interface now and stores the choice on the space when there is one. Never throws. */
   changeLanguage: (language: GuestLanguage) => Promise<void>;
@@ -61,7 +61,6 @@ export function SpaceProvider({
   children: ReactNode;
 }) {
   const [state, setState] = useState<SpaceState>(initial);
-  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
     if (initial.status !== 'loading') return;
@@ -71,20 +70,15 @@ export function SpaceProvider({
         if (live) setState({ status: 'ready', space });
       },
       (error: unknown) => {
-        if (!live) return;
-        if (!(error instanceof ApiError)) setOffline(true);
-        setState({ status: 'none' });
+        // 401 is the server saying "no space"; anything else leaves the question open.
+        const none = error instanceof ApiError && error.status === 401;
+        if (live) setState({ status: none ? 'none' : 'offline' });
       },
     );
     return () => {
       live = false;
     };
   }, [initial.status]);
-
-  const language = state.status === 'ready' ? state.space.language : null;
-  useEffect(() => {
-    if (language) setLanguage(language);
-  }, [language]);
 
   const setSpace = useCallback((space: Space) => setState({ status: 'ready', space }), []);
 
@@ -105,7 +99,7 @@ export function SpaceProvider({
   );
 
   return (
-    <SpaceContext.Provider value={{ state, offline, setSpace, changeLanguage }}>
+    <SpaceContext.Provider value={{ state, setSpace, changeLanguage }}>
       {children}
     </SpaceContext.Provider>
   );

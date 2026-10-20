@@ -78,6 +78,7 @@ describe('GET /api/access/:slug', () => {
     const response = await get(t.app, '/api/access/nope');
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({ error: 'not-found' });
+    expect(response.cookies).toEqual([]);
   });
 });
 
@@ -137,8 +138,17 @@ describe('POST /api/access/:slug/pin', () => {
     for (let i = 0; i < 5; i++) expect((await c.pin(slug, '999999')).statusCode).toBe(401);
   });
 
-  it('answers 404 for an unknown slug', async () => {
-    expect((await client().pin('nope', '123456')).statusCode).toBe(404);
+  it('answers 404 for an unknown slug without setting a device cookie', async () => {
+    const response = await client().pin('nope', '123456');
+    expect(response.statusCode).toBe(404);
+    expect(response.cookies).toEqual([]);
+  });
+
+  it('sets the device cookie on a first wrong PIN for a live link', async () => {
+    const { slug } = await seedLiveUnit(t.db);
+    const response = await client().pin(slug, '999999');
+    expect(response.statusCode).toBe(401);
+    expect(response.cookies.map((c) => c.name)).toEqual([DEVICE_COOKIE]);
   });
 
   it('throttles a device after five wrong PINs, also for the right one, then lets it in', async () => {

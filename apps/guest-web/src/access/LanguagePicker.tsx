@@ -2,12 +2,9 @@ import { GUEST_LANGUAGES, type GuestLanguage } from '@fetivi/domain/vocabulary';
 import { Check } from '@phosphor-icons/react';
 import type { Ref } from 'react';
 import { useTranslation } from 'react-i18next';
-import { pickBrowserLanguage } from '../i18n/browser-language';
+import { navigatorLanguages, pickBrowserLanguage } from '../i18n/browser-language';
 import { LANGUAGE_NAMES } from '../i18n/languages';
 import { MascotSays } from '../shell/Mascot';
-
-const navigatorLanguages = (): readonly string[] =>
-  typeof navigator === 'undefined' ? [] : (navigator.languages ?? []);
 
 /** The seven languages in a fixed order, each under its own name; the phone's one is marked. */
 export function LanguageOptions({

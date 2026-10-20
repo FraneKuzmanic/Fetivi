@@ -46,6 +46,13 @@ describe('guest-web App', () => {
     }
   });
 
+  it('says the connection failed when the space could not be loaded', () => {
+    const html = render('/chat', { status: 'offline' });
+    expect(html).toContain('No connection.');
+    expect(html).not.toContain(NO_LINK);
+    expect(html).not.toContain('<nav');
+  });
+
   it('opens the unit link on the language picker', () => {
     expect(render('/u/abc')).toContain('Choose your language');
     expect(render('/u/abc', { status: 'none' })).toContain('Choose your language');
@@ -55,6 +62,8 @@ describe('guest-web App', () => {
     const html = render('/chat', ready);
     expect(html).toContain(CHAT_TEXT);
     expect(html).toContain('<nav');
+    // Focus lands on the tab's heading after the PIN.
+    expect(html).toContain('<h1 id="tab-title" tabindex="-1">Chat</h1>');
   });
 
   it('asks for the PIN of another unit even with a space', () => {

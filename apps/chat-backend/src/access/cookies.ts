@@ -19,11 +19,12 @@ export function spaceCookieOptions(closedAt: Date, now: Date): CookieSerializeOp
   return { ...clearCookieOptions, maxAge: Math.max(0, Math.floor((until - now.getTime()) / 1000)) };
 }
 
-/** The device id the per-device PIN limit counts against; set on first contact. */
-export function ensureDeviceId(request: FastifyRequest, reply: FastifyReply): string {
-  const existing = request.cookies[DEVICE_COOKIE];
-  if (existing) return existing;
-  const id = newToken();
+/** The device id the per-device PIN limit counts against: the cookie's, or a new one. */
+export const deviceIdOf = (request: FastifyRequest): string =>
+  request.cookies[DEVICE_COOKIE] ?? newToken();
+
+/** Sets the device cookie on first contact with a live link; a known device keeps its cookie. */
+export function rememberDevice(request: FastifyRequest, reply: FastifyReply, id: string): void {
+  if (request.cookies[DEVICE_COOKIE]) return;
   reply.setCookie(DEVICE_COOKIE, id, { ...clearCookieOptions, maxAge: DEVICE_MAX_AGE_S });
-  return id;
 }

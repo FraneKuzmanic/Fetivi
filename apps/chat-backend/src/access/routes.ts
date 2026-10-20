@@ -9,7 +9,7 @@ import {
 } from '@fetivi/domain';
 import type { FastifyPluginAsync } from 'fastify';
 import { HttpError } from '../http-error';
-import { ensureDeviceId, spaceCookieOptions } from './cookies';
+import { deviceIdOf, rememberDevice, spaceCookieOptions } from './cookies';
 import { spaceOf } from './plugin';
 import { languageBody, pinBody, slugParams } from './schemas';
 
@@ -33,14 +33,14 @@ export const accessRoutes: FastifyPluginAsync<AccessRouteDeps> = async (app, { d
   app.get('/api/access/:slug', { config: { access: 'public' } }, async (request, reply) => {
     const { slug } = slugParams.parse(request.params);
     if (!(await findUnitBySlug(db, slug))) throw new HttpError(404, 'not-found');
-    ensureDeviceId(request, reply);
+    rememberDevice(request, reply, deviceIdOf(request));
     return reply.status(204).send();
   });
 
   app.post('/api/access/:slug/pin', { config: { access: 'public' } }, async (request, reply) => {
     const { slug } = slugParams.parse(request.params);
     const { pin, language } = pinBody.parse(request.body);
-    const deviceId = ensureDeviceId(request, reply);
+    const deviceId = deviceIdOf(request);
     const at = now();
     let result: Awaited<ReturnType<typeof enterPin>>;
     try {
@@ -49,6 +49,8 @@ export const accessRoutes: FastifyPluginAsync<AccessRouteDeps> = async (app, { d
       if (error instanceof SpaceRuleError) throw new HttpError(404, 'not-found');
       throw error;
     }
+    // Only now: an unknown link answers 404 without handing out a device cookie.
+    rememberDevice(request, reply, deviceId);
     if (!result.ok) {
       const retryAfter = seconds(result.retryAfterMs);
       if (result.reason === 'throttled') {
@@ -58,12 +60,9 @@ export const accessRoutes: FastifyPluginAsync<AccessRouteDeps> = async (app, { d
       throw new HttpError(401, 'wrong-pin', { retryAfter });
     }
     reply.setCookie(SPACE_COOKIE, result.token, spaceCookieOptions(result.space.closedAt, at));
-    return reply.status(201).send({
-      language: result.space.language,
-      closedAt: result.space.closedAt.toISOString(),
-      closed: false,
-      unitSlug: slug,
-    });
+    return reply
+      .status(201)
+      .send(spaceView({ space: result.space, unitSlug: slug, closed: false }));
   });
 
   app.get('/api/space', { config: { access: 'space' } }, async (request) =>

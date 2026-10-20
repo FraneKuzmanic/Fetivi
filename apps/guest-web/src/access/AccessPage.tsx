@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { ApiError, checkLink } from '../api';
 import { setLanguage } from '../i18n';
-import { pickBrowserLanguage } from '../i18n/browser-language';
+import { navigatorLanguages, pickBrowserLanguage } from '../i18n/browser-language';
 import { entryDecision, storedLanguage, storeLanguage, useSpace } from '../space';
 import { LanguagePicker } from './LanguagePicker';
 import { NoLinkPage } from './NoLinkPage';
@@ -17,9 +17,7 @@ export function AccessPage() {
   const [linkMissing, setLinkMissing] = useState(false);
   const [step, setStep] = useState<'language' | 'pin'>('language');
   const [language, setChosen] = useState<GuestLanguage>(
-    () =>
-      storedLanguage() ??
-      pickBrowserLanguage(typeof navigator === 'undefined' ? [] : (navigator.languages ?? [])),
+    () => storedLanguage() ?? pickBrowserLanguage(navigatorLanguages()),
   );
   const heading = useRef<HTMLHeadingElement>(null);
   const decision = entryDecision(state, slug);

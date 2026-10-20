@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { AccessPage } from './access/AccessPage';
 import { NoLinkPage } from './access/NoLinkPage';
+import { TAB_NAMES } from './shell/EmptyTab';
 import { RequireSpace } from './shell/RequireSpace';
 import { Shell } from './shell/Shell';
 import { SpaceProvider, type SpaceState } from './space';
@@ -11,7 +12,7 @@ export function App({ initial }: { initial?: SpaceState }) {
     <SpaceProvider initial={initial}>
       <Routes>
         <Route path="/u/:slug" element={<AccessPage />} />
-        {(['chat', 'guide', 'trip'] as const).map((tab) => (
+        {TAB_NAMES.map((tab) => (
           <Route
             key={tab}
             path={`/${tab}`}
