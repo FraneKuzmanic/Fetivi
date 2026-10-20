@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { catalogCategoryOf, isPastBudget, type StalenessInput, stalenessOf } from './staleness';
+import { isPastBudget, type StalenessInput, stalenessKeyOf, stalenessOf } from './staleness';
 import { CATALOG_KINDS, PLACE_CATEGORIES, STALENESS_BUDGET_DAYS } from './vocabulary';
 
 const NOW = new Date('2027-06-01T12:00:00Z');
@@ -80,6 +80,6 @@ describe('budgets', () => {
   });
 
   it('refuses a place without a category', () => {
-    expect(() => catalogCategoryOf({ kind: 'place', placeCategory: null })).toThrow();
+    expect(() => stalenessKeyOf({ kind: 'place', placeCategory: null })).toThrow();
   });
 });

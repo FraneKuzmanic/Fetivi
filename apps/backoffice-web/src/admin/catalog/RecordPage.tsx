@@ -37,7 +37,7 @@ import {
   SeasonsEditor,
   SourcesEditor,
 } from './RowEditors';
-import { StalenessChip } from './StalenessChip';
+import { day, StalenessChip } from './StalenessChip';
 
 interface Coords {
   lat: number | null;
@@ -131,6 +131,7 @@ export function NewRecordPage() {
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/admin/catalog">Catalog</Link>
+        <span aria-hidden="true">/</span>
         <Link to={`/admin/catalog/destinations/${id}`}>{destinationName ?? 'Destination'}</Link>
       </nav>
       <div className="page-head">
@@ -287,8 +288,6 @@ function detailsBody(kind: CatalogKind, d: Draft, location: LatLng | null): Cata
   }
 }
 
-const day = (iso: string) => new Date(iso).toLocaleDateString();
-
 /** /admin/catalog/records/:id */
 export function RecordPage() {
   const { id = '' } = useParams();
@@ -357,6 +356,7 @@ export function RecordPage() {
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/admin/catalog">Catalog</Link>
+        <span aria-hidden="true">/</span>
         <Link to={`/admin/catalog/destinations/${record.destination.id}`}>
           {record.destination.name}
         </Link>
@@ -538,7 +538,7 @@ export function RecordPage() {
           <h2>Verification</h2>
           <p>
             {record.verifiedAt
-              ? `Last verified ${day(record.verifiedAt)} by ${record.verifiedByEmail ?? 'the seed script'}.`
+              ? `Last verified ${day(record.verifiedAt)} by ${record.verifiedByEmail ?? 'the seed script or a deleted account'}.`
               : 'Never verified.'}
             {record.staleness.staleAt
               ? ` ${record.staleness.status === 'stale' ? 'Went' : 'Goes'} past its budget on ${day(record.staleness.staleAt)}.`

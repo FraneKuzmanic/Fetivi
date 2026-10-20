@@ -50,7 +50,8 @@ export function arrivalReleaseAt(checkIn: CivilDate, zone: string, daysBefore = 
   return shiftDays(checkIn, -daysBefore, zone);
 }
 
-const LOCAL_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+/** 'YYYY-MM-DDTHH:mm', the wall-clock form `fromLocalDateTime` accepts. */
+export const LOCAL_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const LOCAL_FORMAT = "yyyy-LL-dd'T'HH:mm";
 
 /** 'YYYY-MM-DDTHH:mm' as wall-clock time in `zone` → the instant. Throws on a bad value or a DST gap. */

@@ -12,3 +12,9 @@ export type Db = ReturnType<typeof createDb>['db'];
 
 /** A database handle or an open transaction. */
 export type Executor = Db | Parameters<Parameters<Db['transaction']>[0]>[0];
+
+/** The Postgres error code of a failed query, also when Drizzle wraps the driver error. */
+export function pgCode(error: unknown): string | undefined {
+  const e = error as { code?: string; cause?: { code?: string } };
+  return e.cause?.code ?? e.code;
+}

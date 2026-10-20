@@ -10,6 +10,7 @@ import {
   type JobQueue,
   listCatalogTranslations,
   markVerified,
+  pgCode,
   replaceOpeningHours,
   replacePlaceImages,
   replaceSeasons,
@@ -21,7 +22,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { principalOf } from '../auth/plugin';
 import { HttpError } from '../http-error';
-import { withTranslationErrors } from '../properties/routes';
+import { withTranslationErrors } from '../translation-errors';
 import {
   destinationOut,
   findDestination,
@@ -52,11 +53,6 @@ const RecordsQuery = z.object({ kind: z.enum(CATALOG_KINDS).optional() });
 type LatLng = { lat: number; lng: number };
 const toPoint = (p: LatLng | null | undefined) =>
   p === undefined ? undefined : p === null ? null : { x: p.lng, y: p.lat };
-
-function pgCode(error: unknown): string | undefined {
-  const e = error as { code?: string; cause?: { code?: string } };
-  return e.cause?.code ?? e.code;
-}
 
 /** Turns catalog rule and time errors into HTTP errors. */
 async function withCatalogErrors<T>(run: () => Promise<T>): Promise<T> {

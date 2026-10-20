@@ -116,6 +116,14 @@ describe('destinations', () => {
     expect(response.statusCode).toBe(400);
   });
 
+  it.each([1, 100])('accepts a radius of exactly %i km', async (radiusKm) => {
+    const url = `/api/admin/destinations/${trogirId}`;
+    const patched = await patch(t.app, url, { radiusKm }, adminCookie);
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().radiusKm).toBe(radiusKm);
+    await patch(t.app, url, { radiusKm: 15 }, adminCookie);
+  });
+
   it('refuses to delete a destination with records, and deletes an empty one', async () => {
     const split = await post(
       t.app,

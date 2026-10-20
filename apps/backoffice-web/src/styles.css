@@ -965,6 +965,10 @@ button svg,
   max-width: 100%;
 }
 
+.segmented.wrap button {
+  min-height: 44px;
+}
+
 .record-row {
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -1050,6 +1054,15 @@ button svg,
   max-height: 120px;
   border-radius: var(--radius-sm);
   object-fit: cover;
+}
+
+.image-broken {
+  max-width: 280px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px dashed var(--gray-200);
+  font-size: 14px;
+  color: var(--gray-500);
 }
 
 @media (min-width: 600px) {

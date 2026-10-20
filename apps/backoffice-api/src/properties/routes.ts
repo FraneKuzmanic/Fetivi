@@ -9,7 +9,6 @@ import {
   listTranslations,
   properties,
   retryTranslation,
-  TranslationRuleError,
   unitHiddenBlocks,
   units,
 } from '@fetivi/domain';
@@ -17,6 +16,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { HttpError } from '../http-error';
+import { withTranslationErrors } from '../translation-errors';
 import { qrFileName, renderQr, unitLink } from './qr';
 import {
   AmenitiesBody,
@@ -70,25 +70,6 @@ function propertyValues(input: PropertyInput) {
   const { location, ...rest } = input;
   if (location === undefined) return rest;
   return { ...rest, location: location ? { x: location.lng, y: location.lat } : null };
-}
-
-const TRANSLATION_ERROR_STATUS: Record<TranslationRuleError['code'], number> = {
-  'invalid-input': 400,
-  'not-found': 404,
-  'stale-revision': 409,
-  'translation-not-failed': 409,
-};
-
-/** Runs a translation operation, turning its rule errors into HTTP errors. */
-export async function withTranslationErrors<T>(run: () => Promise<T>): Promise<T> {
-  try {
-    return await run();
-  } catch (error) {
-    if (error instanceof TranslationRuleError) {
-      throw new HttpError(TRANSLATION_ERROR_STATUS[error.code], error.code);
-    }
-    throw error;
-  }
 }
 
 function blockResult(block: Parameters<typeof blockOut>[0]) {

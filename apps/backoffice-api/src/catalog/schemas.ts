@@ -3,6 +3,7 @@ import {
   type CatalogKind,
   IMAGE_SOURCES,
   LIMITS,
+  LOCAL_DATETIME,
   PLACE_CATEGORIES,
   SOURCE_FIELDS,
   stripMarkdownHtml,
@@ -52,7 +53,7 @@ export const DestinationPatch = z
   .partial();
 
 /** Wall-clock time in the destination's zone, 'YYYY-MM-DDTHH:mm'. */
-export const localDateTime = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+export const localDateTime = z.string().regex(LOCAL_DATETIME);
 
 const fieldSourcesFor = <K extends CatalogKind>(kind: K) =>
   z.partialRecord(z.enum(SOURCE_FIELDS[kind]), httpsUrl);

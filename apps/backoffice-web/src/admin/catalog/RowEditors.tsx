@@ -6,7 +6,7 @@ import {
 } from '@fetivi/domain/catalog-vocabulary';
 import { LIMITS } from '@fetivi/domain/vocabulary';
 import { Plus, Trash } from '@phosphor-icons/react';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import type { CatalogLink, FieldSources, OpeningHours, PlaceImage, Season } from '../../api';
 import { SelectField, TextField, TimeField } from '../../forms/fields';
 import { IMAGE_SOURCE_LABELS, SOURCE_FIELD_LABELS, WEEKDAY_LABELS } from '../../forms/labels';
@@ -257,6 +257,27 @@ export function OpeningHoursEditor({
 
 const isHttps = (url: string | null) => url !== null && /^https:\/\/\S+$/.test(url);
 
+/** A thumbnail of the photo, or a note when the URL does not load. Remount it per URL. */
+function ImagePreview({ url, alt }: { url: string; alt: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) {
+    return (
+      <p className="image-preview image-broken" role="status">
+        This image did not load. Check the URL.
+      </p>
+    );
+  }
+  return (
+    <img
+      className="image-preview"
+      src={url}
+      alt={alt}
+      loading="lazy"
+      onError={() => setBroken(true)}
+    />
+  );
+}
+
 export function ImagesEditor({
   images,
   onChange,
@@ -279,12 +300,7 @@ export function ImagesEditor({
           // biome-ignore lint/suspicious/noArrayIndexKey: rows have no identity of their own
           <div className="row-editor-item image-row" key={i}>
             {isHttps(image.url) ? (
-              <img
-                className="image-preview"
-                src={image.url}
-                alt={image.attribution ?? 'Preview'}
-                loading="lazy"
-              />
+              <ImagePreview key={image.url} url={image.url} alt={image.attribution ?? 'Preview'} />
             ) : null}
             <InputField
               label="Image URL"

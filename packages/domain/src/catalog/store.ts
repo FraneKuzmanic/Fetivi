@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import type { Db, Executor } from '../db/client';
+import { type Db, type Executor, pgCode } from '../db/client';
 import {
   type CatalogRecordRow,
   catalogOpeningHours,
@@ -8,7 +8,7 @@ import {
   placeImages,
 } from '../db/schema/catalog';
 import type { JobQueue } from '../jobs/queue';
-import { enqueueCatalogTranslation } from './translation';
+import { enqueueCatalogTranslation, lockCatalogRecord } from './translation';
 import { type ImageSource, KIND_HAS_HOURS, KIND_HAS_SEASONS } from './vocabulary';
 
 // The one write path for catalog record content. A new revision of the title or description
@@ -61,11 +61,6 @@ export interface PlaceImageInput {
   sourcePageUrl: string | null;
 }
 
-function pgCode(error: unknown): string | undefined {
-  const e = error as { code?: string; cause?: { code?: string } };
-  return e.cause?.code ?? e.code;
-}
-
 /** A violated CHECK (23514) is invalid input; anything else is rethrown. */
 async function checked<T>(run: () => Promise<T>): Promise<T> {
   try {
@@ -97,11 +92,7 @@ export async function createCatalogRecord(
 }
 
 async function lockRecord(tx: Executor, id: string) {
-  const [record] = await tx
-    .select()
-    .from(catalogRecords)
-    .where(eq(catalogRecords.id, id))
-    .for('update');
+  const record = await lockCatalogRecord(tx, id);
   if (!record) throw new CatalogRuleError('not-found');
   return record;
 }

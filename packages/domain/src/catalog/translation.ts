@@ -40,7 +40,8 @@ export async function enqueueCatalogTranslation(
   await queue.send(QUEUES.translateCatalogRecord, data, tx, options);
 }
 
-async function lockRecord(tx: Executor, recordId: string) {
+/** Reads a record with a row lock, which serialises saves, verification and the job. */
+export async function lockCatalogRecord(tx: Executor, recordId: string) {
   const [record] = await tx
     .select()
     .from(catalogRecords)
@@ -90,7 +91,7 @@ export async function runCatalogTranslation(
   const { sourceLanguage, collected } = result;
 
   return db.transaction(async (tx) => {
-    const current = await lockRecord(tx, recordId);
+    const current = await lockCatalogRecord(tx, recordId);
     if (!current || current.revision !== revision) return 'discarded';
     const now = deps.now();
     if (sourceLanguage !== null && sourceLanguage !== 'other') {
@@ -159,7 +160,7 @@ async function markFailed(
   error: TranslationError,
 ): Promise<TranslationRunResult> {
   return deps.db.transaction(async (tx) => {
-    const current = await lockRecord(tx, record.id);
+    const current = await lockCatalogRecord(tx, record.id);
     if (current?.revision !== record.revision || current.translationStatus !== 'pending') {
       return 'discarded';
     }

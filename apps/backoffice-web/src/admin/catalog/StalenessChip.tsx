@@ -9,7 +9,8 @@ const TONE: Record<StalenessStatus, string> = {
   expired: 'neutral',
 };
 
-const day = (iso: string) => new Date(iso).toLocaleDateString();
+/** An ISO instant as a date in the viewer's locale. */
+export const day = (iso: string) => new Date(iso).toLocaleDateString();
 
 /** Whether a record is still within its staleness budget. */
 export function StalenessChip({ staleness }: { staleness: Staleness }) {

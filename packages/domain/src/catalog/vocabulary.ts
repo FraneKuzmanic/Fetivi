@@ -18,10 +18,10 @@ export const PLACE_CATEGORIES = [
 export type PlaceCategory = (typeof PLACE_CATEGORIES)[number];
 
 /** What a staleness budget is keyed by: a place's category, otherwise the record's kind. */
-export type CatalogCategory = PlaceCategory | Exclude<CatalogKind, 'place'>;
+export type StalenessKey = PlaceCategory | Exclude<CatalogKind, 'place'>;
 
 /** Days from verified_at until a record is past its budget; null = never stale (events expire). */
-export const STALENESS_BUDGET_DAYS: Record<CatalogCategory, number | null> = {
+export const STALENESS_BUDGET_DAYS: Record<StalenessKey, number | null> = {
   restaurant: 90,
   cafe_bar: 90,
   shop: 90,

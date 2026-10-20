@@ -1,8 +1,8 @@
 import {
-  type CatalogCategory,
   type CatalogKind,
   type PlaceCategory,
   STALENESS_BUDGET_DAYS,
+  type StalenessKey,
   type StalenessStatus,
 } from './vocabulary';
 
@@ -16,9 +16,7 @@ export interface StalenessInput {
 }
 
 /** The key of a record's staleness budget: a place's category, otherwise its kind. */
-export function catalogCategoryOf(
-  r: Pick<StalenessInput, 'kind' | 'placeCategory'>,
-): CatalogCategory {
+export function stalenessKeyOf(r: Pick<StalenessInput, 'kind' | 'placeCategory'>): StalenessKey {
   if (r.kind !== 'place') return r.kind;
   if (r.placeCategory === null) throw new Error('place without category');
   return r.placeCategory;
@@ -36,7 +34,7 @@ export function stalenessOf(r: StalenessInput, now: Date): Staleness {
     return { status: 'expired', staleAt: null };
   }
   if (r.verifiedAt === null) return { status: 'never_verified', staleAt: null };
-  const days = STALENESS_BUDGET_DAYS[catalogCategoryOf(r)];
+  const days = STALENESS_BUDGET_DAYS[stalenessKeyOf(r)];
   if (days === null) return { status: 'fresh', staleAt: null };
   const staleAt = new Date(r.verifiedAt.getTime() + days * DAY_MS);
   return { status: now.getTime() >= staleAt.getTime() ? 'stale' : 'fresh', staleAt };

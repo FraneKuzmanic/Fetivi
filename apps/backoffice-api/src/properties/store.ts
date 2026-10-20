@@ -10,6 +10,7 @@ import {
   loadEffectiveUnit,
   newQrSlug,
   type PropertyRow,
+  pgCode,
   properties,
   propertyAmenities,
   SHARED_CORE_FIELDS,
@@ -148,11 +149,6 @@ export async function saveBlock(
 }
 
 // --- Slugs and amenities ----------------------------------------------------------------------
-
-function pgCode(error: unknown): string | undefined {
-  const e = error as { code?: string; cause?: { code?: string } };
-  return e.code ?? e.cause?.code;
-}
 
 /** Gives the unit a QR slug unless it has one. Slugs are permanent. */
 export async function issueSlug(tx: Executor, unitId: string): Promise<void> {
