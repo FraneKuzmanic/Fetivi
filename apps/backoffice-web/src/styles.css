@@ -611,6 +611,11 @@ button svg,
   color: #8a5a00;
 }
 
+.chip.fail {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
 .with-icon {
   display: inline-flex;
   align-items: center;
@@ -861,4 +866,57 @@ button svg,
 .segmented button[aria-selected="true"] {
   background: var(--sky-100);
   color: var(--blue-600);
+}
+
+/* --- Translations: per-language rows inside the block row ------------------------------------ */
+
+.block-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.translations {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 100%;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.translations p {
+  margin: 0;
+}
+
+.translation-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.translation-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.translation-head button {
+  margin-left: auto;
+}
+
+.translation-title {
+  font-weight: 500;
+}
+
+.translation-body {
+  margin: 0;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--gray-500);
 }

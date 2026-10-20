@@ -1,13 +1,26 @@
+import { createAnthropicTranslationModel, createDb, createJobQueue } from '@fetivi/domain';
 import { loadConfig } from './config';
-import { jobs } from './jobs';
+import { egress } from './egress';
+import { createJobs } from './jobs';
 import { startJobRunner } from './runner';
 
 const config = loadConfig();
-const boss = await startJobRunner({ connectionString: config.DATABASE_URL, jobs });
-console.log(`job runner started with ${jobs.length} job(s)`);
+const { db, pool } = createDb(config.DATABASE_URL);
+const model = createAnthropicTranslationModel({
+  apiKey: config.ANTHROPIC_API_KEY,
+  fetch: egress.fetch,
+});
+if (!config.ANTHROPIC_API_KEY) {
+  console.warn('ANTHROPIC_API_KEY is not set: translations will fail as not-configured');
+}
+const boss = await startJobRunner({
+  connectionString: config.DATABASE_URL,
+  jobs: (boss) => createJobs({ db, queue: createJobQueue(boss), model, now: () => new Date() }),
+});
+console.log('job runner started');
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
-    void boss.stop({ graceful: true });
+    void boss.stop({ graceful: true }).then(() => pool.end());
   });
 }

@@ -3,7 +3,9 @@ import {
   type BlockRow,
   type Db,
   type EffectiveUnit,
+  enqueueTranslation,
   infoBlocks,
+  type JobQueue,
   loadEffectiveUnit,
   newQrSlug,
   type PropertyRow,
@@ -11,6 +13,7 @@ import {
   propertyAmenities,
   SHARED_CORE_FIELDS,
   type SharedCore,
+  type SourceLanguage,
   type UnitRow,
   unitAmenities,
   unitHiddenBlocks,
@@ -93,29 +96,56 @@ export async function countBlocks(
 }
 
 /**
- * The one write path for block content: an insert starts at revision 1, every update adds one.
- * Translation (ticket 04) enqueues its work here, keyed by (block id, revision).
+ * The one write path for block content. An insert starts at revision 1; an update adds one only
+ * when the title or body changes. Each new revision enqueues its translation job in the same
+ * transaction, keyed by (block id, revision).
  */
 export async function saveBlock(
-  db: Executor,
+  db: Db,
+  queue: JobQueue,
   write:
     | { insert: NewBlock }
     | { update: { id: string; hostId: string; changes: BlockChanges; now: Date } },
 ): Promise<BlockRow> {
-  if ('insert' in write) {
-    const [block] = await db.insert(infoBlocks).values(write.insert).returning();
-    if (!block) throw new Error('block insert returned nothing');
+  return db.transaction(async (tx) => {
+    if ('insert' in write) {
+      const [block] = await tx.insert(infoBlocks).values(write.insert).returning();
+      if (!block) throw new Error('block insert returned nothing');
+      await enqueueTranslation(tx, queue, block);
+      return block;
+    }
+    const { id, hostId, changes, now } = write.update;
+    // Locked, so two concurrent saves still produce two distinct revisions.
+    const [current] = await tx
+      .select()
+      .from(infoBlocks)
+      .where(and(eq(infoBlocks.id, id), ownedBlockCondition(tx, hostId)))
+      .for('update');
+    if (!current) throw notFound();
+    // The editor always sends every field, so compare values, not presence.
+    const textChanged =
+      (changes.title !== undefined && changes.title !== current.title) ||
+      (changes.body !== undefined && changes.body !== current.body);
+    const [block] = await tx
+      .update(infoBlocks)
+      .set({
+        ...changes,
+        updatedAt: now,
+        ...(textChanged
+          ? {
+              revision: current.revision + 1,
+              translationStatus: 'pending' as const,
+              translationError: null,
+              sourceLanguage: null,
+            }
+          : {}),
+      })
+      .where(eq(infoBlocks.id, id))
+      .returning();
+    if (!block) throw notFound();
+    if (textChanged) await enqueueTranslation(tx, queue, block);
     return block;
-  }
-  const { id, hostId, changes, now } = write.update;
-  // Revision in SQL, so two concurrent saves still produce two distinct revisions.
-  const [block] = await db
-    .update(infoBlocks)
-    .set({ ...changes, revision: sql`${infoBlocks.revision} + 1`, updatedAt: now })
-    .where(and(eq(infoBlocks.id, id), ownedBlockCondition(db, hostId)))
-    .returning();
-  if (!block) throw notFound();
-  return block;
+  });
 }
 
 // --- Slugs and amenities ----------------------------------------------------------------------
@@ -213,6 +243,12 @@ export function blockOut(b: BlockRow) {
     body: b.body,
     visibility: b.visibility,
     revision: b.revision,
+    translation: {
+      status: b.translationStatus,
+      error: b.translationError,
+      publishedRevision: b.publishedRevision,
+      sourceLanguage: b.sourceLanguage as SourceLanguage | null,
+    },
     replacesBlockId: b.replacesBlockId,
     position: b.position,
     createdAt: b.createdAt.toISOString(),

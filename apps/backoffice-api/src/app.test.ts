@@ -8,6 +8,7 @@ const { db, pool } = createDb('postgres://unused@127.0.0.1:1/x');
 const deps = {
   db,
   mailer: createMemoryMailer(),
+  queue: { send: async () => {}, publish: async () => {} },
   webOrigin: 'http://host.test',
   guestOrigin: 'http://guest.test',
   logger: false,

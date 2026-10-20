@@ -4,6 +4,8 @@ import { type Block, type BlockInput, type BlockResult, host, type SecretWarning
 import { CATEGORY_LABELS, VISIBILITY_LABELS } from '../forms/labels';
 import { useAction } from '../useAction';
 import { BlockEditor, SecretWarnings } from './BlockEditor';
+import { TranslationChip } from './translations/TranslationChip';
+import { TranslationsPanel } from './translations/TranslationsPanel';
 
 /** The first line of a Markdown body, as a one-line preview. */
 export function preview(body: string): string {
@@ -27,6 +29,7 @@ export function BlockList({
   const { busy, error, run } = useAction();
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [warnings, setWarnings] = useState<SecretWarning[]>([]);
+  const [translating, setTranslating] = useState<string | null>(null);
 
   const done = (found: SecretWarning[]) =>
     void run(async () => {
@@ -61,7 +64,10 @@ export function BlockList({
                     ? ` · ${VISIBILITY_LABELS.after_release}`
                     : null}
                 </span>
-                <strong>{block.title}</strong>
+                <span className="block-title">
+                  <strong>{block.title}</strong>
+                  <TranslationChip status={block.translation.status} />
+                </span>
                 <span className="muted">{preview(block.body)}</span>
               </div>
               <div className="actions">
@@ -74,6 +80,13 @@ export function BlockList({
                   }}
                 >
                   Edit
+                </button>
+                <button
+                  type="button"
+                  aria-expanded={translating === block.id}
+                  onClick={() => setTranslating(translating === block.id ? null : block.id)}
+                >
+                  {translating === block.id ? 'Hide translations' : 'Translations'}
                 </button>
                 <button
                   type="button"
@@ -91,6 +104,9 @@ export function BlockList({
                   Delete
                 </button>
               </div>
+              {translating === block.id ? (
+                <TranslationsPanel block={block} onChanged={onChanged} />
+              ) : null}
             </li>
           ),
         )}

@@ -4,8 +4,12 @@ import type {
   BlockCategory,
   BlockVisibility,
   CheckInMethod,
+  GuestLanguage,
   HostBlockCategory,
   ParkingType,
+  TranslationError,
+  TranslationOrigin,
+  TranslationStatus,
 } from '@fetivi/domain/vocabulary';
 
 export class ApiError extends Error {
@@ -91,10 +95,34 @@ export interface Block {
   body: string;
   visibility: BlockVisibility;
   revision: number;
+  translation: BlockTranslation;
   replacesBlockId: string | null;
   position: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export type SourceLanguage = GuestLanguage | 'other';
+
+export interface BlockTranslation {
+  status: TranslationStatus;
+  error: TranslationError | null;
+  publishedRevision: number | null;
+  sourceLanguage: SourceLanguage | null;
+}
+
+export interface TranslationsView {
+  blockId: string;
+  revision: number;
+  publishedRevision: number | null;
+  status: TranslationStatus;
+  error: TranslationError | null;
+  sourceLanguage: SourceLanguage | null;
+  languages: {
+    language: GuestLanguage;
+    current: { title: string; body: string; origin: TranslationOrigin; updatedAt: string } | null;
+    published: { title: string; body: string; origin: TranslationOrigin } | null;
+  }[];
 }
 
 export interface BlockInput {
@@ -260,5 +288,17 @@ export const host = {
   updateBlock: (id: string, body: Partial<BlockInput>) =>
     patch<BlockResult>(`/api/host/blocks/${id}`, body),
   deleteBlock: (id: string) => remove(`/api/host/blocks/${id}`),
+  translations: (id: string) => api<TranslationsView>(`/api/host/blocks/${id}/translations`),
+  correctTranslation: (
+    id: string,
+    language: GuestLanguage,
+    body: { revision: number; title: string; body: string },
+  ) =>
+    put<{ view: TranslationsView; structureWarnings: string[] }>(
+      `/api/host/blocks/${id}/translations/${language}`,
+      body,
+    ),
+  retryTranslation: (id: string) =>
+    post<{ view: TranslationsView }>(`/api/host/blocks/${id}/translations/retry`),
   qrUrl: (unitId: string, format: 'svg' | 'png') => `/api/host/units/${unitId}/qr?format=${format}`,
 };

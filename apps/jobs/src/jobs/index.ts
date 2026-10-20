@@ -1,4 +1,9 @@
+import type { TranslationDeps, TranslationModel } from '@fetivi/domain';
 import type { JobDefinition } from '../runner';
+import { translateBlockJob } from './translate-block';
 
 // Later tickets add calendar polling, response windows, holds, digests and retention.
-export const jobs: readonly JobDefinition[] = [];
+export function createJobs(deps: TranslationDeps & { model: TranslationModel }): JobDefinition[] {
+  // The runner hands each handler the data its own queue was sent.
+  return [translateBlockJob(deps) as JobDefinition];
+}

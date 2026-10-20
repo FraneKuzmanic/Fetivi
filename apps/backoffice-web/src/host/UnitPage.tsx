@@ -11,6 +11,8 @@ import { AmenitiesEditor } from './AmenitiesEditor';
 import { BlockEditor, SecretWarnings } from './BlockEditor';
 import { BlockList, preview } from './BlockList';
 import { CORE_SECTIONS, CoreField } from './CoreFields';
+import { TranslationChip } from './translations/TranslationChip';
+import { usePendingRefresh } from './translations/usePendingRefresh';
 
 type Draft = Required<UnitPatch>;
 
@@ -41,6 +43,10 @@ export function UnitPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  usePendingRefresh([...(detail?.blocks ?? []), ...(detail?.propertyBlocks ?? [])], async () =>
+    setDetail(await host.unit(id)),
+  );
 
   if (!detail || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
@@ -386,7 +392,10 @@ function InheritedBlocks({
             <li key={block.id} className={`block-row${isHidden || replacement ? ' faded' : ''}`}>
               <div className="block-text">
                 <span className="eyebrow">{CATEGORY_LABELS[block.category]}</span>
-                <strong>{block.title}</strong>
+                <span className="block-title">
+                  <strong>{block.title}</strong>
+                  <TranslationChip status={block.translation.status} />
+                </span>
                 <span className="muted">
                   {replacement
                     ? `Replaced here by "${replacement.title}"`

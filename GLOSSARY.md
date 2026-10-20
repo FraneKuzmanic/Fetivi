@@ -17,8 +17,14 @@ One rentable space of a Property. It inherits the Property's content and may ove
 _Avoid_: Apartment (as the generic term), room, listing
 
 **Info block**:
-A titled piece of Markdown guest information in one Guide section, owned by a Property or a Unit, with a revision number that grows with every edit.
+A titled piece of Markdown guest information in one Guide section, owned by a Property or a Unit, with a revision number that grows with every edit of its title or text.
 _Avoid_: Article, note, card
+
+**Translation**:
+One guest language's version of an Info block's title and text, for one revision: the host's own text, a machine translation, or the host's correction.
+
+**Published revision**:
+The revision of an Info block guests see; it moves forward only when all seven languages exist for a newer revision.
 
 **QR link**:
 A Unit's permanent guest link, issued once the admin approves its Property and printed as a QR code.

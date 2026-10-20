@@ -154,3 +154,10 @@ export const UnitBlockCreate = BlockCreate.extend({
   replacesBlockId: z.uuid().nullable().optional(),
 });
 export const BlockPatch = z.strictObject(blockFields).partial();
+
+/** A host's own translation of one language; same transforms and limits as the block itself. */
+export const TranslationCorrection = z.strictObject({
+  revision: z.number().int().min(1),
+  title: blockFields.title,
+  body: blockFields.body,
+});

@@ -4,8 +4,12 @@ import type {
   BlockCategory,
   BlockVisibility,
   CheckInMethod,
+  GuestLanguage,
   ParkingType,
   SharedCoreField,
+  TranslationError,
+  TranslationOrigin,
+  TranslationStatus,
 } from '@fetivi/domain/vocabulary';
 
 export const AMENITY_LABELS: Record<Amenity, string> = {
@@ -102,4 +106,34 @@ export const CORE_FIELD_LABELS: Record<SharedCoreField, string> = {
   emergencyContactName: 'Emergency contact name',
   emergencyContactPhone: 'Emergency contact phone',
   licenceNumber: 'Licence number',
+};
+
+/** Guest languages under their English names; the host UI is English. */
+export const LANGUAGE_LABELS: Record<GuestLanguage, string> = {
+  en: 'English',
+  hr: 'Croatian',
+  de: 'German',
+  it: 'Italian',
+  pl: 'Polish',
+  hu: 'Hungarian',
+  fr: 'French',
+};
+
+export const TRANSLATION_STATUS_LABELS: Record<TranslationStatus, string> = {
+  pending: 'Translating',
+  published: 'Published',
+  failed: 'Translation failed',
+};
+
+export const TRANSLATION_ERROR_LABELS: Record<TranslationError, string> = {
+  'structure-mismatch':
+    "Some languages did not keep the text's structure (headings, lists, links or placeholders). Correct them below or retry.",
+  'model-error': 'The translation service did not answer. Retry in a moment.',
+  'not-configured': 'Translation is not set up on this server.',
+};
+
+export const TRANSLATION_ORIGIN_LABELS: Record<TranslationOrigin, string> = {
+  source: 'Original',
+  machine: 'Machine',
+  host: 'Your correction',
 };

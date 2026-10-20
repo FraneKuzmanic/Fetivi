@@ -11,11 +11,18 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { BLOCK_CATEGORIES, BLOCK_VISIBILITY } from '../../property/vocabulary';
+import {
+  BLOCK_CATEGORIES,
+  BLOCK_VISIBILITY,
+  TRANSLATION_ERRORS,
+  TRANSLATION_STATUSES,
+} from '../../property/vocabulary';
 import { properties, units } from './properties';
 
 export const blockCategory = pgEnum('block_category', BLOCK_CATEGORIES);
 export const blockVisibility = pgEnum('block_visibility', BLOCK_VISIBILITY);
+export const translationStatus = pgEnum('translation_status', TRANSLATION_STATUSES);
+export const translationError = pgEnum('translation_error', TRANSLATION_ERRORS);
 
 /** Host-written guest information, owned by exactly one property or one unit. */
 export const infoBlocks = pgTable(
@@ -29,8 +36,16 @@ export const infoBlocks = pgTable(
     /** Markdown, in the host's source language. */
     body: text('body').notNull(),
     visibility: blockVisibility('visibility').notNull().default('always'),
-    /** Source revision, +1 on every edit; translations are keyed to it. */
+    /** Source revision, +1 on every edit of title or body; translations are keyed to it. */
     revision: integer('revision').notNull().default(1),
+    /** The revision guests see; null until all seven languages first exist. */
+    publishedRevision: integer('published_revision'),
+    /** Translation status of `revision`. */
+    translationStatus: translationStatus('translation_status').notNull().default('pending'),
+    /** Set only when the status is failed. */
+    translationError: translationError('translation_error'),
+    /** A guest language or 'other', detected by the translation job for `revision`. */
+    sourceLanguage: text('source_language'),
     /** On a unit block: the property block it stands in for on this unit. */
     replacesBlockId: uuid('replaces_block_id').references((): AnyPgColumn => infoBlocks.id, {
       onDelete: 'set null',
@@ -46,6 +61,10 @@ export const infoBlocks = pgTable(
     check(
       'info_blocks_replaces_check',
       sql`${t.replacesBlockId} is null or ${t.unitId} is not null`,
+    ),
+    check(
+      'info_blocks_published_revision_check',
+      sql`${t.publishedRevision} is null or ${t.publishedRevision} <= ${t.revision}`,
     ),
   ],
 );

@@ -1,9 +1,15 @@
 import {
+  correctTranslation,
   type Db,
   findSecretLikeText,
+  GUEST_LANGUAGES,
   infoBlocks,
+  type JobQueue,
   LIMITS,
+  listTranslations,
   properties,
+  retryTranslation,
+  TranslationRuleError,
   unitHiddenBlocks,
   units,
 } from '@fetivi/domain';
@@ -20,6 +26,7 @@ import {
   PropertyCreate,
   type PropertyInput,
   PropertyPatch,
+  TranslationCorrection,
   UnitBlockCreate,
   UnitCreate,
   UnitPatch,
@@ -42,12 +49,14 @@ import {
 
 export interface PropertyDeps {
   db: Db;
+  queue: JobQueue;
   now: () => Date;
   guestOrigin: string;
 }
 
 const IdParams = z.object({ id: z.uuid() });
 const QrQuery = z.object({ format: z.enum(['svg', 'png']).default('svg') });
+const LanguageParams = z.object({ id: z.uuid(), language: z.enum(GUEST_LANGUAGES) });
 
 /** The host id comes only from request.auth, never from the client. */
 function hostIdOf(request: FastifyRequest): string {
@@ -63,12 +72,24 @@ function propertyValues(input: PropertyInput) {
   return { ...rest, location: location ? { x: location.lng, y: location.lat } : null };
 }
 
+/** Runs a translation operation, turning its rule errors into HTTP errors. */
+async function translationRule<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (error instanceof TranslationRuleError) {
+      throw new HttpError(error.code === 'invalid-input' ? 400 : 409, error.code);
+    }
+    throw error;
+  }
+}
+
 function blockResult(block: Parameters<typeof blockOut>[0]) {
   return { block: blockOut(block), warnings: findSecretLikeText(`${block.title}\n${block.body}`) };
 }
 
 export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): Promise<void> {
-  const { db, guestOrigin } = deps;
+  const { db, queue, guestOrigin } = deps;
   const host = { config: { access: 'host' as const } };
   const idOf = (request: FastifyRequest) => IdParams.parse(request.params).id;
 
@@ -221,7 +242,7 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     if ((await countBlocks(db, { propertyId: property.id })) >= LIMITS.blocksPerOwner) {
       throw new HttpError(400, 'invalid-input');
     }
-    const block = await saveBlock(db, { insert: { ...body, propertyId: property.id } });
+    const block = await saveBlock(db, queue, { insert: { ...body, propertyId: property.id } });
     return reply.status(201).send(blockResult(block));
   });
 
@@ -241,7 +262,7 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     if ((await countBlocks(db, { unitId: unit.id })) >= LIMITS.blocksPerOwner) {
       throw new HttpError(400, 'invalid-input');
     }
-    const block = await saveBlock(db, { insert: { ...body, unitId: unit.id } });
+    const block = await saveBlock(db, queue, { insert: { ...body, unitId: unit.id } });
     return reply.status(201).send(blockResult(block));
   });
 
@@ -250,7 +271,9 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     const id = idOf(request);
     await findOwnedBlock(db, hostId, id);
     const changes = BlockPatch.parse(request.body);
-    const block = await saveBlock(db, { update: { id, hostId, changes, now: deps.now() } });
+    const block = await saveBlock(db, queue, {
+      update: { id, hostId, changes, now: deps.now() },
+    });
     return blockResult(block);
   });
 
@@ -258,5 +281,35 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     const block = await findOwnedBlock(db, hostIdOf(request), idOf(request));
     await db.delete(infoBlocks).where(eq(infoBlocks.id, block.id));
     return reply.status(204).send();
+  });
+
+  // --- Translations ---------------------------------------------------------------------------
+
+  const translationDeps = { db, queue, now: deps.now };
+
+  app.get('/api/host/blocks/:id/translations', host, async (request) =>
+    listTranslations(db, await findOwnedBlock(db, hostIdOf(request), idOf(request))),
+  );
+
+  app.put('/api/host/blocks/:id/translations/:language', host, async (request) => {
+    const { id, language } = LanguageParams.parse(request.params);
+    const hostId = hostIdOf(request);
+    await findOwnedBlock(db, hostId, id);
+    const body = TranslationCorrection.parse(request.body);
+    const { structureWarnings } = await translationRule(() =>
+      correctTranslation(translationDeps, id, { language, ...body }),
+    );
+    return {
+      view: await listTranslations(db, await findOwnedBlock(db, hostId, id)),
+      structureWarnings,
+    };
+  });
+
+  app.post('/api/host/blocks/:id/translations/retry', host, async (request) => {
+    const hostId = hostIdOf(request);
+    const id = idOf(request);
+    await findOwnedBlock(db, hostId, id);
+    await translationRule(() => retryTranslation(translationDeps, id));
+    return { view: await listTranslations(db, await findOwnedBlock(db, hostId, id)) };
   });
 }

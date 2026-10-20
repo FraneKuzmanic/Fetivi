@@ -10,6 +10,7 @@ import { AmenitiesEditor } from './AmenitiesEditor';
 import { BlockList } from './BlockList';
 import { CORE_SECTIONS, CoreField } from './CoreFields';
 import { StatusChip } from './PropertiesPage';
+import { usePendingRefresh } from './translations/usePendingRefresh';
 
 const ZONES = Intl.supportedValuesOf('timeZone');
 
@@ -88,6 +89,11 @@ export function PropertyPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  usePendingRefresh(detail?.blocks ?? [], async () => {
+    const fresh = await host.property(id);
+    setDetail((d) => (d ? { ...d, blocks: fresh.blocks } : d));
+  });
 
   if (!detail || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;

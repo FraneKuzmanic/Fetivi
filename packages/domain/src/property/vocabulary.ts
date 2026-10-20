@@ -125,3 +125,18 @@ export const LIMITS = {
   amenityNote: 200,
   blocksPerOwner: 100,
 } as const;
+
+/** Guest languages, in the PRD's order. Also the order of the language picker. */
+export const GUEST_LANGUAGES = ['en', 'hr', 'de', 'it', 'pl', 'hu', 'fr'] as const;
+export type GuestLanguage = (typeof GUEST_LANGUAGES)[number];
+
+/** 'source' is the host's own text; 'machine' the job's; 'host' a host correction. */
+export const TRANSLATION_ORIGINS = ['source', 'machine', 'host'] as const;
+export type TranslationOrigin = (typeof TRANSLATION_ORIGINS)[number];
+
+/** Of a block's current revision. Published means guests see the current revision. */
+export const TRANSLATION_STATUSES = ['pending', 'published', 'failed'] as const;
+export type TranslationStatus = (typeof TRANSLATION_STATUSES)[number];
+
+export const TRANSLATION_ERRORS = ['structure-mismatch', 'model-error', 'not-configured'] as const;
+export type TranslationError = (typeof TRANSLATION_ERRORS)[number];

@@ -1,6 +1,7 @@
-import { createMemoryMailer, type Db } from '@fetivi/domain';
+import { createJobQueue, createMemoryMailer, type Db, ensureQueues } from '@fetivi/domain';
 import { createTestDatabase, type TestDatabase } from '@fetivi/domain/testing';
 import type { FastifyInstance, FastifyPluginAsync, LightMyRequestResponse } from 'fastify';
+import { PgBoss } from 'pg-boss';
 import { buildApp } from './app';
 import { SESSION_COOKIE } from './auth/sessions';
 
@@ -12,6 +13,8 @@ export interface TestApp {
   app: FastifyInstance;
   db: Db;
   testDb: TestDatabase;
+  /** Sends only; no worker runs in API tests. */
+  boss: PgBoss;
   mailer: ReturnType<typeof createMemoryMailer>;
   clock: { now: () => Date; advance: (ms: number) => void };
   close: () => Promise<void>;
@@ -23,6 +26,10 @@ export async function createTestApp(
 ) {
   const testDb = await createTestDatabase();
   const mailer = createMemoryMailer();
+  const boss = new PgBoss({ connectionString: testDb.url, supervise: false, schedule: false });
+  boss.on('error', console.error);
+  await boss.start();
+  await ensureQueues(boss);
   let current = new Date('2026-10-19T10:00:00Z').getTime();
   const clock = {
     now: () => new Date(current),
@@ -33,6 +40,7 @@ export async function createTestApp(
   const app = buildApp({
     db: testDb.db,
     mailer,
+    queue: createJobQueue(boss),
     webOrigin: TEST_ORIGIN,
     guestOrigin: GUEST_TEST_ORIGIN,
     now: clock.now,
@@ -45,10 +53,12 @@ export async function createTestApp(
     app,
     db: testDb.db,
     testDb,
+    boss,
     mailer,
     clock,
     close: async () => {
       await app.close();
+      await boss.stop({ graceful: false, timeout: 1000 });
       await testDb.drop();
     },
   };

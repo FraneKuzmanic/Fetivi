@@ -4,3 +4,4 @@ export * from './audit';
 export * from './info-blocks';
 export * from './properties';
 export * from './sessions';
+export * from './translations';

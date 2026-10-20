@@ -13,6 +13,8 @@ const MESSAGES: Record<string, string> = {
   'bad-origin': 'This request was blocked. Please reload the page.',
   'not-found': 'Not found.',
   'not-approved': 'The property must be approved before the QR code is issued.',
+  'stale-revision': 'The text changed while you were editing. Reload and try again.',
+  'translation-not-failed': 'This translation is not in a failed state.',
 };
 
 export function messageFor(code: string): string {

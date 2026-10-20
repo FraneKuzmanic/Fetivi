@@ -8,11 +8,9 @@
     "start": "node --env-file-if-exists=.env --import tsx src/index.ts"
   },
   "dependencies": {
+    "@fetivi/domain": "workspace:*",
     "@fetivi/egress": "workspace:*",
     "pg-boss": "12.38.0",
     "zod": "4.6.7"
-  },
-  "devDependencies": {
-    "@fetivi/domain": "workspace:*"
   }
 }
