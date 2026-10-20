@@ -21,7 +21,7 @@ const echo = {
   description: 'Echoes a word.',
   inputSchema: z.object({ word: z.string() }),
   outputSchema: z.object({ word: z.string(), unit: z.string() }),
-  scope: 'unit:read',
+  scope: 'unit:read' as const,
   annotations: readOnly,
 };
 

@@ -15,7 +15,6 @@ export interface SpaceContext extends Situation {
   propertyId: string;
   destinationId: string | null;
   language: GuestLanguage;
-  closed: boolean;
 }
 
 /** The ids and situation behind a space at `now`; null when the space (or its Stay) is gone. */
@@ -35,7 +34,6 @@ export async function loadSituation(
       location: properties.location,
       hostId: properties.hostId,
       language: spaces.language,
-      closedAt: spaces.closedAt,
     })
     .from(spaces)
     .innerJoin(stays, eq(stays.id, spaces.stayId))
@@ -72,6 +70,5 @@ export async function loadSituation(
     propertyId: row.propertyId,
     destinationId,
     language: row.language,
-    closed: now >= row.closedAt,
   };
 }

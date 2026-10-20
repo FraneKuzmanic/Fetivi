@@ -54,7 +54,6 @@ describe('loadSituation', () => {
       propertyId: seed.propertyId,
       destinationId,
       language: 'de',
-      closed: false,
     });
   });
 
@@ -74,17 +73,15 @@ describe('loadSituation', () => {
     expect((await loadSituation(testDb.db, active.spaceId, NOW))?.hostHasOwnOffers).toBe(true);
   });
 
-  it('is closed and ended after checkout day', async () => {
+  it('is ended after checkout day', async () => {
     const seed = await seedGuestUnit(testDb.db, { now: NOW });
     const after = seed.stay.activeUntil;
     expect(await loadSituation(testDb.db, seed.spaceId, after)).toMatchObject({
       phase: 'ended',
-      closed: true,
     });
     const before = new Date(after.getTime() - 1);
     expect(await loadSituation(testDb.db, seed.spaceId, before)).toMatchObject({
       phase: 'in_stay',
-      closed: false,
     });
   });
 

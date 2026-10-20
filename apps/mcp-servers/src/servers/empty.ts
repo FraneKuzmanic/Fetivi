@@ -1,7 +1,6 @@
 import type { McpServerName } from '@fetivi/domain';
 import { McpServer } from '@modelcontextprotocol/server';
-
-export const SERVER_VERSION = '0.1.0';
+import { SERVER_VERSION } from './version';
 
 /** A server with no tools yet; the tools capability makes `tools/list` answer `[]`. */
 export function buildEmptyServer(name: McpServerName): McpServer {

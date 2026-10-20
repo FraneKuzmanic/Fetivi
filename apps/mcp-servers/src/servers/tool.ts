@@ -1,4 +1,4 @@
-import type { GuestIdentity } from '@fetivi/domain';
+import type { GuestIdentity, Scope } from '@fetivi/domain';
 import type {
   CallToolResult,
   McpServer,
@@ -46,7 +46,7 @@ export interface GuestToolConfig<I extends z.ZodObject, O extends z.ZodObject> {
   inputSchema: I;
   outputSchema: O;
   /** The scope the token must carry; checked on every call. */
-  scope: string;
+  scope: Scope;
   /** Required so every tool states readOnlyHint / destructiveHint / idempotentHint honestly. */
   annotations: ToolAnnotations;
 }

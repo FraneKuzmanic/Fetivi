@@ -1,10 +1,13 @@
 import type { AddressInfo } from 'node:net';
 import {
   type Db,
+  GUEST_TOKEN_ALG,
+  GUEST_TOKEN_TTL_SECONDS,
+  GUEST_TOKEN_TYPE,
+  guestClaimsFor,
   loadSituation,
   type McpServerName,
   type SpaceContext,
-  scopesFor,
   serverUrl,
 } from '@fetivi/domain';
 import { createTestDatabase, type TestDatabase } from '@fetivi/domain/testing';
@@ -31,8 +34,8 @@ export interface TestKeys {
 
 /** An ephemeral ES256 pair with its local JWKS, standing in for the chat backend's. */
 export async function createTestKeys(kid = 'test-key'): Promise<TestKeys> {
-  const { privateKey, publicKey } = await generateKeyPair('ES256', { extractable: true });
-  const jwk = { ...(await exportJWK(publicKey)), kid, alg: 'ES256' };
+  const { privateKey, publicKey } = await generateKeyPair(GUEST_TOKEN_ALG, { extractable: true });
+  const jwk = { ...(await exportJWK(publicKey)), kid, alg: GUEST_TOKEN_ALG };
   return { privateKey, kid, keys: createLocalJWKSet({ keys: [jwk] }) };
 }
 
@@ -55,20 +58,16 @@ export interface SignOptions {
 export async function signToken(keys: TestKeys, o: SignOptions): Promise<string> {
   const iat = o.iat ?? Math.floor(Date.now() / 1000);
   return new SignJWT({
-    stay: o.ctx.stayId,
-    unit: o.ctx.unitId,
-    property: o.ctx.propertyId,
-    destination: o.ctx.destinationId,
-    lang: o.ctx.language,
-    scope: o.scope ?? scopesFor(o.server, o.ctx).join(' '),
+    ...guestClaimsFor(o.server, o.ctx),
+    ...(o.scope === undefined ? {} : { scope: o.scope }),
     ...o.claims,
   })
-    .setProtectedHeader({ alg: 'ES256', typ: 'at+jwt', kid: keys.kid, ...o.header })
+    .setProtectedHeader({ alg: GUEST_TOKEN_ALG, typ: GUEST_TOKEN_TYPE, kid: keys.kid, ...o.header })
     .setIssuer(o.iss ?? TEST_ISSUER)
     .setAudience(o.aud ?? serverUrl(TEST_BASE, o.server))
     .setSubject(o.ctx.spaceId)
     .setIssuedAt(iat)
-    .setExpirationTime(o.exp ?? iat + 300)
+    .setExpirationTime(o.exp ?? iat + GUEST_TOKEN_TTL_SECONDS)
     .sign(o.key ?? keys.privateKey);
 }
 

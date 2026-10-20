@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { GUEST_LANGUAGES, type GuestLanguage } from '../property/vocabulary';
+import type { SpaceContext } from './load';
+import { type McpServerName, scopesFor } from './scopes';
 
 // The guest token contract, shared by the minter (chat backend) and the verifier (mcp-servers).
 
@@ -25,6 +27,21 @@ export const guestTokenClaims = z.object({
   scope: z.string(),
 });
 export type GuestTokenClaims = z.infer<typeof guestTokenClaims>;
+
+/** The private claims of one server's token for a space; the registered claims are set by the signer. */
+export function guestClaimsFor(
+  server: McpServerName,
+  ctx: SpaceContext,
+): Pick<GuestTokenClaims, 'stay' | 'unit' | 'property' | 'destination' | 'lang' | 'scope'> {
+  return {
+    stay: ctx.stayId,
+    unit: ctx.unitId,
+    property: ctx.propertyId,
+    destination: ctx.destinationId,
+    lang: ctx.language,
+    scope: scopesFor(server, ctx).join(' '),
+  };
+}
 
 /** What a server knows about its caller: identity from the token, never from arguments. */
 export interface GuestIdentity {

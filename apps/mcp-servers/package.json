@@ -12,7 +12,6 @@
     "@fetivi/egress": "workspace:*",
     "@modelcontextprotocol/fastify": "2.0.1",
     "@modelcontextprotocol/server": "2.3.1",
-    "drizzle-orm": "0.45.4",
     "fastify": "5.12.7",
     "jose": "6.2.12",
     "zod": "4.6.7"

@@ -3,11 +3,11 @@ import {
   GUEST_TOKEN_ALG,
   GUEST_TOKEN_TTL_SECONDS,
   GUEST_TOKEN_TYPE,
+  guestClaimsFor,
   loadSituation,
   MCP_SERVERS,
   type McpServerName,
   type SpaceContext,
-  scopesFor,
   serverUrl,
 } from '@fetivi/domain';
 import { SignJWT } from 'jose';
@@ -36,14 +36,7 @@ export async function mintServerTokens(
   const iat = seconds(now);
   const entries = await Promise.all(
     MCP_SERVERS.map(async (server) => {
-      const token = await new SignJWT({
-        stay: ctx.stayId,
-        unit: ctx.unitId,
-        property: ctx.propertyId,
-        destination: ctx.destinationId,
-        lang: ctx.language,
-        scope: scopesFor(server, ctx).join(' '),
-      })
+      const token = await new SignJWT(guestClaimsFor(server, ctx))
         .setProtectedHeader({ alg: GUEST_TOKEN_ALG, typ: GUEST_TOKEN_TYPE, kid: cfg.key.kid })
         .setIssuer(cfg.issuer)
         .setAudience(serverUrl(cfg.mcpBaseUrl, server))

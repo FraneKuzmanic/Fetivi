@@ -17,7 +17,6 @@ const ctx: SpaceContext = {
   propertyId: randomUUID(),
   destinationId: randomUUID(),
   language: 'hr',
-  closed: false,
 };
 const audience = serverUrl(TEST_BASE, 'stay');
 const verifier = createGuestTokenVerifier({ keys: keys.keys, issuer: TEST_ISSUER, audience });

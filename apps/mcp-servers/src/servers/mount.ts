@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
-import { type GuestIdentity, type McpServerName, serverUrl } from '@fetivi/domain';
+import { type GuestIdentity, type McpServerName, type Scope, serverUrl } from '@fetivi/domain';
 import {
   type AuthInfo,
   bearerAuthChallengeResponse,
@@ -19,7 +19,7 @@ export interface MountOptions {
   /** Base of the canonical URLs (MCP_PUBLIC_URL). */
   publicBase: string;
   verifier: OAuthTokenVerifier;
-  requiredScopes: string[];
+  requiredScopes: Scope[];
   /** Called once per request with that request's verified identity. */
   factory: (identity: GuestIdentity) => McpServer;
 }

@@ -5,7 +5,7 @@ import {
   ProjectionRuleError,
 } from '@fetivi/domain';
 import { McpServer, ResourceNotFoundError } from '@modelcontextprotocol/server';
-import { SERVER_VERSION } from '../empty';
+import { SERVER_VERSION } from '../version';
 
 export const UNIT_RESOURCE_URI = 'fetivi://stay/unit';
 
