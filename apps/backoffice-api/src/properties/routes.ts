@@ -1,6 +1,7 @@
 import {
   correctTranslation,
   type Db,
+  type Executor,
   findSecretLikeText,
   GUEST_LANGUAGES,
   infoBlocks,
@@ -8,6 +9,7 @@ import {
   LIMITS,
   listTranslations,
   properties,
+  refreshStayTimes,
   retryTranslation,
   unitHiddenBlocks,
   units,
@@ -106,11 +108,21 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     const hostId = hostIdOf(request);
     const id = idOf(request);
     const body = PropertyPatch.parse(request.body);
-    const [property] = await db
-      .update(properties)
-      .set({ ...propertyValues(body), updatedAt: deps.now() })
-      .where(and(eq(properties.id, id), eq(properties.hostId, hostId)))
-      .returning();
+    const update = (tx: Executor) =>
+      tx
+        .update(properties)
+        .set({ ...propertyValues(body), updatedAt: deps.now() })
+        .where(and(eq(properties.id, id), eq(properties.hostId, hostId)))
+        .returning();
+    // A new zone moves the derived instants of the property's active Stays.
+    const [property] =
+      body.timezone === undefined
+        ? await update(db)
+        : await db.transaction(async (tx) => {
+            const rows = await update(tx);
+            if (rows.length > 0) await refreshStayTimes(tx, { propertyId: id }, deps.now());
+            return rows;
+          });
     if (!property) throw new HttpError(404, 'not-found');
     return propertyDetail(db, property);
   });
@@ -162,11 +174,21 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     const hostId = hostIdOf(request);
     const id = idOf(request);
     const body = UnitPatch.parse(request.body);
-    const [unit] = await db
-      .update(units)
-      .set({ ...body, updatedAt: deps.now() })
-      .where(and(eq(units.id, id), inArray(units.propertyId, ownedPropertyIds(db, hostId))))
-      .returning();
+    const update = (tx: Executor) =>
+      tx
+        .update(units)
+        .set({ ...body, updatedAt: deps.now() })
+        .where(and(eq(units.id, id), inArray(units.propertyId, ownedPropertyIds(db, hostId))))
+        .returning();
+    // A new release offset moves the arrival release time of the unit's active Stays.
+    const [unit] =
+      body.arrivalReleaseDaysBefore === undefined
+        ? await update(db)
+        : await db.transaction(async (tx) => {
+            const rows = await update(tx);
+            if (rows.length > 0) await refreshStayTimes(tx, { unitId: id }, deps.now());
+            return rows;
+          });
     if (!unit) throw new HttpError(404, 'not-found');
     return unitDetail(db, await findOwnedUnit(db, hostId, id), guestOrigin);
   });

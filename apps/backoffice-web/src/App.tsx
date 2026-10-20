@@ -14,6 +14,9 @@ import { SignUpPage } from './auth/SignUpPage';
 import { VerifyEmailPage } from './auth/VerifyEmailPage';
 import { PropertiesPage } from './host/PropertiesPage';
 import { NewPropertyPage, PropertyPage } from './host/PropertyPage';
+import { NewStayPage } from './host/stays/NewStayPage';
+import { StayPage } from './host/stays/StayPage';
+import { StaysPage } from './host/stays/StaysPage';
 import { UnitPage } from './host/UnitPage';
 import { SessionProvider } from './session';
 import { AdminHome } from './shell/AdminHome';
@@ -80,6 +83,30 @@ export function App() {
           element={
             <Page area="host">
               <UnitPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/stays"
+          element={
+            <Page area="host">
+              <StaysPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/stays/new"
+          element={
+            <Page area="host">
+              <NewStayPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/stays/:id"
+          element={
+            <Page area="host">
+              <StayPage />
             </Page>
           }
         />

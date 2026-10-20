@@ -8,6 +8,7 @@ import { hostRoutes } from './host/routes';
 import { registerErrorHandler } from './http-error';
 import { propertyRoutes } from './properties/routes';
 import { providerRoutes } from './providers/routes';
+import { stayRoutes } from './stays/routes';
 
 export interface AppDeps {
   db: Db;
@@ -38,5 +39,6 @@ export function buildApp(deps: AppDeps) {
   app.register(adminRoutes, { db, now });
   app.register(catalogRoutes, { db, queue, now });
   app.register(providerRoutes, { db, queue, now });
+  app.register(stayRoutes, { db, now, guestOrigin });
   return app;
 }

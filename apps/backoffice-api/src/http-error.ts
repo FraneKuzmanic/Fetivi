@@ -20,7 +20,9 @@ export type ErrorCode =
   | 'destination-not-empty'
   | 'provider-has-offers'
   | 'offer-has-slots'
-  | 'seats-taken';
+  | 'seats-taken'
+  | 'unit-not-live'
+  | 'stay-ended';
 
 export class HttpError extends Error {
   override name = 'HttpError';

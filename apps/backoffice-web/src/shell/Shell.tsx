@@ -1,5 +1,6 @@
 import {
   Buildings,
+  CalendarCheck,
   ClipboardText,
   Handshake,
   type Icon,
@@ -37,7 +38,10 @@ function navItems(me: Me): NavItem[] {
       { to: '/admin/audit', label: 'Audit', icon: ClipboardText, prefixes: [] },
     ];
   }
-  return [{ to: '/', label: 'Properties', icon: Buildings, prefixes: ['/properties', '/units'] }];
+  return [
+    { to: '/', label: 'Properties', icon: Buildings, prefixes: ['/properties', '/units'] },
+    { to: '/stays', label: 'Stays', icon: CalendarCheck, prefixes: ['/stays'] },
+  ];
 }
 
 function Brand() {

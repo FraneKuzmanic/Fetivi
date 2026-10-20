@@ -57,6 +57,13 @@
       "when": 1792513139083,
       "tag": "0007_offer_response_window_cap",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792516928189,
+      "tag": "0008_stays",
+      "breakpoints": true
     }
   ]
 }

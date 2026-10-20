@@ -238,6 +238,48 @@ export type UnitPatch = Partial<
   >
 >;
 
+export type StayPhase = 'upcoming' | 'in_stay' | 'ended';
+
+export interface Stay {
+  id: string;
+  unitId: string;
+  unitName: string;
+  propertyId: string;
+  propertyName: string;
+  timezone: string;
+  /** Civil dates, 'YYYY-MM-DD'. */
+  checkIn: string;
+  checkout: string;
+  partySize: number;
+  bookerName: string | null;
+  reservationNumber: string | null;
+  pin: string;
+  arrivalReleaseAt: string;
+  /** 'YYYY-MM-DDTHH:mm' in the property's zone. */
+  arrivalReleaseLocal: string;
+  activeUntil: string;
+  possiblyCancelled: boolean;
+  pinSentAt: string | null;
+  handoverLanguage: GuestLanguage;
+  /** The unit's permanent link; never contains the PIN. */
+  unitLink: string | null;
+  phase: StayPhase;
+  pinWarning: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StayInput {
+  checkIn: string;
+  checkout: string;
+  partySize: number;
+  bookerName?: string | null;
+  reservationNumber?: string | null;
+  handoverLanguage?: GuestLanguage;
+}
+
+export type StayPatch = Partial<StayInput> & { pinSent?: boolean };
+
 export interface AdminPropertyRow {
   id: string;
   name: string;
@@ -317,6 +359,18 @@ export const host = {
   retryTranslation: (id: string) =>
     post<{ view: TranslationsView }>(`/api/host/blocks/${id}/translations/retry`),
   qrUrl: (unitId: string, format: 'svg' | 'png') => `/api/host/units/${unitId}/qr?format=${format}`,
+  stays: (params: { unitId?: string; past?: boolean } = {}) => {
+    const query = new URLSearchParams();
+    if (params.unitId) query.set('unitId', params.unitId);
+    if (params.past) query.set('past', 'true');
+    const search = query.toString();
+    return api<{ stays: Stay[] }>(`/api/host/stays${search ? `?${search}` : ''}`);
+  },
+  stay: (id: string) => api<Stay>(`/api/host/stays/${id}`),
+  createStay: (unitId: string, body: StayInput) =>
+    post<Stay>(`/api/host/units/${unitId}/stays`, body),
+  updateStay: (id: string, body: StayPatch) => patch<Stay>(`/api/host/stays/${id}`, body),
+  deleteStay: (id: string) => remove(`/api/host/stays/${id}`),
 };
 
 // --- Catalog (admin) -----------------------------------------------------------------------------

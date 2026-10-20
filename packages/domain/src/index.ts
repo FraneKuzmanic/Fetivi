@@ -6,5 +6,6 @@ export * from './jobs';
 export * from './mail';
 export * from './offers';
 export * from './property';
+export * from './stays';
 export * from './time';
 export * from './translation';

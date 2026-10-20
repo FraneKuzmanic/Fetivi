@@ -44,7 +44,7 @@ export function TextField({
   maxLength: number;
   placeholder?: string | undefined;
   required?: boolean;
-  type?: 'text' | 'tel' | 'email';
+  type?: 'text' | 'tel' | 'email' | 'date';
   autoComplete?: string;
 }) {
   return (

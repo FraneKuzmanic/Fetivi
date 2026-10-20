@@ -1257,3 +1257,63 @@ button svg,
     white-space: nowrap;
   }
 }
+
+/* --- Stays: PIN, hand-over messages, list ---------------------------------------------------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.inline-field {
+  flex: 0 1 20rem;
+}
+
+.pin-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.pin-display {
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+  color: var(--navy-900);
+}
+
+.handover {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.handover textarea {
+  min-height: 10rem;
+  resize: vertical;
+}
+
+.copy-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (min-width: 700px) {
+  .stays-table .row-link,
+  .stays-table .table-head {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 6rem 13rem;
+  }
+}

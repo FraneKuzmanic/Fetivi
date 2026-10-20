@@ -79,6 +79,7 @@ export function UnitPage() {
 
       <div className="editor">
         <QrPanel detail={detail} />
+        <StaysPanel detail={detail} />
 
         <Section title="Unit name" onSave={saveFields(['name'])}>
           <TextField
@@ -274,6 +275,30 @@ function QrPanel({ detail }: { detail: UnitDetail }) {
           </a>
         </div>
       </div>
+    </section>
+  );
+}
+
+function StaysPanel({ detail }: { detail: UnitDetail }) {
+  return (
+    <section className="panel">
+      <h2>Stays</h2>
+      {detail.qrSlug ? (
+        <>
+          <p className="muted">Register each guest party to get a PIN for them.</p>
+          <div className="actions">
+            <Link className="button primary" to={`/stays/new?unit=${detail.id}`}>
+              <Plus aria-hidden="true" weight="bold" />
+              Register a Stay
+            </Link>
+            <Link className="button" to={`/stays?unit=${detail.id}`}>
+              See Stays
+            </Link>
+          </div>
+        </>
+      ) : (
+        <p className="muted">Stays can be registered once Fetivi approves the property.</p>
+      )}
     </section>
   );
 }

@@ -87,3 +87,10 @@ _Avoid_: SLA
 **Stay**:
 One guest party's registered visit to a unit, from check-in to checkout, identified by its PIN.
 _Avoid_: Reservation, booking
+
+**Active Stay**:
+A Stay from its registration until the end of its checkout day in the Property's time zone; its PIN works and is unique among the Property's Active Stays.
+
+**Hand-over message**:
+The copy-ready text a Host sends a guest party with the Unit's link and the PIN, never the PIN inside the link, in one of the seven guest languages.
+_Avoid_: Invitation, welcome message

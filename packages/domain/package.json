@@ -7,7 +7,9 @@
     "./testing": "./src/testing/index.ts",
     "./vocabulary": "./src/property/vocabulary.ts",
     "./catalog-vocabulary": "./src/catalog/vocabulary.ts",
-    "./offer-vocabulary": "./src/offers/vocabulary.ts"
+    "./offer-vocabulary": "./src/offers/vocabulary.ts",
+    "./handover": "./src/stays/handover.ts",
+    "./stay-vocabulary": "./src/stays/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
