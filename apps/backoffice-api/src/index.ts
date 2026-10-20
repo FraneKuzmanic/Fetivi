@@ -8,6 +8,7 @@ const app = buildApp({
   db,
   mailer: createConsoleMailer(),
   webOrigin: config.WEB_ORIGIN,
+  guestOrigin: config.GUEST_ORIGIN,
   trustProxy: config.TRUST_PROXY,
 });
 

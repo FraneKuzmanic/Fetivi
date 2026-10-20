@@ -2,6 +2,28 @@
 
 An AI assistant for guests in short-term accommodation that answers questions about the stay and the destination and arranges local services.
 
+## Hosts and properties
+
+**Host**:
+An account that runs one or more Properties and enters the information guests are answered from.
+_Avoid_: Owner, landlord, user
+
+**Property**:
+A place a Host rents out, at one address and in one time zone, holding the content its Units share.
+_Avoid_: Building (except in the physical sense), listing
+
+**Unit**:
+One rentable space of a Property. It inherits the Property's content and may override it field by field, or hide or replace the Property's Info blocks.
+_Avoid_: Apartment (as the generic term), room, listing
+
+**Info block**:
+A titled piece of Markdown guest information in one Guide section, owned by a Property or a Unit, with a revision number that grows with every edit.
+_Avoid_: Article, note, card
+
+**QR link**:
+A Unit's permanent guest link, issued once the admin approves its Property and printed as a QR code.
+_Avoid_: Invite link, booking link
+
 ## Services
 
 **Order**:

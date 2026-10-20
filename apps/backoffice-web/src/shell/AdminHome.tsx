@@ -22,7 +22,7 @@ export function AdminHome() {
 
   return (
     <section>
-      <h2>Hosts</h2>
+      <h1>Hosts</h1>
       {error ? <p role="alert">{error}</p> : null}
       {hosts === null ? <p>Loading…</p> : null}
       {hosts?.length === 0 ? <p className="empty">No hosts yet.</p> : null}

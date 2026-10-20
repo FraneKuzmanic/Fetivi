@@ -5,11 +5,14 @@ import { registerAuth } from './auth/plugin';
 import { authRoutes } from './auth/routes';
 import { hostRoutes } from './host/routes';
 import { registerErrorHandler } from './http-error';
+import { propertyRoutes } from './properties/routes';
 
 export interface AppDeps {
   db: Db;
   mailer: Mailer;
   webOrigin: string;
+  /** Where unit QR codes point. */
+  guestOrigin: string;
   now?: () => Date;
   logger?: boolean;
   /** Proxy addresses whose X-Forwarded-For is believed (e.g. 'loopback'); unset trusts none. */
@@ -19,7 +22,7 @@ export interface AppDeps {
 export function buildApp(deps: AppDeps) {
   const app = Fastify({ logger: deps.logger ?? true, trustProxy: deps.trustProxy ?? false });
   const now = deps.now ?? (() => new Date());
-  const { db, mailer, webOrigin } = deps;
+  const { db, mailer, webOrigin, guestOrigin } = deps;
 
   registerErrorHandler(app);
   registerAuth(app, { db, webOrigin, now });
@@ -27,6 +30,7 @@ export function buildApp(deps: AppDeps) {
   app.get('/health', async () => ({ status: 'ok', service: 'backoffice-api' }));
   app.register(authRoutes, { db, mailer, webOrigin, now });
   app.register(hostRoutes, { db });
+  app.register(propertyRoutes, { db, now, guestOrigin });
   app.register(adminRoutes, { db, now });
   return app;
 }

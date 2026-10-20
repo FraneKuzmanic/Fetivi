@@ -5,7 +5,13 @@ import { loadConfig } from './config';
 
 // The pg pool connects lazily, so no database is needed for these tests.
 const { db, pool } = createDb('postgres://unused@127.0.0.1:1/x');
-const deps = { db, mailer: createMemoryMailer(), webOrigin: 'http://host.test', logger: false };
+const deps = {
+  db,
+  mailer: createMemoryMailer(),
+  webOrigin: 'http://host.test',
+  guestOrigin: 'http://guest.test',
+  logger: false,
+};
 
 afterAll(async () => {
   await pool.end();
@@ -35,6 +41,7 @@ describe('backoffice-api', () => {
       PORT: 3001,
       DATABASE_URL: 'postgres://fetivi:fetivi@127.0.0.1:5433/fetivi',
       WEB_ORIGIN: 'http://localhost:5174',
+      GUEST_ORIGIN: 'http://localhost:5173',
       MAIL_TRANSPORT: 'console',
     });
   });

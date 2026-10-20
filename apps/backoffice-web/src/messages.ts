@@ -12,6 +12,7 @@ const MESSAGES: Record<string, string> = {
   'stop-acting-first': 'Stop acting as a host first.',
   'bad-origin': 'This request was blocked. Please reload the page.',
   'not-found': 'Not found.',
+  'not-approved': 'The property must be approved before the QR code is issued.',
 };
 
 export function messageFor(code: string): string {

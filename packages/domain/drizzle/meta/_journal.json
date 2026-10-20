@@ -15,6 +15,13 @@
       "when": 1792421817593,
       "tag": "0001_fat_madelyne_pryor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792483430615,
+      "tag": "0002_sweet_vector",
+      "breakpoints": true
     }
   ]
 }

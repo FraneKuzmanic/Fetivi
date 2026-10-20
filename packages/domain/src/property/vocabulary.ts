@@ -1,0 +1,127 @@
+// Every controlled list of the property model. Imports nothing: the back-office SPA bundles
+// this file through the `@fetivi/domain/vocabulary` subpath, and the pgEnums are built from it.
+
+/** The seven Guide sections, one to one. Hosts write blocks in all but saved_places. */
+export const BLOCK_CATEGORIES = [
+  'arrival_access',
+  'wifi_essentials',
+  'house_rules_checkout',
+  'how_tos',
+  'saved_places',
+  'host_picks',
+  'contacts_emergency',
+] as const;
+export type BlockCategory = (typeof BLOCK_CATEGORIES)[number];
+
+export type HostBlockCategory = Exclude<BlockCategory, 'saved_places'>;
+/** host_picks holds the Neighbourhood tips block until catalog picks arrive. */
+export const HOST_BLOCK_CATEGORIES = BLOCK_CATEGORIES.filter(
+  (c): c is HostBlockCategory => c !== 'saved_places',
+);
+
+/** after_release: time-gated arrival content, shown from the unit's arrival release time. */
+export const BLOCK_VISIBILITY = ['always', 'after_release'] as const;
+export type BlockVisibility = (typeof BLOCK_VISIBILITY)[number];
+
+/** Airbnb's check-in methods. */
+export const CHECK_IN_METHODS = [
+  'smart_lock',
+  'keypad',
+  'lockbox',
+  'building_staff',
+  'in_person',
+  'other',
+] as const;
+export type CheckInMethod = (typeof CHECK_IN_METHODS)[number];
+
+export const PARKING_TYPES = [
+  'none',
+  'free_on_site',
+  'paid_on_site',
+  'free_street',
+  'paid_street',
+  'public_garage',
+] as const;
+export type ParkingType = (typeof PARKING_TYPES)[number];
+
+export const BED_TYPES = ['double', 'single', 'sofa_bed', 'bunk', 'crib'] as const;
+export type BedType = (typeof BED_TYPES)[number];
+export interface Bed {
+  type: BedType;
+  count: number;
+}
+
+/** Google VacationRental amenity names (booleans), minus booking-only ones. */
+export const AMENITIES = [
+  'ac',
+  'airport_shuttle',
+  'balcony',
+  'beach_access',
+  'child_friendly',
+  'crib',
+  'elevator',
+  'fireplace',
+  'free_breakfast',
+  'gym',
+  'heating',
+  'hot_tub',
+  'ironing_board',
+  'kitchen',
+  'microwave',
+  'outdoor_grill',
+  'oven_stove',
+  'patio',
+  'pets_allowed',
+  'pool',
+  'private_beach_access',
+  'self_check_in',
+  'smoking_allowed',
+  'tv',
+  'washer',
+  'dryer',
+  'dishwasher',
+  'wheelchair_accessible',
+  'wifi',
+  'hair_dryer',
+  'coffee_maker',
+  'sea_view',
+] as const;
+export type Amenity = (typeof AMENITIES)[number];
+
+/** Core fields a property sets and a unit may override; null on a unit means "inherit". */
+export const SHARED_CORE_FIELDS = [
+  'checkInTime',
+  'checkoutTime',
+  'checkInMethod',
+  'accessInstructions',
+  'parkingType',
+  'parkingNotes',
+  'petsAllowed',
+  'smokingAllowed',
+  'partiesAllowed',
+  'quietHoursFrom',
+  'quietHoursTo',
+  'houseRulesNotes',
+  'hostPhone',
+  'emergencyContactName',
+  'emergencyContactPhone',
+  'licenceNumber',
+] as const;
+export type SharedCoreField = (typeof SHARED_CORE_FIELDS)[number];
+
+/** Maximum lengths of host input, in characters (after markup stripping). */
+export const LIMITS = {
+  name: 120,
+  title: 120,
+  /** Addresses, Wi-Fi network, contact names. */
+  shortText: 200,
+  /** Access instructions, notes. */
+  longText: 2000,
+  blockBody: 5000,
+  phone: 32,
+  code: 64,
+  wifiPassword: 128,
+  licence: 64,
+  amenityNote: 200,
+  blocksPerOwner: 100,
+} as const;

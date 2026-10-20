@@ -5,6 +5,7 @@ import { buildApp } from './app';
 import { SESSION_COOKIE } from './auth/sessions';
 
 export const TEST_ORIGIN = 'http://host.test';
+export const GUEST_TEST_ORIGIN = 'http://guest.test';
 export const PASSWORD = 'correct horse battery';
 
 export interface TestApp {
@@ -33,6 +34,7 @@ export async function createTestApp(
     db: testDb.db,
     mailer,
     webOrigin: TEST_ORIGIN,
+    guestOrigin: GUEST_TEST_ORIGIN,
     now: clock.now,
     logger: false,
     trustProxy: options.trustProxy,
@@ -53,13 +55,35 @@ export async function createTestApp(
   return t;
 }
 
-export function post(app: FastifyInstance, url: string, body?: unknown, cookie?: string) {
+function write(
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  app: FastifyInstance,
+  url: string,
+  body?: unknown,
+  cookie?: string,
+) {
   return app.inject({
-    method: 'POST',
+    method,
     url,
     headers: { origin: TEST_ORIGIN, ...(cookie ? { cookie } : {}) },
     ...(body === undefined ? {} : { payload: body as object }),
   });
+}
+
+export function post(app: FastifyInstance, url: string, body?: unknown, cookie?: string) {
+  return write('POST', app, url, body, cookie);
+}
+
+export function patch(app: FastifyInstance, url: string, body?: unknown, cookie?: string) {
+  return write('PATCH', app, url, body, cookie);
+}
+
+export function put(app: FastifyInstance, url: string, body?: unknown, cookie?: string) {
+  return write('PUT', app, url, body, cookie);
+}
+
+export function del(app: FastifyInstance, url: string, cookie?: string) {
+  return write('DELETE', app, url, undefined, cookie);
 }
 
 export function get(app: FastifyInstance, url: string, cookie?: string) {

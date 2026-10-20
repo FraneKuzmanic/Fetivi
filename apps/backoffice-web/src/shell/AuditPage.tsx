@@ -12,7 +12,7 @@ export function AuditPage() {
 
   return (
     <section>
-      <h2>Act-as audit</h2>
+      <h1>Act-as audit</h1>
       {error ? <p role="alert">{error}</p> : null}
       {entries === null ? <p>Loading…</p> : null}
       {entries?.length === 0 ? <p className="empty">Nothing recorded yet.</p> : null}

@@ -1,11 +1,12 @@
-import { accounts, actAsAudit, type Db } from '@fetivi/domain';
-import { and, desc, eq } from 'drizzle-orm';
+import { accounts, actAsAudit, type Db, properties, units } from '@fetivi/domain';
+import { and, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { principalOf } from '../auth/plugin';
 import { toMe } from '../auth/routes';
 import { deleteSessionsOf, setActingAs } from '../auth/sessions';
 import { HttpError } from '../http-error';
+import { issueSlug } from '../properties/store';
 
 export interface AdminDeps {
   db: Db;
@@ -14,6 +15,7 @@ export interface AdminDeps {
 
 const IdParams = z.object({ id: z.uuid() });
 const ActAsBody = z.object({ hostId: z.uuid() });
+const PropertiesQuery = z.object({ status: z.enum(['pending', 'approved']).default('pending') });
 const AuditQuery = z.object({ limit: z.coerce.number().int().min(1).max(500).default(100) });
 
 export async function adminRoutes(app: FastifyInstance, deps: AdminDeps): Promise<void> {
@@ -103,6 +105,58 @@ export async function adminRoutes(app: FastifyInstance, deps: AdminDeps): Promis
     }
     await setActingAs(db, principal.sessionId, null);
     return toMe({ ...principal, actingAs: null });
+  });
+
+  app.get('/api/admin/properties', admin, async (request) => {
+    const { status } = PropertiesQuery.parse(request.query);
+    const rows = await db
+      .select({
+        id: properties.id,
+        name: properties.name,
+        city: properties.city,
+        hostEmail: accounts.email,
+        unitCount: sql<number>`(select count(*)::int from ${units} where ${units.propertyId} = ${properties.id})`,
+        createdAt: properties.createdAt,
+        approvedAt: properties.approvedAt,
+      })
+      .from(properties)
+      .innerJoin(accounts, eq(properties.hostId, accounts.id))
+      .where(
+        status === 'pending' ? isNull(properties.approvedAt) : isNotNull(properties.approvedAt),
+      )
+      .orderBy(desc(properties.createdAt));
+    return {
+      properties: rows.map((r) => ({
+        ...r,
+        createdAt: r.createdAt.toISOString(),
+        approvedAt: r.approvedAt?.toISOString() ?? null,
+      })),
+    };
+  });
+
+  /** One-way and idempotent: approving again keeps the first approval and every slug. */
+  app.post('/api/admin/properties/:id/approve', admin, async (request, reply) => {
+    const principal = principalOf(request);
+    const { id } = IdParams.parse(request.params);
+    await db.transaction(async (tx) => {
+      const [property] = await tx
+        .select({ id: properties.id })
+        .from(properties)
+        .where(eq(properties.id, id))
+        .for('update');
+      if (!property) throw new HttpError(404, 'not-found');
+      const now = deps.now();
+      await tx
+        .update(properties)
+        .set({ approvedAt: now, approvedBy: principal.account.id, updatedAt: now })
+        .where(and(eq(properties.id, id), isNull(properties.approvedAt)));
+      const slugless = await tx
+        .select({ id: units.id })
+        .from(units)
+        .where(and(eq(units.propertyId, id), isNull(units.qrSlug)));
+      for (const unit of slugless) await issueSlug(tx, unit.id);
+    });
+    return reply.status(204).send();
   });
 
   app.get('/api/admin/audit', admin, async (request) => {

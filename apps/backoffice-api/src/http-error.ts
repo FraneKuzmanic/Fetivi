@@ -13,7 +13,8 @@ export type ErrorCode =
   | 'stop-acting-first'
   | 'bad-origin'
   | 'not-found'
-  | 'email-taken';
+  | 'email-taken'
+  | 'not-approved';
 
 export class HttpError extends Error {
   override name = 'HttpError';
