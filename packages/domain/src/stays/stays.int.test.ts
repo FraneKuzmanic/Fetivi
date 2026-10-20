@@ -233,4 +233,31 @@ describe('refreshStayTimes', () => {
     expect(a?.arrivalReleaseAt.toISOString()).toBe('2026-10-17T22:00:00.000Z');
     expect(e?.arrivalReleaseAt.toISOString()).toBe(ended.arrivalReleaseAt.toISOString());
   });
+  it('makes a registration wait for an open release-offset change, so it never keeps the old offset', async () => {
+    const { unitIds } = await seed({ unitCount: 1 });
+    const unitId = unitIds[0] as string;
+    let release = () => {};
+    const hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let updated = () => {};
+    const unitUpdated = new Promise<void>((resolve) => {
+      updated = resolve;
+    });
+    // The unit PATCH: update the offset, then (still open) refresh the unit's Stays.
+    const patch = testDb.db.transaction(async (tx) => {
+      await tx.update(units).set({ arrivalReleaseDaysBefore: 3 }).where(eq(units.id, unitId));
+      updated();
+      await hold;
+      await refreshStayTimes(tx, { unitId }, NOW);
+    });
+    await unitUpdated;
+    const registering = registerStay(testDb.db, unitId, stay, NOW);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    release();
+    await patch;
+
+    const row = await registering;
+    expect(row.arrivalReleaseAt.toISOString()).toBe('2026-10-17T22:00:00.000Z');
+  });
 });

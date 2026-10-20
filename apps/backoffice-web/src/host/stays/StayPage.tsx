@@ -1,7 +1,7 @@
 import { handOverMessages } from '@fetivi/domain/handover';
 import { GUEST_LANGUAGES } from '@fetivi/domain/vocabulary';
 import { Copy } from '@phosphor-icons/react';
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { host, type Stay } from '../../api';
 import { CheckboxField, Section, SelectField } from '../../forms/fields';
@@ -192,6 +192,19 @@ function MessageBox({
   boxRef: RefObject<HTMLTextAreaElement | null>;
 }) {
   const id = title.replace(/\W+/g, '-').toLowerCase();
+  // Grow the box to its text, so the link and the PIN are visible without scrolling inside it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new text is the re-fit trigger.
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const fit = () => {
+      box.style.height = 'auto';
+      box.style.height = `${box.scrollHeight + box.offsetHeight - box.clientHeight}px`;
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [boxRef, text]);
   return (
     <div className="handover">
       <label className="field-label" htmlFor={id}>

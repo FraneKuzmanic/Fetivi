@@ -1,6 +1,6 @@
 import { BED_TYPES, type HostBlockCategory, LIMITS } from '@fetivi/domain/vocabulary';
 import { DownloadSimple, Plus, Trash } from '@phosphor-icons/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { type Block, host, type SecretWarning, type UnitDetail, type UnitPatch } from '../api';
 import { CheckboxField, NumberField, Section, SelectField, TextField } from '../forms/fields';
@@ -280,9 +280,10 @@ function QrPanel({ detail }: { detail: UnitDetail }) {
 }
 
 function StaysPanel({ detail }: { detail: UnitDetail }) {
+  const headingId = useId();
   return (
-    <section className="panel">
-      <h2>Stays</h2>
+    <section className="panel" aria-labelledby={headingId}>
+      <h2 id={headingId}>Stays</h2>
       {detail.qrSlug ? (
         <>
           <p className="muted">Register each guest party to get a PIN for them.</p>

@@ -1,21 +1,10 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { host, type PropertySummary } from '../../api';
+import { host } from '../../api';
 import { SelectField } from '../../forms/fields';
 import { useAction } from '../../useAction';
+import { liveUnits } from './format';
 import { type StayDraft, StayFields, stayBody } from './StayFields';
-
-/** Units that accept Stays: approved property, QR issued. */
-export function liveUnits(properties: PropertySummary[]) {
-  const several = properties.length > 1;
-  return properties
-    .filter((p) => p.approved)
-    .flatMap((p) =>
-      p.units
-        .filter((u) => u.hasQr)
-        .map((u) => ({ id: u.id, label: several ? `${p.name} · ${u.name}` : u.name })),
-    );
-}
 
 export function NewStayPage() {
   const navigate = useNavigate();

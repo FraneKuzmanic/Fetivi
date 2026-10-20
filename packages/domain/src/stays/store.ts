@@ -47,18 +47,16 @@ interface UnitContext {
 
 /**
  * Loads unit, property and host account for a Stay write and locks the property row FOR UPDATE,
- * so all PIN draws of one property (across its units) run one after the other.
+ * so all PIN draws of one property (across its units) run one after the other. The unit row is
+ * then read FOR UPDATE too (property first, the same order as deletes cascade), so a release
+ * offset change still in flight is waited for instead of being copied stale into the Stay.
  */
 async function lockUnitContext(tx: Executor, unitId: string): Promise<UnitContext> {
-  const [unit] = await tx
-    .select({
-      propertyId: units.propertyId,
-      qrSlug: units.qrSlug,
-      arrivalReleaseDaysBefore: units.arrivalReleaseDaysBefore,
-    })
+  const [owner] = await tx
+    .select({ propertyId: units.propertyId })
     .from(units)
     .where(eq(units.id, unitId));
-  if (!unit) throw new StayRuleError('not-found');
+  if (!owner) throw new StayRuleError('not-found');
   const [property] = await tx
     .select({
       timezone: properties.timezone,
@@ -66,9 +64,19 @@ async function lockUnitContext(tx: Executor, unitId: string): Promise<UnitContex
       hostId: properties.hostId,
     })
     .from(properties)
-    .where(eq(properties.id, unit.propertyId))
+    .where(eq(properties.id, owner.propertyId))
     .for('update');
   if (!property) throw new StayRuleError('not-found');
+  const [unit] = await tx
+    .select({
+      propertyId: units.propertyId,
+      qrSlug: units.qrSlug,
+      arrivalReleaseDaysBefore: units.arrivalReleaseDaysBefore,
+    })
+    .from(units)
+    .where(eq(units.id, unitId))
+    .for('update');
+  if (!unit) throw new StayRuleError('not-found');
   const [host] = await tx
     .select({ suspendedAt: accounts.suspendedAt })
     .from(accounts)

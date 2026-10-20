@@ -27,7 +27,7 @@ interface Template {
   optional: string;
 }
 
-// hr, de, it, pl, hu, fr are machine-drafted; review with a native speaker before the pilot.
+// hr, de, it, pl, hu, fr are unreviewed; check them with a native speaker before the pilot.
 const TEMPLATES: Record<GuestLanguage, Template> = {
   en: {
     intro: (u, f, t) =>

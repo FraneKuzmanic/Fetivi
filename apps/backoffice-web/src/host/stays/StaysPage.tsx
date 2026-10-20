@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { host, type PropertySummary, type Stay } from '../../api';
 import { useAction } from '../../useAction';
-import { dateRange, guestsLabel, nightsLabel, PHASE_LABELS } from './format';
+import { dateRange, guestsLabel, liveUnits, nightsLabel, PHASE_LABELS } from './format';
 
 export function StayChips({ stay }: { stay: Stay }) {
   return (
@@ -48,9 +48,8 @@ export function StaysPage() {
   };
 
   const several = properties.length > 1;
-  const units = properties.flatMap((p) =>
-    p.units.map((u) => ({ id: u.id, label: several ? `${p.name} · ${u.name}` : u.name })),
-  );
+  // Only live units can have Stays.
+  const units = liveUnits(properties);
   const warned = list?.filter((s) => s.pinWarning).length ?? 0;
 
   return (
@@ -63,7 +62,7 @@ export function StaysPage() {
         </Link>
       </div>
       <div className="filters">
-        <div className="segmented" role="tablist" aria-label="When">
+        <div className="segmented wrap" role="tablist" aria-label="When">
           {[false, true].map((isPast) => (
             <button
               key={String(isPast)}

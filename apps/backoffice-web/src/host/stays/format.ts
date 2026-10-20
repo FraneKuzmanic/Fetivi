@@ -1,4 +1,4 @@
-import type { Stay } from '../../api';
+import type { PropertySummary, Stay } from '../../api';
 
 // Labels for Stays. Dates are civil dates, so they are formatted in UTC and never shift a day.
 // Day first (en-GB): hosts in Croatia read 21 Oct, not Oct 21.
@@ -42,6 +42,18 @@ export const PHASE_LABELS: Record<Stay['phase'], string> = {
 export function releaseText(arrivalReleaseLocal: string): string {
   const [date = '', time = ''] = arrivalReleaseLocal.split('T');
   return `Arrival details from ${dayMonth.format(civil(date))}, ${time}`;
+}
+
+/** Units that accept Stays: approved property, QR issued. */
+export function liveUnits(properties: PropertySummary[]) {
+  const several = properties.length > 1;
+  return properties
+    .filter((p) => p.approved)
+    .flatMap((p) =>
+      p.units
+        .filter((u) => u.hasQr)
+        .map((u) => ({ id: u.id, label: several ? `${p.name} · ${u.name}` : u.name })),
+    );
 }
 
 export function guestsLabel(partySize: number): string {
