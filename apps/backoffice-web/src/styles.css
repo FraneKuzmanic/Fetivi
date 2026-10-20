@@ -1120,6 +1120,11 @@ button svg,
   .table.providers-table .table-head {
     grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.4fr) minmax(0, 1fr) 6rem;
   }
+
+  /* The column header names it; stacked phone rows keep the word. */
+  .providers-table .commission-word {
+    display: none;
+  }
 }
 
 .translation-label {

@@ -15,16 +15,10 @@ import { and, asc, desc, eq, gte, lt, sql } from 'drizzle-orm';
 import { HttpError } from '../http-error';
 
 // Reads and response shapes of the Provider and Offer routes. Slot times go out as wall-clock
-// strings in the Offer's destination zone.
+// strings in the Offer's destination zone. Every Provider Offer has a destination (CHECK), so the
+// reads inner-join it; host Offers (ticket 38) bring the property's zone with them.
 
 const notFound = () => new HttpError(404, 'not-found');
-
-/**
- * The zone an Offer's times are entered in. Host Offers without a destination (ticket 38) will use
- * the property's zone; none exist yet, so this falls back to Zagreb.
- */
-export const zoneOf = (destination: DestinationRow | null) =>
-  destination?.timezone ?? 'Europe/Zagreb';
 
 export function providerOut(row: ProviderRow, offerCount = 0) {
   return {
@@ -70,17 +64,17 @@ export async function findOffer(db: Executor, id: string) {
     .select({ offer: offers, provider: providers, destination: destinations })
     .from(offers)
     .leftJoin(providers, eq(offers.providerId, providers.id))
-    .leftJoin(destinations, eq(offers.destinationId, destinations.id))
+    .innerJoin(destinations, eq(offers.destinationId, destinations.id))
     .where(eq(offers.id, id));
   if (!row) throw notFound();
   return row;
 }
 
-export function offerSummaryOut(offer: OfferRow, destination: DestinationRow | null) {
+export function offerSummaryOut(offer: OfferRow, destination: DestinationRow) {
   return {
     id: offer.id,
     providerId: offer.providerId,
-    destination: destination ? { id: destination.id, name: destination.name } : null,
+    destination: { id: destination.id, name: destination.name },
     title: offer.title,
     category: offer.category,
     orderKind: offer.orderKind,
@@ -103,7 +97,7 @@ export async function offerDetail(
   db: Executor,
   offer: OfferRow,
   provider: ProviderRow | null,
-  destination: DestinationRow | null,
+  destination: DestinationRow,
 ) {
   const [place] = offer.placeId
     ? await db
@@ -114,7 +108,7 @@ export async function offerDetail(
   return {
     ...offerSummaryOut(offer, destination),
     provider: provider ? { id: provider.id, name: provider.name } : null,
-    timezone: zoneOf(destination),
+    timezone: destination.timezone,
     description: offer.description,
     cancellationPolicy: offer.cancellationPolicy,
     placeId: offer.placeId,
@@ -136,7 +130,7 @@ export async function listProviderOffers(db: Executor, providerId: string) {
   const rows = await db
     .select({ offer: offers, destination: destinations })
     .from(offers)
-    .leftJoin(destinations, eq(offers.destinationId, destinations.id))
+    .innerJoin(destinations, eq(offers.destinationId, destinations.id))
     .where(eq(offers.providerId, providerId))
     .orderBy(asc(offers.title));
   return rows.map((r) => offerSummaryOut(r.offer, r.destination));
@@ -176,11 +170,11 @@ export async function listSlots(
 /** A slot with its Offer's zone, for responses. */
 export async function findSlotZone(db: Executor, slotId: string) {
   const [row] = await db
-    .select({ destination: destinations })
+    .select({ timezone: destinations.timezone })
     .from(allotmentSlots)
     .innerJoin(offers, eq(allotmentSlots.offerId, offers.id))
-    .leftJoin(destinations, eq(offers.destinationId, destinations.id))
+    .innerJoin(destinations, eq(offers.destinationId, destinations.id))
     .where(eq(allotmentSlots.id, slotId));
   if (!row) throw notFound();
-  return zoneOf(row.destination);
+  return row.timezone;
 }

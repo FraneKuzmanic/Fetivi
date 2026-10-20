@@ -31,7 +31,6 @@ import {
   offerDetail,
   providerOut,
   slotOut,
-  zoneOf,
 } from './out';
 import {
   OfferCreate,
@@ -181,15 +180,14 @@ export async function providerRoutes(app: FastifyInstance, deps: ProviderDeps): 
   app.get('/api/admin/offers/:id/slots', admin, async (request) => {
     const { offer, destination } = await findOffer(db, idOf(request));
     const { past } = SlotsQuery.parse(request.query);
-    const timezone = zoneOf(destination);
+    const { timezone } = destination;
     return { timezone, slots: await listSlots(db, offer.id, timezone, now(), past === 'true') };
   });
 
   app.post('/api/admin/offers/:id/slots/bulk', admin, async (request) => {
     const { offer, destination } = await findOffer(db, idOf(request));
     const { capacity, ...schedule } = SlotsBulkBody.parse(request.body);
-    // Slot times are entered in the destination's zone; an Offer without one cannot take them.
-    if (!destination) throw new HttpError(400, 'invalid-input');
+    // Slot times are entered in the destination's zone.
     const expanded = expandWeeklySchedule(schedule, destination.timezone);
     const result = await withOfferErrors(() =>
       addAllotmentSlots(db, offer.id, expanded.startsAt, capacity, now()),

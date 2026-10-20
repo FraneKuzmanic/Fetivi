@@ -228,11 +228,20 @@ describe('offers: validation', () => {
     const over = await post(
       t.app,
       offersUrl(),
-      offerBody({ responseWindowMinutes: 5_760 }),
+      offerBody({ responseWindowMinutes: 3_120 }),
       adminCookie,
     );
     expect(over.statusCode).toBe(400);
-    expect((await createOffer({ responseWindowMinutes: 5_759 })).responseWindowMinutes).toBe(5_759);
+    const offer = await createOffer({ responseWindowMinutes: 3_119 });
+    expect(offer.responseWindowMinutes).toBe(3_119);
+    // Narrowing the hours under an existing window is refused too.
+    const narrowed = await patch(
+      t.app,
+      offerUrl(offer.id),
+      { responseHoursFrom: '09:00' },
+      adminCookie,
+    );
+    expect(narrowed.statusCode).toBe(400);
     const hours = await post(
       t.app,
       offersUrl(),

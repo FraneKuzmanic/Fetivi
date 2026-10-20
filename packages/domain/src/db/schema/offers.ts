@@ -142,7 +142,9 @@ export const offers = pgTable(
     ),
     check(
       'offers_response_window_check',
-      sql`${t.responseWindowMinutes} between 1 and 5759 and ${t.responseHoursFrom} < ${t.responseHoursTo}`,
+      // Under 4 × the daily span: even a request just after closing is answered within 4 days
+      // (maxResponseWindowMinutes in vocabulary.ts).
+      sql`${t.responseWindowMinutes} >= 1 and ${t.responseHoursFrom} < ${t.responseHoursTo} and ${t.responseWindowMinutes} < 4 * extract(epoch from ${t.responseHoursTo} - ${t.responseHoursFrom}) / 60`,
     ),
     check(
       'offers_published_revision_check',

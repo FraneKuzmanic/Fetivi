@@ -149,11 +149,19 @@ describe('row checks', () => {
   });
 
   it('keeps the response window under four days with from before to', async () => {
-    await expect(create(offer({ responseWindowMinutes: 5_760 }))).rejects.toEqual(invalid);
+    // 08:00–21:00 is 780 counted minutes a day: 4 × 780 would reach 4 days after a late request.
+    await expect(create(offer({ responseWindowMinutes: 3_120 }))).rejects.toEqual(invalid);
     await expect(create(offer({ responseWindowMinutes: 0 }))).rejects.toEqual(invalid);
-    expect((await create(offer({ responseWindowMinutes: 5_759 }))).responseWindowMinutes).toBe(
-      5_759,
+    expect((await create(offer({ responseWindowMinutes: 3_119 }))).responseWindowMinutes).toBe(
+      3_119,
     );
+    const allDay = { responseHoursFrom: '00:00', responseHoursTo: '23:59' };
+    await expect(create(offer({ ...allDay, responseWindowMinutes: 5_756 }))).rejects.toEqual(
+      invalid,
+    );
+    expect(
+      (await create(offer({ ...allDay, responseWindowMinutes: 5_755 }))).responseWindowMinutes,
+    ).toBe(5_755);
     await expect(
       create(offer({ responseHoursFrom: '21:00', responseHoursTo: '08:00' })),
     ).rejects.toEqual(invalid);

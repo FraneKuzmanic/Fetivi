@@ -170,6 +170,7 @@ export function SelectField<T extends string>({
   options,
   labels,
   emptyLabel,
+  required,
 }: FieldProps & {
   value: T | null;
   onChange: (value: T | null) => void;
@@ -177,6 +178,8 @@ export function SelectField<T extends string>({
   labels: Record<T, string>;
   /** The label of the null choice; leave out when a value is required. */
   emptyLabel?: string;
+  /** With an `emptyLabel`: the browser refuses to submit the null choice. */
+  required?: boolean;
 }) {
   return (
     <Field label={label} hint={hint}>
@@ -185,6 +188,7 @@ export function SelectField<T extends string>({
           id={ids.id}
           aria-describedby={ids.describedBy}
           value={value ?? ''}
+          required={required}
           onChange={(e) => onChange(e.target.value === '' ? null : (e.target.value as T))}
         >
           {emptyLabel !== undefined ? <option value="">{emptyLabel}</option> : null}

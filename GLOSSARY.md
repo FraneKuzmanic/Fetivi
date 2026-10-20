@@ -76,6 +76,14 @@ _Avoid_: Partner, supplier, vendor
 **Category**:
 The catalog classification of an Offer, such as tour, dining experience or transfer. Independent of Order kind.
 
+**Allotment slot**:
+One start time of an allotment Offer with its seat capacity and the seats remaining, from the Provider's deal.
+_Avoid_: Departure, session, timeslot
+
+**Response window**:
+How long a Provider has to answer an on-request Order, counted only within the Offer's daily response hours and always ending under 4 days after the request.
+_Avoid_: SLA
+
 **Stay**:
 One guest party's registered visit to a unit, from check-in to checkout, identified by its PIN.
 _Avoid_: Reservation, booking

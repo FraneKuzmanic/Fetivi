@@ -5,7 +5,6 @@ import { type Provider, providers } from '../../api';
 import { useAction } from '../../useAction';
 import { percentFromBp } from './money';
 
-export const commissionLine = (bp: number) => `${percentFromBp(bp).toFixed(2)} % commission`;
 const offerCountLine = (n: number) => (n === 1 ? '1 Offer' : `${n} Offers`);
 
 /** /admin/providers: every Provider with its deal and the number of its Offers. */
@@ -48,7 +47,10 @@ export function ProvidersPage() {
                   {p.active ? null : <span className="chip neutral">Paused</span>}
                 </span>
                 <span className="muted">{p.email}</span>
-                <span className="muted">{commissionLine(p.commissionBp)}</span>
+                <span className="muted">
+                  {percentFromBp(p.commissionBp).toFixed(2)} %
+                  <span className="commission-word"> commission</span>
+                </span>
                 <span className="muted">{offerCountLine(p.offerCount)}</span>
               </Link>
             </li>

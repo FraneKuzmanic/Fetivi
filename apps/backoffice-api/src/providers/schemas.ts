@@ -3,6 +3,7 @@ import {
   AVAILABILITY_MODES,
   CONTACT_FIELDS,
   LIMITS,
+  maxResponseWindowMinutes,
   OFFER_CATEGORIES,
   OFFER_DEFAULTS,
   OFFER_LIMITS,
@@ -58,7 +59,8 @@ const offerFields = {
   priceUnit: z.enum(PRICE_UNITS),
   freeCancelHoursBefore: z.number().int().min(0).max(OFFER_LIMITS.freeCancelHoursMax),
   refundPercentAfter: z.number().int().min(0).max(100),
-  responseWindowMinutes: z.number().int().min(1).max(OFFER_LIMITS.responseWindowMinutesMax),
+  /** Capped by the hours below (maxResponseWindowMinutes); a PATCH meets the DB CHECK. */
+  responseWindowMinutes: z.number().int().min(1),
   responseHoursFrom: hhmm,
   responseHoursTo: hhmm,
   contactFields: z.enum(CONTACT_FIELDS),
@@ -97,6 +99,11 @@ export const OfferCreate = z
     if ((o.availabilityMode === 'live') !== (o.adapterKind !== null)) fail('live needs an adapter');
     if (o.availabilityMode === 'live' && o.externalProductRef === null) fail('live needs a ref');
     if (o.responseHoursFrom >= o.responseHoursTo) fail('hours from must be before to');
+    if (
+      o.responseWindowMinutes > maxResponseWindowMinutes(o.responseHoursFrom, o.responseHoursTo)
+    ) {
+      fail('response window must end under 4 days');
+    }
   });
 
 export const OfferPatch = z.strictObject(offerFields).partial();

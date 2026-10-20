@@ -61,8 +61,6 @@ export const OFFER_LIMITS = {
   commissionBpMax: 10_000,
   /** In cents. */
   priceMinorMax: 10_000_000,
-  /** Always under 4 days. */
-  responseWindowMinutesMax: 5_759,
   freeCancelHoursMax: 720,
   capacityMax: 999,
   slotTimesPerDay: 12,
@@ -72,3 +70,13 @@ export const OFFER_LIMITS = {
   taxNumber: 32,
   dealNotes: 2000,
 } as const;
+
+/**
+ * The longest response window that always ends under 4 days (96 h) after the request. The window
+ * counts only minutes between `from` and `to` ('HH:mm'), so a request just after `to` waits
+ * overnight first; staying under 4 × the daily span keeps that worst case under 96 h.
+ */
+export function maxResponseWindowMinutes(from: string, to: string): number {
+  const minutes = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+  return Math.max(0, 4 * (minutes(to) - minutes(from)) - 1);
+}

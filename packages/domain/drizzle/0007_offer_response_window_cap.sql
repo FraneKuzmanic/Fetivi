@@ -1,0 +1,2 @@
+ALTER TABLE "offers" DROP CONSTRAINT "offers_response_window_check";--> statement-breakpoint
+ALTER TABLE "offers" ADD CONSTRAINT "offers_response_window_check" CHECK ("offers"."response_window_minutes" >= 1 and "offers"."response_hours_from" < "offers"."response_hours_to" and "offers"."response_window_minutes" < 4 * extract(epoch from "offers"."response_hours_to" - "offers"."response_hours_from") / 60);

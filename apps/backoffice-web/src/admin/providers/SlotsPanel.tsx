@@ -61,7 +61,7 @@ export function SlotsPanel({ offerId, timezone }: { offerId: string; timezone: s
       });
       setResult(
         skipped > 0
-          ? `Created ${created}, skipped ${skipped} (already there, in the past, or not on the clock that day).`
+          ? `Created ${created}, skipped ${skipped} (already there, in the past, or skipped by a clock change).`
           : `Created ${created}.`,
       );
       await reload();
@@ -234,12 +234,13 @@ function SlotRow({ slot, onChanged }: { slot: AllotmentSlot; onChanged: () => Pr
         className="icon-button"
         aria-label={`Delete slot ${start}`}
         disabled={busy}
-        onClick={() =>
+        onClick={() => {
+          if (!window.confirm(`Delete the slot on ${start}?`)) return;
           void run(async () => {
             await providers.deleteSlot(slot.id);
             await onChanged();
-          })
-        }
+          });
+        }}
       >
         <Trash aria-hidden="true" />
       </button>

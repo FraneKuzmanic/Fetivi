@@ -3,6 +3,7 @@ import {
   AVAILABILITY_MODES,
   type AvailabilityMode,
   CONTACT_FIELDS,
+  maxResponseWindowMinutes,
   OFFER_CATEGORIES,
   OFFER_DEFAULTS,
   OFFER_LIMITS,
@@ -80,6 +81,7 @@ function LiveFields({
         options={ADAPTER_KINDS}
         labels={ADAPTER_KIND_LABELS}
         emptyLabel="Choose…"
+        required
         onChange={onAdapter}
       />
       <TextField
@@ -87,6 +89,7 @@ function LiveFields({
         hint="The Offer's id in that system."
         value={externalProductRef}
         maxLength={OFFER_LIMITS.externalRef}
+        required
         onChange={onRef}
       />
     </div>
@@ -384,6 +387,10 @@ export function OfferPage() {
 
   const isRequest = draft.orderKind === 'request';
   const live = draft.availabilityMode === 'live';
+  const windowMax = maxResponseWindowMinutes(
+    draft.responseHoursFrom ?? '00:00',
+    draft.responseHoursTo ?? '23:59',
+  );
   const placeIds = places.map((p) => p.id);
   const placeLabels = Object.fromEntries(places.map((p) => [p.id, p.title]));
   // A linked place missing from the list (deleted meanwhile) still shows by name.
@@ -581,7 +588,7 @@ export function OfferPage() {
                 label="Response window (minutes)"
                 value={draft.responseWindowMinutes}
                 min={1}
-                max={OFFER_LIMITS.responseWindowMinutesMax}
+                max={windowMax}
                 onChange={set('responseWindowMinutes')}
               />
               <div className="field-row">
@@ -596,7 +603,10 @@ export function OfferPage() {
                   onChange={set('responseHoursTo')}
                 />
               </div>
-              <small>In {offer.timezone}. Always under 4 days.</small>
+              <small>
+                In {offer.timezone}. Always under 4 days: with these hours, at most {windowMax}{' '}
+                minutes.
+              </small>
             </>
           ) : null}
         </Section>
