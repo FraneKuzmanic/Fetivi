@@ -130,6 +130,10 @@ export const LIMITS = {
 export const GUEST_LANGUAGES = ['en', 'hr', 'de', 'it', 'pl', 'hu', 'fr'] as const;
 export type GuestLanguage = (typeof GUEST_LANGUAGES)[number];
 
+/** The language a block is written in: a guest language, or 'other'. */
+export const SOURCE_LANGUAGES = [...GUEST_LANGUAGES, 'other'] as const;
+export type SourceLanguage = (typeof SOURCE_LANGUAGES)[number];
+
 /** 'source' is the host's own text; 'machine' the job's; 'host' a host correction. */
 export const TRANSLATION_ORIGINS = ['source', 'machine', 'host'] as const;
 export type TranslationOrigin = (typeof TRANSLATION_ORIGINS)[number];

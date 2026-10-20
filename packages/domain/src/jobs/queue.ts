@@ -1,10 +1,7 @@
 import { createHash } from 'node:crypto';
 import { type SQLChunk, sql } from 'drizzle-orm';
 import type { Db as BossDb, PgBoss, Queue } from 'pg-boss';
-import type { Db } from '../db/client';
-
-/** A database handle or an open transaction. */
-export type Executor = Db | Parameters<Parameters<Db['transaction']>[0]>[0];
+import type { Executor } from '../db/client';
 
 export const QUEUES = { translateBlock: 'translate-block' } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];

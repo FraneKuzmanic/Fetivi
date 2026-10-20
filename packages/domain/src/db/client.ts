@@ -9,3 +9,6 @@ export function createDb(connectionString: string) {
 }
 
 export type Db = ReturnType<typeof createDb>['db'];
+
+/** A database handle or an open transaction. */
+export type Executor = Db | Parameters<Parameters<Db['transaction']>[0]>[0];

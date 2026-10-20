@@ -72,13 +72,20 @@ function propertyValues(input: PropertyInput) {
   return { ...rest, location: location ? { x: location.lng, y: location.lat } : null };
 }
 
+const TRANSLATION_ERROR_STATUS: Record<TranslationRuleError['code'], number> = {
+  'invalid-input': 400,
+  'not-found': 404,
+  'stale-revision': 409,
+  'translation-not-failed': 409,
+};
+
 /** Runs a translation operation, turning its rule errors into HTTP errors. */
-async function translationRule<T>(run: () => Promise<T>): Promise<T> {
+async function withTranslationErrors<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
   } catch (error) {
     if (error instanceof TranslationRuleError) {
-      throw new HttpError(error.code === 'invalid-input' ? 400 : 409, error.code);
+      throw new HttpError(TRANSLATION_ERROR_STATUS[error.code], error.code);
     }
     throw error;
   }
@@ -296,7 +303,7 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     const hostId = hostIdOf(request);
     await findOwnedBlock(db, hostId, id);
     const body = TranslationCorrection.parse(request.body);
-    const { structureWarnings } = await translationRule(() =>
+    const { structureWarnings } = await withTranslationErrors(() =>
       correctTranslation(translationDeps, id, { language, ...body }),
     );
     return {
@@ -309,7 +316,7 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     const hostId = hostIdOf(request);
     const id = idOf(request);
     await findOwnedBlock(db, hostId, id);
-    await translationRule(() => retryTranslation(translationDeps, id));
+    await withTranslationErrors(() => retryTranslation(translationDeps, id));
     return { view: await listTranslations(db, await findOwnedBlock(db, hostId, id)) };
   });
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { GUEST_LANGUAGES } from '../property/vocabulary';
+import { GUEST_LANGUAGES, type GuestLanguage, SOURCE_LANGUAGES } from '../property/vocabulary';
 import type { BlockText } from './structure';
 
 export const TRANSLATION_MODEL_ID = 'claude-sonnet-5-5';
@@ -32,16 +32,10 @@ Tone: warm, clear and short, like a friendly local host. Do not add Dalmatian ex
 const Slot = z.strictObject({ title: z.string(), body: z.string() });
 
 export const TranslationOutput = z.strictObject({
-  source_language: z.enum([...GUEST_LANGUAGES, 'other']),
-  translations: z.strictObject({
-    en: Slot,
-    hr: Slot,
-    de: Slot,
-    it: Slot,
-    pl: Slot,
-    hu: Slot,
-    fr: Slot,
-  }),
+  source_language: z.enum(SOURCE_LANGUAGES),
+  translations: z.strictObject(
+    Object.fromEntries(GUEST_LANGUAGES.map((l) => [l, Slot])) as Record<GuestLanguage, typeof Slot>,
+  ),
 });
 export type TranslationOutputData = z.infer<typeof TranslationOutput>;
 

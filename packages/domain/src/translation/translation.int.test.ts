@@ -211,6 +211,17 @@ describe('runTranslation', () => {
     expect(fr).toMatchObject({ title: 'Mon titre', origin: 'host' });
   });
 
+  it('replaces a correction of the source language made before it was detected', async () => {
+    const { block } = await fixture();
+    await correctTranslation(deps(), block.id, { language: 'hr', revision: 1, ...good('hr') });
+    const model = scripted(output());
+    expect(await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 })).toBe(
+      'published',
+    );
+    const hr = (await rowsOf(block.id, 1)).find((r) => r.language === 'hr');
+    expect(hr).toMatchObject({ ...SOURCE, origin: 'source' });
+  });
+
   it('marks a model error and a missing key as failed', async () => {
     const a = await fixture();
     const errored = scripted({ ok: false, error: 'model-error', detail: '529' });
@@ -302,6 +313,16 @@ describe('correctTranslation', () => {
     await expect(
       correctTranslation(deps(), block.id, { language: 'hr', revision: 1, ...good('hr') }),
     ).rejects.toBeInstanceOf(TranslationRuleError);
+  });
+
+  it('reports a missing block as not found', async () => {
+    await expect(
+      correctTranslation(deps(), crypto.randomUUID(), {
+        language: 'de',
+        revision: 1,
+        ...good('de'),
+      }),
+    ).rejects.toMatchObject({ code: 'not-found' });
   });
 
   it('saves a correction that breaks the structure, with warnings', async () => {

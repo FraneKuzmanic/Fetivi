@@ -1,5 +1,5 @@
 import type { CookieSerializeOptions } from '@fastify/cookie';
-import { accounts, type Db, sessions } from '@fetivi/domain';
+import { accounts, type Db, type Executor, sessions } from '@fetivi/domain';
 import { eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { Principal } from './access';
@@ -11,9 +11,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const IDLE_MS = 30 * DAY_MS;
 export const ABSOLUTE_MS = 90 * DAY_MS;
 export const SLIDE_AFTER_MS = 60 * 60 * 1000;
-
-/** A database handle or an open transaction. */
-export type Executor = Db | Parameters<Parameters<Db['transaction']>[0]>[0];
 
 /** Browsers drop a `__Host-` cookie, even a clearing one, without Secure and Path=/. */
 export const clearCookieOptions: CookieSerializeOptions = {

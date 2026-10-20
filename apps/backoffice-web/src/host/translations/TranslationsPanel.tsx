@@ -19,7 +19,7 @@ function sourceLine(view: TranslationsView): string {
 function guestsLine(view: TranslationsView): string | null {
   if (view.publishedRevision === view.revision) return null;
   if (view.publishedRevision === null) return "Guests don't see this block until it is translated.";
-  return `Guests see revision ${view.publishedRevision} until this one is published.`;
+  return 'Guests see the previously published version until this one is published.';
 }
 
 /** Every guest language of one block: read, correct, and retry a failed translation. */
@@ -66,17 +66,15 @@ export function TranslationsPanel({
         {guests ? ` ${guests}` : null}
       </p>
       {view.status === 'failed' && view.error ? (
-        <div className="warning" role="status">
-          <p>{TRANSLATION_ERROR_LABELS[view.error]}</p>
-          <div className="actions">
-            <button type="button" disabled={busy} onClick={retry}>
-              Retry translation
-            </button>
-          </div>
+        <div className="translation-failed">
+          <p className="translation-error">{TRANSLATION_ERROR_LABELS[view.error]}</p>
+          <button type="button" disabled={busy} onClick={retry}>
+            Retry translation
+          </button>
         </div>
       ) : null}
       {warnings.length > 0 ? (
-        <div className="warning" role="status">
+        <div className="translation-warnings" role="status">
           <p>
             <strong>Saved. Check these:</strong>
           </p>
@@ -88,7 +86,7 @@ export function TranslationsPanel({
         </div>
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
-      <ul className="rows">
+      <ul className="translation-list">
         {view.languages.map(({ language, current }) => {
           const isSource = language === view.sourceLanguage;
           return (

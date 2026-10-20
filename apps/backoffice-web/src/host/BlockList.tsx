@@ -1,7 +1,7 @@
 import type { HostBlockCategory } from '@fetivi/domain/vocabulary';
 import { useState } from 'react';
 import { type Block, type BlockInput, type BlockResult, host, type SecretWarning } from '../api';
-import { CATEGORY_LABELS, VISIBILITY_LABELS } from '../forms/labels';
+import { CATEGORY_LABELS, TRANSLATION_ERROR_LABELS, VISIBILITY_LABELS } from '../forms/labels';
 import { useAction } from '../useAction';
 import { BlockEditor, SecretWarnings } from './BlockEditor';
 import { TranslationChip } from './translations/TranslationChip';
@@ -69,6 +69,14 @@ export function BlockList({
                   <TranslationChip status={block.translation.status} />
                 </span>
                 <span className="muted">{preview(block.body)}</span>
+                {/* The open panel shows the error next to its Retry button. */}
+                {block.translation.status === 'failed' &&
+                block.translation.error &&
+                translating !== block.id ? (
+                  <span className="translation-error">
+                    {TRANSLATION_ERROR_LABELS[block.translation.error]}
+                  </span>
+                ) : null}
               </div>
               <div className="actions">
                 <button

@@ -1,10 +1,10 @@
-import { accounts, accountTokens, type Db, type Mailer } from '@fetivi/domain';
+import { accounts, accountTokens, type Db, type Executor, type Mailer } from '@fetivi/domain';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { HttpError } from '../http-error';
 import type { Principal } from './access';
 import { hashPassword, verifyAgainstDummy, verifyPassword } from './passwords';
-import { createSession, deleteSessionsOf, type Executor } from './sessions';
+import { createSession, deleteSessionsOf } from './sessions';
 import { clearFailures, isThrottled, recordFailure } from './throttle';
 import { hashToken, newToken } from './tokens';
 

@@ -7,6 +7,7 @@ import type {
   GuestLanguage,
   HostBlockCategory,
   ParkingType,
+  SourceLanguage,
   TranslationError,
   TranslationOrigin,
   TranslationStatus,
@@ -101,8 +102,6 @@ export interface Block {
   createdAt: string;
   updatedAt: string;
 }
-
-export type SourceLanguage = GuestLanguage | 'other';
 
 export interface BlockTranslation {
   status: TranslationStatus;

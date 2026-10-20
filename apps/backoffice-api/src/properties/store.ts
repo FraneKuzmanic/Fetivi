@@ -3,6 +3,7 @@ import {
   type BlockRow,
   type Db,
   type EffectiveUnit,
+  type Executor,
   enqueueTranslation,
   infoBlocks,
   type JobQueue,
@@ -13,14 +14,12 @@ import {
   propertyAmenities,
   SHARED_CORE_FIELDS,
   type SharedCore,
-  type SourceLanguage,
   type UnitRow,
   unitAmenities,
   unitHiddenBlocks,
   units,
 } from '@fetivi/domain';
 import { and, asc, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
-import type { Executor } from '../auth/sessions';
 import { HttpError } from '../http-error';
 import { unitLink } from './qr';
 
@@ -247,7 +246,7 @@ export function blockOut(b: BlockRow) {
       status: b.translationStatus,
       error: b.translationError,
       publishedRevision: b.publishedRevision,
-      sourceLanguage: b.sourceLanguage as SourceLanguage | null,
+      sourceLanguage: b.sourceLanguage,
     },
     replacesBlockId: b.replacesBlockId,
     position: b.position,

@@ -1,0 +1,2 @@
+CREATE TYPE "public"."source_language" AS ENUM('en', 'hr', 'de', 'it', 'pl', 'hu', 'fr', 'other');--> statement-breakpoint
+ALTER TABLE "info_blocks" ALTER COLUMN "source_language" SET DATA TYPE "public"."source_language" USING "source_language"::"public"."source_language";

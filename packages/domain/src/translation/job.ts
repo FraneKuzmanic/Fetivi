@@ -1,13 +1,14 @@
 import { and, eq, inArray, lt, sql } from 'drizzle-orm';
-import type { Db } from '../db/client';
+import type { Db, Executor } from '../db/client';
 import { infoBlocks } from '../db/schema/info-blocks';
 import { blockTranslations } from '../db/schema/translations';
-import { EVENTS, type Executor, type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
+import { EVENTS, type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
 import type { BlockRow } from '../property/effective';
 import { loadEffectiveUnit } from '../property/load';
 import {
   GUEST_LANGUAGES,
   type GuestLanguage,
+  type SourceLanguage,
   type TranslationError,
   type TranslationOrigin,
   type TranslationStatus,
@@ -26,11 +27,14 @@ export interface TranslationDeps {
   now: () => Date;
 }
 
-export type SourceLanguage = GuestLanguage | 'other';
+/** What the translate-block job needs: the shared deps plus the model. */
+export type TranslationJobDeps = TranslationDeps & { model: TranslationModel };
 
 export class TranslationRuleError extends Error {
   override name = 'TranslationRuleError';
-  constructor(readonly code: 'invalid-input' | 'stale-revision' | 'translation-not-failed') {
+  constructor(
+    readonly code: 'invalid-input' | 'not-found' | 'stale-revision' | 'translation-not-failed',
+  ) {
     super(code);
   }
 }
@@ -120,7 +124,7 @@ export type TranslationRunResult = 'published' | 'failed' | 'discarded';
 
 /** The translate-block job. Never throws for model failures: they end as a visible status. */
 export async function runTranslation(
-  deps: TranslationDeps & { model: TranslationModel },
+  deps: TranslationJobDeps,
   { blockId, revision }: TranslationJobData,
 ): Promise<TranslationRunResult> {
   const { db, model } = deps;
@@ -138,15 +142,12 @@ export async function runTranslation(
   // The model calls run outside any transaction: one takes up to 86 s.
   const source: BlockText = { title: block.title, body: block.body };
   const collected = new Map<GuestLanguage, Collected>();
-  let sourceLanguage = block.sourceLanguage as SourceLanguage | null;
+  let sourceLanguage = block.sourceLanguage;
   if (need.length > 0) {
     const first = await model.translate(source);
     if (!first.ok) return markFailed(deps, block, first.error);
     sourceLanguage = first.output.source_language;
-    if (sourceLanguage !== 'other' && need.includes(sourceLanguage)) {
-      collected.set(sourceLanguage, { ...source, origin: 'source' });
-    }
-    const missing = () => need.filter((l) => !collected.has(l));
+    const missing = () => need.filter((l) => l !== sourceLanguage && !collected.has(l));
     for (const [l, t] of passing(source, first.output, missing())) collected.set(l, t);
     if (missing().length > 0) {
       // One retry; only the languages still missing are taken from it.
@@ -161,6 +162,22 @@ export async function runTranslation(
     const current = await lockBlock(tx, blockId);
     if (!current || current.revision !== revision) return 'discarded';
     const now = deps.now();
+    if (sourceLanguage !== null && sourceLanguage !== 'other') {
+      // The source slot is always the host's own text, even over a correction made before the
+      // source language was known.
+      const row = { ...source, origin: 'source' as const, updatedAt: now };
+      await tx
+        .insert(blockTranslations)
+        .values({ blockId, revision, language: sourceLanguage, ...row, createdAt: now })
+        .onConflictDoUpdate({
+          target: [
+            blockTranslations.blockId,
+            blockTranslations.revision,
+            blockTranslations.language,
+          ],
+          set: row,
+        });
+    }
     if (collected.size > 0) {
       await tx
         .insert(blockTranslations)
@@ -220,7 +237,7 @@ export async function correctTranslation(
   const { language, revision, title, body } = input;
   return deps.db.transaction(async (tx) => {
     const block = await lockBlock(tx, blockId);
-    if (!block) throw new TranslationRuleError('stale-revision');
+    if (!block) throw new TranslationRuleError('not-found');
     if (revision !== block.revision && revision !== block.publishedRevision) {
       throw new TranslationRuleError('stale-revision');
     }
@@ -318,7 +335,7 @@ export async function listTranslations(db: Executor, block: BlockRow): Promise<T
     publishedRevision: block.publishedRevision,
     status: block.translationStatus,
     error: block.translationError,
-    sourceLanguage: block.sourceLanguage as SourceLanguage | null,
+    sourceLanguage: block.sourceLanguage,
     languages: GUEST_LANGUAGES.map((language) => {
       const current = at(block.revision, language);
       const published = older === null ? undefined : at(older, language);

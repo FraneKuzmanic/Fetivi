@@ -14,6 +14,7 @@ import {
 import {
   BLOCK_CATEGORIES,
   BLOCK_VISIBILITY,
+  SOURCE_LANGUAGES,
   TRANSLATION_ERRORS,
   TRANSLATION_STATUSES,
 } from '../../property/vocabulary';
@@ -23,6 +24,7 @@ export const blockCategory = pgEnum('block_category', BLOCK_CATEGORIES);
 export const blockVisibility = pgEnum('block_visibility', BLOCK_VISIBILITY);
 export const translationStatus = pgEnum('translation_status', TRANSLATION_STATUSES);
 export const translationError = pgEnum('translation_error', TRANSLATION_ERRORS);
+export const sourceLanguage = pgEnum('source_language', SOURCE_LANGUAGES);
 
 /** Host-written guest information, owned by exactly one property or one unit. */
 export const infoBlocks = pgTable(
@@ -44,8 +46,8 @@ export const infoBlocks = pgTable(
     translationStatus: translationStatus('translation_status').notNull().default('pending'),
     /** Set only when the status is failed. */
     translationError: translationError('translation_error'),
-    /** A guest language or 'other', detected by the translation job for `revision`. */
-    sourceLanguage: text('source_language'),
+    /** Detected by the translation job for `revision`. */
+    sourceLanguage: sourceLanguage('source_language'),
     /** On a unit block: the property block it stands in for on this unit. */
     replacesBlockId: uuid('replaces_block_id').references((): AnyPgColumn => infoBlocks.id, {
       onDelete: 'set null',
