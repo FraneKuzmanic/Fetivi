@@ -16,22 +16,22 @@ const isChips = (segment: Segment) =>
   'data' in segment && (segment.data as { name?: unknown } | null)?.name === 'follow-up-chips';
 
 /**
- * An answer in part order: consecutive text joins into one bubble, each component stands alone.
- * Follow-up chips always come last, even when the model wrote more after showing them.
+ * An answer reads as its words first, in one bubble, then its components in part order, with
+ * follow-up chips last: the model often searches before it writes, and the words introduce the
+ * cards.
  */
 function segmentsOf(message: UIMessage): Segment[] {
-  const out: Segment[] = [];
+  const text = message.parts.flatMap((p) => (p.type === 'text' && p.text ? [p.text] : []));
+  const components: Segment[] = [];
   message.parts.forEach((part, index) => {
-    if (part.type === 'text') {
-      if (!part.text) return;
-      const last = out.at(-1);
-      if (last && 'text' in last) last.text = `${last.text}\n${part.text}`;
-      else out.push({ key: `text-${index}`, text: part.text });
-    } else if (isComponentPart(part)) {
-      out.push({ key: part.id ?? `part-${index}`, data: part.data });
-    }
+    if (isComponentPart(part))
+      components.push({ key: part.id ?? `part-${index}`, data: part.data });
   });
-  return [...out.filter((s) => !isChips(s)), ...out.filter(isChips)];
+  return [
+    ...(text.length > 0 ? [{ key: 'text', text: text.join('\n') }] : []),
+    ...components.filter((s) => !isChips(s)),
+    ...components.filter(isChips),
+  ];
 }
 
 /** How many place cards an answer shows, for the spoken announcement. */

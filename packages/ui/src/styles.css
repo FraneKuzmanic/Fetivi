@@ -133,8 +133,8 @@
 
 .fv-choice-past {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
+  flex-direction: column;
+  gap: 0.25rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -264,12 +264,15 @@
 
 .fv-credit {
   margin: 0;
-  padding: 0.25rem 0.875rem 0;
+  padding: 0 0.875rem;
   color: var(--gray-500);
   font-size: 0.75rem;
 }
 
 .fv-credit a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
   color: inherit;
 }
 

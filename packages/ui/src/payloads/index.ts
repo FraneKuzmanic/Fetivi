@@ -3,9 +3,8 @@
 import { PLACE_CATEGORIES, STALENESS_STATUSES } from '@fetivi/domain/catalog-vocabulary';
 import { z } from 'zod';
 
-/** The UI message part type is `data-${COMPONENT_DATA_TYPE}`. */
-export const COMPONENT_DATA_TYPE = 'component';
-export const COMPONENT_PART_TYPE = `data-${COMPONENT_DATA_TYPE}` as const;
+/** The UI message part type of a streamed component. */
+export const COMPONENT_PART_TYPE = 'data-component';
 
 const short = z.string().trim().min(1).max(60);
 
@@ -61,18 +60,5 @@ export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('place-carousel'), payload: placeCarousel }),
 ]);
 
-export type FollowUpChipsPayload = z.infer<typeof followUpChips>;
-export type ChoiceCardPayload = z.infer<typeof choiceCard>;
 export type PlaceCardPayload = z.infer<typeof placeCard>;
-export type PlaceCarouselPayload = z.infer<typeof placeCarousel>;
 export type ComponentPart = z.infer<typeof componentPart>;
-export type ComponentName = ComponentPart['name'];
-/** What the model sends to the presentation tools (before defaults apply). */
-export type SuggestRepliesInput = z.input<typeof followUpChips>;
-export type AskChoiceInput = z.input<typeof choiceCard>;
-
-export const COMPONENT_NAMES = [
-  'follow-up-chips',
-  'choice-card',
-  'place-carousel',
-] as const satisfies readonly ComponentName[];

@@ -121,3 +121,7 @@ _Avoid_: profile, preferences, persona
 **Need**:
 A special-category About me item (diet for health or religious reasons, accessibility). Stored only when the guest taps it in themselves; a Need Fetivi only heard about is used in that Conversation and never saved.
 _Avoid_: restriction, requirement
+
+**Saved place**:
+A Catalog record (a place or a day trip) a Space's guests saved from a place card, kept per Space for the Guide and My trip. It is stored by the record's id, so the API's `placeId` and the table's `record_id` name the same thing.
+_Avoid_: favourite, bookmark

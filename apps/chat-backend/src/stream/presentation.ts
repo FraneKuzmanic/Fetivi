@@ -1,5 +1,11 @@
 import { choiceCard, followUpChips } from '@fetivi/ui/payloads';
-import { type StopCondition, type ToolSet, tool } from 'ai';
+import {
+  type PrepareStepFunction,
+  type StepResult,
+  type StopCondition,
+  type ToolSet,
+  tool,
+} from 'ai';
 
 /** Host-side tools that only show a component; they are not MCP tools and touch no data. */
 export const PRESENTATION_TOOLS = ['suggest_replies', 'ask_choice'] as const;
@@ -26,6 +32,9 @@ export function presentationTools(): ToolSet {
   };
 }
 
+const answered = (steps: readonly StepResult<ToolSet>[]) =>
+  steps.some((s) => s.text.trim().length > 0);
+
 /**
  * Stops the loop after a step whose calls are all presentation calls: the guest answers next, so
  * another model round trip would only cost. A step that also searched continues, so the model sees
@@ -37,6 +46,19 @@ export const endsWithPresentation: StopCondition<ToolSet> = ({ steps }) => {
   const calls = steps.at(-1)?.toolCalls ?? [];
   if (calls.length === 0) return false;
   if (!calls.every((c) => !c.invalid && isPresentationTool(c.toolName))) return false;
-  const answered = steps.some((s) => s.text.trim().length > 0);
-  return answered || calls.some((c) => c.toolName === 'ask_choice');
+  return answered(steps) || calls.some((c) => c.toolName === 'ask_choice');
+};
+
+/**
+ * The step after chips shown without text writes the answer. It is sent without that chips call
+ * and may not call tools: after seeing its own chips acknowledged, Sonnet often ends the turn
+ * empty, while from the search results it answers. The chips are already shown and stored.
+ */
+export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, messages }) => {
+  const calls = steps.at(-1)?.toolCalls ?? [];
+  const chips = calls.some((c) => !c.invalid && c.toolName === 'suggest_replies');
+  if (!chips || answered(steps)) return undefined;
+  const [call, result] = messages.slice(-2);
+  const dropChips = call?.role === 'assistant' && result?.role === 'tool';
+  return { toolChoice: 'none', ...(dropChips ? { messages: messages.slice(0, -2) } : {}) };
 };

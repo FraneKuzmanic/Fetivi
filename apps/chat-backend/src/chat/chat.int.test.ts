@@ -600,6 +600,13 @@ describe('Recommendation components', () => {
 
     const chunks = readStream(await send(t, cookie, 'Any tips?'));
     expect(model.doStreamCalls).toHaveLength(2);
+    // The second call may only write text, and is sent without the chips call.
+    expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: 'auto' });
+    expect(model.doStreamCalls[1]?.toolChoice).toEqual({ type: 'none' });
+    expect(JSON.stringify(model.doStreamCalls[1]?.prompt)).not.toContain(
+      '"toolName":"suggest_replies"',
+    );
+    expect(JSON.stringify(model.doStreamCalls[0]?.prompt)).not.toContain('"toolName"');
     expect(chunks).toContainEqual(
       expect.objectContaining({ data: expect.objectContaining({ name: 'follow-up-chips' }) }),
     );

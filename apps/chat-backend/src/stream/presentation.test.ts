@@ -1,6 +1,6 @@
 import type { StepResult, ToolSet } from 'ai';
 import { describe, expect, it } from 'vitest';
-import { endsWithPresentation, presentationTools } from './presentation';
+import { endsWithPresentation, presentationTools, textAfterSilentChips } from './presentation';
 
 /** A step with these calls ('!' marks an invalid one); it has text unless `silent`. */
 const step = (...names: string[]) => stepWith('Some text.', names);
@@ -38,12 +38,53 @@ describe('endsWithPresentation', () => {
   });
 });
 
+describe('textAfterSilentChips', () => {
+  const question = { role: 'user', content: 'Where should we eat?' };
+  const search = [
+    { role: 'assistant', content: [{ type: 'tool-call', toolName: 'search_places' }] },
+    { role: 'tool', content: [{ type: 'tool-result', toolName: 'search_places' }] },
+  ];
+  const chipsCall = [
+    { role: 'assistant', content: [{ type: 'tool-call', toolName: 'suggest_replies' }] },
+    { role: 'tool', content: [{ type: 'tool-result', toolName: 'suggest_replies' }] },
+  ];
+  const prepare = (steps: StepResult<ToolSet>[], messages: unknown[] = []) =>
+    textAfterSilentChips({ steps, messages } as unknown as Parameters<
+      typeof textAfterSilentChips
+    >[0]);
+
+  it('answers in text, without the chips call, after chips shown without any text', () => {
+    expect(
+      prepare(
+        [silent('search_places'), silent('suggest_replies')],
+        [question, ...search, ...chipsCall],
+      ),
+    ).toEqual({ toolChoice: 'none', messages: [question, ...search] });
+    expect(prepare([silent('suggest_replies')])).toEqual({ toolChoice: 'none' });
+  });
+
+  it('leaves every other step alone', () => {
+    expect(prepare([])).toBeUndefined();
+    expect(prepare([silent('search_places')])).toBeUndefined();
+    expect(prepare([step('search_places'), silent('suggest_replies')])).toBeUndefined();
+    // An invalid call goes back to the model to correct, with the tools.
+    expect(prepare([silent('suggest_replies!')])).toBeUndefined();
+    expect(prepare([silent('ask_choice')])).toBeUndefined();
+  });
+});
+
 describe('presentationTools', () => {
   it('only acknowledges, and validates its input with the payload schema', async () => {
     const tools = presentationTools();
     const execute = tools.suggest_replies?.execute;
     expect(
       await execute?.({ replies: ['Yes'] }, { toolCallId: 'c', messages: [] } as never),
+    ).toEqual({ shown: true });
+    expect(
+      await tools.ask_choice?.execute?.({ question: 'Which?', options: ['a', 'b'] }, {
+        toolCallId: 'c',
+        messages: [],
+      } as never),
     ).toEqual({ shown: true });
     const schema = tools.ask_choice?.inputSchema as unknown as {
       safeParse: (v: unknown) => { success: boolean };

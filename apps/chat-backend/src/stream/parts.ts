@@ -5,30 +5,6 @@ import { isPresentationTool } from './presentation';
 type Rec = Record<string, unknown>;
 const isRecord = (v: unknown): v is Rec => typeof v === 'object' && v !== null;
 
-/** Only the fields a card shows; contact details and sources stay in the tool result. */
-const cardOf = (r: Rec) => {
-  const image = isRecord(r.image) ? r.image : null;
-  const staleness = isRecord(r.staleness) ? r.staleness : null;
-  return {
-    id: r.id,
-    kind: r.kind,
-    category: r.category,
-    title: r.title,
-    summary: r.summary,
-    location: r.location,
-    distanceKm: r.distanceKm,
-    travelMinutes: r.travelMinutes,
-    image: image && {
-      url: image.url,
-      attribution: image.attribution,
-      licence: image.licence,
-      sourcePageUrl: image.sourcePageUrl,
-    },
-    verifiedAt: r.verifiedAt,
-    staleness: staleness && { status: staleness.status },
-  };
-};
-
 const candidate = (toolName: string, value: unknown): unknown => {
   switch (toolName) {
     case 'search_places': {
@@ -36,7 +12,8 @@ const candidate = (toolName: string, value: unknown): unknown => {
       if (!Array.isArray(results) || results.length === 0) return null;
       return {
         name: 'place-carousel',
-        payload: { places: results.map((r) => (isRecord(r) ? cardOf(r) : r)) },
+        // Parsing keeps only the fields a card shows; contact details and sources stay in the result.
+        payload: { places: results },
       };
     }
     case 'suggest_replies':

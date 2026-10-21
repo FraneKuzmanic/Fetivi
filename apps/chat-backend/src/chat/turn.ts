@@ -39,7 +39,11 @@ import {
   systemInstructions,
 } from '../prompt/prompt';
 import { withComponentParts } from '../stream/parts';
-import { endsWithPresentation, presentationTools } from '../stream/presentation';
+import {
+  endsWithPresentation,
+  presentationTools,
+  textAfterSilentChips,
+} from '../stream/presentation';
 import { mintServerTokens, type TokenConfig } from '../tokens/mint';
 import { CHAT_MODEL_ID, CHAT_PROVIDER_OPTIONS, MAX_OUTPUT_TOKENS, MAX_STEPS } from './model';
 
@@ -165,6 +169,7 @@ export async function runTurn(
       allowSystemInMessages: true,
       tools,
       stopWhen: [isStepCount(MAX_STEPS), endsWithPresentation],
+      prepareStep: textAfterSilentChips,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       providerOptions: CHAT_PROVIDER_OPTIONS,
       onError: ({ error }) => log.error({ err: error }, 'chat turn failed'),

@@ -77,6 +77,25 @@ describe('component parts in the chat', () => {
     expect(html).toContain('>Save</button>');
   });
 
+  it('puts the words before cards the model showed first', () => {
+    const html = render([
+      question,
+      {
+        id: 'a1',
+        role: 'assistant',
+        parts: [
+          carousel([card('p1', 'Konoba Mala')]),
+          { type: 'text', text: 'Konoba Mala is my pick.' },
+          { type: 'text', text: 'Book ahead.' },
+        ] as UIMessage['parts'],
+      },
+    ]);
+    expect(html.indexOf('Konoba Mala is my pick.')).toBeLessThan(
+      html.indexOf('class="fv-carousel"'),
+    );
+    expect(html.match(/class="bubble fetivi"/g)).toHaveLength(1);
+  });
+
   it('puts chips after text written after them', () => {
     const html = render([
       question,
