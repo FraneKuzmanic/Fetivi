@@ -16,14 +16,22 @@ const WARNING_KIND: Record<SecretWarning['kind'], string> = {
   password: 'a password',
 };
 
-/** Shown after a save whose text looks like it holds a secret. The save itself succeeded. */
-export function SecretWarnings({ warnings }: { warnings: SecretWarning[] }) {
+/**
+ * Shown after a save whose text looks like it holds a secret. The save itself succeeded. A draft
+ * that is not saved yet passes its own lead.
+ */
+export function SecretWarnings({
+  warnings,
+  lead = 'Saved, but check this.',
+}: {
+  warnings: SecretWarning[];
+  lead?: string;
+}) {
   return (
     <div className="warning" role="status">
       <p>
-        <strong>Saved, but check this.</strong> Parts of the text look like a secret. Put secrets in
-        the typed fields (Wi-Fi, door codes, phone numbers) so guests only see them when they
-        should.
+        <strong>{lead}</strong> Parts of the text look like a secret. Put secrets in the typed
+        fields (Wi-Fi, door codes, phone numbers) so guests only see them when they should.
       </p>
       <ul>
         {warnings.map((w) => (

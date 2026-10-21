@@ -100,10 +100,10 @@ export async function countBlocks(
 /**
  * The one write path for block content. An insert starts at revision 1; an update adds one only
  * when the title or body changes. Each new revision enqueues its translation job in the same
- * transaction, keyed by (block id, revision).
+ * transaction, keyed by (block id, revision). Inside a transaction it runs as a savepoint.
  */
 export async function saveBlock(
-  db: Db,
+  db: Executor,
   queue: JobQueue,
   write:
     | { insert: NewBlock }

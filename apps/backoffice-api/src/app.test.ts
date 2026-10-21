@@ -14,6 +14,9 @@ const deps = {
   logger: false,
   // Nothing is written in these tests.
   media: createLocalMediaStore('unused-media'),
+  manualImportModel: {
+    extract: async () => ({ ok: false as const, error: 'not-configured' as const, detail: '' }),
+  },
 };
 
 afterAll(async () => {

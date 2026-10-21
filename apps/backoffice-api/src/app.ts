@@ -1,4 +1,4 @@
-import type { Db, JobQueue, Mailer, MediaStore } from '@fetivi/domain';
+import type { Db, JobQueue, Mailer, ManualImportModel, MediaStore } from '@fetivi/domain';
 import Fastify from 'fastify';
 import { adminRoutes } from './admin/routes';
 import { registerAuth } from './auth/plugin';
@@ -6,6 +6,7 @@ import { authRoutes } from './auth/routes';
 import { catalogRoutes } from './catalog/routes';
 import { hostRoutes } from './host/routes';
 import { registerErrorHandler } from './http-error';
+import { manualImportRoutes } from './manual-import/routes';
 import { mediaRoutes } from './media/routes';
 import { propertyRoutes } from './properties/routes';
 import { providerLinkRoutes } from './provider-link/routes';
@@ -26,6 +27,8 @@ export interface AppDeps {
   trustProxy?: string | undefined;
   /** Block media files. */
   media: MediaStore;
+  /** Reads house manuals for the import; tests pass a scripted stub. */
+  manualImportModel: ManualImportModel;
 }
 
 export function buildApp(deps: AppDeps) {
@@ -41,6 +44,7 @@ export function buildApp(deps: AppDeps) {
   app.register(hostRoutes, { db });
   app.register(propertyRoutes, { db, queue, now, guestOrigin, media: deps.media });
   app.register(mediaRoutes, { db, queue, now, media: deps.media });
+  app.register(manualImportRoutes, { db, queue, now, model: deps.manualImportModel });
   app.register(adminRoutes, { db, now });
   app.register(catalogRoutes, { db, queue, now });
   app.register(providerRoutes, { db, queue, now });

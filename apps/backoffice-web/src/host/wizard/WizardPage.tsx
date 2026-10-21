@@ -2,10 +2,17 @@ import type { PropertyType } from '@fetivi/domain/vocabulary';
 import { isWizardStepId } from '@fetivi/domain/wizard';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
-import { host, type PropertyDetail, type UnitDetail, type WizardStatus } from '../../api';
+import {
+  host,
+  type ManualImport,
+  type PropertyDetail,
+  type UnitDetail,
+  type WizardStatus,
+} from '../../api';
 import { useAction } from '../../useAction';
 import { format, useWizardCopy } from './copy';
 import { GoLivePanel } from './GoLivePanel';
+import { pendingByStep } from './import/drafts';
 import { LanguagePicker } from './LanguagePicker';
 import { WizardOverview } from './WizardOverview';
 import { WizardStep } from './WizardStep';
@@ -14,6 +21,7 @@ interface Loaded {
   detail: UnitDetail;
   property: PropertyDetail;
   status: WizardStatus;
+  manualImport: ManualImport | null;
 }
 
 /** /units/:id/setup and /units/:id/setup/:stepId. Progress lives in the saved data only. */
@@ -24,9 +32,14 @@ export function WizardPage() {
   const [data, setData] = useState<Loaded | null>(null);
 
   const reload = useCallback(async () => {
-    const [detail, status] = await Promise.all([host.unit(id), host.wizard(id)]);
+    const [detail, status, manual] = await Promise.all([
+      host.unit(id),
+      host.wizard(id),
+      // The import is an extra: the wizard works without it.
+      host.manualImport(id).catch(() => ({ import: null })),
+    ]);
     const property = await host.property(detail.propertyId);
-    setData({ detail, property, status });
+    setData({ detail, property, status, manualImport: manual.import });
   }, [id]);
 
   useEffect(() => {
@@ -39,6 +52,7 @@ export function WizardPage() {
   if (!data) return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
 
   const { detail, property, status } = data;
+  const pending = pendingByStep(data.manualImport);
   const goLivePanel = (
     <GoLivePanel
       status={status}
@@ -65,6 +79,7 @@ export function WizardPage() {
         detail={detail}
         property={property}
         reload={reload}
+        manualPending={pending.byStep[stepId] ?? 0}
       />
     );
   }
@@ -97,6 +112,7 @@ export function WizardPage() {
         busy={busy}
         onTypeChange={setType}
         goLivePanel={goLivePanel}
+        manualPending={data.manualImport ? pending.total : null}
       />
     </>
   );

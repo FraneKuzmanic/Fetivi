@@ -7,6 +7,8 @@ import {
   createMemoryMailer,
   type Db,
   ensureQueues,
+  type ManualImportModel,
+  type ManualModelResult,
 } from '@fetivi/domain';
 import { createTestDatabase, type TestDatabase } from '@fetivi/domain/testing';
 import type { FastifyInstance, FastifyPluginAsync, LightMyRequestResponse } from 'fastify';
@@ -31,9 +33,36 @@ export interface TestApp {
   close: () => Promise<void>;
 }
 
+const NOT_CONFIGURED_MODEL: ManualImportModel = {
+  extract: async () => ({ ok: false, error: 'not-configured', detail: 'test default' }),
+};
+
+/** A manual import model that returns `outputs` in order and records the texts it was given. */
+export function scriptedManualModel(outputs: ManualModelResult[]) {
+  const queue = [...outputs];
+  const calls: string[] = [];
+  const model: ManualImportModel & { calls: string[]; push: (r: ManualModelResult) => void } = {
+    calls,
+    push: (result) => {
+      queue.push(result);
+    },
+    extract: async (text) => {
+      calls.push(text);
+      const next = queue.shift();
+      if (!next) throw new Error('scriptedManualModel: no output left');
+      return next;
+    },
+  };
+  return model;
+}
+
 /** A back-office app on its own test database, with an in-memory inbox and a movable clock. */
 export async function createTestApp(
-  options: { extraRoutes?: FastifyPluginAsync; trustProxy?: string } = {},
+  options: {
+    extraRoutes?: FastifyPluginAsync;
+    trustProxy?: string;
+    manualImportModel?: ManualImportModel;
+  } = {},
 ) {
   const testDb = await createTestDatabase();
   const mailer = createMemoryMailer();
@@ -59,6 +88,7 @@ export async function createTestApp(
     logger: false,
     trustProxy: options.trustProxy,
     media: createLocalMediaStore(mediaDir),
+    manualImportModel: options.manualImportModel ?? NOT_CONFIGURED_MODEL,
   });
   if (options.extraRoutes) app.register(options.extraRoutes);
   await app.ready();

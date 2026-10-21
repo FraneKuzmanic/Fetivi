@@ -27,6 +27,15 @@ const MESSAGES: Record<string, string> = {
   'unsupported-media': 'Use a JPEG, PNG or WebP photo, or an MP4 or WebM video.',
   'media-too-large': 'This file is too large: photos up to 10 MB, videos up to 50 MB.',
   'too-many-media': 'A block can have up to 6 photos or videos. Remove one first.',
+  'unsupported-manual': 'Upload a PDF, Word (.docx) or text file, or paste the text.',
+  'manual-too-large': 'This file is too large: manuals up to 10 MB.',
+  'manual-too-long':
+    'This manual is too long: up to 60,000 characters. Paste the parts guests need.',
+  'manual-empty':
+    'We could not find any text in this file. If it is a scanned PDF, paste the text instead.',
+  'import-failed': 'Reading the manual failed. Please try again in a minute.',
+  'import-not-configured': 'Importing manuals is not available right now. Please contact Fetivi.',
+  'draft-resolved': 'This draft was already handled. Reload the page.',
 };
 
 export function messageFor(code: string): string {

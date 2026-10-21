@@ -6,6 +6,7 @@ export * from './block-media';
 export * from './catalog';
 export * from './conversations';
 export * from './info-blocks';
+export * from './manual-imports';
 export * from './metrics';
 export * from './notifications';
 export * from './offers';

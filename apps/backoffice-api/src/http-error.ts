@@ -26,7 +26,14 @@ export type ErrorCode =
   | 'stay-ended'
   | 'unsupported-media'
   | 'media-too-large'
-  | 'too-many-media';
+  | 'too-many-media'
+  | 'unsupported-manual'
+  | 'manual-too-large'
+  | 'manual-too-long'
+  | 'manual-empty'
+  | 'import-failed'
+  | 'import-not-configured'
+  | 'draft-resolved';
 
 export class HttpError extends Error {
   override name = 'HttpError';

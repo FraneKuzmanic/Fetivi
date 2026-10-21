@@ -22,8 +22,10 @@ import type {
   BlockCategory,
   BlockVisibility,
   CheckInMethod,
+  DraftStatus,
   GuestLanguage,
   HostBlockCategory,
+  ManualSource,
   MediaKind,
   ParkingType,
   PropertyType,
@@ -298,6 +300,67 @@ export interface WizardStatus {
   goLive: { ready: boolean; missing: GoLiveItem[] };
 }
 
+/** Every column a manual draft can fill, by name; the values are the API's own types. */
+export type ManualDraftValues = Partial<
+  Pick<PropertyDetail, 'addressLine' | 'city' | 'postalCode' | 'buildingDoorCode'> &
+    Pick<
+      UnitDetail,
+      | keyof CoreValues
+      | 'noWifi'
+      | 'wifiNetwork'
+      | 'wifiPassword'
+      | 'doorCode'
+      | 'lockboxCode'
+      | 'maxOccupancy'
+      | 'bedrooms'
+      | 'bathrooms'
+      | 'beds'
+    >
+>;
+export type ManualDraftColumn = keyof ManualDraftValues;
+
+/** One draft of a house manual import; mirrors the domain's ManualDraftItem. */
+export type ManualDraftItem = { id: string; status: DraftStatus } & (
+  | { kind: 'field'; fieldId: WizardFieldId; values: ManualDraftValues }
+  | { kind: 'amenities'; amenities: AmenityEntry[] }
+  | {
+      kind: 'block';
+      category: HostBlockCategory;
+      wizardKey: WizardPromptKey | null;
+      title: string;
+      body: string;
+      scrubbed: boolean;
+      warnings: SecretWarning[];
+    }
+  | { kind: 'unmapped'; text: string; fieldId: WizardFieldId | null }
+);
+
+export interface ManualImport {
+  id: string;
+  source: ManualSource;
+  createdAt: string;
+  items: ManualDraftItem[];
+}
+
+export type ConfirmBody =
+  | { values: ManualDraftValues }
+  | { amenities: AmenityEntry[] }
+  | { title: string; body: string }
+  | { category: HostBlockCategory; title: string; body: string };
+
+const MANUAL_EXTENSION_TYPES: Record<string, string> = {
+  pdf: 'application/pdf',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  txt: 'text/plain',
+};
+
+/** Some browsers give no type for .txt or .docx files; the extension decides then. */
+function typedManualFile(file: File): File {
+  if (file.type) return file;
+  const type = MANUAL_EXTENSION_TYPES[file.name.split('.').pop()?.toLowerCase() ?? ''];
+  return type ? new File([file], file.name, { type }) : file;
+}
+
 export type StayPhase = 'upcoming' | 'in_stay' | 'ended';
 
 export interface Stay {
@@ -430,6 +493,24 @@ export const host = {
   mediaUrl: (id: string) => `/api/host/media/${id}`,
   wizard: (id: string) => api<WizardStatus>(`/api/host/units/${id}/wizard`),
   goLive: (id: string) => post<WizardStatus>(`/api/host/units/${id}/go-live`),
+  manualImport: (unitId: string) =>
+    api<{ import: ManualImport | null }>(`/api/host/units/${unitId}/manual-import`),
+  pasteManual: (unitId: string, text: string) =>
+    post<{ import: ManualImport }>(`/api/host/units/${unitId}/manual-import`, { text }),
+  uploadManual: (unitId: string, file: File) =>
+    upload<{ import: ManualImport }>(
+      `/api/host/units/${unitId}/manual-import`,
+      typedManualFile(file),
+    ),
+  confirmDraft: (unitId: string, itemId: string, body: ConfirmBody) =>
+    post<{ import: ManualImport; warnings: SecretWarning[] }>(
+      `/api/host/units/${unitId}/manual-import/items/${itemId}/confirm`,
+      body,
+    ),
+  dismissDraft: (unitId: string, itemId: string) =>
+    post<{ import: ManualImport }>(
+      `/api/host/units/${unitId}/manual-import/items/${itemId}/dismiss`,
+    ),
   qrUrl: (unitId: string, format: 'svg' | 'png') => `/api/host/units/${unitId}/qr?format=${format}`,
   stays: (params: { unitId?: string; past?: boolean } = {}) => {
     const query = new URLSearchParams();

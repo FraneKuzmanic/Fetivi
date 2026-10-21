@@ -1,4 +1,5 @@
 import {
+  createAnthropicManualImportModel,
   createConsoleMailer,
   createDb,
   createJobQueue,
@@ -8,8 +9,12 @@ import {
 import { PgBoss } from 'pg-boss';
 import { buildApp } from './app';
 import { loadConfig } from './config';
+import { egress } from './egress';
 
 const config = loadConfig();
+if (!config.ANTHROPIC_API_KEY) {
+  console.warn('ANTHROPIC_API_KEY is not set: house manual imports will fail as not configured');
+}
 const { db, pool } = createDb(config.DATABASE_URL);
 // Only sends jobs; the jobs process works them.
 const boss = new PgBoss({
@@ -28,6 +33,10 @@ const app = buildApp({
   guestOrigin: config.GUEST_ORIGIN,
   trustProxy: config.TRUST_PROXY,
   media: createLocalMediaStore(config.MEDIA_DIR),
+  manualImportModel: createAnthropicManualImportModel({
+    apiKey: config.ANTHROPIC_API_KEY,
+    fetch: egress.fetch,
+  }),
 });
 
 await app.listen({ host: config.HOST, port: config.PORT });

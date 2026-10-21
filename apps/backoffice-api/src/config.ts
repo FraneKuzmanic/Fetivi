@@ -13,6 +13,11 @@ const schema = z.object({
   TRUST_PROXY: z.string().optional(),
   /** Block media files. Both processes must point at the same directory (a shared volume in production). */
   MEDIA_DIR: z.string().default('../../.data/media'),
+  /** For the house manual import; without it, imports fail as not configured. */
+  ANTHROPIC_API_KEY: z
+    .string()
+    .optional()
+    .transform((s) => s || undefined),
 });
 
 export type Config = z.infer<typeof schema>;

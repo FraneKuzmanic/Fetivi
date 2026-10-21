@@ -44,6 +44,13 @@ Apartment, studio, house, villa, room or guesthouse; decides which setup questio
 **Setup wizard**:
 The guided per-Unit form, one step per Guide section, each field marked Required, Recommended or Optional.
 
+**House manual import**:
+A Host pastes or uploads an existing house manual; Fetivi turns it into Drafts for the Setup wizard.
+
+**Draft**:
+A value or Info block proposed from a house manual, marked "From your manual". Nothing in a Draft reaches guests until the Host confirms it; confirming a block starts its Translation.
+_Avoid_: suggestion (that is Suggestions' term)
+
 ## Local knowledge
 
 **Destination**:

@@ -140,6 +140,10 @@ export const LIMITS = {
   mediaPerBlock: 6,
   imageBytes: 10 * 1024 * 1024,
   videoBytes: 50 * 1024 * 1024,
+  /** House manual import: the uploaded file, the extracted text, and the blocks one import may propose. */
+  manualBytes: 10 * 1024 * 1024,
+  manualText: 60_000,
+  manualBlocks: 40,
 } as const;
 
 /** Photos and short videos on an Info block. */
@@ -175,3 +179,11 @@ export type TranslationStatus = (typeof TRANSLATION_STATUSES)[number];
 
 export const TRANSLATION_ERRORS = ['structure-mismatch', 'model-error', 'not-configured'] as const;
 export type TranslationError = (typeof TRANSLATION_ERRORS)[number];
+
+/** Where a house manual import came from. */
+export const MANUAL_SOURCES = ['paste', 'pdf', 'docx', 'txt'] as const;
+export type ManualSource = (typeof MANUAL_SOURCES)[number];
+
+/** A house manual draft: pending until the host confirms or dismisses it. */
+export const DRAFT_STATUSES = ['pending', 'confirmed', 'dismissed'] as const;
+export type DraftStatus = (typeof DRAFT_STATUSES)[number];

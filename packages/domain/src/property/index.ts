@@ -1,5 +1,6 @@
 export * from './effective';
 export * from './load';
+export * from './manual-import';
 export * from './sanitize';
 export * from './secrets';
 export * from './slug';

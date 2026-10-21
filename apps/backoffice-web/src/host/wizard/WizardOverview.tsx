@@ -5,7 +5,7 @@ import {
   type WizardStepId,
   wizardStepPath,
 } from '@fetivi/domain/wizard';
-import { CaretRight, CheckCircle } from '@phosphor-icons/react';
+import { CaretRight, CheckCircle, FileArrowUp } from '@phosphor-icons/react';
 import { type ReactNode, useId } from 'react';
 import { Link } from 'react-router';
 import type { WizardStatus } from '../../api';
@@ -75,13 +75,17 @@ export function WizardOverview({
   busy,
   onTypeChange,
   goLivePanel,
+  manualPending,
 }: {
   status: WizardStatus;
   busy: boolean;
   onTypeChange: (type: PropertyType) => void;
   goLivePanel: ReactNode;
+  /** Drafts of the house manual import still to review; null when there is no import. */
+  manualPending?: number | null;
 }) {
-  const { ui, steps } = useWizardCopy();
+  const { ui, steps, manualImport: mi } = useWizardCopy();
+  const importId = useId();
   const stepState = useStepState();
   const stepsId = useId();
   const next = status.resumeStep;
@@ -104,6 +108,27 @@ export function WizardOverview({
               <CaretRight aria-hidden="true" />
             </Link>
           </div>
+        </section>
+        <section className="panel" aria-labelledby={importId}>
+          <h2 id={importId}>{mi.title}</h2>
+          {manualPending ? (
+            <div className="prompt-row">
+              <span>{format(mi.pendingCount, { n: manualPending })}</span>
+              <Link className="button" to={`/units/${status.unitId}/setup/import`}>
+                {mi.review}
+              </Link>
+            </div>
+          ) : (
+            <>
+              <p className="muted">{mi.intro}</p>
+              <div className="actions">
+                <Link className="button" to={`/units/${status.unitId}/setup/import`}>
+                  <FileArrowUp aria-hidden="true" />
+                  {mi.overviewCta}
+                </Link>
+              </div>
+            </>
+          )}
         </section>
         <section className="panel" aria-labelledby={stepsId}>
           <h2 id={stepsId}>{ui.steps}</h2>

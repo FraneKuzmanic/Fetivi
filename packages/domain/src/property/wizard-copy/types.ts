@@ -36,6 +36,48 @@ export interface WizardCopy {
     translationsPending: string;
     openQr: string;
   };
+  /** The house manual import (ticket 21). */
+  manualImport: {
+    title: string;
+    intro: string;
+    overviewCta: string;
+    review: string;
+    /** {n} */
+    pendingCount: string;
+    /** {n} */
+    stepNotice: string;
+    pasteTab: string;
+    uploadTab: string;
+    pasteLabel: string;
+    fileLabel: string;
+    fileHint: string;
+    start: string;
+    reading: string;
+    replaceWarning: string;
+    importAnother: string;
+    /** {pending}, {confirmed}, {dismissed} */
+    summary: string;
+    fromManual: string;
+    /** {value} */
+    now: string;
+    confirm: string;
+    edit: string;
+    dismiss: string;
+    confirmed: string;
+    dismissed: string;
+    allReviewed: string;
+    backToSetup: string;
+    unmappedTitle: string;
+    unmappedIntro: string;
+    /** {field} */
+    couldNotUse: string;
+    place: string;
+    placeIn: string;
+    scrubbed: string;
+    bedsHint: string;
+    amenitiesLabel: string;
+    nothingFound: string;
+  };
   ui: {
     setup: string;
     /** {unit} */

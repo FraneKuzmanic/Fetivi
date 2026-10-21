@@ -86,12 +86,15 @@ export function WizardStep({
   detail,
   property,
   reload,
+  manualPending,
 }: {
   stepId: WizardStepId;
   status: WizardStatus;
   detail: UnitDetail;
   property: PropertyDetail;
   reload: () => Promise<void>;
+  /** Drafts of this step from the house manual import, still to review. */
+  manualPending: number;
 }) {
   const copy = useWizardCopy();
   const { ui } = copy;
@@ -487,6 +490,14 @@ export function WizardStep({
         </header>
 
         <div className="panel wizard-body">
+          {manualPending > 0 ? (
+            <div className="manual-notice" role="status">
+              <span>{format(copy.manualImport.stepNotice, { n: manualPending })}</span>
+              <Link to={`/units/${detail.id}/setup/import#step-${stepId}`}>
+                {copy.manualImport.review}
+              </Link>
+            </div>
+          ) : null}
           {stepId === 'saved_places' ? <p>{ui.savedPlacesInfo}</p> : null}
           <form id={formId} onSubmit={submit} className="wizard-form">
             {fields

@@ -1863,3 +1863,124 @@ html:has(.wizard-footer) {
     flex: none;
   }
 }
+
+/* --- House manual import: drafts as rows, a tag chip, the step notice ---------------------- */
+
+.manual-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.manual-summary p {
+  margin: 0;
+}
+
+.manual-done {
+  align-items: flex-start;
+}
+
+.manual-done p {
+  margin: 0;
+}
+
+.manual-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.manual-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0;
+  border-top: 1px solid var(--gray-200);
+  overflow-wrap: anywhere;
+}
+
+.manual-list > .manual-row:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+.manual-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.manual-row-title {
+  font-weight: 500;
+}
+
+.manual-tag {
+  background: var(--sky-100);
+  color: var(--blue-600);
+}
+
+.manual-row .chip svg {
+  margin-right: 4px;
+}
+
+.manual-values {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.manual-values > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.manual-values dt {
+  color: var(--gray-500);
+}
+
+.manual-values dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+.manual-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.manual-now {
+  margin: 0;
+}
+
+.manual-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.manual-source .segmented button {
+  min-height: var(--tap);
+}
+
+.manual-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--sky-100);
+}
+
+.manual-notice a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  font-weight: 500;
+}
