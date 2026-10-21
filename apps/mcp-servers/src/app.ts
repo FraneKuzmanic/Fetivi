@@ -16,6 +16,7 @@ import { buildEmptyServer } from './servers/empty';
 import { buildLocalServer } from './servers/local/server';
 import { mountServer } from './servers/mount';
 import { buildStayServer } from './servers/stay/server';
+import { buildTripServer } from './servers/trip/server';
 
 export interface AppDeps {
   config: Pick<Config, 'HOST' | 'MCP_ALLOWED_HOSTS' | 'MCP_PUBLIC_URL' | 'GUEST_TOKEN_ISSUER'>;
@@ -66,7 +67,10 @@ export function mountServers(
     },
     local: { requiredScopes: [], factory: (identity) => buildLocalServer(identity, { db, now }) },
     services: { requiredScopes: [], factory: () => buildEmptyServer('services') },
-    trip: { requiredScopes: [], factory: () => buildEmptyServer('trip') },
+    trip: {
+      requiredScopes: ['about_me:read'],
+      factory: (identity) => buildTripServer(identity, { db, now }),
+    },
   };
   for (const name of MCP_SERVERS) {
     const verifier = createGuestTokenVerifier({

@@ -59,6 +59,7 @@ export interface AppendTurnInput {
   /** The projection the model has now been given. */
   projection: GuestProjection;
   situationNote: string | null;
+  aboutMeNote: string | null;
   now: Date;
 }
 
@@ -93,6 +94,7 @@ export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> 
       .set({
         projection: input.projection,
         situationNote: input.situationNote,
+        aboutMeNote: input.aboutMeNote,
         updatedAt: input.now,
       })
       .where(eq(conversations.id, input.conversationId));

@@ -32,6 +32,23 @@ describe('Shell', () => {
     expect(html.indexOf('<header')).toBeLessThan(html.indexOf('<main'));
     expect(html.indexOf('<main')).toBeLessThan(html.indexOf('<nav'));
     expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toMatch(
+      /<a [^>]*href="\/about-me"[^>]*>.*?<span class="visually-hidden">About me<\/span><\/a>/,
+    );
+  });
+
+  it('renders a page that is not a tab with no tab marked', () => {
+    const html = renderToString(
+      <MemoryRouter initialEntries={['/about-me']}>
+        <SpaceProvider initial={{ status: 'none' }}>
+          <Shell>
+            <p>page body</p>
+          </Shell>
+        </SpaceProvider>
+      </MemoryRouter>,
+    );
+    expect(html).toContain('<main id="main" class="shell-main"><p>page body</p></main>');
+    expect(links(html).filter((a) => a.includes('aria-current="page"'))).toEqual([]);
   });
 
   it('shows the Chat badge only with unread messages', () => {

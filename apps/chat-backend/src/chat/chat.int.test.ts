@@ -4,9 +4,10 @@ import {
   findConversation,
   loadMessages,
   type MessageRow,
+  seedTrogir,
   turnMetrics,
 } from '@fetivi/domain';
-import { seedGuestUnit, TROGIR } from '@fetivi/domain/testing';
+import { noopQueue, publishCatalog, seedGuestUnit, TROGIR } from '@fetivi/domain/testing';
 import { simulateReadableStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { eq } from 'drizzle-orm';
@@ -351,5 +352,103 @@ describe('POST /api/chat guards', () => {
     });
     const third = await send(t, cookie, 'three');
     expect(third.statusCode).toBe(200);
+  });
+});
+
+const callStep = (toolName: string, input: unknown): StreamResult => ({
+  stream: simulateReadableStream({
+    chunks: [
+      { type: 'stream-start', warnings: [] },
+      { type: 'tool-call', toolCallId: `call-${toolName}`, toolName, input: JSON.stringify(input) },
+      {
+        type: 'finish',
+        finishReason: { unified: 'tool-calls', raw: 'tool_use' },
+        usage: usage(100, 10),
+      },
+    ],
+  }),
+});
+
+const putAboutMe = (t: ChatTestApp, cookie: string, body: Record<string, unknown>) =>
+  write(
+    'PUT',
+    t.app,
+    '/api/about-me',
+    { party: null, interests: [], pace: null, budget: null, needs: [], ...body },
+    { cookie },
+  );
+
+describe('About me in the conversation', () => {
+  it('appends an About me note only when About me changes', async () => {
+    const model = mockModel([textStep('one'), textStep('two'), textStep('three')]);
+    const { t, cookie, space } = await setup(model);
+
+    await send(t, cookie, 'hello');
+    const first = await stored(t, space.space.id);
+    expect(first.rows.some((r) => textOf(r).includes('About me'))).toBe(false);
+    expect(first.conversation.aboutMeNote).toBeNull();
+
+    expect((await putAboutMe(t, cookie, { party: 'couple', interests: ['food'] })).statusCode).toBe(
+      200,
+    );
+    await send(t, cookie, 'any ideas?');
+    const second = await stored(t, space.space.id);
+    const notes = second.rows.filter(
+      (r) => r.role === 'system' && textOf(r).includes('About me ('),
+    );
+    expect(notes).toHaveLength(1);
+    expect(textOf(notes[0])).toContain('a couple');
+    expect(textOf(notes[0])).toContain('food and wine');
+    expect(second.conversation.aboutMeNote).toBe(textOf(notes[0]).split('\n\n').at(-1));
+    expectAnthropicSystemOrder(model.doStreamCalls[1]?.prompt ?? []);
+
+    await send(t, cookie, 'thanks');
+    const third = await stored(t, space.space.id);
+    expect(third.rows.filter((r) => textOf(r).includes('About me'))).toHaveLength(1);
+    expect(third.conversation.aboutMeNote).toBe(second.conversation.aboutMeNote);
+  });
+
+  it('reorders search_places by a saved interest', async () => {
+    const turn = () => [
+      callStep('search_places', { date: '2027-07-12', limit: 10 }),
+      textStep('Here you go.'),
+    ];
+    const model = mockModel([...turn(), ...turn()]);
+    const { t, cookie, space } = await setup(model);
+    const { destinationId } = await seedTrogir(t.db, noopQueue, t.clock.now());
+    await publishCatalog(t.db, destinationId);
+
+    const titlesOfLastSearch = async () => {
+      const { rows } = await stored(t, space.space.id);
+      const part = rows
+        .flatMap((r) => r.parts)
+        .filter((p) => p.type === 'tool-search_places')
+        .at(-1) as { state: string; output: { results: { title: string }[] } } | undefined;
+      expect(part?.state).toBe('output-available');
+      return part?.output.results.map((r) => r.title) ?? [];
+    };
+    const copacabana = (titles: string[]) => titles.findIndex((x) => x.includes('Copacabana'));
+
+    await send(t, cookie, 'Where should we go?');
+    const before = await titlesOfLastSearch();
+    await putAboutMe(t, cookie, { interests: ['beaches'] });
+    await send(t, cookie, 'Where should we go?');
+    const after = await titlesOfLastSearch();
+
+    expect(copacabana(before)).toBeGreaterThan(-1);
+    expect(copacabana(after)).toBeLessThan(copacabana(before));
+  });
+
+  it("refuses the model's attempt to save a special-category need", async () => {
+    const model = mockModel([callStep('update_about_me', { needs: ['halal'] }), textStep('ok')]);
+    const { t, cookie, space } = await setup(model);
+
+    await send(t, cookie, 'We eat halal, remember that');
+    const { rows } = await stored(t, space.space.id);
+    const part = rows.flatMap((r) => r.parts).find((p) => p.type === 'tool-update_about_me');
+    expect(part).toBeDefined();
+    expect(part?.state).not.toBe('output-available');
+    const read = await get(t.app, '/api/about-me', cookie);
+    expect(read.json()).toMatchObject({ aboutMe: { needs: [] } });
   });
 });

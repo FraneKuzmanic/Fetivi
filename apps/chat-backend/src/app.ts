@@ -2,6 +2,7 @@ import type { Db } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
 import type { LanguageModel } from 'ai';
 import Fastify from 'fastify';
+import { aboutMeRoutes } from './about-me/routes';
 import { registerAccess } from './access/plugin';
 import { accessRoutes } from './access/routes';
 import { chatRoutes } from './chat/routes';
@@ -38,6 +39,7 @@ export function buildApp(deps: AppDeps) {
 
   app.get('/health', async () => ({ status: 'ok', service: 'chat-backend' }));
   app.register(accessRoutes, { db, now });
+  app.register(aboutMeRoutes, { db, now });
   app.register(tokenRoutes, { key: deps.tokens.key });
   app.register(chatRoutes, {
     db,

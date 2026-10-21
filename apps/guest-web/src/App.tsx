@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router';
+import { AboutMePage } from './about-me/AboutMePage';
 import { AccessPage } from './access/AccessPage';
 import { NoLinkPage } from './access/NoLinkPage';
 import { TAB_NAMES } from './shell/EmptyTab';
@@ -23,6 +24,16 @@ export function App({ initial }: { initial?: SpaceState }) {
             }
           />
         ))}
+        <Route
+          path="/about-me"
+          element={
+            <RequireSpace>
+              <Shell>
+                <AboutMePage />
+              </Shell>
+            </RequireSpace>
+          }
+        />
         <Route
           path="/"
           element={

@@ -1,3 +1,4 @@
+export * from './about-me';
 export * from './accounts';
 export * from './amenities';
 export * from './audit';

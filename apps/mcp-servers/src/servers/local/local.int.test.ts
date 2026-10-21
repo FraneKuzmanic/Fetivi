@@ -1,5 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { createCatalogRecord, destinations, seedTrogir } from '@fetivi/domain';
+import {
+  createCatalogRecord,
+  destinations,
+  EMPTY_ABOUT_ME,
+  replaceAboutMe,
+  seedTrogir,
+  updateAboutMe,
+} from '@fetivi/domain';
 import { noopQueue, publishCatalog, seedGuestUnit } from '@fetivi/domain/testing';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -173,6 +180,26 @@ describe('local tools', () => {
     };
     expect(results).toHaveLength(1);
     expect(results[0]?.links.map((l) => l.url)).toEqual(['https://www.promet-split.hr/']);
+  });
+
+  it("ranks by the Space's About me", async () => {
+    const titles = async () =>
+      (
+        (await call(tokenA, 'search_places', { limit: 10 })).structuredContent as {
+          results: { title: string }[];
+        }
+      ).results.map((r) => r.title);
+    const copacabana = (list: string[]) => list.findIndex((title) => title.includes('Copacabana'));
+    const before = await titles();
+    await updateAboutMe(t.db, a.spaceId, { addInterests: ['beaches'] }, SUMMER);
+    try {
+      const after = await titles();
+      expect(copacabana(before)).toBeGreaterThan(-1);
+      expect(copacabana(after)).toBeLessThan(copacabana(before));
+      expect([...after].sort()).toEqual([...before].sort());
+    } finally {
+      await replaceAboutMe(t.db, a.spaceId, EMPTY_ABOUT_ME, SUMMER);
+    }
   });
 
   it('rejects invalid input', async () => {

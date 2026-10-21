@@ -330,6 +330,34 @@ input {
   height: 1.25rem;
 }
 
+.shell-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  border: 1px solid var(--gray-300);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--navy-900);
+}
+
+.header-link[aria-current="page"] {
+  border-color: var(--blue-600);
+  color: var(--blue-600);
+}
+
+.header-link svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
 .shell-main {
   max-width: 40rem;
   margin: 0 auto;
@@ -535,6 +563,156 @@ input {
   align-items: center;
   gap: 0.5rem 1rem;
   margin-top: 0.25rem;
+}
+
+/* About me: the trip flow (in Chat) and the About me page */
+
+.trip-flow,
+.about-me {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trip-flow h2 {
+  font-size: 1.25rem;
+}
+
+.trip-flow h2:focus,
+.trip-flow:focus,
+.about-me-field h2:focus {
+  outline: none;
+}
+
+.trip-flow-progress,
+.trip-flow-hint,
+.needs-note {
+  color: var(--gray-500);
+  font-size: 0.875rem;
+}
+
+.trip-flow-progress {
+  font-weight: 500;
+}
+
+.trip-flow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem 1rem;
+  margin-top: 0.25rem;
+}
+
+.trip-flow-actions .button {
+  min-width: 7rem;
+}
+
+.choice-group {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--tap);
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  color: var(--navy-900);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+}
+
+.choice:hover {
+  border-color: var(--blue-600);
+}
+
+.choice[aria-checked="true"],
+.choice[aria-pressed="true"] {
+  border-color: var(--blue-600);
+  background: var(--sky-100);
+  color: var(--blue-600);
+}
+
+.choice svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.save-error {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.about-me {
+  gap: 1rem;
+}
+
+.about-me-start {
+  align-self: flex-start;
+}
+
+.about-me-closed {
+  color: var(--gray-500);
+}
+
+.about-me-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.about-me-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.about-me-field h2 {
+  font-size: 1.0625rem;
+}
+
+.about-me-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-me-items li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding-inline-start: 0.875rem;
+  border: 1px solid var(--sky-200);
+  border-radius: var(--radius-md);
+  background: var(--sky-100);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.about-me-remove svg {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .messages {

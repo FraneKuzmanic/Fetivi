@@ -9,7 +9,8 @@
     "./catalog-vocabulary": "./src/catalog/vocabulary.ts",
     "./offer-vocabulary": "./src/offers/vocabulary.ts",
     "./handover": "./src/stays/handover.ts",
-    "./stay-vocabulary": "./src/stays/vocabulary.ts"
+    "./stay-vocabulary": "./src/stays/vocabulary.ts",
+    "./about-me-vocabulary": "./src/about-me/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

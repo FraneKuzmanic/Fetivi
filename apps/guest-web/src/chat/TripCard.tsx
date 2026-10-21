@@ -2,14 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { skipTripCard, tripCardSkipped } from './trip-card';
 
-/** One skippable invitation to talk about the trip; Start only sends a message for now. */
-export function TripCard({
-  storageKey,
-  onSend,
-}: {
-  storageKey: string;
-  onSend: (text: string) => void;
-}) {
+/** One skippable invitation to the About me flow. */
+export function TripCard({ storageKey, onStart }: { storageKey: string; onStart: () => void }) {
   const { t } = useTranslation();
   const [skipped, setSkipped] = useState(() => tripCardSkipped(storageKey));
   if (skipped) return null;
@@ -18,7 +12,7 @@ export function TripCard({
       <h2 id="trip-card-title">{t('chat.tripTitle')}</h2>
       <p>{t('chat.tripBody')}</p>
       <div className="trip-card-actions">
-        <button type="button" className="button" onClick={() => onSend(t('chat.tripMessage'))}>
+        <button type="button" className="button" onClick={onStart}>
           {t('chat.tripStart')}
         </button>
         <button

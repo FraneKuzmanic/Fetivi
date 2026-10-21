@@ -1,3 +1,4 @@
+export * from './about-me';
 export * from './catalog';
 export * from './conversations';
 export * from './db/client';

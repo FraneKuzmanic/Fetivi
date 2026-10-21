@@ -59,6 +59,8 @@ describe('ChatView', () => {
     expect(out).toContain('Tell me about your trip');
     expect(out).toContain('>Skip<');
     expect(out).toContain('role="log"');
+    // Start opens the About me flow; it sends no chat message.
+    expect(out).not.toContain('trip-flow');
   });
 
   it('welcomes in every guest language', () => {

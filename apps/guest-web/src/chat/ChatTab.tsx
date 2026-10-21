@@ -2,6 +2,7 @@ import { useChat } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { TripFlow } from '../about-me/TripFlow';
 import { MascotSays } from '../shell/Mascot';
 import { useSpace } from '../space';
 import { Composer } from './Composer';
@@ -9,7 +10,7 @@ import { chatErrorKey, chatTransport, getChatHistory } from './chat-api';
 import { MessageList } from './MessageList';
 import { StarterCards } from './StarterCards';
 import { TripCard } from './TripCard';
-import { tripCardKey } from './trip-card';
+import { skipTripCard, tripCardKey } from './trip-card';
 import { Welcome } from './Welcome';
 
 type History =
@@ -68,6 +69,8 @@ export function ChatView({ initial }: { initial: UIMessage[] }) {
     transport: chatTransport,
   });
   const [draft, setDraft] = useState('');
+  // The About me flow; once finished its thanks stay until the guest sends a message.
+  const [flow, setFlow] = useState<'closed' | 'open' | 'done'>('closed');
   // The text last sent, so a failed turn can put it back.
   const pending = useRef('');
   const busy = status === 'submitted' || status === 'streaming';
@@ -76,6 +79,7 @@ export function ChatView({ initial }: { initial: UIMessage[] }) {
   const send = useCallback(
     (text: string) => {
       if (error) clearError();
+      setFlow((f) => (f === 'done' ? 'closed' : f));
       pending.current = text;
       setDraft('');
       void sendMessage({ text });
@@ -100,9 +104,19 @@ export function ChatView({ initial }: { initial: UIMessage[] }) {
       {messages.length === 0 && !closed && space && (
         <>
           <StarterCards onSend={send} />
-          <TripCard storageKey={tripCardKey(space.unitSlug, space.closedAt)} onSend={send} />
+          {flow === 'closed' && (
+            <TripCard
+              storageKey={tripCardKey(space.unitSlug, space.closedAt)}
+              onStart={() => {
+                // The card does not come back on this device once the flow has opened.
+                skipTripCard(tripCardKey(space.unitSlug, space.closedAt));
+                setFlow('open');
+              }}
+            />
+          )}
         </>
       )}
+      {flow !== 'closed' && !closed && <TripFlow onFinish={() => setFlow('done')} />}
       <MessageList messages={messages} status={status} />
       {errorKey && (
         <div className="chat-error" role="alert">

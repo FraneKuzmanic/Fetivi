@@ -73,6 +73,7 @@ describe('conversations', () => {
       ],
       projection,
       situationNote: 'note 1',
+      aboutMeNote: null,
       now: later(1000),
     });
     const changed: GuestProjection = { ...projection, language: 'de' };
@@ -84,6 +85,7 @@ describe('conversations', () => {
       ],
       projection: changed,
       situationNote: 'note 2',
+      aboutMeNote: null,
       now: later(2000),
     });
     const rows = await loadMessages(testDb.db, c.id);
@@ -115,6 +117,7 @@ describe('conversations', () => {
       messages: [{ id: `u-${c.id}`, role: 'user', parts: text('hi') }],
       projection,
       situationNote: null,
+      aboutMeNote: null,
       now: NOW,
     });
     await recordTurnMetrics(testDb.db, {

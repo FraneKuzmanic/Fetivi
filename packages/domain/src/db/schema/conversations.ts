@@ -34,6 +34,8 @@ export const conversations = pgTable('conversations', {
   projection: jsonb('projection').$type<GuestProjection>().notNull(),
   /** The text of the last situation note appended, or null before the first. */
   situationNote: text('situation_note'),
+  /** The text of the last About me note appended, or null if none was ever needed. */
+  aboutMeNote: text('about_me_note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
 });

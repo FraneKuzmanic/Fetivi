@@ -38,7 +38,7 @@ export interface CatalogScope {
   propertyId: string;
   stayId: string;
   language: GuestLanguage;
-  /** Ticket 12 fills it; null until then. */
+  /** From the Space's About me (aboutMeFit); null when nothing ranks. */
   aboutMe: AboutMeFit | null;
 }
 

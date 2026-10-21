@@ -1,7 +1,9 @@
 import {
+  aboutMeFit,
   type CatalogScope,
   type Db,
   type GuestIdentity,
+  getAboutMe,
   getPlace,
   listTransportNotes,
   searchEvents,
@@ -73,8 +75,18 @@ export function buildLocalServer(
       outputSchema: searchPlacesOutput,
       annotations: readOnly,
     },
-    async (args) =>
-      visible(await searchPlaces(db, scope, { ...args, limit: args.limit ?? 5 }, now())),
+    // About me is read per call, so a preference saved earlier in the turn already counts.
+    async (args) => {
+      const fit = aboutMeFit(await getAboutMe(db, identity.spaceId));
+      return visible(
+        await searchPlaces(
+          db,
+          { ...scope, aboutMe: fit },
+          { ...args, limit: args.limit ?? 5 },
+          now(),
+        ),
+      );
+    },
   );
 
   registerGuestTool(

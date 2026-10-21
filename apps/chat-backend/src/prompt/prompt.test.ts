@@ -1,7 +1,23 @@
-import type { GuestProjection } from '@fetivi/domain';
+import {
+  type AboutMe,
+  BUDGETS,
+  EMPTY_ABOUT_ME,
+  type GuestProjection,
+  INTERESTS,
+  NEEDS,
+  PACES,
+  PARTY_SHAPES,
+} from '@fetivi/domain';
 import { describe, expect, it } from 'vitest';
 import { INSTRUCTIONS } from './instructions';
-import { buildSystemText, projectionChangeNote, situationNote, systemInstructions } from './prompt';
+import {
+  ABOUT_ME_EN,
+  aboutMeNote,
+  buildSystemText,
+  projectionChangeNote,
+  situationNote,
+  systemInstructions,
+} from './prompt';
 
 const projection: GuestProjection = {
   language: 'en',
@@ -150,5 +166,51 @@ describe('situationNote', () => {
     expect(situationNote({ ...base, now, phase: 'ended' })).toContain(
       'the guests have checked out.',
     );
+  });
+});
+
+describe('aboutMeNote', () => {
+  const full: AboutMe = {
+    party: 'family',
+    interests: ['beaches', 'food'],
+    pace: 'easy',
+    budget: 'mid',
+    needs: ['gluten_free'],
+  };
+
+  it('is null while nothing was ever saved', () => {
+    expect(aboutMeNote(EMPTY_ABOUT_ME, null)).toBeNull();
+  });
+
+  it('describes everything saved in one paragraph', () => {
+    expect(aboutMeNote(full, null)).toBe(
+      "About me (what the guests chose to share; use it to tailor suggestions, don't recite it): travelling as a family with children; they enjoy beaches and swimming, food and wine; pace: take it easy; budget: mid-range. Needs they added themselves: gluten-free (coeliac).",
+    );
+  });
+
+  it('names only what is set', () => {
+    expect(aboutMeNote({ ...EMPTY_ABOUT_ME, interests: ['nature'] }, null)).toBe(
+      "About me (what the guests chose to share; use it to tailor suggestions, don't recite it): they enjoy nature and walks.",
+    );
+  });
+
+  it('says once that About me was emptied', () => {
+    expect(aboutMeNote(EMPTY_ABOUT_ME, 'About me (…): a couple.')).toBe(
+      "About me is now empty: the guests removed what they had shared. Don't rely on earlier preferences.",
+    );
+  });
+
+  it('has an English phrase for every code', () => {
+    const vocabularies = {
+      party: PARTY_SHAPES,
+      interests: INTERESTS,
+      pace: PACES,
+      budget: BUDGETS,
+      needs: NEEDS,
+    } as const;
+    for (const [field, codes] of Object.entries(vocabularies)) {
+      const phrases = ABOUT_ME_EN[field as keyof typeof ABOUT_ME_EN] as Record<string, string>;
+      for (const code of codes) expect(phrases[code], `${field}.${code}`).toBeTruthy();
+    }
   });
 });

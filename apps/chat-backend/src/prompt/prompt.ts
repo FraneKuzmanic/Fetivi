@@ -1,4 +1,16 @@
-import type { CivilDate, GuestLanguage, GuestProjection, StayPhase } from '@fetivi/domain';
+import {
+  type AboutMe,
+  type Budget,
+  type CivilDate,
+  type GuestLanguage,
+  type GuestProjection,
+  type Interest,
+  isAboutMeEmpty,
+  type Need,
+  type Pace,
+  type PartyShape,
+  type StayPhase,
+} from '@fetivi/domain';
 import type { SystemModelMessage } from 'ai';
 import { DateTime } from 'luxon';
 import { INSTRUCTIONS } from './instructions';
@@ -95,4 +107,69 @@ export function situationNote(input: {
     `The stay runs from ${day(input.checkIn)} to ${day(input.checkout)}; ` +
     `the guests ${PHASE_WORDS[input.phase]}.`
   );
+}
+
+/** English phrases for the About me codes: the note is for the model, which answers in the guest's language. */
+export const ABOUT_ME_EN: {
+  party: Record<PartyShape, string>;
+  interests: Record<Interest, string>;
+  pace: Record<Pace, string>;
+  budget: Record<Budget, string>;
+  needs: Record<Need, string>;
+} = {
+  party: {
+    solo: 'one person travelling alone',
+    couple: 'a couple',
+    family: 'a family with children',
+    friends: 'a group of friends',
+    group: 'a group',
+  },
+  interests: {
+    beaches: 'beaches and swimming',
+    sights: 'history and sights',
+    food: 'food and wine',
+    nature: 'nature and walks',
+    day_trips: 'boat and day trips',
+    active: 'sport and activities',
+    nightlife: 'nightlife',
+    shopping: 'markets and shopping',
+    slow: 'slow, relaxed days',
+  },
+  pace: { easy: 'take it easy', mixed: 'a bit of both', full: 'pack the days' },
+  budget: { simple: 'keep it simple', mid: 'mid-range', treat: 'happy to treat themselves' },
+  needs: {
+    gluten_free: 'gluten-free (coeliac)',
+    food_allergy: 'a food allergy',
+    halal: 'halal food',
+    kosher: 'kosher food',
+    step_free: 'step-free access or a wheelchair',
+    limited_mobility: 'limited mobility',
+  },
+};
+
+/**
+ * The About me note's text, appended when it differs from the last one. Null while nothing was ever
+ * saved (`previous` null and About me empty); an emptied About me says so once.
+ */
+export function aboutMeNote(aboutMe: AboutMe, previous: string | null): string | null {
+  if (isAboutMeEmpty(aboutMe)) {
+    return previous === null
+      ? null
+      : "About me is now empty: the guests removed what they had shared. Don't rely on earlier preferences.";
+  }
+  const en = ABOUT_ME_EN;
+  const parts: string[] = [];
+  if (aboutMe.party) parts.push(`travelling as ${en.party[aboutMe.party]}`);
+  if (aboutMe.interests.length) {
+    parts.push(`they enjoy ${aboutMe.interests.map((i) => en.interests[i]).join(', ')}`);
+  }
+  if (aboutMe.pace) parts.push(`pace: ${en.pace[aboutMe.pace]}`);
+  if (aboutMe.budget) parts.push(`budget: ${en.budget[aboutMe.budget]}`);
+  const head =
+    "About me (what the guests chose to share; use it to tailor suggestions, don't recite it):";
+  const body = parts.length ? ` ${parts.join('; ')}.` : '';
+  const needs = aboutMe.needs.length
+    ? ` Needs they added themselves: ${aboutMe.needs.map((n) => en.needs[n]).join(', ')}.`
+    : '';
+  return `${head}${body}${needs}`;
 }
