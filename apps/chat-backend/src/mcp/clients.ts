@@ -44,7 +44,13 @@ export function openTurnClients(opts: {
       let client = connecting.get(server);
       if (!client) {
         client = timed(async () => {
-          const c = new Client(CLIENT_INFO, { versionNegotiation: { mode: 'auto' } });
+          // The guest answers elicitations in the app, so input requests come back to the
+          // caller instead of being fulfilled here (manual mode, spike S1).
+          const c = new Client(CLIENT_INFO, {
+            versionNegotiation: { mode: 'auto' },
+            capabilities: { elicitation: { form: {} } },
+            inputRequired: { autoFulfill: false },
+          });
           const transport = new StreamableHTTPClientTransport(
             new URL(serverUrl(opts.baseUrl, server)),
             {

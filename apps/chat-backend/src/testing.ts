@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import {
   accounts,
   type Db,
+  type JobQueue,
   properties,
   type ResolvedSpace,
   registerStay,
@@ -157,11 +158,13 @@ export interface ChatTestApp {
 /**
  * A chat-backend app wired to the real MCP servers (listening on a free port, trusting this
  * app's key) on one test database. Token audiences stay `http://mcp.test/<server>`; the MCP fetch
- * rewrites that base to the listening port. `probe` mounts a `local` server with one test tool.
+ * rewrites that base to the listening port. `probe` mounts a `local` server with one test tool;
+ * `queue` receives the MCP servers' jobs (dropped by default).
  */
 export async function createChatTestApp(options: {
   model: LanguageModel | null;
   probe?: boolean;
+  queue?: JobQueue;
 }): Promise<ChatTestApp> {
   const testDb = await createTestDatabase();
   let current = Date.now();
@@ -180,6 +183,7 @@ export async function createChatTestApp(options: {
     publicBase: TEST_MCP_BASE,
     now: clock.now,
     overrides: options.probe ? { local: buildProbeServer } : {},
+    ...(options.queue ? { queue: options.queue } : {}),
   });
   await mcpApp.listen({ host: '127.0.0.1', port: 0 });
   const port = (mcpApp.server.address() as AddressInfo).port;

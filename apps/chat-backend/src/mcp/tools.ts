@@ -1,4 +1,4 @@
-import { MCP_SERVERS, type McpServerName } from '@fetivi/domain';
+import { GUEST_CONFIRMS_META_KEY, MCP_SERVERS, type McpServerName } from '@fetivi/domain';
 import type { CallToolResult, Tool } from '@modelcontextprotocol/client';
 import { type JSONSchema7, jsonSchema, type ToolSet, tool } from 'ai';
 import type { TurnClients } from './clients';
@@ -43,24 +43,28 @@ export async function listTurnTools(
   return MCP_SERVERS.flatMap((server, i) => (lists[i] ?? []).map((t) => ({ server, tool: t })));
 }
 
-const textOf = (content: CallToolResult['content']) =>
+/** A tool the server marks for the guest's confirmation: the model pauses on it. */
+export const guestConfirms = (t: Tool) => t._meta?.[GUEST_CONFIRMS_META_KEY] === true;
+
+/** The paused tools of this turn by name, each with the server that runs its halves. */
+export function pausedTools(listed: ListedTool[]): Map<string, ListedTool> {
+  return new Map(listed.filter((l) => guestConfirms(l.tool)).map((l) => [l.tool.name, l]));
+}
+
+export const textOf = (content: CallToolResult['content']) =>
   content
     .map((c) => (c.type === 'text' ? c.text : ''))
     .filter(Boolean)
     .join('\n');
 
 /**
- * Hand conversion into AI SDK tools (not @ai-sdk/mcp). `pauses(tool)` true leaves a tool without
- * `execute`, so the step stops for the guest (write tools, ticket 17); no tool pauses yet.
- * A tool error from the server becomes a thrown error, which the model sees as a tool error.
+ * Hand conversion into AI SDK tools (not @ai-sdk/mcp). A tool the server marks as guest-confirmed
+ * gets no `execute`, so the step stops on it and the turn loop runs its halves (src/loop). A tool
+ * error from the server becomes a thrown error, which the model sees as a tool error.
  */
 export function toAiTools(
   listed: ListedTool[],
-  opts: {
-    clients: TurnClients;
-    pauses?: (server: McpServerName, tool: Tool) => boolean;
-    onCall?: (name: string) => void;
-  },
+  opts: { clients: TurnClients; onCall?: (name: string) => void },
 ): ToolSet {
   const tools: ToolSet = {};
   for (const { server, tool: t } of listed) {
@@ -69,7 +73,7 @@ export function toAiTools(
       description: t.description ?? t.title ?? t.name,
       inputSchema: jsonSchema(t.inputSchema as JSONSchema7),
     };
-    if (opts.pauses?.(server, t)) {
+    if (guestConfirms(t)) {
       tools[t.name] = tool(definition);
       continue;
     }

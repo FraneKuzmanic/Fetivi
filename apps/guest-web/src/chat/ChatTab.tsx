@@ -6,8 +6,15 @@ import { TripFlow } from '../about-me/TripFlow';
 import { MascotSays } from '../shell/Mascot';
 import { useSpace } from '../space';
 import { Composer } from './Composer';
-import { chatErrorKey, chatTransport, getChatHistory } from './chat-api';
+import {
+  chatErrorKey,
+  chatTransport,
+  type GuestAnswerOutput,
+  getChatHistory,
+  hasGuestAnswer,
+} from './chat-api';
 import { MessageList } from './MessageList';
+import type { CardAnswer } from './render/ConfirmationPart';
 import { SavedPlacesProvider } from './render/SavedPlaces';
 import { StarterCards } from './StarterCards';
 import { TripCard } from './TripCard';
@@ -65,15 +72,19 @@ export function ChatView({ initial }: { initial: UIMessage[] }) {
   const { t } = useTranslation();
   const { state } = useSpace();
   const space = state.status === 'ready' ? state.space : null;
-  const { messages, sendMessage, status, error, setMessages, clearError } = useChat({
+  const { messages, sendMessage, status, error, setMessages, clearError, addToolOutput } = useChat({
     messages: initial,
     transport: chatTransport,
+    // A tap on a booking card goes to the server by itself.
+    sendAutomaticallyWhen: hasGuestAnswer,
   });
   const [draft, setDraft] = useState('');
   // The About me flow; once finished its thanks stay until the guest sends a message.
   const [flow, setFlow] = useState<'closed' | 'open' | 'done'>('closed');
   // The text last sent, so a failed turn can put it back.
   const pending = useRef('');
+  // What the last request carried: a failed answer keeps the guest's message and the card.
+  const lastRequest = useRef<'text' | 'answer'>('text');
   const busy = status === 'submitted' || status === 'streaming';
   const closed = space?.closed ?? true;
 
@@ -81,6 +92,7 @@ export function ChatView({ initial }: { initial: UIMessage[] }) {
     (text: string) => {
       if (error) clearError();
       setFlow((f) => (f === 'done' ? 'closed' : f));
+      lastRequest.current = 'text';
       pending.current = text;
       setDraft('');
       void sendMessage({ text });
@@ -88,9 +100,26 @@ export function ChatView({ initial }: { initial: UIMessage[] }) {
     [error, clearError, sendMessage],
   );
 
-  // A failed turn stores nothing on the server: drop it here too and give the text back.
+  // Confirm or Cancel on a card: the answer goes on the paused call until the server replies.
+  const answer = useCallback(
+    ({ toolName, toolCallId, action, content }: CardAnswer) => {
+      if (error) clearError();
+      lastRequest.current = 'answer';
+      const output: GuestAnswerOutput = {
+        kind: 'guest-answer',
+        nonce: crypto.randomUUID(),
+        action,
+        ...(content ? { content } : {}),
+      };
+      void addToolOutput({ tool: toolName, toolCallId, output });
+    },
+    [error, clearError, addToolOutput],
+  );
+
+  // A failed turn stores nothing on the server: drop it here too and give the text back. A failed
+  // answer stores nothing either; the card opens again for another tap.
   useEffect(() => {
-    if (!error) return;
+    if (!error || lastRequest.current === 'answer') return;
     setMessages((current) => {
       const lastUser = current.findLastIndex((m) => m.role === 'user');
       return lastUser < 0 ? current : current.slice(0, lastUser);
@@ -101,7 +130,11 @@ export function ChatView({ initial }: { initial: UIMessage[] }) {
   // "Something else" on a choice card: the guest types their own answer.
   const focusComposer = useCallback(() => document.getElementById('chat-input')?.focus(), []);
 
-  const errorKey = error ? chatErrorKey(error) : null;
+  const errorKey = !error
+    ? null
+    : lastRequest.current === 'answer'
+      ? 'booking.errorAnswer'
+      : chatErrorKey(error);
   return (
     <div className="chat-view">
       <Welcome />
@@ -128,12 +161,13 @@ export function ChatView({ initial }: { initial: UIMessage[] }) {
           interactive={!busy && !closed}
           onSend={send}
           onSomethingElse={focusComposer}
+          onAnswer={answer}
         />
       </SavedPlacesProvider>
       {errorKey && (
         <div className="chat-error" role="alert">
           <p>{t(errorKey)}</p>
-          {errorKey !== 'chat.errorClosed' && (
+          {errorKey !== 'chat.errorClosed' && errorKey !== 'booking.errorAnswer' && (
             <button type="button" className="text-button" onClick={() => send(pending.current)}>
               {t('chat.retry')}
             </button>

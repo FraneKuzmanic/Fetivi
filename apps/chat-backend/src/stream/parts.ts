@@ -20,6 +20,29 @@ const candidate = (toolName: string, value: unknown): unknown => {
       return { name: 'follow-up-chips', payload: value };
     case 'ask_choice':
       return { name: 'choice-card', payload: value };
+    case 'check_availability': {
+      if (!isRecord(value)) return null;
+      const starts = value.starts;
+      if (!Array.isArray(starts) || starts.length === 0) return null;
+      return {
+        name: 'availability-picker',
+        // The picker shows local times and places left; instants stay in the result.
+        payload: {
+          offerId: value.offerId,
+          date: value.date,
+          quantity: value.quantity,
+          starts: starts.map((s: Rec) => ({
+            slotId: s.slotId,
+            startsAtLocal: s.startsAtLocal,
+            remaining: s.remaining,
+          })),
+        },
+      };
+    }
+    case 'create_order':
+      // Only a real Order gets a receipt; "not ordered" is told by the model's words.
+      if (!isRecord(value) || value.outcome !== 'ordered') return null;
+      return { name: 'receipt-card', payload: { order: value.order } };
     default:
       return null;
   }

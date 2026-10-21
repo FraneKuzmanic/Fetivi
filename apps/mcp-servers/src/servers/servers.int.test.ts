@@ -1,4 +1,5 @@
 import {
+  GUEST_CONFIRMS_META_KEY,
   MCP_SERVERS,
   type McpServerName,
   SCOPES,
@@ -145,7 +146,10 @@ describe('servers over HTTP', () => {
     for (const server of ['services', 'trip'] as const) {
       const client = await connect(server, await signToken(t.keys, { server, ctx }));
       expect(client.getProtocolEra()).toBe('modern');
-      expect((await client.listTools()).tools.map((tool) => tool.name)).toEqual(expected[server]);
+      const { tools } = await client.listTools();
+      expect(tools.map((tool) => tool.name)).toEqual(expected[server]);
+      // update_about_me writes without a card, so nothing here pauses the model.
+      for (const tool of tools) expect(tool._meta?.[GUEST_CONFIRMS_META_KEY]).toBeUndefined();
       await client.close();
     }
   });

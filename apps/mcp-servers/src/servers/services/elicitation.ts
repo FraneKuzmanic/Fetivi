@@ -1,4 +1,9 @@
-import { type ContactFields, type CreateOrderDraft, PENDING_TTL_SECONDS } from '@fetivi/domain';
+import {
+  type ContactFields,
+  type CreateOrderDraft,
+  ORDER_DRAFT_META_KEY,
+  PENDING_TTL_SECONDS,
+} from '@fetivi/domain';
 import {
   CLIENT_CAPABILITIES_META_KEY,
   createRequestStateCodec,
@@ -10,12 +15,6 @@ import { z } from 'zod';
 
 // The confirmation card of create_order (architecture §4.3). Everything shown comes from the
 // stored draft, never from model text. Form mode never asks for secrets: email, name and phone only.
-
-/** The key of the one input request create_order sends. */
-export const CONFIRM_KEY = 'confirm';
-
-/** Where ticket 17's card reads the structured draft: the elicitation request's `_meta`. */
-export const ORDER_DRAFT_META_KEY = 'app.fetivi/order-draft';
 
 /** The guest's answer: email always, plus the contact fields the Offer configures. */
 export function contactSchemaFor(fields: ContactFields) {

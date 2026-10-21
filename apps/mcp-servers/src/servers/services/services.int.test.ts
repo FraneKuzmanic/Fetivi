@@ -1,4 +1,10 @@
-import { allotmentSlots, fromLocalDateTime, QUEUES, type SpaceContext } from '@fetivi/domain';
+import {
+  allotmentSlots,
+  fromLocalDateTime,
+  GUEST_CONFIRMS_META_KEY,
+  QUEUES,
+  type SpaceContext,
+} from '@fetivi/domain';
 import {
   publishOffer,
   type SeededGuestUnit,
@@ -241,6 +247,13 @@ describe('tools/list per situation', () => {
       openWorldHint: true,
     });
     for (const tool of tools) expect(tool.outputSchema).toBeDefined();
+    // Only the guest-confirmed write carries the pause flag the chat backend reads.
+    expect(tools.map((x) => x._meta?.[GUEST_CONFIRMS_META_KEY] === true)).toEqual([
+      false,
+      false,
+      false,
+      true,
+    ]);
   });
 
   it('outside a destination: four tools with own Offers, else only list_my_orders', async () => {

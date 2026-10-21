@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { allotmentSlots } from '../../db/schema/offers';
 import { inventoryHolds, orders } from '../../db/schema/orders';
 import { pendingActions } from '../../db/schema/pending-actions';
+import { spaces } from '../../db/schema/spaces';
 import { createJobQueue, ensureQueues, type JobQueue } from '../../jobs/queue';
 import type { GuestOfferScope } from '../../offers/guest';
 import { createOrder, type OrderDeps } from '../../orders/machine';
@@ -252,6 +253,48 @@ describe('completeOrder', () => {
     const second = await complete(pendingId);
     expect(second).toMatchObject({ replay: true, order: { id: first.order.id } });
     expect(await ordersOf(offerId)).toHaveLength(1);
+  });
+
+  it('stores the card email on the space with the first opt-in time', async () => {
+    const g = await seedGuestUnit(testDb.db, { now: NOW });
+    const space = async () =>
+      (await testDb.db.select().from(spaces).where(eq(spaces.id, g.spaceId)))[0];
+    const prepare = async () => {
+      const offer = await allotment();
+      return (
+        await prepareOrder(deps(), ctx(g), { offerId: offer.offerId, date: DAY, quantity: 1 })
+      ).pendingId;
+    };
+    expect((await space())?.email).toBeNull();
+
+    const first = await prepare();
+    await completeOrder(deps(), { pendingId: first, ...ctx(g), contact: CONTACT });
+    const after = await space();
+    expect(after).toMatchObject({
+      email: 'guest@example.test',
+      emailOptInAt: clock,
+      updatedAt: clock,
+    });
+
+    // A replay writes nothing.
+    const later = new Date(clock.getTime() + 60_000);
+    clock = later;
+    await completeOrder(deps(), { pendingId: first, ...ctx(g), contact: CONTACT });
+    expect((await space())?.updatedAt).toEqual(after?.updatedAt);
+
+    // A later card with a new email replaces it and keeps the opt-in time.
+    const second = await prepare();
+    await completeOrder(deps(), {
+      pendingId: second,
+      ...ctx(g),
+      contact: { ...CONTACT, email: 'other@example.test' },
+    });
+    expect(await space()).toMatchObject({
+      email: 'other@example.test',
+      emailOptInAt: after?.emailOptInAt,
+      updatedAt: later,
+    });
+    clock = NOW;
   });
 
   it('concurrent completions make exactly one Order', async () => {

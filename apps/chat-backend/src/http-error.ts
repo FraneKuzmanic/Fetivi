@@ -10,6 +10,8 @@ export type ErrorCode =
   | 'too-many-attempts'
   | 'space-closed'
   | 'turn-in-progress'
+  | 'nothing-to-answer'
+  | 'orders-unavailable'
   | 'chat-unavailable'
   | 'turn-failed';
 

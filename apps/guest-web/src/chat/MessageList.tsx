@@ -1,26 +1,53 @@
 import { componentPart } from '@fetivi/ui/payloads';
-import type { ChatStatus, UIMessage } from 'ai';
+import { type ChatStatus, isToolUIPart, type UIMessage } from 'ai';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mascot } from '../shell/Mascot';
-import { isComponentPart, messageText } from './chat-api';
+import { isComponentPart, isElicitationPart, isGuestAnswer, messageText } from './chat-api';
 import { ComponentPart } from './render/ComponentPart';
+import { type CardAnswer, ConfirmationPart } from './render/ConfirmationPart';
 
 const NEAR_BOTTOM_PX = 120;
 
 const isBusy = (status: ChatStatus) => status === 'submitted' || status === 'streaming';
 
-type Segment = { key: string; text: string } | { key: string; data: unknown };
+type Card = { key: string; card: unknown; state: 'open' | 'sending' };
+type Segment = { key: string; text: string } | { key: string; data: unknown } | Card;
 
 const isChips = (segment: Segment) =>
   'data' in segment && (segment.data as { name?: unknown } | null)?.name === 'follow-up-chips';
 
 /**
- * An answer reads as its words first, in one bubble, then its components in part order, with
- * follow-up chips last: the model often searches before it writes, and the words introduce the
- * cards.
+ * The confirmation cards still waiting: open while the call has no result, sending while the
+ * guest's tap is on its way. A tap left on the part after a reply (the server asked again, or the
+ * request failed) opens the card again. Answered cards are gone: the receipt or the words tell.
  */
-function segmentsOf(message: UIMessage): Segment[] {
+function cardsOf(message: UIMessage, busy: boolean): Card[] {
+  const cards: Card[] = [];
+  for (const part of message.parts) {
+    if (!isElicitationPart(part) || !part.id) continue;
+    const call = message.parts.find((p) => isToolUIPart(p) && p.toolCallId === part.id);
+    if (!call || !isToolUIPart(call)) continue;
+    const tapped = call.state === 'output-available' && isGuestAnswer(call.output);
+    if (call.state !== 'input-available' && !tapped) continue;
+    cards.push({
+      key: `card-${part.id}`,
+      card: part.data,
+      state: tapped && busy ? 'sending' : 'open',
+    });
+  }
+  return cards;
+}
+
+/** Whether an answer ends with a card for the guest to confirm, for the spoken announcement. */
+const asksToConfirm = (message: UIMessage) => cardsOf(message, false).length > 0;
+
+/**
+ * An answer reads as its words first, in one bubble, then any confirmation card, then its
+ * components in part order, with follow-up chips last: the model often searches before it
+ * writes, and the words introduce the cards.
+ */
+function segmentsOf(message: UIMessage, busy: boolean): Segment[] {
   const text = message.parts.flatMap((p) => (p.type === 'text' && p.text ? [p.text] : []));
   const components: Segment[] = [];
   message.parts.forEach((part, index) => {
@@ -29,6 +56,7 @@ function segmentsOf(message: UIMessage): Segment[] {
   });
   return [
     ...(text.length > 0 ? [{ key: 'text', text: text.join('\n') }] : []),
+    ...cardsOf(message, busy),
     ...components.filter((s) => !isChips(s)),
     ...components.filter(isChips),
   ];
@@ -53,6 +81,7 @@ export function MessageList({
   interactive,
   onSend,
   onSomethingElse,
+  onAnswer,
 }: {
   messages: UIMessage[];
   status: ChatStatus;
@@ -60,6 +89,8 @@ export function MessageList({
   interactive: boolean;
   onSend: (text: string) => void;
   onSomethingElse: () => void;
+  /** The guest's Confirm or Cancel on a booking card. */
+  onAnswer: (answer: CardAnswer) => void;
 }) {
   const { t } = useTranslation();
   const stick = useRef(true);
@@ -92,9 +123,14 @@ export function MessageList({
     const last = messages.at(-1);
     if (last?.role !== 'assistant') return;
     const count = placesShown(last);
-    const text = messageText(last);
     setAnnouncement(
-      count > 0 ? [text, t('components.placesShown', { count })].filter(Boolean).join(' ') : text,
+      [
+        messageText(last),
+        count > 0 ? t('components.placesShown', { count }) : '',
+        asksToConfirm(last) ? t('booking.cardShown') : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
     );
   }, [status, messages, t]);
 
@@ -116,7 +152,7 @@ export function MessageList({
               </p>
             );
           }
-          const segments = segmentsOf(m);
+          const segments = segmentsOf(m, isBusy(status));
           if (segments.length === 0) return null;
           const firstOfRun = messages[i - 1]?.role !== 'assistant';
           const latest = interactive && i === messages.length - 1;
@@ -126,6 +162,18 @@ export function MessageList({
               <span className="avatar">{firstOfRun && <Mascot className="avatar-mascot" />}</span>
               <div className="fetivi-turn">
                 {segments.map((segment) => {
+                  if ('card' in segment) {
+                    // An open card acts only on the newest answer while the guest can reply.
+                    if (segment.state === 'open' && !latest) return null;
+                    return (
+                      <ConfirmationPart
+                        key={segment.key}
+                        data={segment.card}
+                        state={segment.state}
+                        onAnswer={onAnswer}
+                      />
+                    );
+                  }
                   if (!('text' in segment)) {
                     return (
                       <ComponentPart

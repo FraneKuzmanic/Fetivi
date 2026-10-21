@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import {
   appendTurn,
+  type ConversationRow,
   type Db,
+  findConversation,
   type GuestProjection,
   getAboutMe,
   getOrCreateConversation,
@@ -13,24 +15,31 @@ import {
   type MessageRow,
   type ResolvedSpace,
   recordTurnMetrics,
+  type SpaceContext,
   scopesFor,
   UNIT_RESOURCE_URI,
 } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
 import {
-  convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
-  isStepCount,
   type LanguageModel,
-  streamText,
-  toUIMessageStream,
+  type ToolSet,
   type UIMessage,
+  type UIMessageStreamWriter,
 } from 'ai';
 import type { FastifyBaseLogger } from 'fastify';
 import { HttpError } from '../http-error';
+import type { GuestAnswer } from '../loop/elicitation';
+import { cancelOpenCalls, createLoop, type LoopResult, openCalls } from '../loop/run';
 import { openTurnClients, type TurnClients } from '../mcp/clients';
-import { listTurnTools, type ToolCatalog, toAiTools } from '../mcp/tools';
+import {
+  type ListedTool,
+  listTurnTools,
+  pausedTools,
+  type ToolCatalog,
+  toAiTools,
+} from '../mcp/tools';
 import {
   aboutMeNote,
   buildSystemText,
@@ -38,14 +47,9 @@ import {
   situationNote,
   systemInstructions,
 } from '../prompt/prompt';
-import { withComponentParts } from '../stream/parts';
-import {
-  endsWithPresentation,
-  presentationTools,
-  textAfterSilentChips,
-} from '../stream/presentation';
+import { presentationTools } from '../stream/presentation';
 import { mintServerTokens, type TokenConfig } from '../tokens/mint';
-import { CHAT_MODEL_ID, CHAT_PROVIDER_OPTIONS, MAX_OUTPUT_TOKENS, MAX_STEPS } from './model';
+import { CHAT_MODEL_ID } from './model';
 
 export interface ChatDeps {
   db: Db;
@@ -89,15 +93,29 @@ async function readProjection(clients: TurnClients): Promise<GuestProjection> {
   return JSON.parse(content.text) as GuestProjection;
 }
 
+/** What both entries share: the lock, this turn's MCP clients and tools. */
+interface OpenTurn {
+  model: LanguageModel;
+  spaceId: string;
+  ctx: SpaceContext;
+  startedAt: Date;
+  t0: number;
+  clients: TurnClients;
+  tools: ToolSet;
+  paused: Map<string, ListedTool>;
+  /** MCP tool calls of this turn, for metrics. */
+  calls: string[];
+}
+
 /**
- * One guest turn, streamed. Throws HttpError before the stream starts. The user message and the
- * answer are stored together only when the turn completes, so a failed turn leaves the history
- * (and the cached prompt prefix) as it was.
+ * Takes the space's lock and opens the turn's MCP clients and tools, then runs `body`. Throws
+ * HttpError before the stream starts; on any throw the clients close and the lock is released.
+ * Otherwise `body`'s stream releases both when it ends.
  */
-export async function runTurn(
+async function withTurn(
   deps: ChatDeps,
   space: ResolvedSpace,
-  text: string,
+  body: (turn: OpenTurn) => Promise<Response>,
 ): Promise<Response> {
   const { db, log, model } = deps;
   if (model === null) throw new HttpError(503, 'chat-unavailable');
@@ -119,34 +137,6 @@ export async function runTurn(
       fetch: deps.mcpFetch,
     });
     clients = turnClients;
-    const projection = await readProjection(turnClients);
-
-    const conversation = await getOrCreateConversation(
-      db,
-      spaceId,
-      { systemPrompt: buildSystemText(projection), projection },
-      startedAt,
-    );
-    const history = await loadMessages(db, conversation.id);
-    const aboutMeText = aboutMeNote(await getAboutMe(db, spaceId), conversation.aboutMeNote);
-
-    const note = situationNote({
-      now: startedAt,
-      timezone: projection.property.timezone,
-      checkIn: projection.stay.checkIn,
-      checkout: projection.stay.checkout,
-      phase: ctx.phase,
-    });
-    const notes = [
-      projectionChangeNote(conversation.projection, projection),
-      note === conversation.situationNote ? null : note,
-      aboutMeText === conversation.aboutMeNote ? null : aboutMeText,
-    ].filter((n) => n !== null);
-    // Anthropic takes a mid-conversation system message only right after a user message, and not
-    // two in a row: so the notes go after the guest's text, joined into one message.
-    const newMessages: UIMessage[] = [textMessage('user', text)];
-    if (notes.length > 0) newMessages.push(textMessage('system', notes.join('\n\n')));
-
     const scopes = Object.fromEntries(
       MCP_SERVERS.map((s) => [s, scopesFor(s, ctx).join(' ')]),
     ) as Record<McpServerName, string>;
@@ -157,85 +147,17 @@ export async function runTurn(
     for (const name of Object.keys(shownTools)) {
       if (name in mcpTools) throw new Error(`A server exposes the presentation tool ${name}`);
     }
-    const tools = { ...mcpTools, ...shownTools };
-
-    const originalMessages = [...history.map(rowToUiMessage), ...newMessages];
-    const messages = await convertToModelMessages(originalMessages, { tools });
-    const result = streamText({
+    return await body({
       model,
-      instructions: systemInstructions(conversation.systemPrompt),
-      messages,
-      // Only the server makes system messages: the request body carries nothing but text.
-      allowSystemInMessages: true,
-      tools,
-      stopWhen: [isStepCount(MAX_STEPS), endsWithPresentation],
-      prepareStep: textAfterSilentChips,
-      maxOutputTokens: MAX_OUTPUT_TOKENS,
-      providerOptions: CHAT_PROVIDER_OPTIONS,
-      onError: ({ error }) => log.error({ err: error }, 'chat turn failed'),
+      spaceId,
+      ctx,
+      startedAt,
+      t0,
+      clients: turnClients,
+      tools: { ...mcpTools, ...shownTools },
+      paused: pausedTools(listed),
+      calls,
     });
-
-    const persist = async (responseMessage: UIMessage) => {
-      const usage = await result.usage;
-      const steps = (await result.steps).length;
-      await appendTurn(db, {
-        conversationId: conversation.id,
-        messages: [...newMessages, responseMessage].map(toRow),
-        projection,
-        situationNote: note,
-        aboutMeNote: aboutMeText ?? conversation.aboutMeNote,
-        now: deps.now(),
-      });
-      await recordTurnMetrics(db, {
-        conversationId: conversation.id,
-        model: CHAT_MODEL_ID,
-        startedAt,
-        wallMs: Math.round(performance.now() - t0),
-        mcpMs: Math.round(turnClients.mcpMs),
-        inputTokens: usage.inputTokens ?? 0,
-        outputTokens: usage.outputTokens ?? 0,
-        cacheReadTokens: usage.inputTokenDetails?.cacheReadTokens ?? 0,
-        cacheWriteTokens: usage.inputTokenDetails?.cacheWriteTokens ?? 0,
-        steps,
-        toolCalls: calls.length,
-        toolNames: calls,
-      });
-    };
-
-    // The outer stream owns the message id and persistence, so the stored answer holds the same
-    // component parts, in the same order, as the browser saw.
-    const stream = createUIMessageStream({
-      originalMessages,
-      generateId: randomUUID,
-      execute: ({ writer }) => {
-        writer.merge(
-          toUIMessageStream({
-            stream: result.stream,
-            tools,
-            // Thinking is neither shown nor stored; earlier turns are resent without it.
-            sendReasoning: false,
-            // The model run decides whether the turn completed; the outer stream only adds parts.
-            onEnd: ({ outcome }) => writer.setOutcome(outcome),
-            onError: () => 'turn-failed',
-          }).pipeThrough(withComponentParts()),
-        );
-      },
-      onEnd: async ({ responseMessage, outcome }) => {
-        try {
-          if (outcome.status === 'completed') await persist(responseMessage);
-        } catch (error) {
-          log.error({ err: error }, 'chat turn not stored');
-        } finally {
-          await turnClients.close();
-          running.delete(spaceId);
-        }
-      },
-      onError: () => 'turn-failed',
-    });
-    const response = createUIMessageStreamResponse({ stream });
-    // Runs the model to the end even if the browser goes away.
-    void Promise.resolve(result.consumeStream()).catch(() => {});
-    return response;
   } catch (error) {
     await clients?.close();
     running.delete(spaceId);
@@ -243,4 +165,192 @@ export async function runTurn(
     log.error({ err: error }, 'chat turn failed before streaming');
     throw new HttpError(502, 'turn-failed');
   }
+}
+
+/**
+ * The response stream around one loop. The outer stream owns the message id and persistence, so
+ * the stored answer holds the same parts, in the same order, as the browser saw. When the last
+ * original message is the assistant's, the stream continues it (same id).
+ */
+function streamTurn(
+  deps: ChatDeps,
+  turn: OpenTurn,
+  originalMessages: UIMessage[],
+  run: (writer: UIMessageStreamWriter) => Promise<LoopResult>,
+  persist: (responseMessage: UIMessage, result: LoopResult) => Promise<void>,
+): Response {
+  let result: LoopResult | null = null;
+  const stream = createUIMessageStream({
+    originalMessages,
+    generateId: randomUUID,
+    execute: async ({ writer }) => {
+      const done = await run(writer);
+      result = done;
+      writer.setOutcome(done.outcome);
+    },
+    onEnd: async ({ responseMessage, outcome }) => {
+      try {
+        if (outcome.status === 'completed' && result) await persist(responseMessage, result);
+      } catch (error) {
+        deps.log.error({ err: error }, 'chat turn not stored');
+      } finally {
+        await turn.clients.close();
+        running.delete(turn.spaceId);
+      }
+    },
+    onError: (error) => {
+      deps.log.error({ err: error }, 'chat turn failed');
+      return 'turn-failed';
+    },
+  });
+  return createUIMessageStreamResponse({ stream });
+}
+
+async function recordMetrics(
+  deps: ChatDeps,
+  turn: OpenTurn,
+  conversationId: string,
+  result: LoopResult,
+): Promise<void> {
+  await recordTurnMetrics(deps.db, {
+    conversationId,
+    model: CHAT_MODEL_ID,
+    startedAt: turn.startedAt,
+    wallMs: Math.round(performance.now() - turn.t0),
+    mcpMs: Math.round(turn.clients.mcpMs),
+    inputTokens: result.usage.input,
+    outputTokens: result.usage.output,
+    cacheReadTokens: result.usage.cacheRead,
+    cacheWriteTokens: result.usage.cacheWrite,
+    steps: result.steps,
+    toolCalls: turn.calls.length,
+    toolNames: turn.calls,
+  });
+}
+
+const loopDeps = (deps: ChatDeps, turn: OpenTurn, conversation: ConversationRow) => ({
+  model: turn.model,
+  instructions: systemInstructions(conversation.systemPrompt),
+  tools: turn.tools,
+  paused: turn.paused,
+  clients: turn.clients,
+  log: deps.log,
+  onCall: (name: string) => turn.calls.push(name),
+});
+
+/**
+ * One guest turn, streamed. Throws HttpError before the stream starts. The user message and the
+ * answer are stored together only when the turn completes, so a failed turn leaves the history
+ * (and the cached prompt prefix) as it was.
+ */
+export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Promise<Response> {
+  return withTurn(deps, space, async (turn) => {
+    const { db } = deps;
+    const projection = await readProjection(turn.clients);
+    const conversation = await getOrCreateConversation(
+      db,
+      turn.spaceId,
+      { systemPrompt: buildSystemText(projection), projection },
+      turn.startedAt,
+    );
+    const history = (await loadMessages(db, conversation.id)).map(rowToUiMessage);
+    // A card still open when the guest types: the guest moved on, so it is cancelled first.
+    const cancelled = await cancelOpenCalls(
+      { clients: turn.clients, paused: turn.paused, onCall: (n) => turn.calls.push(n) },
+      history.at(-1),
+    );
+    if (cancelled) history[history.length - 1] = cancelled;
+    const aboutMeText = aboutMeNote(await getAboutMe(db, turn.spaceId), conversation.aboutMeNote);
+
+    const note = situationNote({
+      now: turn.startedAt,
+      timezone: projection.property.timezone,
+      checkIn: projection.stay.checkIn,
+      checkout: projection.stay.checkout,
+      phase: turn.ctx.phase,
+    });
+    const notes = [
+      projectionChangeNote(conversation.projection, projection),
+      note === conversation.situationNote ? null : note,
+      aboutMeText === conversation.aboutMeNote ? null : aboutMeText,
+    ].filter((n) => n !== null);
+    // Anthropic takes a mid-conversation system message only right after a user message, and not
+    // two in a row: so the notes go after the guest's text, joined into one message.
+    const newMessages: UIMessage[] = [textMessage('user', text)];
+    if (notes.length > 0) newMessages.push(textMessage('system', notes.join('\n\n')));
+    const originalMessages = [...history, ...newMessages];
+
+    return streamTurn(
+      deps,
+      turn,
+      originalMessages,
+      (writer) =>
+        createLoop(loopDeps(deps, turn, conversation), originalMessages, null, writer).run(),
+      async (responseMessage, result) => {
+        await appendTurn(db, {
+          conversationId: conversation.id,
+          messages: [...newMessages, responseMessage].map(toRow),
+          updated: cancelled ? [toRow(cancelled)] : [],
+          projection,
+          situationNote: note,
+          aboutMeNote: aboutMeText ?? conversation.aboutMeNote,
+          now: deps.now(),
+        });
+        await recordMetrics(deps, turn, conversation.id, result);
+      },
+    );
+  });
+}
+
+/**
+ * The guest's answer to a card, streamed into the same assistant message. The paused call and
+ * its `requestState` come from the stored message, never from the browser; nothing is kept in
+ * process between requests. A model failure after the tap is not stored: the card stays open and
+ * a second tap returns the same Order (the server deduplicates on the pending record).
+ */
+export function resumeTurn(
+  deps: ChatDeps,
+  space: ResolvedSpace,
+  guest: GuestAnswer,
+): Promise<Response> {
+  return withTurn(deps, space, async (turn) => {
+    const { db } = deps;
+    const conversation = await findConversation(db, turn.spaceId);
+    if (!conversation) throw new HttpError(409, 'nothing-to-answer');
+    const history = (await loadMessages(db, conversation.id)).map(rowToUiMessage);
+    const assistant = history.at(-1);
+    const open =
+      assistant?.role === 'assistant'
+        ? openCalls(assistant, turn.paused).find((c) => c.part.toolCallId === guest.toolCallId)
+        : undefined;
+    if (!assistant || !open || open.requestState === null) {
+      throw new HttpError(409, 'nothing-to-answer');
+    }
+    const requestState = open.requestState;
+    // No new user message, so no notes: Anthropic takes a system message only after a user one.
+    return streamTurn(
+      deps,
+      turn,
+      history,
+      (writer) =>
+        createLoop(
+          loopDeps(deps, turn, conversation),
+          history.slice(0, -1),
+          assistant,
+          writer,
+        ).resume({ ...open, requestState }, guest),
+      async (responseMessage, result) => {
+        await appendTurn(db, {
+          conversationId: conversation.id,
+          messages: [],
+          updated: [toRow(responseMessage)],
+          projection: conversation.projection,
+          situationNote: conversation.situationNote,
+          aboutMeNote: conversation.aboutMeNote,
+          now: deps.now(),
+        });
+        if (result.steps > 0) await recordMetrics(deps, turn, conversation.id, result);
+      },
+    );
+  });
 }

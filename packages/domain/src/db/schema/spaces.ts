@@ -16,6 +16,10 @@ export const spaces = pgTable(
     language: guestLanguage('language').notNull(),
     /** = stays.active_until, kept in step by the stays store. The PIN and chat stop here. */
     closedAt: timestamp('closed_at', { withTimezone: true }).notNull(),
+    /** Given on the first Order's card; the latest wins. Full opt-in and verification are ticket 26. */
+    email: text('email'),
+    /** The one opt-in covering confirmations, recovery and alerts (PRD §6.1); the first time is kept. */
+    emailOptInAt: timestamp('email_opt_in_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
   },

@@ -1,6 +1,14 @@
 // The contracts of Fetivi's own streamed components. React-free: the chat backend validates with
 // these through `@fetivi/ui/payloads`, and the guest app re-checks stored parts before rendering.
 import { PLACE_CATEGORIES, STALENESS_STATUSES } from '@fetivi/domain/catalog-vocabulary';
+import {
+  AVAILABILITY_MODES,
+  CONTACT_FIELDS,
+  PAYMENT_MODES,
+  PRICE_UNITS,
+} from '@fetivi/domain/offer-vocabulary';
+import { ORDER_STATUSES, PAYMENT_STATUSES } from '@fetivi/domain/order-vocabulary';
+import { GUEST_LANGUAGES } from '@fetivi/domain/vocabulary';
 import { z } from 'zod';
 
 /** The UI message part type of a streamed component. */
@@ -53,12 +61,108 @@ export const placeCarousel = z.object({
   places: z.array(placeCard).min(1).max(10),
 });
 
+/** The starts of one day from check_availability; tapping one tells Fetivi the guest's pick. */
+export const availabilityPicker = z.object({
+  offerId: z.string().min(1),
+  date: z.string().min(1),
+  quantity: z.number().int().min(1),
+  starts: z
+    .array(
+      z.object({
+        slotId: z.string().nullable(),
+        /** 'YYYY-MM-DDTHH:mm' at the property; null when the Offer has no start time. */
+        startsAtLocal: z.string().nullable(),
+        remaining: z.number().nullable(),
+      }),
+    )
+    .min(1)
+    .max(24),
+});
+
+/** One Order as the guest sees it: the receipt in chat and in My trip. */
+export const orderSummary = z.object({
+  id: z.string().min(1),
+  offerId: z.string().min(1),
+  offerTitle: z.string(),
+  status: z.enum(ORDER_STATUSES),
+  paymentStatus: z.enum(PAYMENT_STATUSES),
+  paymentMode: z.enum(PAYMENT_MODES),
+  date: z.string(),
+  startsAt: z.string().nullable(),
+  startsAtLocal: z.string().nullable(),
+  quantity: z.number(),
+  priceMinor: z.number().nullable(),
+  currency: z.string(),
+  createdAt: z.string(),
+});
+
+export const receiptCard = z.object({ order: orderSummary });
+
 /** A streamed component: its name and a payload valid for that name. */
 export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('follow-up-chips'), payload: followUpChips }),
   z.object({ name: z.literal('choice-card'), payload: choiceCard }),
   z.object({ name: z.literal('place-carousel'), payload: placeCarousel }),
+  z.object({ name: z.literal('availability-picker'), payload: availabilityPicker }),
+  z.object({ name: z.literal('receipt-card'), payload: receiptCard }),
 ]);
+
+/** The UI message part type of a confirmation card; its id is the paused tool call's id. */
+export const ELICITATION_PART_TYPE = 'data-elicitation';
+
+/** The stored create_order draft the card shows; never model text. Not strict, like placeCard. */
+export const orderDraft = z.object({
+  pendingId: z.string().min(1),
+  offerId: z.string().min(1),
+  offerTitle: z.string(),
+  language: z.enum(GUEST_LANGUAGES),
+  date: z.string(),
+  slotId: z.string().nullable(),
+  startsAt: z.string().nullable(),
+  startsAtLocal: z.string().nullable(),
+  quantity: z.number().int(),
+  priceMinor: z.number().int().nullable(),
+  currency: z.string(),
+  priceUnit: z.enum(PRICE_UNITS),
+  paymentMode: z.enum(PAYMENT_MODES),
+  availabilityMode: z.enum(AVAILABILITY_MODES),
+  cancellationPolicy: z.string(),
+  contactFields: z.enum(CONTACT_FIELDS),
+});
+
+/**
+ * A paused write tool's confirmation: the server's form (message and schema), the stored draft
+ * and the opaque `requestState`, which the backend sends back byte for byte.
+ */
+export const elicitationPayload = z.object({
+  toolCallId: z.string().min(1),
+  toolName: z.string().min(1),
+  key: z.string().min(1),
+  message: z.string(),
+  requestedSchema: z
+    .object({
+      type: z.literal('object'),
+      properties: z.record(
+        z.string(),
+        z
+          .object({
+            type: z.string(),
+            format: z.string().optional(),
+            title: z.string().optional(),
+            description: z.string().optional(),
+          })
+          .passthrough(),
+      ),
+      required: z.array(z.string()).optional(),
+    })
+    .passthrough(),
+  requestState: z.string().min(1),
+  draft: orderDraft.nullable(),
+});
 
 export type PlaceCardPayload = z.infer<typeof placeCard>;
 export type ComponentPart = z.infer<typeof componentPart>;
+export type AvailabilityPickerPayload = z.infer<typeof availabilityPicker>;
+export type OrderSummaryPayload = z.infer<typeof orderSummary>;
+export type OrderDraft = z.infer<typeof orderDraft>;
+export type ElicitationPayload = z.infer<typeof elicitationPayload>;

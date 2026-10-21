@@ -1,12 +1,15 @@
 import { findConversation, loadMessages, type MessagePart } from '@fetivi/domain';
-import { COMPONENT_PART_TYPE } from '@fetivi/ui/payloads';
+import { COMPONENT_PART_TYPE, ELICITATION_PART_TYPE } from '@fetivi/ui/payloads';
 import type { FastifyPluginAsync } from 'fastify';
 import { spaceOf } from '../access/plugin';
 import { chatBody } from './schemas';
-import { type ChatDeps, rowToUiMessage, runTurn } from './turn';
+import { type ChatDeps, resumeTurn, rowToUiMessage, runTurn } from './turn';
 
 const shown = (part: MessagePart) =>
-  part.type === 'text' || part.type.startsWith('tool-') || part.type === COMPONENT_PART_TYPE;
+  part.type === 'text' ||
+  part.type.startsWith('tool-') ||
+  part.type === COMPONENT_PART_TYPE ||
+  part.type === ELICITATION_PART_TYPE;
 
 export const chatRoutes: FastifyPluginAsync<ChatDeps> = async (app, deps) => {
   /** The guest's chat history: their messages and Fetivi's, without system notes. */
@@ -21,9 +24,11 @@ export const chatRoutes: FastifyPluginAsync<ChatDeps> = async (app, deps) => {
     };
   });
 
-  /** One turn, answered as an AI SDK UI message stream (SSE). */
+  /** One turn, or the guest's answer to a card, answered as an AI SDK UI message stream (SSE). */
   app.post('/api/chat', { config: { access: 'space' } }, async (request) => {
-    const { text } = chatBody.parse(request.body);
-    return runTurn(deps, spaceOf(request), text);
+    const body = chatBody.parse(request.body);
+    return 'text' in body
+      ? runTurn(deps, spaceOf(request), body.text)
+      : resumeTurn(deps, spaceOf(request), body.answer);
   });
 };

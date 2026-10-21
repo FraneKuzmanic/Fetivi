@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { choiceCard, componentPart, followUpChips, type PlaceCardPayload, placeCarousel } from '.';
+import {
+  availabilityPicker,
+  choiceCard,
+  componentPart,
+  type ElicitationPayload,
+  elicitationPayload,
+  followUpChips,
+  type OrderSummaryPayload,
+  type PlaceCardPayload,
+  placeCarousel,
+  receiptCard,
+} from '.';
 
 const PLACE: PlaceCardPayload = {
   id: 'a1b2',
@@ -81,5 +92,111 @@ describe('componentPart', () => {
 
   it('refuses an unknown name', () => {
     expect(componentPart.safeParse({ name: 'weather', payload: {} }).success).toBe(false);
+  });
+});
+
+const ORDER: OrderSummaryPayload = {
+  id: 'f2b1c3d4-0000-4000-8000-000000000001',
+  offerId: 'o-1',
+  offerTitle: 'Blue Lagoon boat trip',
+  status: 'confirmed',
+  paymentStatus: 'none',
+  paymentMode: 'direct',
+  date: '2026-10-22',
+  startsAt: '2026-10-22T07:00:00.000Z',
+  startsAtLocal: '2026-10-22T09:00',
+  quantity: 2,
+  priceMinor: 9000,
+  currency: 'EUR',
+  createdAt: '2026-10-21T10:00:00.000Z',
+};
+
+const ELICITATION: ElicitationPayload = {
+  toolCallId: 'call-1',
+  toolName: 'create_order',
+  key: 'confirm',
+  message: 'Book Blue Lagoon boat trip?',
+  requestedSchema: {
+    type: 'object',
+    properties: {
+      email: { type: 'string', format: 'email', description: 'Email' },
+      name: { type: 'string', description: 'Name' },
+    },
+    required: ['email', 'name'],
+  },
+  requestState: 'opaque.state',
+  draft: {
+    pendingId: 'p-1',
+    offerId: 'o-1',
+    offerTitle: 'Blue Lagoon boat trip',
+    language: 'en',
+    date: '2026-10-22',
+    slotId: 's-1',
+    startsAt: '2026-10-22T07:00:00.000Z',
+    startsAtLocal: '2026-10-22T09:00',
+    quantity: 2,
+    priceMinor: 9000,
+    currency: 'EUR',
+    priceUnit: 'person',
+    paymentMode: 'direct',
+    availabilityMode: 'allotment',
+    cancellationPolicy: 'Free cancellation up to 24 hours before.',
+    contactFields: 'name',
+  },
+};
+
+describe('availability-picker', () => {
+  const day = { offerId: 'o-1', date: '2026-10-22', quantity: 2 };
+  it('takes one to 24 starts, with or without a time', () => {
+    const starts = [
+      { slotId: 's-1', startsAtLocal: '2026-10-22T09:00', remaining: 8 },
+      { slotId: null, startsAtLocal: null, remaining: null },
+    ];
+    expect(availabilityPicker.safeParse({ ...day, starts }).success).toBe(true);
+    expect(
+      componentPart.safeParse({ name: 'availability-picker', payload: { ...day, starts } }).success,
+    ).toBe(true);
+  });
+
+  it('refuses an empty day or more than 24 starts', () => {
+    const start = { slotId: 's', startsAtLocal: null, remaining: 1 };
+    expect(availabilityPicker.safeParse({ ...day, starts: [] }).success).toBe(false);
+    expect(
+      availabilityPicker.safeParse({ ...day, starts: Array.from({ length: 25 }, () => start) })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe('receipt-card', () => {
+  it('takes an Order with both statuses and keeps extra fields harmless', () => {
+    expect(receiptCard.safeParse({ order: { ...ORDER, extra: 1 } }).success).toBe(true);
+    expect(
+      componentPart.safeParse({ name: 'receipt-card', payload: { order: ORDER } }).success,
+    ).toBe(true);
+  });
+
+  it('refuses an unknown status', () => {
+    expect(receiptCard.safeParse({ order: { ...ORDER, status: 'booked' } }).success).toBe(false);
+    expect(receiptCard.safeParse({ order: { ...ORDER, paymentStatus: 'paid' } }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('elicitation', () => {
+  it('takes the server form, the draft and the state', () => {
+    expect(elicitationPayload.safeParse(ELICITATION).success).toBe(true);
+    expect(elicitationPayload.safeParse({ ...ELICITATION, draft: null }).success).toBe(true);
+  });
+
+  it('refuses a missing state, a non-object schema or a broken draft', () => {
+    for (const bad of [
+      { ...ELICITATION, requestState: '' },
+      { ...ELICITATION, requestedSchema: { type: 'string', properties: {} } },
+      { ...ELICITATION, draft: { ...ELICITATION.draft, paymentMode: 'cash' } },
+    ]) {
+      expect(elicitationPayload.safeParse(bad).success).toBe(false);
+    }
   });
 });

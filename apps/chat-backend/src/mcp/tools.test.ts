@@ -1,8 +1,8 @@
-import type { McpServerName } from '@fetivi/domain';
+import { GUEST_CONFIRMS_META_KEY, type McpServerName } from '@fetivi/domain';
 import type { Client, Tool } from '@modelcontextprotocol/client';
 import { describe, expect, it, vi } from 'vitest';
 import type { TurnClients } from './clients';
-import { createToolCatalog, listTurnTools, toAiTools } from './tools';
+import { createToolCatalog, listTurnTools, pausedTools, toAiTools } from './tools';
 
 const def = (name: string): Tool => ({
   name,
@@ -105,17 +105,23 @@ describe('toAiTools', () => {
     await expect(tools.t?.execute?.({}, execOptions)).rejects.toThrow('not permitted');
   });
 
-  it('leaves a pausing tool without execute', () => {
+  it('leaves a tool the server marks guest-confirmed without execute', () => {
     const { clients } = fakeClients({});
-    const tools = toAiTools(
-      [
-        { server: 'services', tool: def('order') },
-        { server: 'local', tool: def('read') },
-      ],
-      { clients, pauses: (server) => server === 'services' },
-    );
+    const listed = [
+      {
+        server: 'services' as const,
+        tool: { ...def('order'), _meta: { [GUEST_CONFIRMS_META_KEY]: true } },
+      },
+      { server: 'services' as const, tool: { ...def('write'), _meta: { other: true } } },
+      { server: 'local' as const, tool: def('read') },
+    ];
+    const tools = toAiTools(listed, { clients });
     expect(tools.order).toBeDefined();
     expect('execute' in (tools.order ?? {})).toBe(false);
+    expect(tools.write?.execute).toBeTypeOf('function');
     expect(tools.read?.execute).toBeTypeOf('function');
+    expect([...pausedTools(listed)].map(([name, l]) => [name, l.server])).toEqual([
+      ['order', 'services'],
+    ]);
   });
 });

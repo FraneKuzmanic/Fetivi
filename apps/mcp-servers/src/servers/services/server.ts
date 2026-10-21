@@ -1,5 +1,6 @@
 import {
   availabilityFor,
+  CONFIRM_KEY,
   type CreateOrderDraft,
   completeOrder,
   type Db,
@@ -30,7 +31,6 @@ import {
 } from '../tool';
 import { SERVER_VERSION } from '../version';
 import {
-  CONFIRM_KEY,
   clientCanElicitForm,
   confirmationMessage,
   contactSchemaFor,

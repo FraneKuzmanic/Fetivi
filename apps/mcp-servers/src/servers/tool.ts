@@ -1,4 +1,4 @@
-import type { GuestIdentity, Scope } from '@fetivi/domain';
+import { GUEST_CONFIRMS_META_KEY, type GuestIdentity, type Scope } from '@fetivi/domain';
 import {
   type CallToolResult,
   type InputRequiredResult,
@@ -96,6 +96,7 @@ function register<I extends z.ZodObject, O extends z.ZodObject>(
   name: string,
   config: GuestToolConfig<I, O>,
   callback: (args: z.infer<I>, ctx: ServerContext) => Promise<CallToolResult | InputRequiredResult>,
+  _meta?: Record<string, unknown>,
 ): RegisteredTool {
   assertNoIdentityArgs(name, config.inputSchema);
   return server.registerTool<O, I>(
@@ -106,6 +107,7 @@ function register<I extends z.ZodObject, O extends z.ZodObject>(
       inputSchema: config.inputSchema,
       outputSchema: config.outputSchema,
       annotations: config.annotations,
+      ...(_meta ? { _meta } : {}),
     },
     // The SDK's callback type is conditional on the schema type, which TypeScript cannot resolve
     // for a generic `I`; the callback is typed against `z.infer<I>` directly.
@@ -148,7 +150,12 @@ export function registerGuestConfirmTool<I extends z.ZodObject, O extends z.ZodO
     ctx: ServerContext,
   ) => Promise<z.infer<O> | InputRequiredResult>,
 ): RegisteredTool {
-  return register(server, name, config, (args, ctx) =>
-    answer(identity, config, () => handler(args, identity, ctx)),
+  return register(
+    server,
+    name,
+    config,
+    (args, ctx) => answer(identity, config, () => handler(args, identity, ctx)),
+    // The chat backend pauses the model on this flag and shows the guest the card.
+    { [GUEST_CONFIRMS_META_KEY]: true },
   );
 }

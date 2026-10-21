@@ -1,8 +1,14 @@
-import { ChoiceCard, FollowUpChips, PlaceCarousel } from '@fetivi/ui';
+import {
+  AvailabilityPicker,
+  ChoiceCard,
+  FollowUpChips,
+  PlaceCarousel,
+  ReceiptCard,
+} from '@fetivi/ui';
 import { componentPart } from '@fetivi/ui/payloads';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { choiceLabels, placeLabels } from './labels';
+import { choiceLabels, pickedText, pickerLabels, placeLabels, receiptLabels } from './labels';
 import { useSavedPlaces } from './SavedPlaces';
 
 /**
@@ -57,5 +63,20 @@ export function ComponentPart({
           labels={placeLabels(t, i18n.language)}
         />
       );
+    case 'availability-picker': {
+      const { date, starts } = part.payload;
+      return (
+        <AvailabilityPicker
+          date={date}
+          starts={starts}
+          active={latest}
+          // The guest's pick goes to Fetivi as their words; the model has the slot ids.
+          onPick={(start) => onSend(pickedText(t, i18n.language, date, start.startsAtLocal))}
+          labels={pickerLabels(t, i18n.language)}
+        />
+      );
+    }
+    case 'receipt-card':
+      return <ReceiptCard order={part.payload.order} labels={receiptLabels(t, i18n.language)} />;
   }
 }

@@ -884,3 +884,37 @@ input {
     height: 6rem;
   }
 }
+
+/* My trip */
+
+.trip-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding-top: 2rem;
+}
+
+.trip-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.trip-section h2 {
+  font-size: 1.125rem;
+}
+
+.trip-offline {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.trip-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

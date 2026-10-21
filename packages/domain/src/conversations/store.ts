@@ -1,4 +1,4 @@
-import { asc, eq, max } from 'drizzle-orm';
+import { and, asc, eq, max } from 'drizzle-orm';
 import type { Db, Executor } from '../db/client';
 import {
   type ConversationRow,
@@ -56,6 +56,11 @@ export async function loadMessages(db: Executor, conversationId: string): Promis
 export interface AppendTurnInput {
   conversationId: string;
   messages: { id: string; role: MessageRow['role']; parts: MessagePart[] }[];
+  /**
+   * Messages already stored whose parts are replaced: a paused tool call answered or cancelled,
+   * or an assistant message a resumed turn continued.
+   */
+  updated?: { id: string; parts: MessagePart[] }[];
   /** The projection the model has now been given. */
   projection: GuestProjection;
   situationNote: string | null;
@@ -63,7 +68,10 @@ export interface AppendTurnInput {
   now: Date;
 }
 
-/** Stores one completed turn's messages after the existing ones, and what the model now knows. */
+/**
+ * Stores one completed turn's messages after the existing ones, replaces the parts of the
+ * `updated` ones, and records what the model now knows.
+ */
 export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> {
   await db.transaction(async (tx) => {
     const [locked] = await tx
@@ -72,6 +80,15 @@ export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> 
       .where(eq(conversations.id, input.conversationId))
       .for('update');
     if (!locked) throw new ConversationRuleError('not-found');
+    for (const m of input.updated ?? []) {
+      const [row] = await tx
+        .update(messages)
+        .set({ parts: m.parts })
+        .where(and(eq(messages.id, m.id), eq(messages.conversationId, input.conversationId)))
+        .returning({ id: messages.id });
+      // Thrown inside the transaction, so nothing of the turn is written.
+      if (!row) throw new ConversationRuleError('not-found');
+    }
     const [last] = await tx
       .select({ seq: max(messages.seq) })
       .from(messages)

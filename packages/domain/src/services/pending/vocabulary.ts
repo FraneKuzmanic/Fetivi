@@ -13,3 +13,12 @@ export const PENDING_TTL_SECONDS = 600;
 
 /** The allotment hold placed at the guest's tap. It is committed right after, so this only bounds a lost commit. */
 export const ORDER_HOLD_MINUTES = 15;
+
+/** A tool definition's `_meta` flag: the host pauses the model on this tool and lets the guest confirm. */
+export const GUEST_CONFIRMS_META_KEY = 'app.fetivi/guest-confirms';
+
+/** Where the confirmation card reads the structured draft: the elicitation request's `_meta`. */
+export const ORDER_DRAFT_META_KEY = 'app.fetivi/order-draft';
+
+/** The key of the one input request create_order sends. */
+export const CONFIRM_KEY = 'confirm';

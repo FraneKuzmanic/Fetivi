@@ -8,6 +8,7 @@ import { accessRoutes } from './access/routes';
 import { chatRoutes } from './chat/routes';
 import { registerErrorHandler } from './http-error';
 import { createToolCatalog } from './mcp/tools';
+import { orderRoutes } from './orders/routes';
 import { savedPlaceRoutes } from './saved-places/routes';
 import type { TokenConfig } from './tokens/mint';
 import { tokenRoutes } from './tokens/routes';
@@ -43,6 +44,7 @@ export function buildApp(deps: AppDeps) {
   app.register(aboutMeRoutes, { db, now });
   app.register(savedPlaceRoutes, { db, now });
   app.register(tokenRoutes, { key: deps.tokens.key });
+  app.register(orderRoutes, { db, now, tokens: deps.tokens, mcpFetch: deps.chat.mcpFetch });
   app.register(chatRoutes, {
     db,
     now,

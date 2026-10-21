@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 import { ChatTab } from '../chat/ChatTab';
+import { TripTab } from '../my-trip/TripTab';
 import { EmptyTab, type Tab } from './EmptyTab';
 import { LanguageMenu } from './LanguageMenu';
 import { TabBar } from './TabBar';
@@ -33,7 +34,8 @@ export function Shell({
         </div>
       </header>
       <main id="main" className="shell-main">
-        {children ?? (tab === 'chat' ? <ChatTab /> : <EmptyTab tab={tab ?? 'chat'} />)}
+        {children ??
+          (tab === 'trip' ? <TripTab /> : tab === 'guide' ? <EmptyTab tab={tab} /> : <ChatTab />)}
       </main>
       <TabBar unread={unread} />
     </div>

@@ -133,3 +133,56 @@ describe('withComponentParts', () => {
     expect(await run(chunks)).toEqual(chunks);
   });
 });
+
+const ORDER = {
+  id: 'f2b1c3d4-0000-4000-8000-000000000001',
+  offerId: 'o-1',
+  offerTitle: 'Blue Lagoon boat trip',
+  status: 'confirmed',
+  paymentStatus: 'none',
+  paymentMode: 'direct',
+  date: '2026-10-22',
+  startsAt: '2026-10-22T07:00:00.000Z',
+  startsAtLocal: '2026-10-22T09:00',
+  quantity: 2,
+  priceMinor: 9000,
+  currency: 'EUR',
+  createdAt: '2026-10-21T10:00:00.000Z',
+};
+
+describe('booking components', () => {
+  const day = { offerId: 'o-1', date: '2026-10-22', quantity: 2 };
+
+  it('shows the starts of a day as a picker, without the instants', () => {
+    const part = componentFor('check_availability', {
+      ...day,
+      starts: [
+        {
+          slotId: 's-1',
+          startsAt: '2026-10-22T07:00:00.000Z',
+          startsAtLocal: '2026-10-22T09:00',
+          remaining: 8,
+        },
+      ],
+    });
+    expect(part).toEqual({
+      name: 'availability-picker',
+      payload: {
+        ...day,
+        starts: [{ slotId: 's-1', startsAtLocal: '2026-10-22T09:00', remaining: 8 }],
+      },
+    });
+  });
+
+  it('shows nothing for a day without starts', () => {
+    expect(componentFor('check_availability', { ...day, starts: [] })).toBeNull();
+  });
+
+  it('shows a receipt only for an Order that was made', () => {
+    expect(componentFor('create_order', { outcome: 'ordered', order: ORDER })).toEqual({
+      name: 'receipt-card',
+      payload: { order: ORDER },
+    });
+    expect(componentFor('create_order', { outcome: 'not_ordered', order: null })).toBeNull();
+  });
+});

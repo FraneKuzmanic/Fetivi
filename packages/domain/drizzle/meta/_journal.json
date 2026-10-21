@@ -134,6 +134,13 @@
       "when": 1792595825294,
       "tag": "0018_pending_actions",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792597982471,
+      "tag": "0019_space_email",
+      "breakpoints": true
     }
   ]
 }

@@ -104,6 +104,57 @@ describe('conversations', () => {
     expect(after?.systemPrompt).toBe('s');
   });
 
+  it('replaces stored parts and appends in one call, only within the conversation', async () => {
+    const a = await seed();
+    const b = await seed();
+    const open = (spaceId: string, projection: GuestProjection) =>
+      getOrCreateConversation(testDb.db, spaceId, { systemPrompt: 's', projection }, NOW);
+    const ca = await open(a.spaceId, a.projection);
+    const cb = await open(b.spaceId, b.projection);
+    const base = { situationNote: null, aboutMeNote: null, now: later(1000) };
+    await appendTurn(testDb.db, {
+      ...base,
+      conversationId: ca.id,
+      projection: a.projection,
+      messages: [
+        { id: 'u-a1', role: 'user', parts: text('book it') },
+        { id: 'u-a2', role: 'assistant', parts: text('paused') },
+      ],
+    });
+    await appendTurn(testDb.db, {
+      ...base,
+      conversationId: cb.id,
+      projection: b.projection,
+      messages: [{ id: 'u-b1', role: 'assistant', parts: text('other') }],
+    });
+
+    await appendTurn(testDb.db, {
+      ...base,
+      conversationId: ca.id,
+      projection: a.projection,
+      updated: [{ id: 'u-a2', parts: text('resumed') }],
+      messages: [{ id: 'u-a3', role: 'user', parts: text('thanks') }],
+    });
+    const rows = await loadMessages(testDb.db, ca.id);
+    expect(rows.map((r) => [r.id, r.seq, r.parts])).toEqual([
+      ['u-a1', 1, text('book it')],
+      ['u-a2', 2, text('resumed')],
+      ['u-a3', 3, text('thanks')],
+    ]);
+
+    await expect(
+      appendTurn(testDb.db, {
+        ...base,
+        conversationId: ca.id,
+        projection: a.projection,
+        updated: [{ id: 'u-b1', parts: text('stolen') }],
+        messages: [{ id: 'u-a4', role: 'user', parts: text('more') }],
+      }),
+    ).rejects.toThrow('not-found');
+    expect(await loadMessages(testDb.db, ca.id)).toHaveLength(3);
+    expect((await loadMessages(testDb.db, cb.id))[0]?.parts).toEqual(text('other'));
+  });
+
   it('deleting the space removes its conversation, messages and metrics', async () => {
     const { spaceId, projection } = await seed();
     const c = await getOrCreateConversation(

@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import type { CreateOrderDraft } from '@fetivi/domain';
+import { type CreateOrderDraft, ORDER_DRAFT_META_KEY } from '@fetivi/domain';
 import { inputRequired, type ServerContext } from '@modelcontextprotocol/server';
 import { describe, expect, it } from 'vitest';
 import {
   confirmationMessage,
   contactSchemaFor,
   createOrderStateCodec,
-  ORDER_DRAFT_META_KEY,
   orderDraftMeta,
 } from './elicitation';
 

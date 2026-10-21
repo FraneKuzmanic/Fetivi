@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { Executor } from '../../db/client';
 import { offers, offerTranslations } from '../../db/schema/offers';
@@ -355,6 +355,16 @@ export async function completeOrder(
       await markPending(tx, row.id, 'released', now);
       return { ok: false, code: RULE_CODES[error.code] ?? 'invalid-input' };
     }
+    // The card's email goes on the space with its opt-in: the latest email wins, the first
+    // opt-in time is kept (ticket 26 adds verification and recovery).
+    await tx
+      .update(spaces)
+      .set({
+        email: contact.email,
+        emailOptInAt: sql`coalesce(${spaces.emailOptInAt}, ${now})`,
+        updatedAt: now,
+      })
+      .where(eq(spaces.id, row.spaceId));
     await markPending(tx, row.id, 'consumed', now);
     return { ok: true, orderId: row.orderId, replay: false };
   });
