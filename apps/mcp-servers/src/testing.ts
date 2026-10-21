@@ -1,16 +1,21 @@
 import type { AddressInfo } from 'node:net';
 import {
   type Db,
+  GUEST_LANGUAGES,
   GUEST_TOKEN_ALG,
   GUEST_TOKEN_TTL_SECONDS,
   GUEST_TOKEN_TYPE,
+  type GuestIdentity,
   guestClaimsFor,
   loadSituation,
+  MCP_SERVERS,
   type McpServerName,
   type SpaceContext,
   serverUrl,
 } from '@fetivi/domain';
 import { createTestDatabase, type TestDatabase } from '@fetivi/domain/testing';
+import { createMcpFastifyApp } from '@modelcontextprotocol/fastify';
+import { McpServer } from '@modelcontextprotocol/server';
 import type { FastifyInstance } from 'fastify';
 import {
   type CryptoKey,
@@ -20,8 +25,15 @@ import {
   type JWTVerifyGetKey,
   SignJWT,
 } from 'jose';
+import { z } from 'zod';
 import { buildApp } from './app';
+import { createGuestTokenVerifier } from './auth/verifier';
 import { loadConfig } from './config';
+import { buildEmptyServer } from './servers/empty';
+import { mountServer } from './servers/mount';
+import { buildStayServer } from './servers/stay/server';
+import { registerGuestTool } from './servers/tool';
+import { SERVER_VERSION } from './servers/version';
 
 export const TEST_BASE = 'http://mcp.test';
 export const TEST_ISSUER = 'http://chat.test';
@@ -127,4 +139,70 @@ export function mcpPost(app: FastifyInstance, path: string, token: string | null
     },
     payload: JSON.stringify(body),
   });
+}
+
+/** The four servers as buildApp mounts them, for other apps' tests; `overrides` swaps a server. */
+export function buildMcpTestApp(opts: {
+  db: Db;
+  keys: JWTVerifyGetKey;
+  issuer: string;
+  publicBase: string;
+  /** For the projection's release gate only; the SDK checks token expiry on the real clock. */
+  now: () => Date;
+  overrides?: Partial<Record<McpServerName, (identity: GuestIdentity) => McpServer>>;
+}): FastifyInstance {
+  const { db, now } = opts;
+  const app = createMcpFastifyApp({ host: '127.0.0.1', allowedHosts: ['127.0.0.1', 'localhost'] });
+  for (const name of MCP_SERVERS) {
+    const verifier = createGuestTokenVerifier({
+      keys: opts.keys,
+      issuer: opts.issuer,
+      audience: serverUrl(opts.publicBase, name),
+    });
+    const override = opts.overrides?.[name];
+    mountServer(app, {
+      name,
+      publicBase: opts.publicBase,
+      verifier,
+      ...(override
+        ? { requiredScopes: [], factory: override }
+        : name === 'stay'
+          ? {
+              requiredScopes: ['unit:read'],
+              factory: (identity) => buildStayServer(identity, { db, now }),
+            }
+          : { requiredScopes: [], factory: () => buildEmptyServer(name) }),
+    });
+  }
+  return app;
+}
+
+/**
+ * A test-only server with one guest tool, `probe_situation`, that echoes the caller's language
+ * and scopes: proves a model tool call reaches an MCP server with this turn's token.
+ */
+export function buildProbeServer(identity: GuestIdentity): McpServer {
+  const server = new McpServer(
+    { name: 'fetivi-probe', version: SERVER_VERSION },
+    { capabilities: { tools: {} } },
+  );
+  registerGuestTool(
+    server,
+    identity,
+    'probe_situation',
+    {
+      title: 'Test probe',
+      description: 'Test probe',
+      scope: 'catalog:read',
+      inputSchema: z.object({ topic: z.string().max(40) }),
+      outputSchema: z.object({
+        topic: z.string(),
+        language: z.enum(GUEST_LANGUAGES),
+        scopes: z.array(z.string()),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ topic }) => ({ topic, language: identity.language, scopes: identity.scopes }),
+  );
+  return server;
 }

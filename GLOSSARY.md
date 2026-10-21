@@ -106,3 +106,7 @@ _Avoid_: context, state
 **Guest projection**:
 The part of a Unit's record a guest may see at a given moment, in the guest's language: no private Host fields, and arrival details and codes only from the release time.
 _Avoid_: guest view, public record
+
+**Conversation**:
+One Space's ongoing chat with Fetivi: the guest's messages, Fetivi's answers and the notes that tell the model what changed. Each Space has exactly one, read-only once the Space closes.
+_Avoid_: chat session, thread

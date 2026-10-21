@@ -22,7 +22,7 @@ const ready: SpaceState = {
   } satisfies Space,
 };
 
-const CHAT_TEXT = 'This is where we&#x27;ll chat.';
+const CHAT_TEXT = '<section class="chat"';
 const NO_LINK = 'Open the link your host sent you';
 
 // AC8: without a valid space, nothing beyond the picker and the PIN screen is reachable.
@@ -63,7 +63,7 @@ describe('guest-web App', () => {
     expect(html).toContain(CHAT_TEXT);
     expect(html).toContain('<nav');
     // Focus lands on the tab's heading after the PIN.
-    expect(html).toContain('<h1 id="tab-title" tabindex="-1">Chat</h1>');
+    expect(html).toContain('<h1 id="tab-title" tabindex="-1" class="visually-hidden">Chat</h1>');
   });
 
   it('asks for the PIN of another unit even with a space', () => {

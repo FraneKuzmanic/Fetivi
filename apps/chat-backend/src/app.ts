@@ -1,8 +1,12 @@
 import type { Db } from '@fetivi/domain';
+import type { Egress } from '@fetivi/egress';
+import type { LanguageModel } from 'ai';
 import Fastify from 'fastify';
 import { registerAccess } from './access/plugin';
 import { accessRoutes } from './access/routes';
+import { chatRoutes } from './chat/routes';
 import { registerErrorHandler } from './http-error';
+import { createToolCatalog } from './mcp/tools';
 import type { TokenConfig } from './tokens/mint';
 import { tokenRoutes } from './tokens/routes';
 
@@ -16,6 +20,12 @@ export interface AppDeps {
   trustProxy?: string | undefined;
   /** Guest token signing for the MCP servers; its public key is served as the JWKS. */
   tokens: TokenConfig;
+  chat: {
+    /** Null without an API key: the chat then answers 503. */
+    model: LanguageModel | null;
+    /** Outbound fetch to the MCP servers. */
+    mcpFetch: Egress['fetch'];
+  };
 }
 
 export function buildApp(deps: AppDeps) {
@@ -29,5 +39,14 @@ export function buildApp(deps: AppDeps) {
   app.get('/health', async () => ({ status: 'ok', service: 'chat-backend' }));
   app.register(accessRoutes, { db, now });
   app.register(tokenRoutes, { key: deps.tokens.key });
+  app.register(chatRoutes, {
+    db,
+    now,
+    tokens: deps.tokens,
+    model: deps.chat.model,
+    mcpFetch: deps.chat.mcpFetch,
+    catalog: createToolCatalog(),
+    log: app.log,
+  });
   return app;
 }

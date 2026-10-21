@@ -9,15 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/react": "4.0.146",
     "@fetivi/domain": "workspace:*",
     "@fetivi/ui": "workspace:*",
     "@fontsource/poppins": "5.3.0",
     "@phosphor-icons/react": "2.1.10",
+    "ai": "7.0.142",
     "i18next": "26.4.4",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-i18next": "17.0.16",
-    "react-router": "8.4.0"
+    "react-router": "8.4.0",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/react": "19.3.0",

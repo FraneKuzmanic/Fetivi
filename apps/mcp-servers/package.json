@@ -2,6 +2,9 @@
   "name": "@fetivi/mcp-servers",
   "private": true,
   "type": "module",
+  "exports": {
+    "./testing": "./src/testing.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "dev": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx --watch src/index.ts",

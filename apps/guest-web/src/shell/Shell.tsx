@@ -1,3 +1,4 @@
+import { ChatTab } from '../chat/ChatTab';
 import { EmptyTab, type Tab } from './EmptyTab';
 import { LanguageMenu } from './LanguageMenu';
 import { TabBar } from './TabBar';
@@ -13,7 +14,7 @@ export function Shell({ tab, unread = 0 }: { tab: Tab; unread?: number }) {
         </div>
       </header>
       <main id="main" className="shell-main">
-        <EmptyTab tab={tab} />
+        {tab === 'chat' ? <ChatTab /> : <EmptyTab tab={tab} />}
       </main>
       <TabBar unread={unread} />
     </div>

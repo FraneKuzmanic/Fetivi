@@ -16,6 +16,8 @@ const schema = z
     GUEST_TOKEN_ISSUER: z.url().default('http://localhost:3000'),
     /** Base of the MCP servers' canonical URLs, the token audiences (production https://mcp.<domain>). */
     MCP_PUBLIC_URL: z.url().default('http://localhost:3002'),
+    /** Claude for the guest chat; without it /api/chat answers 503. */
+    ANTHROPIC_API_KEY: z.string().optional(),
   })
   .refine((c) => c.NODE_ENV !== 'production' || Boolean(c.GUEST_TOKEN_PRIVATE_KEY), {
     message: 'GUEST_TOKEN_PRIVATE_KEY is required in production',

@@ -7,7 +7,11 @@ export type ErrorCode =
   | 'bad-origin'
   | 'no-space'
   | 'wrong-pin'
-  | 'too-many-attempts';
+  | 'too-many-attempts'
+  | 'space-closed'
+  | 'turn-in-progress'
+  | 'chat-unavailable'
+  | 'turn-failed';
 
 export class HttpError extends Error {
   override name = 'HttpError';

@@ -2,12 +2,13 @@ import { createDb } from '@fetivi/domain';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { loadConfig } from './config';
+import { NO_CHAT } from './testing';
 import { loadSigningKey } from './tokens/keys';
 
 // The pg pool connects lazily, so no database is needed for these tests.
 const { db, pool } = createDb('postgres://unused@127.0.0.1:1/x');
 const tokens = { key: await loadSigningKey(undefined), issuer: 'http://x', mcpBaseUrl: 'http://y' };
-const deps = { db, appOrigin: 'http://app.test', logger: false, tokens };
+const deps = { db, appOrigin: 'http://app.test', logger: false, tokens, chat: NO_CHAT };
 
 afterAll(async () => {
   await pool.end();
