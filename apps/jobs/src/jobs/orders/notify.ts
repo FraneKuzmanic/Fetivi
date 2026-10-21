@@ -3,6 +3,7 @@ import {
   type OrderNotifyJobData,
   QUEUE_OPTIONS,
   QUEUES,
+  type SendOutcome,
   sendAdminAlert,
   sendProviderNotification,
 } from '@fetivi/domain';
@@ -18,7 +19,7 @@ export function orderNotifyJob(deps: NotifyDeps): JobDefinition<OrderNotifyJobDa
     name: QUEUES.orderNotify,
     queue: QUEUE_OPTIONS.orderNotify,
     async handler({ orderId, proposalId, kind }) {
-      let outcome: string;
+      let outcome: SendOutcome | 'logged';
       switch (kind) {
         case 'provider_confirmed':
           outcome = await sendProviderNotification(deps, { orderId, proposalId, kind });

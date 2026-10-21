@@ -6,7 +6,7 @@ import { orderNotificationDeliveries } from '../db/schema/notifications';
 import { orders } from '../db/schema/orders';
 import { createJobQueue, ensureQueues, type JobQueue } from '../jobs/queue';
 import { createMemoryMailer, type Mailer } from '../mail';
-import { createOrder, type OrderDeps } from '../orders/machine';
+import { cancel, createOrder, type OrderDeps } from '../orders/machine';
 import { confirmHeldOrder } from '../services/adapters';
 import { createTestDatabase, type TestDatabase } from '../testing';
 import {
@@ -131,6 +131,20 @@ describe('the Provider email', () => {
 
   it("is skipped for a host's own Offer", async () => {
     const { job } = await confirmedOrder({ host: true });
+    const mailer = createMemoryMailer();
+    expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('skipped');
+    expect(mailer.sent).toHaveLength(0);
+    const [order] = await testDb.db.select().from(orders).where(eq(orders.id, job.orderId));
+    expect(order?.providerLinkTokenHash).toBeNull();
+  });
+
+  it('is skipped, with no link issued, once the Order is no longer confirmed', async () => {
+    const { job } = await confirmedOrder();
+    await cancel(orderDeps(), {
+      orderId: job.orderId,
+      proposalId: job.proposalId,
+      trigger: 'guest',
+    });
     const mailer = createMemoryMailer();
     expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('skipped');
     expect(mailer.sent).toHaveLength(0);

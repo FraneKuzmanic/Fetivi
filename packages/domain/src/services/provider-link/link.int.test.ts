@@ -169,9 +169,9 @@ describe('the page view', () => {
     const view = providerLinkView(found);
     expect(view.final).toBe(true);
     expect(view.actions).toEqual([]);
+    expect(view.guest).toEqual({});
     expect((await acknowledgeOrder(deps(), ref)).outcome).toBe('rejected');
-    // Already cancelled: the machine reads a repeat cancellation as a no-op.
-    expect((await cannotFulfil(deps(), ref)).outcome).toBe('unchanged');
+    expect((await cannotFulfil(deps(), ref)).outcome).toBe('rejected');
     expect(await status(ref.orderId)).toBe('cancelled');
   });
 });
@@ -200,7 +200,7 @@ describe("Can't fulfil", () => {
           where name = ${QUEUES.orderNotify} and data->>'orderId' = ${ref.orderId}`,
     );
     expect(rows.map((r) => r.kind)).toContain('admin_provider_cancelled');
-    expect((await cannotFulfil(deps(), ref)).outcome).toBe('unchanged');
+    expect((await cannotFulfil(deps(), ref)).outcome).toBe('rejected');
     expect(await remaining(slotId)).toBe(4);
   });
 });

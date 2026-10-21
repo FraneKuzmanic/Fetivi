@@ -157,6 +157,7 @@ describe('the page', () => {
     const body = (await get(t.app, url)).body;
     expect(body).toContain('Otkazana');
     expect(body).not.toContain('<form');
+    expect(body).not.toContain('Ana Horvat');
   });
 });
 

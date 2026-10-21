@@ -71,6 +71,7 @@ export const allotmentAdapter: ProviderAdapter = {
   async hold(ctx, { orderId, proposalId, slotId, quantity, expiresAt }) {
     if (!slotId) throw new AdapterError('invalid-input');
     const existing = await holdOf(ctx, proposalId);
+    if (existing?.state === 'released') throw new AdapterError('hold-gone');
     if (existing) return { ref: existing.id, expiresAt: existing.expiresAt };
     const [slot] = await ctx.db
       .select()

@@ -6,7 +6,7 @@ import { orderProposals, orders } from '../../db/schema/orders';
 import { properties, units } from '../../db/schema/properties';
 import { stays } from '../../db/schema/stays';
 import { type GuestFields, guestFieldsFor } from '../../notifications/provider/compose';
-import type { PriceUnit, ProviderLanguage } from '../../offers/vocabulary';
+import { PROVIDER_DEFAULTS, type PriceUnit, type ProviderLanguage } from '../../offers/vocabulary';
 import { type OrderDeps, OrderRuleError, type TransitionOutcome } from '../../orders/machine';
 import { isFinalOrderStatus, type OrderStatus } from '../../orders/vocabulary';
 import { type CivilDate, toLocalDateTime } from '../../time';
@@ -77,6 +77,7 @@ export interface ProviderLinkView {
   startTime: string | null;
   quantity: number;
   priceUnit: PriceUnit;
+  /** Empty once the Order is final: the link stays, the guest's contact details do not. */
   guest: GuestFields;
   status: OrderStatus;
   final: boolean;
@@ -88,6 +89,7 @@ export interface ProviderLinkView {
 export function providerLinkView(found: FoundProviderOrder): ProviderLinkView {
   const { order, proposal } = found;
   const zone = found.destinationZone ?? found.propertyZone;
+  const final = isFinalOrderStatus(order.status);
   const open = order.status === 'confirmed' && order.availabilityMode === 'allotment';
   const actions: ProviderLinkAction[] = !open
     ? []
@@ -98,15 +100,15 @@ export function providerLinkView(found: FoundProviderOrder): ProviderLinkView {
     orderId: order.id,
     proposalId: proposal.id,
     providerName: found.provider?.name ?? null,
-    language: found.provider?.language ?? 'hr',
+    language: found.provider?.language ?? PROVIDER_DEFAULTS.language,
     offerTitle: found.offer.title,
     date: proposal.date,
     startTime: proposal.startsAt ? toLocalDateTime(proposal.startsAt, zone).slice(11) : null,
     quantity: proposal.quantity,
     priceUnit: order.priceUnit,
-    guest: guestFieldsFor(found.offer.contactFields, order),
+    guest: final ? {} : guestFieldsFor(found.offer.contactFields, order),
     status: order.status,
-    final: isFinalOrderStatus(order.status),
+    final,
     acknowledgedAt: proposal.providerAcknowledgedAt,
     actions,
   };
@@ -144,6 +146,8 @@ export async function cannotFulfil(deps: OrderDeps, ref: ProposalRef): Promise<T
   const [order] = await deps.db.select().from(orders).where(eq(orders.id, ref.orderId));
   if (!order) throw new OrderRuleError('not-found');
   if (order.currentProposalId !== ref.proposalId) return { outcome: 'stale', order };
+  // A final Order has no actions left, whoever closed it: the Provider recorded nothing here.
+  if (isFinalOrderStatus(order.status)) return { outcome: 'rejected', order };
   // Other modes get their own Provider actions (36, 37).
   if (order.availabilityMode !== 'allotment') return { outcome: 'rejected', order };
   const result = await handleInboundCancellation(

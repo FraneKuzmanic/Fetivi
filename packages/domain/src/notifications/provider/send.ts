@@ -30,17 +30,22 @@ export async function sendProviderNotification(
   deps: NotifyDeps,
   job: { orderId: string; proposalId: string; kind: 'provider_confirmed' },
 ): Promise<SendOutcome> {
-  const [owner] = await deps.db
-    .select({ providerId: offers.providerId })
+  // Checked before the link is issued, so a skipped send stores no link hash.
+  const [current] = await deps.db
+    .select({
+      providerId: offers.providerId,
+      status: orders.status,
+      proposalId: orders.currentProposalId,
+    })
     .from(orders)
     .innerJoin(offers, eq(offers.id, orders.offerId))
     .where(eq(orders.id, job.orderId));
-  if (!owner?.providerId) return 'skipped';
+  if (!current?.providerId) return 'skipped';
+  if (current.status !== 'confirmed' || current.proposalId !== job.proposalId) return 'skipped';
   const token = await issueProviderLink(deps.db, deps.providerLink.secret, job.orderId);
   const found = await findOrderByLinkToken(deps.db, token);
   if (!found?.provider) return 'skipped';
   const view = providerLinkView(found);
-  if (view.status !== 'confirmed' || view.proposalId !== job.proposalId) return 'skipped';
   const { email } = found.provider;
   const message = composeProviderConfirmed({
     language: view.language,

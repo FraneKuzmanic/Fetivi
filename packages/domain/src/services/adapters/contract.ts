@@ -104,6 +104,15 @@ export function describeAdapterContract(name: string, setup: () => Promise<Contr
       await rejectsWith(f.adapter.commit(f.ctx, request), 'hold-gone');
     });
 
+    it('refuses to hold a released proposal again and takes no capacity', async () => {
+      const before = await f.capacityLeft();
+      const request = await f.newProposal(1);
+      await f.adapter.hold(f.ctx, request);
+      await f.adapter.release(f.ctx, request);
+      await rejectsWith(f.adapter.hold(f.ctx, request), 'hold-gone');
+      if (before !== null) expect(await f.capacityLeft()).toBe(before);
+    });
+
     it('refuses a hold beyond capacity and changes nothing', async () => {
       const before = await f.capacityLeft();
       if (before === null) return;

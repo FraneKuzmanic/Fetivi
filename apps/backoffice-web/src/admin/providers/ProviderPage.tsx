@@ -1,5 +1,6 @@
 import {
   OFFER_LIMITS,
+  PROVIDER_DEFAULTS,
   PROVIDER_LANGUAGES,
   type ProviderLanguage,
 } from '@fetivi/domain/offer-vocabulary';
@@ -79,7 +80,7 @@ export function NewProviderPage() {
   const [name, setName] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [whatsappPhone, setWhatsappPhone] = useState<string | null>(null);
-  const [language, setLanguage] = useState<ProviderLanguage>('hr');
+  const [language, setLanguage] = useState<ProviderLanguage>(PROVIDER_DEFAULTS.language);
   const [commission, setCommission] = useState<number | null>(0);
 
   function submit(event: FormEvent) {
@@ -137,7 +138,7 @@ export function NewProviderPage() {
               value={language}
               options={PROVIDER_LANGUAGES}
               labels={PROVIDER_LANGUAGE_LABELS}
-              onChange={(value) => setLanguage(value ?? 'hr')}
+              onChange={(value) => setLanguage(value ?? PROVIDER_DEFAULTS.language)}
             />
             <CommissionField value={commission} onChange={setCommission} />
           </div>
@@ -264,7 +265,7 @@ export function ProviderPage() {
             value={draft.language}
             options={PROVIDER_LANGUAGES}
             labels={PROVIDER_LANGUAGE_LABELS}
-            onChange={(value) => set('language')(value ?? 'hr')}
+            onChange={(value) => set('language')(value ?? PROVIDER_DEFAULTS.language)}
           />
           <TextField
             label="Tax number"

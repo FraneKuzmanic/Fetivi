@@ -60,7 +60,7 @@ export interface InboundCancellation {
 export interface ProviderAdapter {
   readonly mode: AvailabilityMode;
   checkAvailability(ctx: AdapterContext, query: AvailabilityQuery): Promise<AvailableStart[]>;
-  /** Takes capacity for one proposal until `expiresAt`. Idempotent per proposal. Throws AdapterError('sold-out'). */
+  /** Takes capacity for one proposal until `expiresAt`. Idempotent per proposal. Throws AdapterError('sold-out'), or 'hold-gone' once the proposal's hold was released. */
   hold(ctx: AdapterContext, request: HoldRequest): Promise<HoldResult>;
   /** Turns the proposal's hold into a reservation under the Order id. Idempotent. Throws AdapterError('hold-gone') after release. */
   commit(ctx: AdapterContext, ref: ProposalRef): Promise<{ externalRef: string }>;

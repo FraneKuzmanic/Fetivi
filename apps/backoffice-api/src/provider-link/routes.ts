@@ -4,6 +4,7 @@ import {
   type Db,
   findOrderByLinkToken,
   type JobQueue,
+  PROVIDER_DEFAULTS,
   PROVIDER_LANGUAGES,
   type ProviderLanguage,
   providerLinkView,
@@ -82,7 +83,7 @@ export async function providerLinkRoutes(
     const query = Query.safeParse(request.query);
     const lang = query.success ? query.data.lang : undefined;
     const found = await findOrderByLinkToken(deps.db, token);
-    if (!found) return html(reply, 404, renderNotFound(lang ?? 'hr'));
+    if (!found) return html(reply, 404, renderNotFound(lang ?? PROVIDER_DEFAULTS.language));
     const view = providerLinkView(found);
     const pageLang: ProviderLanguage = lang ?? view.language;
     const flash: Flash | undefined = query.success ? query.data.done : undefined;
@@ -94,7 +95,7 @@ export async function providerLinkRoutes(
     const body = Body.safeParse(request.body);
     const lang = body.success ? body.data.lang : undefined;
     const found = await findOrderByLinkToken(deps.db, token);
-    if (!found) return html(reply, 404, renderNotFound(lang ?? 'hr'));
+    if (!found) return html(reply, 404, renderNotFound(lang ?? PROVIDER_DEFAULTS.language));
     const view = providerLinkView(found);
     const pageLang = lang ?? view.language;
     if (!body.success) return html(reply, 400, renderBadRequest(pageLang));
