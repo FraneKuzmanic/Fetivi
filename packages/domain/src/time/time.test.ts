@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   arrivalReleaseAt,
   endOfCheckoutDay,
+  endOfCivilDay,
   fromLocalDateTime,
   InvalidTimeInputError,
   startOfCivilDay,
@@ -20,6 +21,11 @@ describe('civil-day helpers', () => {
     [
       'end of checkout day on DST end',
       () => endOfCheckoutDay('2026-10-25', ZG),
+      '2026-10-25T23:00:00.000Z',
+    ],
+    [
+      'end of a civil day on DST end',
+      () => endOfCivilDay('2026-10-25', ZG),
       '2026-10-25T23:00:00.000Z',
     ],
     [

@@ -1,5 +1,5 @@
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
-import type { Executor } from '../db/client';
+import type { Executor, Tx } from '../db/client';
 import { allotmentSlots, providers } from '../db/schema/offers';
 import {
   inventoryHolds,
@@ -14,8 +14,8 @@ import { spaces } from '../db/schema/spaces';
 import { stays } from '../db/schema/stays';
 import type { JobQueue } from '../jobs/queue';
 import { lockOfferRow } from '../offers/translation';
-import { type CivilDate, endOfCheckoutDay, toLocalDateTime } from '../time';
-import { enqueueNotification, scheduleTimer } from './timers';
+import { type CivilDate, endOfCivilDay, toLocalDateTime } from '../time';
+import { enqueueNotification, type OrderTimerJobData, scheduleTimer } from './timers';
 import { actionTarget, nextStatus, type OrderAction, REQUIRED_NOTIFICATION } from './transitions';
 import type { OrderStatus, OrderTrigger, Proposer } from './vocabulary';
 
@@ -93,7 +93,12 @@ export interface ActionInput {
   note?: string;
 }
 
-type Tx = Parameters<Parameters<Executor['transaction']>[0]>[0];
+const TIMER_TRIGGERS: readonly OrderTrigger[] = [
+  'card_timer',
+  'hold_timer',
+  'window_timer',
+  'completion_timer',
+];
 
 const isQuantity = (n: number) => Number.isInteger(n) && n >= 1 && n <= 999;
 
@@ -192,7 +197,11 @@ async function withLockedOrder(
   });
 }
 
-/** Checks the table and writes the status change; the caller applies the effects. */
+/**
+ * Checks the table and writes the status change; the caller applies the effects. Not legal now:
+ * `unchanged` when the same action by the same trigger already led here, `stale` for a timer that
+ * no longer applies, `rejected` otherwise.
+ */
 async function transition(
   tx: Tx,
   deps: OrderDeps,
@@ -202,8 +211,9 @@ async function transition(
 ): Promise<TransitionOutcome> {
   const to = nextStatus(order.status, action, input.trigger, order.availabilityMode);
   if (to === null) {
-    const target = actionTarget(action, order.availabilityMode);
-    return { outcome: order.status === target ? 'unchanged' : 'rejected', order };
+    const target = actionTarget(action, input.trigger, order.availabilityMode);
+    if (order.status === target) return { outcome: 'unchanged', order };
+    return { outcome: TIMER_TRIGGERS.includes(input.trigger) ? 'stale' : 'rejected', order };
   }
   const updated = await writeStatus(tx, deps, order, to, input.proposalId, input);
   return { outcome: 'applied', order: updated };
@@ -316,9 +326,9 @@ export async function createOrder(
     const before = await existing();
     if (before) return { order: before, created: false };
 
-    const place = await stayOfSpace(tx, input.spaceId);
-    if (!place) throw new OrderRuleError('not-found');
-    assertWithinStay(input.date, place.stay);
+    const stayAndZone = await stayOfSpace(tx, input.spaceId);
+    if (!stayAndZone) throw new OrderRuleError('not-found');
+    assertWithinStay(input.date, stayAndZone.stay);
 
     const offer = await lockOfferRow(tx, input.offerId);
     if (!offer) throw new OrderRuleError('not-found');
@@ -328,7 +338,7 @@ export async function createOrder(
       throw new OrderRuleError('invalid-input');
     }
     const slot = input.slotId
-      ? await assertSlot(tx, input.slotId, offer.id, input.date, place.zone)
+      ? await assertSlot(tx, input.slotId, offer.id, input.date, stayAndZone.zone)
       : undefined;
     let commissionBp = 0;
     if (offer.providerId) {
@@ -345,7 +355,7 @@ export async function createOrder(
       .values({
         id: input.id,
         spaceId: input.spaceId,
-        stayId: place.stay.id,
+        stayId: stayAndZone.stay.id,
         offerId: offer.id,
         availabilityMode: offer.availabilityMode,
         paymentMode: offer.paymentMode,
@@ -454,12 +464,11 @@ export async function confirm(
       if (updated) confirmed = updated;
     }
     const { zone } = await stayOfOrder(tx, order);
-    // The helper returns the next civil day's start: the end of the Order's date.
     await scheduleTimer(
       tx,
       deps.queue,
       { orderId: order.id, proposalId: proposal.id, operation: 'completion' },
-      endOfCheckoutDay(proposal.date, zone),
+      endOfCivilDay(proposal.date, zone),
     );
     return { outcome: 'applied', order: confirmed };
   });
@@ -597,6 +606,23 @@ export async function responseWindowMissed(
     });
     return { outcome: 'applied', order };
   });
+}
+
+/** The order-timer job: hands a due timer back to the machine. */
+export async function runOrderTimer(
+  deps: OrderDeps,
+  { orderId, proposalId, operation }: OrderTimerJobData,
+): Promise<TransitionOutcome> {
+  switch (operation) {
+    case 'card_expiry':
+      return expire(deps, { orderId, proposalId, trigger: 'card_timer' });
+    case 'hold_expiry':
+      return expire(deps, { orderId, proposalId, trigger: 'hold_timer' });
+    case 'completion':
+      return complete(deps, { orderId, proposalId, trigger: 'completion_timer' });
+    case 'response_window':
+      return responseWindowMissed(deps, { orderId, proposalId });
+  }
 }
 
 /** An Order with its current proposal. */

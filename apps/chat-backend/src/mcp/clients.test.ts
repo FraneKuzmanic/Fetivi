@@ -28,10 +28,15 @@ describe('openTurnClients timing', () => {
 
   it('adds separate calls up', async () => {
     const c = clients();
+    const start = performance.now();
     await c.timed(() => wait(20));
+    const gapStart = performance.now();
     await wait(30);
+    const gap = performance.now() - gapStart;
     await c.timed(() => wait(20));
+    const wall = performance.now() - start;
     expect(c.mcpMs).toBeGreaterThanOrEqual(35);
-    expect(c.mcpMs).toBeLessThan(65);
+    // The gap between the calls is not counted, however long the machine made it.
+    expect(c.mcpMs).toBeLessThanOrEqual(wall - gap + 1);
   });
 });

@@ -42,7 +42,8 @@ export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 /**
  * The explicit causes of a transition (architecture §4.3), recorded on every OrderEvent.
- * `payment_webhook` is reserved for ticket 33 and unused until then.
+ * `payment_webhook` is reserved for ticket 33 and unused until then. `window_timer` is never
+ * recorded: a missed response window alerts the admin and changes no status.
  */
 export const ORDER_TRIGGERS = [
   'guest',

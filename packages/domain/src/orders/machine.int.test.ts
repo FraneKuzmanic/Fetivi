@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { accounts } from '../db/schema/accounts';
 import { allotmentSlots } from '../db/schema/offers';
 import { inventoryHolds, orderEvents, orderProposals, orders } from '../db/schema/orders';
 import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../jobs/queue';
@@ -19,8 +20,9 @@ import {
   type OrderDeps,
   OrderRuleError,
   propose,
+  runOrderTimer,
 } from './machine';
-import { enqueueNotification, orderJobId, runOrderTimer } from './timers';
+import { enqueueNotification, orderJobId } from './timers';
 
 let testDb: TestDatabase;
 let boss: PgBoss;
@@ -159,6 +161,8 @@ describe('allotment Order', () => {
     const eventsBefore = (await events(order.id)).length;
     const jobsBefore = (await jobsOf(order.id)).length;
     expect((await confirm(deps(), { ...ref, trigger: 'adapter' })).outcome).toBe('unchanged');
+    // A trigger that may never confirm is rejected, even though the Order is confirmed.
+    expect((await confirm(deps(), { ...ref, trigger: 'guest' })).outcome).toBe('rejected');
     expect(await events(order.id)).toHaveLength(eventsBefore);
     expect(await jobsOf(order.id)).toHaveLength(jobsBefore);
 
@@ -174,6 +178,11 @@ describe('allotment Order', () => {
     expect(await remaining(slotId)).toBe(4);
     expect((await holdOf(proposal.id))?.state).toBe('released');
     expect(await notifyKinds(order.id)).toEqual(['order_confirmed', 'order_cancelled']);
+
+    // The completion timer after cancellation no longer applies: stale.
+    const afterCancel = await runOrderTimer(deps(), { ...ref, operation: 'completion' });
+    expect(afterCancel.outcome).toBe('stale');
+    expect(afterCancel.order.status).toBe('cancelled');
   });
 
   it('rejects illegal transitions without writing', async () => {
@@ -395,6 +404,10 @@ describe('on-request Order and proposals', () => {
       trigger: 'provider_link',
     });
     expect(ok.order.status).toBe('confirmed');
+    // The card timer, due now, no longer applies once the guest confirmed: stale.
+    clock = new Date(cardExpiresAt.getTime() + 1000);
+    expect((await runOrderTimer(deps(), v2Card)).outcome).toBe('stale');
+    clock = NOW;
     const all = await events(order.id);
     expect(all.at(-1)?.proposalId).toBe(v2.id);
     expect(all.every((e) => e.toPaymentStatus === 'none')).toBe(true);
@@ -446,6 +459,37 @@ describe('storage guarantees', () => {
     await expect(
       testDb.db.execute(sql`update order_events set note = 'x' where order_id = ${order.id}`),
     ).rejects.toMatchObject({ cause: { message: 'order_events is append-only' } });
+  });
+
+  it('lets deleting the acting admin null the actor, and nothing else', async () => {
+    clock = NOW;
+    const { offerId } = await seedOrderableOffer(testDb.db, {
+      hostId: unit.hostId,
+      availabilityMode: 'on_request',
+    });
+    const { order } = await createOrder(deps(), input({ offerId }));
+    const { proposal } = await current(order.id);
+    const [admin] = await testDb.db
+      .insert(accounts)
+      .values({ email: `admin-${order.id}@example.test`, passwordHash: 'x', role: 'admin' })
+      .returning();
+    if (!admin) throw new Error('no admin');
+    await cancel(deps(), {
+      orderId: order.id,
+      proposalId: proposal.id,
+      trigger: 'admin',
+      actorId: admin.id,
+    });
+    await expect(
+      testDb.db.execute(
+        sql`update order_events set actor_id = null, note = 'x' where actor_id = ${admin.id}`,
+      ),
+    ).rejects.toMatchObject({ cause: { message: 'order_events is append-only' } });
+
+    await testDb.db.delete(accounts).where(eq(accounts.id, admin.id));
+    const cancelled = (await events(order.id)).at(-1);
+    expect(cancelled?.toStatus).toBe('cancelled');
+    expect(cancelled?.actorId).toBeNull();
   });
 
   it('enqueues a notification once per Order, proposal and kind', async () => {

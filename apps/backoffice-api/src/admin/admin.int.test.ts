@@ -1,7 +1,7 @@
 import { accounts, actAsAudit } from '@fetivi/domain';
 import { eq, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createAdmin } from '../cli/create-admin';
 import {
   createTestApp,
@@ -112,22 +112,25 @@ describe('act as host', () => {
     expect(stop.statusCode).toBe(200);
     expect(stop.json().actingAs).toBeNull();
 
-    const audit = await get(t.app, '/api/admin/audit', adminCookie);
-    const entries = audit.json().entries;
-    expect(entries.map((e: { route: string }) => e.route)).toEqual([
-      '/api/admin/act-as/stop',
-      '/api/host/probe',
-      '/api/admin/act-as',
-    ]);
-    for (const entry of entries) {
-      expect(entry).toMatchObject({
-        adminId,
-        hostId: hostA.id,
-        hostEmail: 'a@example.test',
-        method: 'POST',
-        statusCode: 200,
-      });
-    }
+    // The status code is recorded in onResponse, after the reply has been sent.
+    await vi.waitFor(async () => {
+      const audit = await get(t.app, '/api/admin/audit', adminCookie);
+      const entries = audit.json().entries;
+      expect(entries.map((e: { route: string }) => e.route)).toEqual([
+        '/api/admin/act-as/stop',
+        '/api/host/probe',
+        '/api/admin/act-as',
+      ]);
+      for (const entry of entries) {
+        expect(entry).toMatchObject({
+          adminId,
+          hostId: hostA.id,
+          hostEmail: 'a@example.test',
+          method: 'POST',
+          statusCode: 200,
+        });
+      }
+    });
   });
 
   it('does not log reads made while acting', async () => {

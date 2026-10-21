@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AVAILABILITY_MODES } from '../offers/vocabulary';
-import { nextStatus, ORDER_ACTIONS } from './transitions';
+import { actionTarget, nextStatus, ORDER_ACTIONS } from './transitions';
 import { FINAL_ORDER_STATUSES, ORDER_STATUSES, ORDER_TRIGGERS } from './vocabulary';
 
 // Written out independently of the implementation: `from action trigger mode -> to`.
@@ -82,5 +82,23 @@ describe('nextStatus', () => {
     expect(nextStatus('awaiting_confirmation', 'guest_confirm', 'guest', 'live')).toBe(
       'confirming',
     );
+  });
+});
+
+describe('actionTarget', () => {
+  it('is the target of every legal edge of the action, and null for a trigger never legal', () => {
+    for (const action of ORDER_ACTIONS) {
+      for (const trigger of ORDER_TRIGGERS) {
+        for (const mode of AVAILABILITY_MODES) {
+          const targets = new Set(
+            ORDER_STATUSES.map((from) => expected.get(`${from} ${action} ${trigger} ${mode}`)),
+          );
+          targets.delete(undefined);
+          const key = `${action} ${trigger} ${mode}`;
+          expect(targets.size, key).toBeLessThanOrEqual(1);
+          expect(actionTarget(action, trigger, mode), key).toBe([...targets][0] ?? null);
+        }
+      }
+    }
   });
 });

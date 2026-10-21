@@ -37,6 +37,11 @@ export function startOfCivilDay(date: CivilDate, zone: string): Date {
   return civilDayStart(date, zone).toJSDate();
 }
 
+/** The start of the civil day after `date`. */
+export function endOfCivilDay(date: CivilDate, zone: string): Date {
+  return shiftDays(date, 1, zone);
+}
+
 /** The civil-day boundary after checkout day, not the accommodation's checkout time. */
 export function endOfCheckoutDay(checkout: CivilDate, zone: string): Date {
   return shiftDays(checkout, 1, zone);

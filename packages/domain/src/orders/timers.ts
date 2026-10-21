@@ -1,12 +1,5 @@
 import type { Executor } from '../db/client';
 import { type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
-import {
-  complete,
-  expire,
-  type OrderDeps,
-  responseWindowMissed,
-  type TransitionOutcome,
-} from './machine';
 import type { OrderNotification, TimerOperation } from './vocabulary';
 
 // Order timers and notifications are pg-boss jobs keyed by Order id + proposal id + operation,
@@ -61,21 +54,4 @@ export async function enqueueNotification(
 ): Promise<void> {
   const id = orderJobId(data.orderId, data.proposalId, `notify:${data.kind}`);
   await queue.send(QUEUES.orderNotify, data, tx, { id });
-}
-
-/** The order-timer job: hands a due timer back to the machine. */
-export async function runOrderTimer(
-  deps: OrderDeps,
-  { orderId, proposalId, operation }: OrderTimerJobData,
-): Promise<TransitionOutcome> {
-  switch (operation) {
-    case 'card_expiry':
-      return expire(deps, { orderId, proposalId, trigger: 'card_timer' });
-    case 'hold_expiry':
-      return expire(deps, { orderId, proposalId, trigger: 'hold_timer' });
-    case 'completion':
-      return complete(deps, { orderId, proposalId, trigger: 'completion_timer' });
-    case 'response_window':
-      return responseWindowMissed(deps, { orderId, proposalId });
-  }
 }

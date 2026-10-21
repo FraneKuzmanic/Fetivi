@@ -20,8 +20,9 @@ import {
   type OrderDeps,
   OrderRuleError,
   propose,
+  runOrderTimer,
 } from './machine';
-import { type OrderTimerJobData, runOrderTimer } from './timers';
+import type { OrderTimerJobData } from './timers';
 import { REQUIRED_NOTIFICATION } from './transitions';
 import { isFinalOrderStatus } from './vocabulary';
 
@@ -374,10 +375,23 @@ class World {
       if (isFinalOrderStatus(order.status) || order.status === 'awaiting_confirmation') {
         expect(held).toHaveLength(0);
       }
-      // 5. No action on a stale proposal: versions never go back, one live proposal.
+      // 5. No action on a stale proposal: every event names the proposal current at that point.
+      // A proposal is born with its `propose` event, so replaying the events tracks the current one.
       const version = new Map(proposals.map((p) => [p.id, p.version]));
-      const versions = mine.map((e) => version.get(e.proposalId ?? '') ?? -1);
-      expect(versions).toEqual([...versions].sort((x, y) => x - y));
+      let currentId = mine[0]?.proposalId;
+      expect(version.get(currentId ?? '')).toBe(1);
+      for (const e of mine) {
+        if (e.proposalId === currentId) continue;
+        expect(version.get(e.proposalId ?? ''), `event ${e.id}`).toBe(
+          (version.get(currentId ?? '') ?? 0) + 1,
+        );
+        expect([e.fromStatus, e.toStatus], `event ${e.id}`).toEqual([
+          'pending_provider',
+          'awaiting_confirmation',
+        ]);
+        currentId = e.proposalId;
+      }
+      expect(currentId).toBe(order.currentProposalId);
       const live = proposals.filter((p) => p.orderId === order.id && p.supersededAt === null);
       expect(live.map((p) => p.id)).toEqual([order.currentProposalId]);
       // 6. Pay-direct keeps Payment status none.

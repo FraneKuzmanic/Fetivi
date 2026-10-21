@@ -47,6 +47,10 @@ function afterGuestConfirm(mode: AvailabilityMode): OrderStatus {
   return mode === 'on_request' ? 'pending_provider' : 'confirming';
 }
 
+function target(edge: Edge, mode: AvailabilityMode): OrderStatus {
+  return edge.to === 'after_guest_confirm' ? afterGuestConfirm(mode) : edge.to;
+}
+
 /** The status `action` leads to from `from`, or null when the transition is illegal. */
 export function nextStatus(
   from: OrderStatus,
@@ -55,30 +59,23 @@ export function nextStatus(
   mode: AvailabilityMode,
 ): OrderStatus | null {
   const edge = TABLE[from]?.[action];
-  if (!edge?.triggers.includes(trigger)) return null;
-  return edge.to === 'after_guest_confirm' ? afterGuestConfirm(mode) : edge.to;
+  return edge?.triggers.includes(trigger) ? target(edge, mode) : null;
 }
 
-/** The status an action always ends in, so a repeat of an applied action reads as `unchanged`. */
-export function actionTarget(action: OrderAction, mode: AvailabilityMode): OrderStatus {
-  switch (action) {
-    case 'guest_confirm':
-      return afterGuestConfirm(mode);
-    case 'confirm':
-      return 'confirmed';
-    case 'decline':
-      return 'declined';
-    case 'fail':
-      return 'failed';
-    case 'expire':
-      return 'expired';
-    case 'cancel':
-      return 'cancelled';
-    case 'complete':
-      return 'completed';
-    case 'propose':
-      return 'awaiting_confirmation';
+/**
+ * The status `action` by `trigger` ends in from wherever it is legal, or null when no status
+ * allows it. Every edge of one action has the same target, so a repeat reads as `unchanged`.
+ */
+export function actionTarget(
+  action: OrderAction,
+  trigger: OrderTrigger,
+  mode: AvailabilityMode,
+): OrderStatus | null {
+  for (const edges of Object.values(TABLE)) {
+    const edge = edges?.[action];
+    if (edge?.triggers.includes(trigger)) return target(edge, mode);
   }
+  return null;
 }
 
 /**
