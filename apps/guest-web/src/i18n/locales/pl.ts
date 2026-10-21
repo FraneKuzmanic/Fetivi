@@ -276,7 +276,7 @@ export const pl: Messages = {
       'Kopiowanie nie zadziałało. Tekst jest zaznaczony, możesz go skopiować samodzielnie.',
     call: 'Zadzwoń: {{label}}',
     noWifi: 'Ten apartament nie ma Wi-Fi.',
-    releaseNote: 'Te informacje pojawią się {{when}}.',
+    releaseNote: 'Te informacje pojawią się: {{when}}.',
   },
   amenity: {
     ac: 'Klimatyzacja',

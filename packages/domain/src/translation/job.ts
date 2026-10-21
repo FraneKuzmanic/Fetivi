@@ -114,13 +114,22 @@ export async function runTranslation(
     return 'discarded';
   }
   const existing = await db
-    .select({ language: blockTranslations.language })
+    .select({
+      language: blockTranslations.language,
+      origin: blockTranslations.origin,
+      captions: blockTranslations.captions,
+    })
     .from(blockTranslations)
     .where(and(eq(blockTranslations.blockId, blockId), eq(blockTranslations.revision, revision)));
   const have = new Set(existing.map((r) => r.language));
   const need = GUEST_LANGUAGES.filter((l) => !have.has(l));
 
   const media = await mediaOf(db, blockId);
+  // A host correction stored before the job has no captions: they are translated for it too, so
+  // guests never fall back to a newer revision's source caption.
+  const uncaptioned = existing
+    .filter((r) => r.origin === 'host' && media.some((m) => !(m.id in r.captions)))
+    .map((r) => r.language);
 
   // The model calls run outside any transaction: one takes up to 86 s.
   const source: BlockText = { title: block.title, body: block.body };
@@ -135,7 +144,7 @@ export async function runTranslation(
     const captions = await collectTranslations(
       model,
       captionsText(block.title, media),
-      need,
+      [...need, ...uncaptioned],
       sourceLanguage,
     );
     if (!captions.ok) return markFailed(deps, block, captions.error);
@@ -197,8 +206,30 @@ export async function runTranslation(
             updatedAt: now,
           })),
         )
-        // A host correction stored meanwhile wins.
-        .onConflictDoNothing();
+        // A host correction stored meanwhile keeps its text and gets the machine captions.
+        .onConflictDoUpdate({
+          target: [
+            blockTranslations.blockId,
+            blockTranslations.revision,
+            blockTranslations.language,
+          ],
+          set: { captions: sql`excluded.captions` },
+        });
+    }
+    for (const language of uncaptioned) {
+      const captions = captionsByLanguage?.get(language);
+      if (!captions || language === sourceLanguage) continue;
+      await tx
+        .update(blockTranslations)
+        .set({ captions: captionMap(captions) })
+        .where(
+          and(
+            eq(blockTranslations.blockId, blockId),
+            eq(blockTranslations.revision, revision),
+            eq(blockTranslations.language, language),
+            eq(blockTranslations.origin, 'host'),
+          ),
+        );
     }
     await tx.update(infoBlocks).set({ sourceLanguage }).where(eq(infoBlocks.id, blockId));
     if ((await countAt(tx, blockId, revision)) === GUEST_LANGUAGES.length) {

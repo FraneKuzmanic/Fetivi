@@ -424,7 +424,7 @@ describe('runTranslation with media captions', () => {
         ['c1', 'c2'].map((caption, position) => ({
           blockId: f.block.id,
           kind: 'image' as const,
-          contentType: 'image/png',
+          contentType: 'image/png' as const,
           bytes: 10,
           caption,
           addedRevision: 1,
@@ -489,6 +489,41 @@ describe('runTranslation with media captions', () => {
     const de = (await rowsOf(block.id, 1)).find((r) => r.language === 'de');
     expect(de).toMatchObject({ origin: 'host', title: 'Parking de!' });
     expect(de?.captions[media[0]]).toBe('de:c1');
+  });
+
+  it('gives a correction stored before the job its machine captions', async () => {
+    const { block, media } = await withMedia();
+    await correctTranslation(deps(), block.id, { language: 'de', revision: 1, ...good('de', '!') });
+    const { model } = recording(output(), captions());
+    expect(await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 })).toBe(
+      'published',
+    );
+    const de = (await rowsOf(block.id, 1)).find((r) => r.language === 'de');
+    expect(de).toMatchObject({ origin: 'host', title: 'Parking de!' });
+    expect(de?.captions).toEqual({ [media[0]]: 'de:c1', [media[1]]: 'de:c2' });
+  });
+
+  it('gives a correction stored while the job ran its machine captions', async () => {
+    const { block, media } = await withMedia();
+    let calls = 0;
+    const model: TranslationModel = {
+      async translate() {
+        calls += 1;
+        if (calls === 1) return output();
+        await correctTranslation(deps(), block.id, {
+          language: 'de',
+          revision: 1,
+          ...good('de', '!'),
+        });
+        return captions();
+      },
+    };
+    expect(await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 })).toBe(
+      'published',
+    );
+    const de = (await rowsOf(block.id, 1)).find((r) => r.language === 'de');
+    expect(de).toMatchObject({ origin: 'host', title: 'Parking de!' });
+    expect(de?.captions).toEqual({ [media[0]]: 'de:c1', [media[1]]: 'de:c2' });
   });
 
   it('drops an item deleted while the job ran', async () => {

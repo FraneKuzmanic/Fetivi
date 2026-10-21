@@ -63,5 +63,5 @@ export async function mediaFilesOf(
     .from(blockMedia)
     .innerJoin(infoBlocks, eq(infoBlocks.id, blockMedia.blockId))
     .where(where);
-  return rows.map((r) => mediaFileName(r.id, r.contentType as MediaContentType));
+  return rows.map((r) => mediaFileName(r.id, r.contentType));
 }

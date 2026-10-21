@@ -120,7 +120,7 @@ function FieldValue({
   );
 }
 
-/** One media item: the caption is the image's alt text and the video's visible caption. */
+/** One media item with its caption shown under it; for an image it is also the alt text. */
 export function InfoMedia({
   media,
   mediaUrl,
@@ -134,20 +134,20 @@ export function InfoMedia({
     <ul className="fv-media">
       {media.map((m, i) => (
         <li key={m.id}>
-          {m.kind === 'image' ? (
-            <img src={mediaUrl(m.id)} alt={m.caption} loading="lazy" />
-          ) : (
-            <figure>
-              {/* biome-ignore lint/a11y/useMediaCaption: short host clips have no caption track; the figcaption describes them. */}
+          <figure>
+            {m.kind === 'image' ? (
+              <img src={mediaUrl(m.id)} alt={m.caption} loading="lazy" />
+            ) : (
+              // biome-ignore lint/a11y/useMediaCaption: short host clips have no caption track; the figcaption describes them.
               <video
                 src={mediaUrl(m.id)}
                 controls
                 preload="metadata"
                 aria-describedby={`${id}-${i}`}
               />
-              <figcaption id={`${id}-${i}`}>{m.caption}</figcaption>
-            </figure>
-          )}
+            )}
+            <figcaption id={`${id}-${i}`}>{m.caption}</figcaption>
+          </figure>
         </li>
       ))}
     </ul>

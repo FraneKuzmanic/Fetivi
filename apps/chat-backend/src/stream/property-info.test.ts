@@ -41,9 +41,9 @@ describe('show_property_info', () => {
     expect(componentFor('show_property_info', null)).toBeNull();
   });
 
-  it('does not end the turn the way chips do', () => {
+  it('ends the turn after its text, though it is not a presentation tool', () => {
     expect(isPresentationTool('show_property_info')).toBe(false);
     const step = { text: 'Here it is.', toolCalls: [{ toolName: 'show_property_info' }] };
-    expect(endsWithPresentation({ steps: [step] } as never)).toBe(false);
+    expect(endsWithPresentation({ steps: [step] } as never)).toBe(true);
   });
 });

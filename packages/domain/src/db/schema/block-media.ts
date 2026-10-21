@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { check, index, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { MEDIA_KINDS } from '../../property/vocabulary';
+import { MEDIA_KINDS, type MediaContentType } from '../../property/vocabulary';
 import { infoBlocks } from './info-blocks';
 
 export const mediaKind = pgEnum('media_kind', MEDIA_KINDS);
@@ -15,7 +15,7 @@ export const blockMedia = pgTable(
       .references(() => infoBlocks.id, { onDelete: 'cascade' }),
     kind: mediaKind('kind').notNull(),
     /** Sniffed from the bytes, one of MEDIA_CONTENT_TYPES. */
-    contentType: text('content_type').notNull(),
+    contentType: text('content_type').$type<MediaContentType>().notNull(),
     bytes: integer('bytes').notNull(),
     /** Source-language caption; also the alt text. */
     caption: text('caption').notNull(),

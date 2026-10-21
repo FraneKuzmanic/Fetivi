@@ -15,9 +15,9 @@ export function propertyInfoLabels(t: TFunction, language: string): PropertyInfo
     },
     releaseNote: (releaseAt, timeZone) => {
       const when = new Intl.DateTimeFormat(language, {
-        weekday: 'short',
+        weekday: 'long',
         day: 'numeric',
-        month: 'short',
+        month: 'long',
         hour: '2-digit',
         minute: '2-digit',
         timeZone,

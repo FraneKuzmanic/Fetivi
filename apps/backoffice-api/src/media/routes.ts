@@ -30,6 +30,16 @@ function hostIdOf(request: FastifyRequest): string {
   return hostId;
 }
 
+/**
+ * On the upload route, Fastify's own 413 and 415 mean a file too large or of a type we do not
+ * take. Thrown on to the app's handler; on every other route they stay 400 invalid-input.
+ */
+const uploadErrors = (error: { statusCode?: number }) => {
+  if (error.statusCode === 413) throw new HttpError(413, 'media-too-large');
+  if (error.statusCode === 415) throw new HttpError(415, 'unsupported-media');
+  throw error;
+};
+
 const declaredType = (request: FastifyRequest) =>
   (request.headers['content-type'] ?? '').split(';')[0]?.trim().toLowerCase();
 
@@ -52,7 +62,7 @@ export async function mediaRoutes(app: FastifyInstance, deps: MediaDeps): Promis
 
   app.post(
     '/api/host/blocks/:id/media',
-    { ...host, bodyLimit: LIMITS.videoBytes },
+    { ...host, bodyLimit: LIMITS.videoBytes, errorHandler: uploadErrors },
     async (request, reply) => {
       const hostId = hostIdOf(request);
       const block = await findOwnedBlock(db, hostId, idOf(request));

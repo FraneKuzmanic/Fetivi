@@ -48,8 +48,6 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     // Fastify's own client errors, such as a malformed JSON body.
     const statusCode = (error as { statusCode?: number }).statusCode;
-    if (statusCode === 413) return reply.status(413).send({ error: 'media-too-large' });
-    if (statusCode === 415) return reply.status(415).send({ error: 'unsupported-media' });
     if (statusCode && statusCode >= 400 && statusCode < 500) {
       return reply.status(400).send({ error: 'invalid-input' });
     }

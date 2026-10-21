@@ -277,7 +277,7 @@ export const hr: Messages = {
     copyFailed: 'Kopiranje nije uspjelo. Tekst je označen pa ga možete sami kopirati.',
     call: 'Nazovi: {{label}}',
     noWifi: 'Ovaj apartman nema Wi-Fi.',
-    releaseNote: 'Ovi podaci pojavit će se {{when}}.',
+    releaseNote: 'Ovi podaci pojavit će se: {{when}}.',
   },
   amenity: {
     ac: 'Klima-uređaj',

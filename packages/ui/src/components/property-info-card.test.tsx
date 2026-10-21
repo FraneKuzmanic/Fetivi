@@ -98,7 +98,7 @@ describe('PropertyInfoCard', () => {
     expect(host.textContent).toContain('No Wi-Fi here');
   });
 
-  it('gives images their caption as alt text and videos a figcaption', () => {
+  it('shows every caption under its item, and gives images it as alt text', () => {
     const host = mount({
       ...propertyInfo(projection(true), 'arrival'),
       media: [
@@ -109,8 +109,9 @@ describe('PropertyInfoCard', () => {
     const img = host.querySelector('img');
     expect(img?.getAttribute('alt')).toBe('The lockbox by the door');
     expect(img?.getAttribute('src')).toBe('/api/media/m1');
+    expect(host.querySelector('img + figcaption')?.textContent).toBe('The lockbox by the door');
     const video = host.querySelector('video');
-    const caption = host.querySelector('figcaption');
+    const caption = host.querySelector('video + figcaption');
     expect(caption?.textContent).toBe('Opening the gate');
     expect(video?.getAttribute('aria-describedby')).toBe(caption?.id);
   });

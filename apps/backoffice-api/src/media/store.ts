@@ -127,13 +127,12 @@ export async function deleteMedia(
   return db.transaction(async (tx) => {
     const found = await findOwnedMedia(tx, input.hostId, input.mediaId);
     await tx.delete(blockMedia).where(eq(blockMedia.id, found.id));
-    return mediaFileName(found.id, found.contentType as MediaContentType);
+    return mediaFileName(found.id, found.contentType);
   });
 }
 
 /** A media item the host owns, for the preview. */
 export async function findOwnedMediaFile(db: Db, hostId: string, mediaId: string) {
   const found = await db.transaction((tx) => findOwnedMedia(tx, hostId, mediaId));
-  const contentType = found.contentType as MediaContentType;
-  return { fileName: mediaFileName(found.id, contentType), contentType };
+  return { fileName: mediaFileName(found.id, found.contentType), contentType: found.contentType };
 }

@@ -188,7 +188,7 @@ describe('Arrival and access', () => {
     await mount('/guide/arrival');
     expect(host.querySelector('h1')?.textContent).toBe('Arrival and access');
     expect(host.querySelector('.fv-info-release')?.textContent).toMatch(
-      /^These details appear on Tue, Oct 20/,
+      /^These details appear on Tuesday, October 20/,
     );
     expect(host.textContent).toContain('Lockbox');
     expect(host.textContent).not.toContain('D-4412');
@@ -249,6 +249,7 @@ describe('How-tos', () => {
     const media = host.querySelector('.fv-media');
     expect(media?.querySelector('img')?.getAttribute('alt')).toBe('The dial');
     expect(media?.querySelector('img')?.getAttribute('src')).toBe('/api/media/m1');
+    expect(media?.querySelector('img + figcaption')?.textContent).toBe('The dial');
     expect(media?.querySelector('video + figcaption')?.textContent).toBe('Loading it');
     expect(host.querySelectorAll('h1')).toHaveLength(1);
   });

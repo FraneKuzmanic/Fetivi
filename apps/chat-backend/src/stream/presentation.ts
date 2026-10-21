@@ -19,7 +19,7 @@ export const isPresentationTool = (name: string): name is PresentationTool =>
 /**
  * The input schema is the component's payload schema, so an invalid payload is a tool error the
  * model sees. show_property_info is the exception: the model names only a topic, and the card is
- * filled from the unit record, so its component comes from the output and the loop goes on.
+ * filled from the unit record, so its component comes from the output.
  */
 export function presentationTools(deps: {
   readProjection: () => Promise<GuestProjection>;
@@ -49,17 +49,21 @@ export function presentationTools(deps: {
 const answered = (steps: readonly StepResult<ToolSet>[]) =>
   steps.some((s) => s.text.trim().length > 0);
 
+/** Ends the turn like a presentation call: the card is the answer's last part. */
+const endsTurn = (name: string) => isPresentationTool(name) || name === 'show_property_info';
+
 /**
- * Stops the loop after a step whose calls are all presentation calls: the guest answers next, so
- * another model round trip would only cost. A step that also searched continues, so the model sees
- * the results; so does one with an invalid call, so the model can correct it. Chips without any
- * text in the turn continue too, so the guest never gets cards and chips without words (a choice
- * card carries its own question).
+ * Stops the loop after a step whose calls are all presentation calls or the property card: the
+ * guest answers next, so another model round trip would only cost, and its text would land above
+ * the card again (all of a message's text is shown before its cards). A step that also searched
+ * continues, so the model sees the results; so does one with an invalid call, so the model can
+ * correct it. Chips or a card without any text in the turn continue too, so the guest never gets
+ * them without words (a choice card carries its own question).
  */
 export const endsWithPresentation: StopCondition<ToolSet> = ({ steps }) => {
   const calls = steps.at(-1)?.toolCalls ?? [];
   if (calls.length === 0) return false;
-  if (!calls.every((c) => !c.invalid && isPresentationTool(c.toolName))) return false;
+  if (!calls.every((c) => !c.invalid && endsTurn(c.toolName))) return false;
   return answered(steps) || calls.some((c) => c.toolName === 'ask_choice');
 };
 

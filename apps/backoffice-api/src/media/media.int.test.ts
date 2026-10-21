@@ -118,8 +118,31 @@ describe('POST /api/host/blocks/:id/media', () => {
     const text = await upload(blockId, Buffer.from('just some text here'), 'image/png');
     expect(text.statusCode).toBe(415);
     expect(text.json()).toEqual({ error: 'unsupported-media' });
-    expect((await upload(blockId, Buffer.from('GIF89a....'), 'image/gif')).statusCode).toBe(415);
+    const gif = await upload(blockId, Buffer.from('GIF89a....'), 'image/gif');
+    expect(gif.statusCode).toBe(415);
+    expect(gif.json()).toEqual({ error: 'unsupported-media' });
     expect((await upload(blockId, Buffer.alloc(0), 'image/png')).statusCode).not.toBe(201);
+  });
+
+  it('keeps media errors to the upload route', async () => {
+    const { blockId } = await newBlock();
+    const headers = { origin: TEST_ORIGIN, cookie: hostA };
+    const wrongType = await t.app.inject({
+      method: 'PATCH',
+      url: `/api/host/blocks/${blockId}`,
+      headers: { ...headers, 'content-type': 'text/plain' },
+      payload: 'title',
+    });
+    expect(wrongType.statusCode).toBe(400);
+    expect(wrongType.json()).toEqual({ error: 'invalid-input' });
+    const tooBig = await t.app.inject({
+      method: 'PATCH',
+      url: `/api/host/blocks/${blockId}`,
+      headers: { ...headers, 'content-type': 'application/json' },
+      payload: JSON.stringify({ body: 'x'.repeat(2 * 1024 * 1024) }),
+    });
+    expect(tooBig.statusCode).toBe(400);
+    expect(tooBig.json()).toEqual({ error: 'invalid-input' });
   });
 
   it('enforces the size, count and caption limits', async () => {

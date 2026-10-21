@@ -39,7 +39,11 @@ const field = z.object({
 
 export const propertyInfoCard = z.object({
   topic: z.enum(PROPERTY_INFO_TOPICS),
-  /** ISO instant when the gated fields appear; null once released or when nothing is gated. */
+  /**
+   * ISO instant when the topic's gated fields appear; null once released or for a topic with none.
+   * Before the release the projection does not say whether a gated value exists, so it is set
+   * even when the unit has none.
+   */
   releaseAt: z.string().nullable(),
   /** The property's zone, for showing `releaseAt`. */
   timezone: z.string(),

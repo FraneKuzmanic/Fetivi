@@ -4,7 +4,6 @@ import {
   type Db,
   loadGuestProjection,
   loadSituation,
-  type MediaContentType,
   type MediaStore,
   mediaFileName,
 } from '@fetivi/domain';
@@ -54,11 +53,10 @@ export const mediaRoutes: FastifyPluginAsync<MediaRouteDeps> = async (app, deps)
       .from(blockMedia)
       .where(eq(blockMedia.id, id));
     if (!row) throw new HttpError(404, 'not-found');
-    const contentType = row.contentType as MediaContentType;
     return reply
-      .type(contentType)
+      .type(row.contentType)
       .header('cache-control', 'private, max-age=86400')
       .header('x-content-type-options', 'nosniff')
-      .sendFile(mediaFileName(id, contentType));
+      .sendFile(mediaFileName(id, row.contentType));
   });
 };
