@@ -1,4 +1,5 @@
-import { choiceCard, followUpChips } from '@fetivi/ui/payloads';
+import type { GuestProjection } from '@fetivi/domain';
+import { choiceCard, followUpChips, PROPERTY_INFO_TOPICS, propertyInfo } from '@fetivi/ui/payloads';
 import {
   type PrepareStepFunction,
   type StepResult,
@@ -6,6 +7,7 @@ import {
   type ToolSet,
   tool,
 } from 'ai';
+import { z } from 'zod';
 
 /** Host-side tools that only show a component; they are not MCP tools and touch no data. */
 export const PRESENTATION_TOOLS = ['suggest_replies', 'ask_choice'] as const;
@@ -14,8 +16,14 @@ export type PresentationTool = (typeof PRESENTATION_TOOLS)[number];
 export const isPresentationTool = (name: string): name is PresentationTool =>
   (PRESENTATION_TOOLS as readonly string[]).includes(name);
 
-/** The input schema is the component's payload schema, so an invalid payload is a tool error the model sees. */
-export function presentationTools(): ToolSet {
+/**
+ * The input schema is the component's payload schema, so an invalid payload is a tool error the
+ * model sees. show_property_info is the exception: the model names only a topic, and the card is
+ * filled from the unit record, so its component comes from the output and the loop goes on.
+ */
+export function presentationTools(deps: {
+  readProjection: () => Promise<GuestProjection>;
+}): ToolSet {
   return {
     suggest_replies: tool({
       description:
@@ -28,6 +36,12 @@ export function presentationTools(): ToolSet {
         "Ask the guest to pick from 2–6 short options (multiple: true lets them pick several); the app adds 'Something else'. Use it instead of asking a multiple-choice question in prose. Call it last, never together with another tool.",
       inputSchema: choiceCard,
       execute: async () => ({ shown: true }),
+    }),
+    show_property_info: tool({
+      description:
+        "Show the guest a card with the unit's facts for one topic, with copy buttons for codes and passwords: arrival (check-in, access, codes), wifi, checkout (checkout time and house rules), contacts (112, host, emergency contact). Write your answer as text first, then call this once in the same response. The card is filled from the unit record, never from your words.",
+      inputSchema: z.object({ topic: z.enum(PROPERTY_INFO_TOPICS) }),
+      execute: async ({ topic }) => propertyInfo(await deps.readProjection(), topic),
     }),
   };
 }

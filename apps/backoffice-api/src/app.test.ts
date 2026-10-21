@@ -1,4 +1,4 @@
-import { createDb, createMemoryMailer } from '@fetivi/domain';
+import { createDb, createLocalMediaStore, createMemoryMailer } from '@fetivi/domain';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { loadConfig } from './config';
@@ -12,6 +12,8 @@ const deps = {
   webOrigin: 'http://host.test',
   guestOrigin: 'http://guest.test',
   logger: false,
+  // Nothing is written in these tests.
+  media: createLocalMediaStore('unused-media'),
 };
 
 afterAll(async () => {
@@ -44,6 +46,7 @@ describe('backoffice-api', () => {
       WEB_ORIGIN: 'http://localhost:5174',
       GUEST_ORIGIN: 'http://localhost:5173',
       MAIL_TRANSPORT: 'console',
+      MEDIA_DIR: '../../.data/media',
     });
   });
 

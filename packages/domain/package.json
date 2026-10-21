@@ -10,6 +10,7 @@
     "./offer-vocabulary": "./src/offers/vocabulary.ts",
     "./order-vocabulary": "./src/orders/vocabulary.ts",
     "./handover": "./src/stays/handover.ts",
+    "./projection-types": "./src/projection/types.ts",
     "./stay-vocabulary": "./src/stays/vocabulary.ts",
     "./about-me-vocabulary": "./src/about-me/vocabulary.ts"
   },

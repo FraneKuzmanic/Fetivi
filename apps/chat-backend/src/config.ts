@@ -28,6 +28,8 @@ const schema = z
      * the MCP servers' REQUEST_STATE_SECRET (the same dev default).
      */
     REQUEST_STATE_SECRET: z.string().min(32).default(DEV_REQUEST_STATE_SECRET),
+    /** Block media files. Both processes must point at the same directory (a shared volume in production). */
+    MEDIA_DIR: z.string().default('../../.data/media'),
   })
   .refine((c) => c.NODE_ENV !== 'production' || Boolean(c.GUEST_TOKEN_PRIVATE_KEY), {
     message: 'GUEST_TOKEN_PRIVATE_KEY is required in production',

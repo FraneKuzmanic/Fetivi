@@ -1,6 +1,8 @@
 import {
   type Amenity,
+  type BlockMediaRow,
   type BlockRow,
+  blockMedia,
   type Db,
   type EffectiveUnit,
   type Executor,
@@ -69,7 +71,7 @@ export async function findOwnedBlock(db: Executor, hostId: string, id: string) {
   return block;
 }
 
-function ownedBlockCondition(db: Executor, hostId: string) {
+export function ownedBlockCondition(db: Executor, hostId: string) {
   return or(
     inArray(infoBlocks.propertyId, ownedPropertyIds(db, hostId)),
     inArray(infoBlocks.unitId, ownedUnitIds(db, hostId)),
@@ -228,7 +230,34 @@ export function coreOut(row: SharedCore): SharedCore {
 const locationOut = (location: PropertyRow['location']) =>
   location ? { lat: location.y, lng: location.x } : null;
 
-export function blockOut(b: BlockRow) {
+export function mediaOut(m: BlockMediaRow) {
+  return {
+    id: m.id,
+    kind: m.kind,
+    contentType: m.contentType,
+    bytes: m.bytes,
+    caption: m.caption,
+    addedRevision: m.addedRevision,
+    position: m.position,
+    createdAt: m.createdAt.toISOString(),
+  };
+}
+
+/** The media of the given blocks, in display order, by block id. */
+export async function mediaByBlock(db: Executor, blockIds: string[]) {
+  const rows = blockIds.length
+    ? await db
+        .select()
+        .from(blockMedia)
+        .where(inArray(blockMedia.blockId, blockIds))
+        .orderBy(asc(blockMedia.position), asc(blockMedia.createdAt))
+    : [];
+  const byBlock = new Map<string, BlockMediaRow[]>();
+  for (const row of rows) byBlock.set(row.blockId, [...(byBlock.get(row.blockId) ?? []), row]);
+  return byBlock;
+}
+
+export function blockOut(b: BlockRow, media: readonly BlockMediaRow[] = []) {
   return {
     id: b.id,
     propertyId: b.propertyId,
@@ -248,6 +277,7 @@ export function blockOut(b: BlockRow) {
     position: b.position,
     createdAt: b.createdAt.toISOString(),
     updatedAt: b.updatedAt.toISOString(),
+    media: media.map(mediaOut),
   };
 }
 
@@ -268,6 +298,10 @@ export async function propertyDetail(db: Executor, property: PropertyRow) {
       .where(eq(units.propertyId, property.id))
       .orderBy(asc(units.createdAt)),
   ]);
+  const media = await mediaByBlock(
+    db,
+    blocks.map((b) => b.id),
+  );
   return {
     id: property.id,
     name: property.name,
@@ -284,18 +318,18 @@ export async function propertyDetail(db: Executor, property: PropertyRow) {
     createdAt: property.createdAt.toISOString(),
     updatedAt: property.updatedAt.toISOString(),
     amenities,
-    blocks: blocks.map(blockOut),
+    blocks: blocks.map((b) => blockOut(b, media.get(b.id))),
     units: unitRows,
   };
 }
 
-function effectiveOut(e: EffectiveUnit) {
+function effectiveOut(e: EffectiveUnit, media: Map<string, BlockMediaRow[]>) {
   return {
     ...e,
     ...coreOut(e),
     location: locationOut(e.location),
     approvedAt: e.approvedAt?.toISOString() ?? null,
-    blocks: e.blocks.map((b) => ({ ...blockOut(b), source: b.source })),
+    blocks: e.blocks.map((b) => ({ ...blockOut(b, media.get(b.id)), source: b.source })),
   };
 }
 
@@ -317,6 +351,10 @@ export async function unitDetail(
       loadEffectiveUnit(db, unit.id),
     ]);
   if (!effective) throw notFound();
+  const media = await mediaByBlock(db, [
+    ...ownBlocks.map((b) => b.id),
+    ...propertyBlocks.map((b) => b.id),
+  ]);
   return {
     id: unit.id,
     propertyId: property.id,
@@ -343,11 +381,11 @@ export async function unitDetail(
     propertyValues: coreOut(property),
     propertyAmenities: inheritedAmenities,
     amenities,
-    blocks: ownBlocks.map(blockOut),
+    blocks: ownBlocks.map((b) => blockOut(b, media.get(b.id))),
     /** Every property block, hidden ones included, so a unit can hide, unhide or replace them. */
-    propertyBlocks: propertyBlocks.map(blockOut),
+    propertyBlocks: propertyBlocks.map((b) => blockOut(b, media.get(b.id))),
     hiddenBlockIds: hidden.map((h) => h.blockId),
-    effective: effectiveOut(effective),
+    effective: effectiveOut(effective, media),
   };
 }
 

@@ -1,4 +1,4 @@
-import type { Db } from '@fetivi/domain';
+import type { Db, MediaStore } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
 import type { LanguageModel } from 'ai';
 import Fastify from 'fastify';
@@ -6,8 +6,10 @@ import { aboutMeRoutes } from './about-me/routes';
 import { registerAccess } from './access/plugin';
 import { accessRoutes } from './access/routes';
 import { chatRoutes } from './chat/routes';
+import { guideRoutes } from './guide/routes';
 import { registerErrorHandler } from './http-error';
 import { createToolCatalog } from './mcp/tools';
+import { mediaRoutes } from './media/routes';
 import { orderRoutes } from './orders/routes';
 import { savedPlaceRoutes } from './saved-places/routes';
 import type { TokenConfig } from './tokens/mint';
@@ -24,6 +26,8 @@ export interface AppDeps {
   trustProxy?: string | undefined;
   /** Guest token signing for the MCP servers; its public key is served as the JWKS. */
   tokens: TokenConfig;
+  /** Block media files, served to guests through /api/media. */
+  media: MediaStore;
   chat: {
     /** Null without an API key: the chat then answers 503. */
     model: LanguageModel | null;
@@ -52,6 +56,8 @@ export function buildApp(deps: AppDeps) {
     deps.chat.tools ??
     mcpBinding({ tokens: deps.tokens, mcpFetch: deps.chat.mcpFetch, catalog: createToolCatalog() });
   app.register(orderRoutes, { db, now, tools });
+  app.register(guideRoutes, { db, now, tools });
+  app.register(mediaRoutes, { db, now, media: deps.media });
   app.register(chatRoutes, { db, now, model: deps.chat.model, tools, log: app.log });
   return app;
 }

@@ -24,6 +24,7 @@ import type {
   CheckInMethod,
   GuestLanguage,
   HostBlockCategory,
+  MediaKind,
   ParkingType,
   SourceLanguage,
   TranslationError,
@@ -52,6 +53,19 @@ export async function api<T>(
     credentials: 'same-origin',
   });
   if (response.status === 204) return undefined as T;
+  const json = (await response.json().catch(() => null)) as { error?: string } | null;
+  if (!response.ok) throw new ApiError(response.status, json?.error ?? 'internal');
+  return json as T;
+}
+
+/** Sends a file as the raw request body, typed by its own content type. */
+export async function upload<T>(path: string, file: File): Promise<T> {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: { 'content-type': file.type || 'application/octet-stream' },
+    body: file,
+    credentials: 'same-origin',
+  });
   const json = (await response.json().catch(() => null)) as { error?: string } | null;
   if (!response.ok) throw new ApiError(response.status, json?.error ?? 'internal');
   return json as T;
@@ -119,6 +133,19 @@ export interface Block {
   position: number;
   createdAt: string;
   updatedAt: string;
+  media: BlockMedia[];
+}
+
+/** A photo or short video on a block. */
+export interface BlockMedia {
+  id: string;
+  kind: MediaKind;
+  contentType: string;
+  bytes: number;
+  caption: string;
+  addedRevision: number;
+  position: number;
+  createdAt: string;
 }
 
 export interface BlockTranslation {
@@ -359,6 +386,15 @@ export const host = {
     ),
   retryTranslation: (id: string) =>
     post<{ view: TranslationsView }>(`/api/host/blocks/${id}/translations/retry`),
+  uploadMedia: (blockId: string, file: File, caption: string) =>
+    upload<{ media: BlockMedia; block: Block }>(
+      `/api/host/blocks/${blockId}/media?caption=${encodeURIComponent(caption)}`,
+      file,
+    ),
+  updateMediaCaption: (id: string, caption: string) =>
+    patch<{ media: BlockMedia; block: Block }>(`/api/host/media/${id}`, { caption }),
+  deleteMedia: (id: string) => remove(`/api/host/media/${id}`),
+  mediaUrl: (id: string) => `/api/host/media/${id}`,
   qrUrl: (unitId: string, format: 'svg' | 'png') => `/api/host/units/${unitId}/qr?format=${format}`,
   stays: (params: { unitId?: string; past?: boolean } = {}) => {
     const query = new URLSearchParams();

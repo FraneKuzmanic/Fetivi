@@ -1,4 +1,4 @@
-import { createDb, createJobQueue, ensureQueues } from '@fetivi/domain';
+import { createDb, createJobQueue, createLocalMediaStore, ensureQueues } from '@fetivi/domain';
 import { PgBoss } from 'pg-boss';
 import { buildApp } from './app';
 import { createChatModel } from './chat/model';
@@ -25,6 +25,7 @@ const app = buildApp({
   db,
   appOrigin: config.APP_ORIGIN,
   trustProxy: config.TRUST_PROXY,
+  media: createLocalMediaStore(config.MEDIA_DIR),
   tokens: { key, issuer: config.GUEST_TOKEN_ISSUER, mcpBaseUrl: config.MCP_PUBLIC_URL },
   chat: {
     model: createChatModel({ apiKey: config.ANTHROPIC_API_KEY, fetch: egress.fetch }),

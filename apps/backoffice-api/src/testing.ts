@@ -1,4 +1,13 @@
-import { createJobQueue, createMemoryMailer, type Db, ensureQueues } from '@fetivi/domain';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {
+  createJobQueue,
+  createLocalMediaStore,
+  createMemoryMailer,
+  type Db,
+  ensureQueues,
+} from '@fetivi/domain';
 import { createTestDatabase, type TestDatabase } from '@fetivi/domain/testing';
 import type { FastifyInstance, FastifyPluginAsync, LightMyRequestResponse } from 'fastify';
 import { PgBoss } from 'pg-boss';
@@ -17,6 +26,8 @@ export interface TestApp {
   boss: PgBoss;
   mailer: ReturnType<typeof createMemoryMailer>;
   clock: { now: () => Date; advance: (ms: number) => void };
+  /** This app's own media directory, removed on close. */
+  mediaDir: string;
   close: () => Promise<void>;
 }
 
@@ -26,6 +37,7 @@ export async function createTestApp(
 ) {
   const testDb = await createTestDatabase();
   const mailer = createMemoryMailer();
+  const mediaDir = await mkdtemp(path.join(os.tmpdir(), 'fetivi-bo-media-'));
   const boss = new PgBoss({ connectionString: testDb.url, supervise: false, schedule: false });
   boss.on('error', console.error);
   await boss.start();
@@ -46,6 +58,7 @@ export async function createTestApp(
     now: clock.now,
     logger: false,
     trustProxy: options.trustProxy,
+    media: createLocalMediaStore(mediaDir),
   });
   if (options.extraRoutes) app.register(options.extraRoutes);
   await app.ready();
@@ -56,10 +69,12 @@ export async function createTestApp(
     boss,
     mailer,
     clock,
+    mediaDir,
     close: async () => {
       await app.close();
       await boss.stop({ graceful: false, timeout: 1000 });
       await testDb.drop();
+      await rm(mediaDir, { recursive: true, force: true });
     },
   };
   return t;

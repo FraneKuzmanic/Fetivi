@@ -3,11 +3,14 @@ import {
   ChoiceCard,
   FollowUpChips,
   PlaceCarousel,
+  PropertyInfoCard,
   ReceiptCard,
 } from '@fetivi/ui';
 import { componentPart } from '@fetivi/ui/payloads';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { mediaUrl } from '../../guide/guide-api';
+import { propertyInfoLabels } from '../../guide/labels';
 import { choiceLabels, pickedText, pickerLabels, placeLabels, receiptLabels } from './labels';
 import { useSavedPlaces } from './SavedPlaces';
 
@@ -78,5 +81,13 @@ export function ComponentPart({
     }
     case 'receipt-card':
       return <ReceiptCard order={part.payload.order} labels={receiptLabels(t, i18n.language)} />;
+    case 'property-info':
+      return (
+        <PropertyInfoCard
+          info={part.payload}
+          mediaUrl={mediaUrl}
+          labels={propertyInfoLabels(t, i18n.language)}
+        />
+      );
   }
 }

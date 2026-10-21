@@ -8,6 +8,8 @@ import {
   type JobQueue,
   LIMITS,
   listTranslations,
+  type MediaStore,
+  mediaFilesOf,
   properties,
   refreshStayTimes,
   retryTranslation,
@@ -41,6 +43,7 @@ import {
   findOwnedUnit,
   issueSlug,
   listProperties,
+  mediaByBlock,
   ownedPropertyIds,
   propertyDetail,
   replacePropertyAmenities,
@@ -54,6 +57,7 @@ export interface PropertyDeps {
   queue: JobQueue;
   now: () => Date;
   guestOrigin: string;
+  media: MediaStore;
 }
 
 const IdParams = z.object({ id: z.uuid() });
@@ -74,12 +78,16 @@ function propertyValues(input: PropertyInput) {
   return { ...rest, location: location ? { x: location.lng, y: location.lat } : null };
 }
 
-function blockResult(block: Parameters<typeof blockOut>[0]) {
-  return { block: blockOut(block), warnings: findSecretLikeText(`${block.title}\n${block.body}`) };
+async function blockResult(db: Executor, block: Parameters<typeof blockOut>[0]) {
+  const media = await mediaByBlock(db, [block.id]);
+  return {
+    block: blockOut(block, media.get(block.id)),
+    warnings: findSecretLikeText(`${block.title}\n${block.body}`),
+  };
 }
 
 export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): Promise<void> {
-  const { db, queue, guestOrigin } = deps;
+  const { db, queue, guestOrigin, media } = deps;
   const host = { config: { access: 'host' as const } };
   const idOf = (request: FastifyRequest) => IdParams.parse(request.params).id;
 
@@ -128,11 +136,14 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
   });
 
   app.delete('/api/host/properties/:id', host, async (request, reply) => {
+    // Read before the cascade removes the rows; the files go once the delete succeeded.
+    const files = await mediaFilesOf(db, { propertyId: idOf(request) });
     const deleted = await db
       .delete(properties)
       .where(and(eq(properties.id, idOf(request)), eq(properties.hostId, hostIdOf(request))))
       .returning({ id: properties.id });
     if (deleted.length === 0) throw new HttpError(404, 'not-found');
+    await media.remove(files);
     return reply.status(204).send();
   });
 
@@ -195,6 +206,7 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
 
   app.delete('/api/host/units/:id', host, async (request, reply) => {
     const hostId = hostIdOf(request);
+    const files = await mediaFilesOf(db, { unitId: idOf(request) });
     const deleted = await db
       .delete(units)
       .where(
@@ -202,6 +214,7 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
       )
       .returning({ id: units.id });
     if (deleted.length === 0) throw new HttpError(404, 'not-found');
+    await media.remove(files);
     return reply.status(204).send();
   });
 
@@ -253,7 +266,7 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
       throw new HttpError(400, 'invalid-input');
     }
     const block = await saveBlock(db, queue, { insert: { ...body, propertyId: property.id } });
-    return reply.status(201).send(blockResult(block));
+    return reply.status(201).send(await blockResult(db, block));
   });
 
   app.post('/api/host/units/:id/blocks', host, async (request, reply) => {
@@ -273,7 +286,7 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
       throw new HttpError(400, 'invalid-input');
     }
     const block = await saveBlock(db, queue, { insert: { ...body, unitId: unit.id } });
-    return reply.status(201).send(blockResult(block));
+    return reply.status(201).send(await blockResult(db, block));
   });
 
   app.patch('/api/host/blocks/:id', host, async (request) => {
@@ -284,12 +297,14 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     const block = await saveBlock(db, queue, {
       update: { id, hostId, changes, now: deps.now() },
     });
-    return blockResult(block);
+    return blockResult(db, block);
   });
 
   app.delete('/api/host/blocks/:id', host, async (request, reply) => {
     const block = await findOwnedBlock(db, hostIdOf(request), idOf(request));
+    const files = await mediaFilesOf(db, { blockIds: [block.id] });
     await db.delete(infoBlocks).where(eq(infoBlocks.id, block.id));
+    await media.remove(files);
     return reply.status(204).send();
   });
 

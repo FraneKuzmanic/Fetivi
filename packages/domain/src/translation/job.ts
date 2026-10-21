@@ -1,5 +1,6 @@
-import { and, eq, inArray, lt, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, lt, sql } from 'drizzle-orm';
 import type { Db, Executor } from '../db/client';
+import { blockMedia } from '../db/schema/block-media';
 import { infoBlocks } from '../db/schema/info-blocks';
 import { blockTranslations } from '../db/schema/translations';
 import { EVENTS, type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
@@ -13,9 +14,9 @@ import {
   type TranslationOrigin,
   type TranslationStatus,
 } from '../property/vocabulary';
-import { collectTranslations } from './collect';
+import { type Collected, collectTranslations } from './collect';
 import type { TranslationModel } from './model';
-import { type BlockText, checkStructure } from './structure';
+import { type BlockText, BULLET, checkStructure } from './structure';
 
 // The state rules of ticket 04: the one place that moves a block's translation status and its
 // published revision. Every read-then-write locks the block row, which serialises the job,
@@ -119,20 +120,57 @@ export async function runTranslation(
   const have = new Set(existing.map((r) => r.language));
   const need = GUEST_LANGUAGES.filter((l) => !have.has(l));
 
+  const media = await mediaOf(db, blockId);
+
   // The model calls run outside any transaction: one takes up to 86 s.
   const source: BlockText = { title: block.title, body: block.body };
   const result = await collectTranslations(model, source, need, block.sourceLanguage);
   if (!result.ok) return markFailed(deps, block, result.error);
-  const { sourceLanguage, collected } = result;
+  const { sourceLanguage } = result;
+  // Captions go through their own call, one bullet per item, so the frozen prompt and the
+  // structure check stay unchanged; the bullet count keeps them aligned with the media.
+  // The first call's detected language is authoritative.
+  let captionsByLanguage: Map<GuestLanguage, string[]> | null = null;
+  if (media.length > 0) {
+    const captions = await collectTranslations(
+      model,
+      captionsText(block.title, media),
+      need,
+      sourceLanguage,
+    );
+    if (!captions.ok) return markFailed(deps, block, captions.error);
+    captionsByLanguage = new Map();
+    for (const [language, t] of captions.collected) {
+      const lines = bulletLines(t.body);
+      if (lines.length === media.length) captionsByLanguage.set(language, lines);
+    }
+  }
+  // A language is written only when both calls produced it.
+  const collected = new Map<GuestLanguage, Collected & { captions: string[] }>();
+  for (const [language, t] of result.collected) {
+    const captions = captionsByLanguage ? captionsByLanguage.get(language) : [];
+    if (captions) collected.set(language, { ...t, captions });
+  }
 
   return db.transaction(async (tx) => {
     const current = await lockBlock(tx, blockId);
     if (!current || current.revision !== revision) return 'discarded';
     const now = deps.now();
+    // A media delete does not bump the revision, so an item may have gone meanwhile.
+    const still = new Set((await mediaOf(tx, blockId)).map((m) => m.id));
+    const captionMap = (captions: readonly string[]) =>
+      Object.fromEntries(
+        media.flatMap((m, i) => (still.has(m.id) ? [[m.id, captions[i] ?? m.caption]] : [])),
+      );
     if (sourceLanguage !== null && sourceLanguage !== 'other') {
       // The source slot is always the host's own text, even over a correction made before the
       // source language was known.
-      const row = { ...source, origin: 'source' as const, updatedAt: now };
+      const row = {
+        ...source,
+        captions: captionMap(media.map((m) => m.caption)),
+        origin: 'source' as const,
+        updatedAt: now,
+      };
       await tx
         .insert(blockTranslations)
         .values({ blockId, revision, language: sourceLanguage, ...row, createdAt: now })
@@ -149,11 +187,12 @@ export async function runTranslation(
       await tx
         .insert(blockTranslations)
         .values(
-          [...collected].map(([language, t]) => ({
+          [...collected].map(([language, { captions, ...t }]) => ({
             blockId,
             revision,
             language,
             ...t,
+            captions: captionMap(captions),
             createdAt: now,
             updatedAt: now,
           })),
@@ -173,6 +212,26 @@ export async function runTranslation(
     return 'failed';
   });
 }
+
+/** The block's media in display order. All belong to revisions up to the current one. */
+const mediaOf = (db: Executor, blockId: string) =>
+  db
+    .select({ id: blockMedia.id, caption: blockMedia.caption })
+    .from(blockMedia)
+    .where(eq(blockMedia.blockId, blockId))
+    .orderBy(asc(blockMedia.position), asc(blockMedia.createdAt));
+
+/** Captions are single-line: each becomes exactly one bullet. */
+const captionsText = (title: string, media: readonly { caption: string }[]): BlockText => ({
+  title,
+  body: media.map((m) => `- ${m.caption.replace(/\s+/g, ' ').trim()}`).join('\n'),
+});
+
+const bulletLines = (body: string) =>
+  body
+    .split('\n')
+    .filter((line) => BULLET.test(line))
+    .map((line) => line.replace(/^\s*[-*+]\s+/, '').trim());
 
 async function markFailed(
   deps: TranslationDeps,

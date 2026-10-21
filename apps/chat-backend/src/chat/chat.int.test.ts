@@ -632,3 +632,31 @@ describe('Recommendation components', () => {
     expect(prompt).not.toContain('follow-up-chips');
   });
 });
+
+describe.each(['mcp', 'inprocess'] as const)('Property info card (%s)', (transport) => {
+  it('shows the Wi-Fi card from the unit record, password held back before the release', async () => {
+    const model = mockModel([
+      textAndCallStep('The network is below.', 'show_property_info', { topic: 'wifi' }),
+      textStep('Anything else?'),
+    ]);
+    const t = await createChatTestApp({ model, transport });
+    apps.push(t);
+    const seed = await seedGuestUnit(t.db, { now: t.clock.now(), checkInInDays: 2 });
+    const { cookie } = await enterSpace(t, seed);
+
+    const response = await send(t, cookie, "What's the wifi password?");
+    expect(response.statusCode).toBe(200);
+    // The card does not end the turn the way chips do.
+    expect(model.doStreamCalls).toHaveLength(2);
+    const card = readStream(response).find(
+      (c) => c.type === 'data-component' && c.id === 'call-show_property_info',
+    ) as unknown as { data: { name: string; payload: Record<string, unknown> } } | undefined;
+    expect(card?.data.name).toBe('property-info');
+    expect(card?.data.payload).toMatchObject({
+      topic: 'wifi',
+      releaseAt: seed.stay.arrivalReleaseAt.toISOString(),
+      fields: [{ key: 'wifiNetwork', action: 'copy' }],
+    });
+    expect(JSON.stringify(card)).not.toContain(seed.secrets.wifiPassword);
+  });
+});

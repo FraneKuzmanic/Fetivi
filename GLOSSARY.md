@@ -17,11 +17,15 @@ One rentable space of a Property. It inherits the Property's content and may ove
 _Avoid_: Apartment (as the generic term), room, listing
 
 **Info block**:
-A titled piece of Markdown guest information in one Guide section, owned by a Property or a Unit, with a revision number that grows with every edit of its title or text.
+A titled piece of Markdown guest information in one Guide section, owned by a Property or a Unit, with a revision number that grows with every edit of its title or text, every added Block media item and every caption change.
 _Avoid_: Article, note, card
 
+**Block media**:
+A photo or short video a host attaches to an Info block, with a caption that is translated like the block's text; guests see it from the publication of the revision that added it.
+_Avoid_: Attachment, upload
+
 **Translation**:
-One guest language's version of an Info block's title and text, for one revision: the host's own text, a machine translation, or the host's correction.
+One guest language's version of an Info block's title, text and Block media captions, for one revision: the host's own text, a machine translation, or the host's correction (which keeps the machine captions).
 
 **Published revision**:
 The revision of an Info block guests see; it moves forward only when all seven languages exist for a newer revision.

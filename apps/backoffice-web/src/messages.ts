@@ -21,6 +21,9 @@ const MESSAGES: Record<string, string> = {
   'seats-taken': 'Some seats are already taken.',
   'unit-not-live': 'Stays can be registered once Fetivi has approved the property.',
   'stay-ended': 'This Stay has ended and can no longer be changed.',
+  'unsupported-media': 'Use a JPEG, PNG or WebP photo, or an MP4 or WebM video.',
+  'media-too-large': 'This file is too large: photos up to 10 MB, videos up to 50 MB.',
+  'too-many-media': 'A block can have up to 6 photos or videos. Remove one first.',
 };
 
 export function messageFor(code: string): string {

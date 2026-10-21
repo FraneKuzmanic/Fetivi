@@ -119,7 +119,7 @@ const body = (id: string, revision: number, l: GuestLanguage) =>
   `[${l}] r${revision} B block-${id.slice(-1)}`;
 type TranslationInput = Pick<
   BlockTranslationRow,
-  'blockId' | 'revision' | 'language' | 'title' | 'body'
+  'blockId' | 'revision' | 'language' | 'title' | 'body' | 'captions'
 >;
 const translations: TranslationInput[] = [
   ...[BLOCK_ALWAYS, BLOCK_AFTER, BLOCK_NEVER].map((id) => ({ id, revision: 1 })),
@@ -132,6 +132,7 @@ const translations: TranslationInput[] = [
     language,
     title: title(id, revision, language),
     body: body(id, revision, language),
+    captions: {},
   })),
 );
 
@@ -154,6 +155,7 @@ function input(overrides: Partial<ProjectionInput> & { unit?: ProjectionInput['u
     },
     language: 'en' as GuestLanguage,
     translations,
+    media: [] as ProjectionInput['media'],
     now: RELEASE,
     ...overrides,
   };
@@ -252,17 +254,20 @@ describe('guestProjection content', () => {
         category: 'arrival_access',
         title: title(BLOCK_AFTER, 1, 'de'),
         body: body(BLOCK_AFTER, 1, 'de'),
+        media: [],
       },
       {
         category: 'wifi_essentials',
         title: title(BLOCK_ALWAYS, 1, 'de'),
         body: body(BLOCK_ALWAYS, 1, 'de'),
+        media: [],
       },
       // The revised block keeps its revision-1 text while revision 2 is pending.
       {
         category: 'how_tos',
         title: title(BLOCK_REVISED, 1, 'de'),
         body: body(BLOCK_REVISED, 1, 'de'),
+        media: [],
       },
     ]);
     const json = JSON.stringify(p);
@@ -300,5 +305,86 @@ describe('guestProjection content', () => {
       arrivalDetailsReleaseAt: RELEASE.toISOString(),
     });
     expect(p.amenities).toEqual([{ amenity: 'wifi', note: 'fast' }]);
+  });
+});
+
+describe('guestProjection media', () => {
+  const MEDIA_OLD = 'm0m0m0m0-0000-4000-8000-000000000001';
+  const MEDIA_NEW = 'm0m0m0m0-0000-4000-8000-000000000002';
+  const MEDIA_AFTER = 'm0m0m0m0-0000-4000-8000-000000000003';
+  const media: ProjectionInput['media'] = [
+    // Added at revision 2 of the revised block, which still publishes revision 1.
+    {
+      id: MEDIA_NEW,
+      blockId: BLOCK_REVISED,
+      kind: 'video',
+      caption: 'new source',
+      addedRevision: 2,
+      position: 1,
+      createdAt: at,
+    },
+    {
+      id: MEDIA_OLD,
+      blockId: BLOCK_REVISED,
+      kind: 'image',
+      caption: 'old source',
+      addedRevision: 1,
+      position: 0,
+      createdAt: at,
+    },
+    {
+      id: MEDIA_AFTER,
+      blockId: BLOCK_AFTER,
+      kind: 'image',
+      caption: 'lockbox',
+      addedRevision: 1,
+      position: 0,
+      createdAt: at,
+    },
+  ];
+  const withCaptions = translations.map((t) =>
+    t.blockId === BLOCK_REVISED && t.revision === 1 && t.language === 'de'
+      ? { ...t, captions: { [MEDIA_OLD]: 'alt de' } }
+      : t,
+  );
+  const mediaOf = (p: ReturnType<typeof guestProjection>, category: string) =>
+    p.blocks.find((b) => b.category === category)?.media;
+
+  it('shows only the media of the published revision, with the caption in the language', () => {
+    const p = guestProjection(input({ media, translations: withCaptions, language: 'de' }));
+    expect(mediaOf(p, 'how_tos')).toEqual([{ id: MEDIA_OLD, kind: 'image', caption: 'alt de' }]);
+  });
+
+  it('shows media from the publication of the revision that added it', () => {
+    const unit = effectiveUnit({
+      property,
+      unit: unitRow(),
+      propertyBlocks: [],
+      unitBlocks: [block(BLOCK_REVISED, { revision: 2, publishedRevision: 2 })],
+      hiddenBlockIds: [],
+      propertyAmenities: [],
+      unitAmenities: [],
+    });
+    const p = guestProjection(input({ unit, media, translations: withCaptions }));
+    expect(mediaOf(p, 'how_tos')?.map((m) => m.id)).toEqual([MEDIA_OLD, MEDIA_NEW]);
+  });
+
+  it('falls back to the source caption when the language row has none', () => {
+    const p = guestProjection(input({ media, translations: withCaptions, language: 'en' }));
+    expect(mediaOf(p, 'how_tos')).toEqual([
+      { id: MEDIA_OLD, kind: 'image', caption: 'old source' },
+    ]);
+  });
+
+  it('hides the media of an after-release block before the release', () => {
+    const before = guestProjection(input({ media, now: new Date(RELEASE.getTime() - 1) }));
+    expect(JSON.stringify(before)).not.toContain(MEDIA_AFTER);
+    const after = guestProjection(input({ media }));
+    expect(mediaOf(after, 'arrival_access')?.map((m) => m.id)).toEqual([MEDIA_AFTER]);
+  });
+
+  it('carries media ids but never block ids', () => {
+    const json = JSON.stringify(guestProjection(input({ media })));
+    for (const b of blocks) expect(json).not.toContain(b.id);
   });
 });

@@ -6,6 +6,7 @@ export * from './db/migrate';
 export * from './db/schema';
 export * from './jobs';
 export * from './mail';
+export * from './media';
 export * from './metrics';
 export * from './notifications';
 export * from './offers';

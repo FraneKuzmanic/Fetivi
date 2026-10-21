@@ -108,7 +108,7 @@ Each decision names the alternatives considered. "Reversible" means it can chang
 
 - `Host` has many `Property`; `Property` has many `Unit`. Property-level content is inherited by units and may be overridden per unit.
 - `Unit` carries the permanent QR link slug, the structured core fields, amenities and `InfoBlock`s. Secrets (Wi-Fi password, codes, phones) are typed fields on the unit, never inside block text.
-- `InfoBlock` has a category (one of the seven Guide sections), rich text in the host's source language, media, a visibility rule, and one `Translation` per guest language produced on save. Host picks, neighbourhood tips and the host's own Offers hang off the property.
+- `InfoBlock` has a category (one of the seven Guide sections), rich text in the host's source language, media, a visibility rule, and one `Translation` per guest language produced on save. Media: ADR 0003. Host picks, neighbourhood tips and the host's own Offers hang off the property.
 - `Stay` belongs to a unit: check-in, checkout, party size, optional booker name and reservation number, the six-digit PIN (stored as entered so the host can re-read it; brute-force limits are the defence), the arrival-details release time, a "possibly cancelled" flag, and links to the `CalendarEvent`s that proposed it.
 - `Space` is one device's private world inside a Stay: an opaque long-lived cookie token, language, optional email with opt-in flags, About me preferences (with a special-category marker set only by the guest's own tap), the recovery token, and a `closed_at` derived from checkout. Conversations, plans and Orders belong to a space.
 

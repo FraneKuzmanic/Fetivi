@@ -75,7 +75,9 @@ describe('textAfterSilentChips', () => {
 
 describe('presentationTools', () => {
   it('only acknowledges, and validates its input with the payload schema', async () => {
-    const tools = presentationTools();
+    const tools = presentationTools({
+      readProjection: () => Promise.reject(new Error('not read')),
+    });
     const execute = tools.suggest_replies?.execute;
     expect(
       await execute?.({ replies: ['Yes'] }, { toolCallId: 'c', messages: [] } as never),

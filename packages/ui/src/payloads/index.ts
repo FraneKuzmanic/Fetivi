@@ -10,6 +10,9 @@ import {
 import { ORDER_STATUSES, PAYMENT_STATUSES } from '@fetivi/domain/order-vocabulary';
 import { GUEST_LANGUAGES } from '@fetivi/domain/vocabulary';
 import { z } from 'zod';
+import { propertyInfoCard } from './property-info';
+
+export * from './property-info';
 
 /** The UI message part type of a streamed component. */
 export const COMPONENT_PART_TYPE = 'data-component';
@@ -106,6 +109,7 @@ export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('place-carousel'), payload: placeCarousel }),
   z.object({ name: z.literal('availability-picker'), payload: availabilityPicker }),
   z.object({ name: z.literal('receipt-card'), payload: receiptCard }),
+  z.object({ name: z.literal('property-info'), payload: propertyInfoCard }),
 ]);
 
 /** The UI message part type of a confirmation card; its id is the paused tool call's id. */

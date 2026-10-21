@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { Db } from '../db/client';
 import { accounts } from '../db/schema/accounts';
+import { blockMedia } from '../db/schema/block-media';
 import { catalogRecords, catalogTranslations, destinations } from '../db/schema/catalog';
 import { infoBlocks } from '../db/schema/info-blocks';
 import {
@@ -26,7 +27,14 @@ import type {
   PriceUnit,
   ProviderLanguage,
 } from '../offers/vocabulary';
-import { GUEST_LANGUAGES, type GuestLanguage } from '../property/vocabulary';
+import {
+  type BlockVisibility,
+  GUEST_LANGUAGES,
+  type GuestLanguage,
+  type HostBlockCategory,
+  MEDIA_TYPES,
+  type MediaContentType,
+} from '../property/vocabulary';
 import { registerStay } from '../stays/store';
 import { hashToken, newToken } from '../tokens';
 
@@ -75,6 +83,17 @@ export interface SeedGuestUnitOptions {
   checkInInDays?: number;
   nights?: number;
   spaceLanguage?: GuestLanguage;
+  /** More unit blocks, published at revision 1 in every language (`[<lang>] <text>`). */
+  blocks?: SeedBlock[];
+}
+
+export interface SeedBlock {
+  category: HostBlockCategory;
+  title: string;
+  body: string;
+  visibility?: BlockVisibility;
+  /** Each item's captions are `<lang>:<caption>`; the files themselves are not written. */
+  media?: { caption: string; contentType: MediaContentType }[];
 }
 
 export interface SeededGuestUnit {
@@ -103,6 +122,8 @@ export interface SeededGuestUnit {
   /** Title text of the after_release block in each language, `[de] Arrival <hex>`. */
   afterReleaseTitle: (language: GuestLanguage) => string;
   alwaysTitle: (language: GuestLanguage) => string;
+  /** The `blocks` option's blocks, in order, with their media ids. */
+  extraBlocks: { id: string; media: string[] }[];
 }
 
 /**
@@ -218,6 +239,52 @@ export async function seedGuestUnit(
     ]),
   );
 
+  const extraBlocks: SeededGuestUnit['extraBlocks'] = [];
+  for (const [position, b] of (options.blocks ?? []).entries()) {
+    const [row] = await db
+      .insert(infoBlocks)
+      .values({
+        unitId: unit.id,
+        category: b.category,
+        title: b.title,
+        body: b.body,
+        visibility: b.visibility ?? 'always',
+        position: position + 1,
+        publishedRevision: 1,
+        translationStatus: 'published',
+      })
+      .returning();
+    if (!row) throw new Error('no block');
+    const media = b.media?.length
+      ? await db
+          .insert(blockMedia)
+          .values(
+            b.media.map((m, i) => ({
+              blockId: row.id,
+              kind: MEDIA_TYPES[m.contentType].kind,
+              contentType: m.contentType,
+              bytes: 4,
+              caption: m.caption,
+              addedRevision: 1,
+              position: i,
+            })),
+          )
+          .returning()
+      : [];
+    await db.insert(blockTranslations).values(
+      GUEST_LANGUAGES.map((language) => ({
+        blockId: row.id,
+        revision: 1,
+        language,
+        title: `[${language}] ${b.title}`,
+        body: `[${language}] ${b.body}`,
+        captions: Object.fromEntries(media.map((m) => [m.id, `${language}:${m.caption}`])),
+        origin: language === 'en' ? ('source' as const) : ('machine' as const),
+      })),
+    );
+    extraBlocks.push({ id: row.id, media: media.map((m) => m.id) });
+  }
+
   const today = DateTime.fromJSDate(now, { zone: ZONE }).startOf('day');
   const checkIn = today.plus({ days: options.checkInInDays ?? 2 });
   const stay = await registerStay(
@@ -260,6 +327,7 @@ export async function seedGuestUnit(
     private: priv,
     afterReleaseTitle,
     alwaysTitle,
+    extraBlocks,
   };
 }
 

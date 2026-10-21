@@ -11,6 +11,8 @@ const schema = z.object({
   MAIL_TRANSPORT: z.enum(['console']).default('console'),
   /** Set behind Caddy (e.g. 'loopback') so login throttling sees the real client address. */
   TRUST_PROXY: z.string().optional(),
+  /** Block media files. Both processes must point at the same directory (a shared volume in production). */
+  MEDIA_DIR: z.string().default('../../.data/media'),
 });
 
 export type Config = z.infer<typeof schema>;

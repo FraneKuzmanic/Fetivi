@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { accounts } from '../db/schema/accounts';
+import { blockMedia } from '../db/schema/block-media';
 import { infoBlocks, unitHiddenBlocks } from '../db/schema/info-blocks';
 import { properties, units } from '../db/schema/properties';
 import { blockTranslations } from '../db/schema/translations';
@@ -387,5 +388,125 @@ describe('translationsDone', () => {
     expect(await translationsDone(testDb.db, unit.id)).toBe(false);
     await testDb.db.insert(unitHiddenBlocks).values({ unitId: unit.id, blockId: hidden.id });
     expect(await translationsDone(testDb.db, unit.id)).toBe(true);
+  });
+});
+
+describe('runTranslation with media captions', () => {
+  /** A model that records each source it is asked to translate. */
+  function recording(...results: ModelResult[]) {
+    const sources: { title: string; body: string }[] = [];
+    const model: TranslationModel = {
+      async translate(source) {
+        sources.push(source);
+        const next = results[sources.length - 1];
+        if (!next) throw new Error('unexpected model call');
+        return next;
+      },
+    };
+    return { model, sources };
+  }
+
+  const captions = (overrides: Partial<Record<GuestLanguage, string>> = {}): ModelResult => {
+    const translations = Object.fromEntries(
+      GUEST_LANGUAGES.map((l) => [
+        l,
+        { title: `Parking ${l}`, body: overrides[l] ?? `- ${l}:c1\n- ${l}:c2` },
+      ]),
+    ) as Record<GuestLanguage, { title: string; body: string }>;
+    return { ok: true, output: { source_language: 'hr', translations } };
+  };
+
+  async function withMedia() {
+    const f = await fixture();
+    const rows = await testDb.db
+      .insert(blockMedia)
+      .values(
+        ['c1', 'c2'].map((caption, position) => ({
+          blockId: f.block.id,
+          kind: 'image' as const,
+          contentType: 'image/png',
+          bytes: 10,
+          caption,
+          addedRevision: 1,
+          position,
+        })),
+      )
+      .returning();
+    const [first, second] = rows;
+    if (!first || !second) throw new Error('no media');
+    return { ...f, media: [first.id, second.id] as const };
+  }
+
+  it('translates captions in a second call and stores them by media id', async () => {
+    const { block, media } = await withMedia();
+    const { model, sources } = recording(output(), captions());
+    expect(await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 })).toBe(
+      'published',
+    );
+    expect(sources).toHaveLength(2);
+    expect(sources[1]?.body).toBe('- c1\n- c2');
+    const rows = await rowsOf(block.id, 1);
+    const [m1, m2] = media;
+    expect(rows.find((r) => r.language === 'de')?.captions).toEqual({
+      [m1]: 'de:c1',
+      [m2]: 'de:c2',
+    });
+    expect(rows.find((r) => r.language === 'hr')?.captions).toEqual({
+      [m1]: 'c1',
+      [m2]: 'c2',
+    });
+  });
+
+  it('fails the revision when a language loses a caption', async () => {
+    const { block } = await withMedia();
+    const { model } = recording(output(), captions({ de: '- de:c1' }), captions({ de: '- de:c1' }));
+    expect(await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 })).toBe(
+      'failed',
+    );
+    const rows = await rowsOf(block.id, 1);
+    expect(rows.map((r) => r.language)).not.toContain('de');
+    expect(await blockOf(block.id)).toMatchObject({
+      translationStatus: 'failed',
+      translationError: 'structure-mismatch',
+      publishedRevision: null,
+    });
+  });
+
+  it('makes one call and stores no captions for a block without media', async () => {
+    const { block } = await fixture();
+    const { model, sources } = recording(output());
+    await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 });
+    expect(sources).toHaveLength(1);
+    const rows = await rowsOf(block.id, 1);
+    expect(rows.every((r) => Object.keys(r.captions).length === 0)).toBe(true);
+  });
+
+  it('keeps the machine captions when the host corrects a language', async () => {
+    const { block, media } = await withMedia();
+    const { model } = recording(output(), captions());
+    await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 });
+    await correctTranslation(deps(), block.id, { language: 'de', revision: 1, ...good('de', '!') });
+    const de = (await rowsOf(block.id, 1)).find((r) => r.language === 'de');
+    expect(de).toMatchObject({ origin: 'host', title: 'Parking de!' });
+    expect(de?.captions[media[0]]).toBe('de:c1');
+  });
+
+  it('drops an item deleted while the job ran', async () => {
+    const { block, media } = await withMedia();
+    const [m1, m2] = media;
+    let calls = 0;
+    const model: TranslationModel = {
+      async translate() {
+        calls += 1;
+        if (calls === 1) return output();
+        await testDb.db.delete(blockMedia).where(eq(blockMedia.id, m2));
+        return captions();
+      },
+    };
+    expect(await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 })).toBe(
+      'published',
+    );
+    const de = (await rowsOf(block.id, 1)).find((r) => r.language === 'de');
+    expect(de?.captions).toEqual({ [m1]: 'de:c1' });
   });
 });

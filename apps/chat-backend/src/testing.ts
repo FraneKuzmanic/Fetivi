@@ -1,7 +1,11 @@
 import { randomBytes } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
 import type { AddressInfo } from 'node:net';
+import os from 'node:os';
+import path from 'node:path';
 import {
   accounts,
+  createLocalMediaStore,
   type Db,
   type JobQueue,
   properties,
@@ -45,18 +49,23 @@ export const NO_CHAT: AppDeps['chat'] = {
   },
 };
 
+const newMediaDir = () => mkdtemp(path.join(os.tmpdir(), 'fetivi-chat-media-'));
+
 export interface TestApp {
   app: FastifyInstance;
   db: Db;
   testDb: TestDatabase;
   clock: { now: () => Date; advance: (ms: number) => void };
   tokens: TokenConfig;
+  /** This app's own media directory, removed on close. */
+  mediaDir: string;
   close: () => Promise<void>;
 }
 
 /** A chat-backend app on its own test database, with a movable clock. */
 export async function createTestApp(options: { trustProxy?: string } = {}): Promise<TestApp> {
   const testDb = await createTestDatabase();
+  const mediaDir = await newMediaDir();
   let current = START.getTime();
   const clock = {
     now: () => new Date(current),
@@ -74,6 +83,7 @@ export async function createTestApp(options: { trustProxy?: string } = {}): Prom
     appOrigin: APP_TEST_ORIGIN,
     now: clock.now,
     logger: false,
+    media: createLocalMediaStore(mediaDir),
     trustProxy: options.trustProxy,
     tokens,
     chat: NO_CHAT,
@@ -85,9 +95,11 @@ export async function createTestApp(options: { trustProxy?: string } = {}): Prom
     testDb,
     clock,
     tokens,
+    mediaDir,
     close: async () => {
       await app.close();
       await testDb.drop();
+      await rm(mediaDir, { recursive: true, force: true });
     },
   };
 }
@@ -160,6 +172,8 @@ export interface ChatTestApp {
   clock: { now: () => Date; advance: (ms: number) => void };
   /** Null in `inprocess` mode: no MCP servers run. */
   mcpApp: FastifyInstance | null;
+  /** This app's own media directory, removed on close. */
+  mediaDir: string;
   close: () => Promise<void>;
 }
 
@@ -178,6 +192,7 @@ export async function createChatTestApp(options: {
 }): Promise<ChatTestApp> {
   if (options.transport === 'inprocess') return createInProcessChatTestApp(options);
   const testDb = await createTestDatabase();
+  const mediaDir = await newMediaDir();
   let current = Date.now();
   const clock = {
     now: () => new Date(current),
@@ -207,6 +222,7 @@ export async function createChatTestApp(options: {
     appOrigin: APP_TEST_ORIGIN,
     now: clock.now,
     logger: false,
+    media: createLocalMediaStore(mediaDir),
     tokens: { key, issuer: TEST_ISSUER, mcpBaseUrl: TEST_MCP_BASE },
     chat: { model: options.model, mcpFetch },
   });
@@ -216,10 +232,12 @@ export async function createChatTestApp(options: {
     db: testDb.db,
     clock,
     mcpApp,
+    mediaDir,
     close: async () => {
       await app.close();
       await mcpApp.close();
       await testDb.drop();
+      await rm(mediaDir, { recursive: true, force: true });
     },
   };
 }
@@ -231,6 +249,7 @@ async function createInProcessChatTestApp(options: {
 }): Promise<ChatTestApp> {
   if (options.probe) throw new Error('the probe server runs only over MCP');
   const testDb = await createTestDatabase();
+  const mediaDir = await newMediaDir();
   let current = Date.now();
   const clock = {
     now: () => new Date(current),
@@ -244,6 +263,7 @@ async function createInProcessChatTestApp(options: {
     appOrigin: APP_TEST_ORIGIN,
     now: clock.now,
     logger: false,
+    media: createLocalMediaStore(mediaDir),
     tokens: {
       key: await loadSigningKey(undefined),
       issuer: TEST_ISSUER,
@@ -268,9 +288,11 @@ async function createInProcessChatTestApp(options: {
     db: testDb.db,
     clock,
     mcpApp: null,
+    mediaDir,
     close: async () => {
       await app.close();
       await testDb.drop();
+      await rm(mediaDir, { recursive: true, force: true });
     },
   };
 }

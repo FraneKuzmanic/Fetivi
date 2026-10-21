@@ -137,3 +137,29 @@ describe('component parts in the chat', () => {
     expect(html).not.toContain('fv-save');
   });
 });
+
+describe('property info card in the chat', () => {
+  it('renders a property-info part as the card, with copy buttons', () => {
+    const info = {
+      type: 'data-component',
+      id: 'c9',
+      data: {
+        name: 'property-info',
+        payload: {
+          topic: 'wifi',
+          releaseAt: null,
+          timezone: 'Europe/Zagreb',
+          fields: [
+            { key: 'wifiNetwork', value: 'Mare', action: 'copy' },
+            { key: 'wifiPassword', value: 'sea-breeze', action: 'copy' },
+          ],
+          media: [],
+        },
+      },
+    } as const;
+    const html = render([question, answer([info])]);
+    expect(html).toContain('class="fv-info"');
+    expect(html).toContain('>sea-breeze</code>');
+    expect(html).toContain('Copy Password');
+  });
+});

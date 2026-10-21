@@ -1,4 +1,10 @@
-import { createConsoleMailer, createDb, createJobQueue, ensureQueues } from '@fetivi/domain';
+import {
+  createConsoleMailer,
+  createDb,
+  createJobQueue,
+  createLocalMediaStore,
+  ensureQueues,
+} from '@fetivi/domain';
 import { PgBoss } from 'pg-boss';
 import { buildApp } from './app';
 import { loadConfig } from './config';
@@ -21,6 +27,7 @@ const app = buildApp({
   webOrigin: config.WEB_ORIGIN,
   guestOrigin: config.GUEST_ORIGIN,
   trustProxy: config.TRUST_PROXY,
+  media: createLocalMediaStore(config.MEDIA_DIR),
 });
 
 await app.listen({ host: config.HOST, port: config.PORT });

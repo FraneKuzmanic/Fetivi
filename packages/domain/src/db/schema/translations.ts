@@ -1,4 +1,13 @@
-import { integer, pgEnum, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { GUEST_LANGUAGES, TRANSLATION_ORIGINS } from '../../property/vocabulary';
 import { infoBlocks } from './info-blocks';
 
@@ -18,6 +27,8 @@ export const blockTranslations = pgTable(
     /** Markdown. */
     body: text('body').notNull(),
     origin: translationOrigin('origin').notNull(),
+    /** Media id → caption in this language, for the media of this revision. */
+    captions: jsonb('captions').$type<Record<string, string>>().notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

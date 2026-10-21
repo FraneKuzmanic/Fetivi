@@ -108,7 +108,7 @@ async function withTurn(
     const listed = await turnTools.list();
     const calls: string[] = [];
     const mcpTools = toAiTools(listed, { tools: turnTools, onCall: (n) => calls.push(n) });
-    const shownTools = presentationTools();
+    const shownTools = presentationTools({ readProjection: () => turnTools.readProjection() });
     for (const name of Object.keys(shownTools)) {
       if (name in mcpTools) throw new Error(`A server exposes the presentation tool ${name}`);
     }

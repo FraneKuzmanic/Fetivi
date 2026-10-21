@@ -1,5 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../db/client';
+import { blockMedia } from '../db/schema/block-media';
 import { stays } from '../db/schema/stays';
 import { blockTranslations } from '../db/schema/translations';
 import { loadEffectiveUnit } from '../property/load';
@@ -45,6 +46,7 @@ export async function loadGuestProjection(
           language: blockTranslations.language,
           title: blockTranslations.title,
           body: blockTranslations.body,
+          captions: blockTranslations.captions,
         })
         .from(blockTranslations)
         .where(
@@ -55,5 +57,27 @@ export async function loadGuestProjection(
         )
     : [];
 
-  return guestProjection({ unit, stay, language: input.language, translations, now: input.now });
+  const media = published.length
+    ? await db
+        .select({
+          id: blockMedia.id,
+          blockId: blockMedia.blockId,
+          kind: blockMedia.kind,
+          caption: blockMedia.caption,
+          addedRevision: blockMedia.addedRevision,
+          position: blockMedia.position,
+          createdAt: blockMedia.createdAt,
+        })
+        .from(blockMedia)
+        .where(inArray(blockMedia.blockId, published))
+    : [];
+
+  return guestProjection({
+    unit,
+    stay,
+    language: input.language,
+    translations,
+    media,
+    now: input.now,
+  });
 }

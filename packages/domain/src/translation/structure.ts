@@ -7,7 +7,7 @@ export interface BlockText {
 }
 
 const HEADING = /^(#{1,6})\s+\S/;
-const BULLET = /^\s*[-*+]\s+\S/;
+export const BULLET = /^\s*[-*+]\s+\S/;
 const STEP = /^\s*(\d+)[.)]\s+\S/;
 const LINK = /https?:\/\/[^\s)<>\]"']+/g;
 const PLACEHOLDER = /\{\{\s*[A-Za-z0-9_.-]+\s*\}\}/g;

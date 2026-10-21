@@ -124,7 +124,27 @@ export const LIMITS = {
   licence: 64,
   amenityNote: 200,
   blocksPerOwner: 100,
+  /** Block media caption, also its alt text. */
+  caption: 200,
+  mediaPerBlock: 6,
+  imageBytes: 10 * 1024 * 1024,
+  videoBytes: 50 * 1024 * 1024,
 } as const;
+
+/** Photos and short videos on an Info block. */
+export const MEDIA_KINDS = ['image', 'video'] as const;
+export type MediaKind = (typeof MEDIA_KINDS)[number];
+
+/** Accepted upload types, by sniffed content, with the file extension each is stored under. */
+export const MEDIA_TYPES = {
+  'image/jpeg': { kind: 'image', ext: 'jpg' },
+  'image/png': { kind: 'image', ext: 'png' },
+  'image/webp': { kind: 'image', ext: 'webp' },
+  'video/mp4': { kind: 'video', ext: 'mp4' },
+  'video/webm': { kind: 'video', ext: 'webm' },
+} as const satisfies Record<string, { kind: MediaKind; ext: string }>;
+export type MediaContentType = keyof typeof MEDIA_TYPES;
+export const MEDIA_CONTENT_TYPES = Object.keys(MEDIA_TYPES) as MediaContentType[];
 
 /** Guest languages, in the PRD's order. Also the order of the language picker. */
 export const GUEST_LANGUAGES = ['en', 'hr', 'de', 'it', 'pl', 'hu', 'fr'] as const;

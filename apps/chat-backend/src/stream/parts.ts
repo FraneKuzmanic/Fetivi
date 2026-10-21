@@ -39,6 +39,8 @@ const candidate = (toolName: string, value: unknown): unknown => {
         },
       };
     }
+    case 'show_property_info':
+      return { name: 'property-info', payload: value };
     case 'create_order':
       // Only a real Order gets a receipt; "not ordered" is told by the model's words.
       if (!isRecord(value) || value.outcome !== 'ordered') return null;

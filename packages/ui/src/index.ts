@@ -13,5 +13,10 @@ export {
 export { MapList, type MapListLabels } from './components/map-list/MapList';
 export { PlaceCard, type PlaceLabels } from './components/place-carousel/PlaceCard';
 export { PlaceCarousel } from './components/place-carousel/PlaceCarousel';
+export {
+  InfoMedia,
+  PropertyInfoCard,
+  type PropertyInfoLabels,
+} from './components/property-info-card/PropertyInfoCard';
 export { ReceiptCard, type ReceiptLabels } from './components/receipt-card/ReceiptCard';
 export { Wordmark } from './Wordmark';

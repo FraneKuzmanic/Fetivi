@@ -1,4 +1,4 @@
-import { createDb } from '@fetivi/domain';
+import { createDb, createLocalMediaStore } from '@fetivi/domain';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { loadConfig } from './config';
@@ -8,7 +8,15 @@ import { loadSigningKey } from './tokens/keys';
 // The pg pool connects lazily, so no database is needed for these tests.
 const { db, pool } = createDb('postgres://unused@127.0.0.1:1/x');
 const tokens = { key: await loadSigningKey(undefined), issuer: 'http://x', mcpBaseUrl: 'http://y' };
-const deps = { db, appOrigin: 'http://app.test', logger: false, tokens, chat: NO_CHAT };
+const deps = {
+  db,
+  appOrigin: 'http://app.test',
+  logger: false,
+  tokens,
+  chat: NO_CHAT,
+  // Nothing is written in these tests.
+  media: createLocalMediaStore('unused-media'),
+};
 
 afterAll(async () => {
   await pool.end();
@@ -62,6 +70,7 @@ describe('chat-backend', () => {
       MCP_PUBLIC_URL: 'http://localhost:3002',
       TOOL_TRANSPORT: 'mcp',
       REQUEST_STATE_SECRET: 'dev-only-request-state-secret-change-me-in-production',
+      MEDIA_DIR: '../../.data/media',
     });
   });
 

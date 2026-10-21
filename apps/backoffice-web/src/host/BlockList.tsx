@@ -4,6 +4,7 @@ import { type Block, type BlockInput, type BlockResult, host, type SecretWarning
 import { CATEGORY_LABELS, TRANSLATION_ERROR_LABELS, VISIBILITY_LABELS } from '../forms/labels';
 import { useAction } from '../useAction';
 import { BlockEditor, SecretWarnings } from './BlockEditor';
+import { MediaPanel } from './media/MediaPanel';
 import { TranslationChip } from './translations/TranslationChip';
 import { TranslationsPanel } from './translations/TranslationsPanel';
 
@@ -30,6 +31,7 @@ export function BlockList({
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [warnings, setWarnings] = useState<SecretWarning[]>([]);
   const [translating, setTranslating] = useState<string | null>(null);
+  const [showingMedia, setShowingMedia] = useState<string | null>(null);
 
   const done = (found: SecretWarning[]) =>
     void run(async () => {
@@ -98,6 +100,15 @@ export function BlockList({
                 </button>
                 <button
                   type="button"
+                  aria-expanded={showingMedia === block.id}
+                  onClick={() => setShowingMedia(showingMedia === block.id ? null : block.id)}
+                >
+                  {showingMedia === block.id
+                    ? 'Hide photos & video'
+                    : `Photos & video (${block.media.length})`}
+                </button>
+                <button
+                  type="button"
                   className="danger"
                   disabled={busy}
                   onClick={() => {
@@ -114,6 +125,9 @@ export function BlockList({
               </div>
               {translating === block.id ? (
                 <TranslationsPanel block={block} onChanged={onChanged} />
+              ) : null}
+              {showingMedia === block.id ? (
+                <MediaPanel block={block} onChanged={onChanged} />
               ) : null}
             </li>
           ),
