@@ -270,6 +270,9 @@ importers:
       '@fetivi/egress':
         specifier: workspace:*
         version: link:../../packages/egress
+      '@fetivi/mcp-servers':
+        specifier: workspace:*
+        version: link:../mcp-servers
       '@fetivi/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -291,13 +294,13 @@ importers:
       luxon:
         specifier: 3.7.2
         version: 3.7.2
+      pg-boss:
+        specifier: 12.38.0
+        version: 12.38.0(@opentelemetry/api@1.9.1)
       zod:
         specifier: 4.6.7
         version: 4.6.7
     devDependencies:
-      '@fetivi/mcp-servers':
-        specifier: workspace:*
-        version: link:../mcp-servers
       '@types/luxon':
         specifier: 3.7.6
         version: 3.7.6

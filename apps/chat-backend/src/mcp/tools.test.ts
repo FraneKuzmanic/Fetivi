@@ -1,6 +1,7 @@
 import { GUEST_CONFIRMS_META_KEY, type McpServerName } from '@fetivi/domain';
 import type { Client, Tool } from '@modelcontextprotocol/client';
 import { describe, expect, it, vi } from 'vitest';
+import { mcpTurnTools } from '../tools/registry';
 import type { TurnClients } from './clients';
 import { createToolCatalog, listTurnTools, pausedTools, toAiTools } from './tools';
 
@@ -25,7 +26,12 @@ function fakeClients(
     timed: (run) => run(),
     close: async () => {},
   };
-  return { clients, listTools, callTool };
+  return {
+    clients,
+    tools: mcpTurnTools(clients, createToolCatalog(), scopes),
+    listTools,
+    callTool,
+  };
 }
 
 const scopes = { stay: 'unit:read', local: 'catalog:read', services: '', trip: 'plan:read' };
@@ -61,26 +67,26 @@ describe('listTurnTools', () => {
 
 describe('toAiTools', () => {
   it('refuses two servers exposing the same name', () => {
-    const { clients } = fakeClients({});
+    const { tools: turnTools } = fakeClients({});
     expect(() =>
       toAiTools(
         [
           { server: 'stay', tool: def('dup') },
           { server: 'local', tool: def('dup') },
         ],
-        { clients },
+        { tools: turnTools },
       ),
     ).toThrow('dup');
   });
 
   it('calls the tool on its own server and returns the structured content', async () => {
-    const { clients, callTool } = fakeClients({}, (_name, args) => ({
+    const { tools: turnTools, callTool } = fakeClients({}, (_name, args) => ({
       structuredContent: { echoed: args },
       content: [{ type: 'text', text: '{}' }],
     }));
     const names: string[] = [];
     const tools = toAiTools([{ server: 'local', tool: def('find') }], {
-      clients,
+      tools: turnTools,
       onCall: (n) => names.push(n),
     });
     expect(tools.find?.description).toBe('find tool');
@@ -91,22 +97,24 @@ describe('toAiTools', () => {
   });
 
   it('returns the text when there is no structured content', async () => {
-    const { clients } = fakeClients({}, () => ({ content: [{ type: 'text', text: 'plain' }] }));
-    const tools = toAiTools([{ server: 'local', tool: def('t') }], { clients });
+    const { tools: turnTools } = fakeClients({}, () => ({
+      content: [{ type: 'text', text: 'plain' }],
+    }));
+    const tools = toAiTools([{ server: 'local', tool: def('t') }], { tools: turnTools });
     expect(await tools.t?.execute?.({}, execOptions)).toBe('plain');
   });
 
   it('throws the server’s text on a tool error', async () => {
-    const { clients } = fakeClients({}, () => ({
+    const { tools: turnTools } = fakeClients({}, () => ({
       isError: true,
       content: [{ type: 'text', text: 'not permitted' }],
     }));
-    const tools = toAiTools([{ server: 'local', tool: def('t') }], { clients });
+    const tools = toAiTools([{ server: 'local', tool: def('t') }], { tools: turnTools });
     await expect(tools.t?.execute?.({}, execOptions)).rejects.toThrow('not permitted');
   });
 
   it('leaves a tool the server marks guest-confirmed without execute', () => {
-    const { clients } = fakeClients({});
+    const { tools: turnTools } = fakeClients({});
     const listed = [
       {
         server: 'services' as const,
@@ -115,7 +123,7 @@ describe('toAiTools', () => {
       { server: 'services' as const, tool: { ...def('write'), _meta: { other: true } } },
       { server: 'local' as const, tool: def('read') },
     ];
-    const tools = toAiTools(listed, { clients });
+    const tools = toAiTools(listed, { tools: turnTools });
     expect(tools.order).toBeDefined();
     expect('execute' in (tools.order ?? {})).toBe(false);
     expect(tools.write?.execute).toBeTypeOf('function');

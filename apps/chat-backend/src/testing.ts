@@ -9,21 +9,28 @@ import {
   registerStay,
   resolveSpace,
   SPACE_COOKIE,
+  type ToolTransport,
   units,
 } from '@fetivi/domain';
 import {
   createTestDatabase,
+  noopQueue,
   type SeededGuestUnit,
   type TestDatabase,
 } from '@fetivi/domain/testing';
 import { createEgress, type Egress } from '@fetivi/egress';
-import { buildMcpTestApp, buildProbeServer } from '@fetivi/mcp-servers/testing';
+import {
+  buildMcpTestApp,
+  buildProbeServer,
+  TEST_REQUEST_STATE_SECRET,
+} from '@fetivi/mcp-servers/testing';
 import type { LanguageModel, UIMessageChunk } from 'ai';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { createLocalJWKSet } from 'jose';
 import { type AppDeps, buildApp } from './app';
 import { loadSigningKey } from './tokens/keys';
 import type { TokenConfig } from './tokens/mint';
+import { inProcessBinding } from './tools/inprocess';
 
 export const APP_TEST_ORIGIN = 'http://app.test';
 export const START = new Date('2026-10-19T10:00:00Z');
@@ -151,7 +158,8 @@ export interface ChatTestApp {
   db: Db;
   /** Moves forward only: the MCP SDK checks token expiry on the real clock. */
   clock: { now: () => Date; advance: (ms: number) => void };
-  mcpApp: FastifyInstance;
+  /** Null in `inprocess` mode: no MCP servers run. */
+  mcpApp: FastifyInstance | null;
   close: () => Promise<void>;
 }
 
@@ -159,13 +167,16 @@ export interface ChatTestApp {
  * A chat-backend app wired to the real MCP servers (listening on a free port, trusting this
  * app's key) on one test database. Token audiences stay `http://mcp.test/<server>`; the MCP fetch
  * rewrites that base to the listening port. `probe` mounts a `local` server with one test tool;
- * `queue` receives the MCP servers' jobs (dropped by default).
+ * `queue` receives the tools' jobs (dropped by default). With `transport: 'inprocess'` (V0) no
+ * MCP server runs and the MCP fetch throws, so any MCP hop fails the test.
  */
 export async function createChatTestApp(options: {
   model: LanguageModel | null;
   probe?: boolean;
   queue?: JobQueue;
+  transport?: ToolTransport;
 }): Promise<ChatTestApp> {
+  if (options.transport === 'inprocess') return createInProcessChatTestApp(options);
   const testDb = await createTestDatabase();
   let current = Date.now();
   const clock = {
@@ -208,6 +219,57 @@ export async function createChatTestApp(options: {
     close: async () => {
       await app.close();
       await mcpApp.close();
+      await testDb.drop();
+    },
+  };
+}
+
+async function createInProcessChatTestApp(options: {
+  model: LanguageModel | null;
+  probe?: boolean;
+  queue?: JobQueue;
+}): Promise<ChatTestApp> {
+  if (options.probe) throw new Error('the probe server runs only over MCP');
+  const testDb = await createTestDatabase();
+  let current = Date.now();
+  const clock = {
+    now: () => new Date(current),
+    advance: (ms: number) => {
+      if (ms < 0) throw new Error('the clock only moves forward');
+      current += ms;
+    },
+  };
+  const app = buildApp({
+    db: testDb.db,
+    appOrigin: APP_TEST_ORIGIN,
+    now: clock.now,
+    logger: false,
+    tokens: {
+      key: await loadSigningKey(undefined),
+      issuer: TEST_ISSUER,
+      mcpBaseUrl: TEST_MCP_BASE,
+    },
+    chat: {
+      model: options.model,
+      mcpFetch: async () => {
+        throw new Error('no MCP in process mode');
+      },
+      tools: inProcessBinding({
+        db: testDb.db,
+        now: clock.now,
+        queue: options.queue ?? noopQueue,
+        requestStateSecret: TEST_REQUEST_STATE_SECRET,
+      }),
+    },
+  });
+  await app.ready();
+  return {
+    app,
+    db: testDb.db,
+    clock,
+    mcpApp: null,
+    close: async () => {
+      await app.close();
       await testDb.drop();
     },
   };

@@ -10,6 +10,7 @@ import {
   QUEUES,
   sendProviderNotification,
   spaces,
+  type ToolTransport,
   turnMetrics,
 } from '@fetivi/domain';
 import {
@@ -32,7 +33,8 @@ import {
   write,
 } from '../testing';
 
-// The guest side of an Order end to end: a mocked model, the real MCP servers and database.
+// The guest side of an Order end to end: a mocked model, the real database, and the guest tools
+// over the real MCP servers or in process (V0): every case runs in both modes.
 
 type StreamResult = { stream: ReadableStream<unknown> };
 const ZONE = 'Europe/Zagreb';
@@ -80,7 +82,7 @@ afterEach(async () => {
 });
 
 /** A guest in Trogir with the Provider's Blue Lagoon boat trip bookable the day after check-in. */
-async function setup() {
+async function setup(transport: ToolTransport) {
   const jobs: { name: string; data: Record<string, unknown> }[] = [];
   const queue: JobQueue = {
     send: async (name, data) => {
@@ -91,7 +93,7 @@ async function setup() {
   // Filled per test; the mock reads it by call index.
   const steps: StreamResult[] = [];
   const model = new MockLanguageModelV4({ doStream: steps as never });
-  const t = await createChatTestApp({ model, queue });
+  const t = await createChatTestApp({ model, queue, transport });
   apps.push(t);
   const seed = await seedGuestUnit(t.db, {
     now: t.clock.now(),
@@ -152,9 +154,9 @@ const cards = (chunks: UIMessageChunk[]) =>
 const partOf = (parts: MessagePart[], type: string) =>
   parts.find((p) => p.type === type) as Record<string, unknown> | undefined;
 
-describe('booking in chat', () => {
+describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport) => {
   it('asks for confirmation, books on the tap and resumes the same message (E2E)', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(
       callsStep([order('call-order', s.args)]),
       textStep('Your Blue Lagoon trip is booked for two.'),
@@ -259,10 +261,11 @@ describe('booking in chat', () => {
 
     const metrics = await s.t.db.select().from(turnMetrics);
     expect(metrics.map((m) => m.toolNames)).toEqual([['create_order'], ['create_order']]);
+    expect(metrics.map((m) => m.transport)).toEqual([transport, transport]);
   });
 
   it('pauses only the write tool when it is called with a read tool', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(
       callsStep([
         { id: 'call-list', toolName: 'list_offers', input: {} },
@@ -276,7 +279,7 @@ describe('booking in chat', () => {
   });
 
   it('a decline books nothing, releases the record and the model goes on', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(callsStep([order('call-order', s.args)]), textStep('Nothing was booked.'));
     await sendText(s, 'Book it');
     const chunks = readStream(await sendAnswer(s, { toolCallId: 'call-order', action: 'decline' }));
@@ -290,7 +293,7 @@ describe('booking in chat', () => {
   });
 
   it('a second tap finds nothing to answer and books once', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(callsStep([order('call-order', s.args)]), textStep('Booked.'));
     await sendText(s, 'Book it');
     const tap = { toolCallId: 'call-order', action: 'accept', content: CONTACT };
@@ -301,7 +304,7 @@ describe('booking in chat', () => {
   });
 
   it('answers 409 for an unknown call and 400 for a forged body', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(callsStep([order('call-order', s.args)]));
     const none = await sendAnswer(s, { toolCallId: 'call-order', action: 'accept' });
     expect([none.statusCode, none.json()]).toEqual([409, { error: 'nothing-to-answer' }]);
@@ -320,7 +323,7 @@ describe('booking in chat', () => {
   });
 
   it('new text while a card is open cancels it first, so no call is left without a result', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(callsStep([order('call-order', s.args)]), textStep('Sure, what else?'));
     await sendText(s, 'Book it');
     const chunks = readStream(await sendText(s, 'Actually, what about restaurants?'));
@@ -351,7 +354,7 @@ describe('booking in chat', () => {
   });
 
   it('a refusal of the first half goes back to the model in the same response', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(
       callsStep([order('call-order', { ...s.args, date: plusDays(s.day, 30), slotId: undefined })]),
       textStep('That day is outside your stay.'),
@@ -368,7 +371,7 @@ describe('booking in chat', () => {
   });
 
   it('a tap after the confirmation expired books nothing and the model explains', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(callsStep([order('call-order', s.args)]), textStep('That confirmation expired.'));
     await sendText(s, 'Book it');
     // The pending record's TTL runs on the app clock (the requestState codec on the real one).
@@ -383,7 +386,7 @@ describe('booking in chat', () => {
   });
 
   it('two cards in one step: the first answer waits for the second before the model runs', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(
       callsStep([order('call-a', s.args), order('call-b', { ...s.args, quantity: 1 })]),
       textStep('Both are booked.'),
@@ -404,7 +407,7 @@ describe('booking in chat', () => {
   });
 
   it('a model failure after the tap stores nothing; the next tap returns the same Order', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(callsStep([order('call-order', s.args)]));
     const failing = {
       stream: new ReadableStream({
@@ -426,7 +429,7 @@ describe('booking in chat', () => {
   });
 
   it('the availability picker comes from check_availability', async () => {
-    const s = await setup();
+    const s = await setup(transport);
     s.steps.push(
       callsStep([
         {

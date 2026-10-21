@@ -66,6 +66,7 @@ export function mountServers(
   },
 ) {
   const { db, now, queue, requestStateSecret } = opts;
+  const deps = { db, now, queue, requestStateSecret };
   // `local` needs no scope at the gate: outside a destination the token has no catalog:read, yet
   // the server still answers (an empty list now, web_fallback_search in 31); tools check per call.
   // `services` likewise: after checkout only list_my_orders is listed, and each tool checks its own.
@@ -77,14 +78,14 @@ export function mountServers(
       requiredScopes: ['unit:read'],
       factory: (identity) => buildStayServer(identity, { db, now }),
     },
-    local: { requiredScopes: [], factory: (identity) => buildLocalServer(identity, { db, now }) },
+    local: { requiredScopes: [], factory: (identity) => buildLocalServer(identity, deps) },
     services: {
       requiredScopes: [],
-      factory: (identity) => buildServicesServer(identity, { db, queue, now, requestStateSecret }),
+      factory: (identity) => buildServicesServer(identity, deps),
     },
     trip: {
       requiredScopes: ['about_me:read'],
-      factory: (identity) => buildTripServer(identity, { db, now }),
+      factory: (identity) => buildTripServer(identity, deps),
     },
   };
   for (const name of MCP_SERVERS) {

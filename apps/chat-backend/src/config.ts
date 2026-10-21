@@ -1,4 +1,7 @@
+import { TOOL_TRANSPORTS } from '@fetivi/domain';
 import { z } from 'zod';
+
+const DEV_REQUEST_STATE_SECRET = 'dev-only-request-state-secret-change-me-in-production';
 
 const schema = z
   .object({
@@ -18,10 +21,22 @@ const schema = z
     MCP_PUBLIC_URL: z.url().default('http://localhost:3002'),
     /** Claude for the guest chat; without it /api/chat answers 503. */
     ANTHROPIC_API_KEY: z.string().optional(),
+    /** How the chat reaches the guest tools: MCP (production) or in process (V0, evaluation only). */
+    TOOL_TRANSPORT: z.enum(TOOL_TRANSPORTS).default('mcp'),
+    /**
+     * Read only with TOOL_TRANSPORT=inprocess: the confirmation `requestState` key. It must equal
+     * the MCP servers' REQUEST_STATE_SECRET (the same dev default).
+     */
+    REQUEST_STATE_SECRET: z.string().min(32).default(DEV_REQUEST_STATE_SECRET),
   })
   .refine((c) => c.NODE_ENV !== 'production' || Boolean(c.GUEST_TOKEN_PRIVATE_KEY), {
     message: 'GUEST_TOKEN_PRIVATE_KEY is required in production',
     path: ['GUEST_TOKEN_PRIVATE_KEY'],
+  })
+  // MCP is the production path: the in-process mode skips the token boundary.
+  .refine((c) => c.NODE_ENV !== 'production' || c.TOOL_TRANSPORT === 'mcp', {
+    message: 'TOOL_TRANSPORT must be mcp in production',
+    path: ['TOOL_TRANSPORT'],
   });
 
 export type Config = z.infer<typeof schema>;

@@ -1,6 +1,7 @@
 import { GUEST_CONFIRMS_META_KEY, MCP_SERVERS, type McpServerName } from '@fetivi/domain';
 import type { CallToolResult, Tool } from '@modelcontextprotocol/client';
 import { type JSONSchema7, jsonSchema, type ToolSet, tool } from 'ai';
+import type { TurnTools } from '../tools/registry';
 import type { TurnClients } from './clients';
 
 export interface ListedTool {
@@ -64,10 +65,11 @@ export const textOf = (content: CallToolResult['content']) =>
  */
 export function toAiTools(
   listed: ListedTool[],
-  opts: { clients: TurnClients; onCall?: (name: string) => void },
+  opts: { tools: TurnTools; onCall?: (name: string) => void },
 ): ToolSet {
   const tools: ToolSet = {};
-  for (const { server, tool: t } of listed) {
+  for (const l of listed) {
+    const t = l.tool;
     if (t.name in tools) throw new Error(`Two servers expose the tool ${t.name}`);
     const definition = {
       description: t.description ?? t.title ?? t.name,
@@ -81,16 +83,7 @@ export function toAiTools(
       ...definition,
       execute: async (input: unknown) => {
         opts.onCall?.(t.name);
-        const result = (await opts.clients.timed(async () =>
-          (
-            await opts.clients.get(server)
-          ).callTool({
-            name: t.name,
-            arguments: input as Record<string, unknown>,
-          }),
-        )) as CallToolResult;
-        if (result.isError) throw new Error(textOf(result.content) || 'tool error');
-        return result.structuredContent ?? textOf(result.content);
+        return opts.tools.call(l, input);
       },
     });
   }

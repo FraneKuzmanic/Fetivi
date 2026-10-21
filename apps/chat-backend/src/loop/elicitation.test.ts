@@ -56,11 +56,13 @@ function fake(reply: () => unknown) {
   };
   const call = {
     clients,
-    server: 'services' as const,
-    definition: {
-      name: 'create_order',
-      inputSchema: { type: 'object' as const },
-      outputSchema: { type: 'object' as const },
+    listed: {
+      server: 'services' as const,
+      tool: {
+        name: 'create_order',
+        inputSchema: { type: 'object' as const },
+        outputSchema: { type: 'object' as const },
+      },
     },
     toolCallId: 'call-1',
     toolName: 'create_order',

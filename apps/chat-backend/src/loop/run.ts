@@ -21,11 +21,11 @@ import {
 } from 'ai';
 import type { FastifyBaseLogger } from 'fastify';
 import { CHAT_PROVIDER_OPTIONS, MAX_OUTPUT_TOKENS, MAX_STEPS } from '../chat/model';
-import type { TurnClients } from '../mcp/clients';
 import type { ListedTool } from '../mcp/tools';
 import { componentFor, withComponentParts } from '../stream/parts';
 import { endsWithPresentation, textAfterSilentChips } from '../stream/presentation';
-import { answer, firstHalf, type GuestAnswer, type Outcome, type PausedCall } from './elicitation';
+import type { TurnTools } from '../tools/registry';
+import type { GuestAnswer, Outcome, PausedCall } from './elicitation';
 
 // The turn loop around guest-confirmed tools. The AI SDK stops a step on a tool without
 // `execute`; the loop then runs that call's first half and either shows the card (and ends the
@@ -38,9 +38,10 @@ export interface LoopDeps {
   tools: ToolSet;
   /** Guest-confirmed tools, each with the server that runs its halves. */
   paused: Map<string, ListedTool>;
-  clients: TurnClients;
+  /** Runs the paused tools' halves, over MCP or in process. */
+  turnTools: TurnTools;
   log: FastifyBaseLogger;
-  /** Each MCP tool call, for metrics. */
+  /** Each guest tool call, for metrics. */
   onCall: (name: string) => void;
 }
 
@@ -104,10 +105,8 @@ export function openCalls(message: UIMessage, paused: Map<string, ListedTool>): 
   return calls;
 }
 
-const pausedCall = (clients: TurnClients, open: OpenCall): PausedCall => ({
-  clients,
-  server: open.listed.server,
-  definition: open.listed.tool,
+const pausedCall = (open: OpenCall): PausedCall => ({
+  listed: open.listed,
   toolCallId: open.part.toolCallId,
   toolName: open.toolName,
   input: open.part.input,
@@ -157,8 +156,6 @@ export function createLoop(
     for (const chunk of chunks) writer.write(chunk);
     current = await applyChunks(current, chunks);
   }
-
-  const callOf = (open: OpenCall) => pausedCall(deps.clients, open);
 
   /** One streamText run; false when the model failed. */
   async function segment(): Promise<boolean> {
@@ -223,8 +220,8 @@ export function createLoop(
       let waiting = false;
       for (const open of fresh) {
         deps.onCall(open.toolName);
-        const call = callOf(open);
-        const outcome = await firstHalf(call);
+        const call = pausedCall(open);
+        const outcome = await deps.turnTools.firstHalf(call);
         await emit(outcomeChunks(call, outcome));
         if (outcome.kind === 'ask') waiting = true;
       }
@@ -249,8 +246,8 @@ export function createLoop(
     ): Promise<LoopResult> {
       writer.write({ type: 'start' });
       deps.onCall(open.toolName);
-      const call = callOf(open);
-      const outcome = await answer({
+      const call = pausedCall(open);
+      const outcome = await deps.turnTools.answer({
         ...call,
         requestState: open.requestState,
         answer: { action: guest.action, content: guest.content },
@@ -265,13 +262,13 @@ export function createLoop(
 }
 
 /**
- * Before a new guest text: every card still open in the last answer is cancelled through MCP
+ * Before a new guest text: every card still open in the last answer is cancelled through its tool
  * (the pending record is released; a tap that won the race reports its Order), so the model never
  * sees a tool call without a result. Returns the updated message, or null when nothing was open.
  * Nothing is streamed: the browser's response is a new message.
  */
 export async function cancelOpenCalls(
-  deps: Pick<LoopDeps, 'clients' | 'paused' | 'onCall'>,
+  deps: Pick<LoopDeps, 'turnTools' | 'paused' | 'onCall'>,
   last: UIMessage | undefined,
 ): Promise<UIMessage | null> {
   if (last?.role !== 'assistant') return null;
@@ -279,11 +276,11 @@ export async function cancelOpenCalls(
   if (open.length === 0) return null;
   const chunks: UIMessageChunk[] = [];
   for (const call of open) {
-    const paused = pausedCall(deps.clients, call);
+    const paused = pausedCall(call);
     let outcome: Outcome = { kind: 'error', errorText: NOT_CONFIRMED };
     if (call.requestState !== null) {
       deps.onCall(call.toolName);
-      outcome = await answer({
+      outcome = await deps.turnTools.answer({
         ...paused,
         requestState: call.requestState,
         answer: { action: 'cancel' },

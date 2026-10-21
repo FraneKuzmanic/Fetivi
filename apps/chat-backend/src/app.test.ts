@@ -60,6 +60,8 @@ describe('chat-backend', () => {
       APP_ORIGIN: 'http://localhost:5173',
       GUEST_TOKEN_ISSUER: 'http://localhost:3000',
       MCP_PUBLIC_URL: 'http://localhost:3002',
+      TOOL_TRANSPORT: 'mcp',
+      REQUEST_STATE_SECRET: 'dev-only-request-state-secret-change-me-in-production',
     });
   });
 

@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./tools": "./src/tools/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

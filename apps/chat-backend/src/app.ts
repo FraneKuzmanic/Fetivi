@@ -12,6 +12,7 @@ import { orderRoutes } from './orders/routes';
 import { savedPlaceRoutes } from './saved-places/routes';
 import type { TokenConfig } from './tokens/mint';
 import { tokenRoutes } from './tokens/routes';
+import { mcpBinding, type ToolBinding } from './tools/registry';
 
 export interface AppDeps {
   db: Db;
@@ -28,6 +29,8 @@ export interface AppDeps {
     model: LanguageModel | null;
     /** Outbound fetch to the MCP servers. */
     mcpFetch: Egress['fetch'];
+    /** How the guest tools run; MCP when unset. V0 passes the in-process binding. */
+    tools?: ToolBinding;
   };
 }
 
@@ -44,15 +47,11 @@ export function buildApp(deps: AppDeps) {
   app.register(aboutMeRoutes, { db, now });
   app.register(savedPlaceRoutes, { db, now });
   app.register(tokenRoutes, { key: deps.tokens.key });
-  app.register(orderRoutes, { db, now, tokens: deps.tokens, mcpFetch: deps.chat.mcpFetch });
-  app.register(chatRoutes, {
-    db,
-    now,
-    tokens: deps.tokens,
-    model: deps.chat.model,
-    mcpFetch: deps.chat.mcpFetch,
-    catalog: createToolCatalog(),
-    log: app.log,
-  });
+  // One binding, and so one tool-definition cache, per app.
+  const tools =
+    deps.chat.tools ??
+    mcpBinding({ tokens: deps.tokens, mcpFetch: deps.chat.mcpFetch, catalog: createToolCatalog() });
+  app.register(orderRoutes, { db, now, tools });
+  app.register(chatRoutes, { db, now, model: deps.chat.model, tools, log: app.log });
   return app;
 }

@@ -4,22 +4,16 @@ import {
   type ConversationRow,
   type Db,
   findConversation,
-  type GuestProjection,
   getAboutMe,
   getOrCreateConversation,
   loadMessages,
   loadSituation,
-  MCP_SERVERS,
-  type McpServerName,
   type MessagePart,
   type MessageRow,
   type ResolvedSpace,
   recordTurnMetrics,
   type SpaceContext,
-  scopesFor,
-  UNIT_RESOURCE_URI,
 } from '@fetivi/domain';
-import type { Egress } from '@fetivi/egress';
 import {
   createUIMessageStream,
   createUIMessageStreamResponse,
@@ -32,14 +26,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { HttpError } from '../http-error';
 import type { GuestAnswer } from '../loop/elicitation';
 import { cancelOpenCalls, createLoop, type LoopResult, openCalls } from '../loop/run';
-import { openTurnClients, type TurnClients } from '../mcp/clients';
-import {
-  type ListedTool,
-  listTurnTools,
-  pausedTools,
-  type ToolCatalog,
-  toAiTools,
-} from '../mcp/tools';
+import { type ListedTool, pausedTools, toAiTools } from '../mcp/tools';
 import {
   aboutMeNote,
   buildSystemText,
@@ -48,18 +35,16 @@ import {
   systemInstructions,
 } from '../prompt/prompt';
 import { presentationTools } from '../stream/presentation';
-import { mintServerTokens, type TokenConfig } from '../tokens/mint';
+import type { ToolBinding, TurnTools } from '../tools/registry';
 import { CHAT_MODEL_ID } from './model';
 
 export interface ChatDeps {
   db: Db;
   now: () => Date;
-  tokens: TokenConfig;
   /** Null when ANTHROPIC_API_KEY is unset. */
   model: LanguageModel | null;
-  /** Outbound fetch to the MCP servers (egress; tests rewrite the host). */
-  mcpFetch: Egress['fetch'];
-  catalog: ToolCatalog;
+  /** The guest tools: over MCP, or in process for V0 (TOOL_TRANSPORT). */
+  tools: ToolBinding;
   log: FastifyBaseLogger;
 }
 
@@ -81,35 +66,23 @@ const textMessage = (role: 'system' | 'user', text: string): UIMessage => ({
   parts: [{ type: 'text', text }],
 });
 
-/** The unit record as the stay server shows it to this guest now. Never cached: it is how changes are seen. */
-async function readProjection(clients: TurnClients): Promise<GuestProjection> {
-  const result = await clients.timed(async () =>
-    (await clients.get('stay')).readResource({ uri: UNIT_RESOURCE_URI }),
-  );
-  const content = result.contents[0];
-  if (!content || !('text' in content) || typeof content.text !== 'string') {
-    throw new Error('unit record without text');
-  }
-  return JSON.parse(content.text) as GuestProjection;
-}
-
-/** What both entries share: the lock, this turn's MCP clients and tools. */
+/** What both entries share: the lock, this turn's guest tools. */
 interface OpenTurn {
   model: LanguageModel;
   spaceId: string;
   ctx: SpaceContext;
   startedAt: Date;
   t0: number;
-  clients: TurnClients;
+  turnTools: TurnTools;
   tools: ToolSet;
   paused: Map<string, ListedTool>;
-  /** MCP tool calls of this turn, for metrics. */
+  /** Guest tool calls of this turn, for metrics. */
   calls: string[];
 }
 
 /**
- * Takes the space's lock and opens the turn's MCP clients and tools, then runs `body`. Throws
- * HttpError before the stream starts; on any throw the clients close and the lock is released.
+ * Takes the space's lock and opens the turn's guest tools, then runs `body`. Throws HttpError
+ * before the stream starts; on any throw the tools close and the lock is released.
  * Otherwise `body`'s stream releases both when it ends.
  */
 async function withTurn(
@@ -126,23 +99,15 @@ async function withTurn(
 
   const startedAt = deps.now();
   const t0 = performance.now();
-  let clients: TurnClients | null = null;
+  let opened: TurnTools | null = null;
   try {
     const ctx = await loadSituation(db, spaceId, startedAt);
     if (!ctx) throw new HttpError(401, 'no-space');
-    const tokens = await mintServerTokens(deps.tokens, ctx, startedAt);
-    const turnClients = openTurnClients({
-      tokens,
-      baseUrl: deps.tokens.mcpBaseUrl,
-      fetch: deps.mcpFetch,
-    });
-    clients = turnClients;
-    const scopes = Object.fromEntries(
-      MCP_SERVERS.map((s) => [s, scopesFor(s, ctx).join(' ')]),
-    ) as Record<McpServerName, string>;
-    const listed = await listTurnTools(deps.catalog, turnClients, scopes);
+    const turnTools = await deps.tools.open(ctx, startedAt);
+    opened = turnTools;
+    const listed = await turnTools.list();
     const calls: string[] = [];
-    const mcpTools = toAiTools(listed, { clients: turnClients, onCall: (n) => calls.push(n) });
+    const mcpTools = toAiTools(listed, { tools: turnTools, onCall: (n) => calls.push(n) });
     const shownTools = presentationTools();
     for (const name of Object.keys(shownTools)) {
       if (name in mcpTools) throw new Error(`A server exposes the presentation tool ${name}`);
@@ -153,13 +118,13 @@ async function withTurn(
       ctx,
       startedAt,
       t0,
-      clients: turnClients,
+      turnTools,
       tools: { ...mcpTools, ...shownTools },
       paused: pausedTools(listed),
       calls,
     });
   } catch (error) {
-    await clients?.close();
+    await opened?.close();
     running.delete(spaceId);
     if (error instanceof HttpError) throw error;
     log.error({ err: error }, 'chat turn failed before streaming');
@@ -194,7 +159,7 @@ function streamTurn(
       } catch (error) {
         deps.log.error({ err: error }, 'chat turn not stored');
       } finally {
-        await turn.clients.close();
+        await turn.turnTools.close();
         running.delete(turn.spaceId);
       }
     },
@@ -217,7 +182,8 @@ async function recordMetrics(
     model: CHAT_MODEL_ID,
     startedAt: turn.startedAt,
     wallMs: Math.round(performance.now() - turn.t0),
-    mcpMs: Math.round(turn.clients.mcpMs),
+    mcpMs: Math.round(turn.turnTools.ms),
+    transport: turn.turnTools.transport,
     inputTokens: result.usage.input,
     outputTokens: result.usage.output,
     cacheReadTokens: result.usage.cacheRead,
@@ -233,7 +199,7 @@ const loopDeps = (deps: ChatDeps, turn: OpenTurn, conversation: ConversationRow)
   instructions: systemInstructions(conversation.systemPrompt),
   tools: turn.tools,
   paused: turn.paused,
-  clients: turn.clients,
+  turnTools: turn.turnTools,
   log: deps.log,
   onCall: (name: string) => turn.calls.push(name),
 });
@@ -246,7 +212,7 @@ const loopDeps = (deps: ChatDeps, turn: OpenTurn, conversation: ConversationRow)
 export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Promise<Response> {
   return withTurn(deps, space, async (turn) => {
     const { db } = deps;
-    const projection = await readProjection(turn.clients);
+    const projection = await turn.turnTools.readProjection();
     const conversation = await getOrCreateConversation(
       db,
       turn.spaceId,
@@ -256,7 +222,7 @@ export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Pro
     const history = (await loadMessages(db, conversation.id)).map(rowToUiMessage);
     // A card still open when the guest types: the guest moved on, so it is cancelled first.
     const cancelled = await cancelOpenCalls(
-      { clients: turn.clients, paused: turn.paused, onCall: (n) => turn.calls.push(n) },
+      { turnTools: turn.turnTools, paused: turn.paused, onCall: (n) => turn.calls.push(n) },
       history.at(-1),
     );
     if (cancelled) history[history.length - 1] = cancelled;

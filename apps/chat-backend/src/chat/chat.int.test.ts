@@ -183,6 +183,7 @@ describe('POST /api/chat', () => {
     });
     expect(metrics[0]?.mcpMs).toBeGreaterThan(0);
     expect(metrics[0]?.wallMs).toBeGreaterThanOrEqual(metrics[0]?.mcpMs ?? 0);
+    expect(metrics[0]?.transport).toBe('mcp');
   });
 
   it('keeps the system block byte-identical and each prompt a prefix of the next', async () => {

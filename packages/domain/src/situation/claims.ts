@@ -55,8 +55,20 @@ export interface GuestIdentity {
 }
 
 export function identityOf(c: GuestTokenClaims): GuestIdentity {
+  return toIdentity(c.sub, c);
+}
+
+/** The identity a server's token would carry for this space, without minting one (V0). */
+export function guestIdentityFor(server: McpServerName, ctx: SpaceContext): GuestIdentity {
+  return toIdentity(ctx.spaceId, guestClaimsFor(server, ctx));
+}
+
+function toIdentity(
+  sub: string,
+  c: Pick<GuestTokenClaims, 'stay' | 'unit' | 'property' | 'destination' | 'lang' | 'scope'>,
+): GuestIdentity {
   return {
-    spaceId: c.sub,
+    spaceId: sub,
     stayId: c.stay,
     unitId: c.unit,
     propertyId: c.property,

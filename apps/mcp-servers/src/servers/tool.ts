@@ -1,4 +1,10 @@
-import { GUEST_CONFIRMS_META_KEY, type GuestIdentity, type Scope } from '@fetivi/domain';
+import {
+  type Db,
+  GUEST_CONFIRMS_META_KEY,
+  type GuestIdentity,
+  type JobQueue,
+  type Scope,
+} from '@fetivi/domain';
 import {
   type CallToolResult,
   type InputRequiredResult,
@@ -60,6 +66,42 @@ export interface GuestToolConfig<I extends z.ZodObject, O extends z.ZodObject> {
   annotations: ToolAnnotations;
 }
 
+/** What the guest tools need: every server's dependencies, so V0 can pass one object. */
+export interface ToolDeps {
+  db: Db;
+  now: () => Date;
+  queue: JobQueue;
+  /** HMAC key of the confirmation `requestState`, at least 32 bytes. */
+  requestStateSecret: string;
+}
+
+/** One guest tool as data: the MCP servers register it, V0 calls it in process. */
+export interface GuestToolSpec<
+  I extends z.ZodObject = z.ZodObject,
+  O extends z.ZodObject = z.ZodObject,
+> {
+  name: string;
+  config: GuestToolConfig<I, O>;
+  /** Listed for this caller; mirrors the server's registration conditions. */
+  listed(identity: GuestIdentity): boolean;
+  /** Absent on a guest-confirmed tool, whose halves live in its own module. */
+  handler?(args: z.infer<I>, identity: GuestIdentity, deps: ToolDeps): Promise<z.infer<O>>;
+  /** The host pauses the model on it and lets the guest confirm. */
+  confirm?: true;
+}
+
+/** Erases a spec's schema types so specs of different tools fit in one list. */
+export function guestTool<I extends z.ZodObject, O extends z.ZodObject>(
+  spec: GuestToolSpec<I, O>,
+): GuestToolSpec {
+  return spec as unknown as GuestToolSpec;
+}
+
+/** A tool definition's `_meta`: the chat backend pauses the model on the flag and shows the card. */
+export function guestToolMeta(spec: Pick<GuestToolSpec, 'confirm'>) {
+  return spec.confirm ? { [GUEST_CONFIRMS_META_KEY]: true } : undefined;
+}
+
 function assertNoIdentityArgs(name: string, inputSchema: z.ZodObject): void {
   const declared = Object.keys(inputSchema.shape).filter((key) =>
     identityArgs.has(key.toLowerCase()),
@@ -69,8 +111,11 @@ function assertNoIdentityArgs(name: string, inputSchema: z.ZodObject): void {
   }
 }
 
-/** The scope check, the error mapping and the structured answer every guest tool shares. */
-async function answer<O extends z.ZodObject>(
+/**
+ * The scope check, the error mapping and the structured answer every guest tool shares, over MCP
+ * and in process alike.
+ */
+export async function runGuestTool<O extends z.ZodObject>(
   identity: GuestIdentity,
   config: GuestToolConfig<z.ZodObject, O>,
   run: () => Promise<z.infer<O> | InputRequiredResult>,
@@ -130,7 +175,7 @@ export function registerGuestTool<I extends z.ZodObject, O extends z.ZodObject>(
   handler: (args: z.infer<I>, identity: GuestIdentity) => Promise<z.infer<O>>,
 ): RegisteredTool {
   return register(server, name, config, (args) =>
-    answer(identity, config, () => handler(args, identity)),
+    runGuestTool(identity, config, () => handler(args, identity)),
   );
 }
 
@@ -154,8 +199,23 @@ export function registerGuestConfirmTool<I extends z.ZodObject, O extends z.ZodO
     server,
     name,
     config,
-    (args, ctx) => answer(identity, config, () => handler(args, identity, ctx)),
-    // The chat backend pauses the model on this flag and shows the guest the card.
-    { [GUEST_CONFIRMS_META_KEY]: true },
+    (args, ctx) => runGuestTool(identity, config, () => handler(args, identity, ctx)),
+    guestToolMeta({ confirm: true }),
   );
+}
+
+/** Registers a server's handler-backed specs that are listed for this caller, in order. */
+export function registerGuestTools(
+  server: McpServer,
+  identity: GuestIdentity,
+  deps: ToolDeps,
+  specs: readonly GuestToolSpec[],
+): void {
+  for (const spec of specs) {
+    const handler = spec.handler;
+    if (!handler || !spec.listed(identity)) continue;
+    registerGuestTool(server, identity, spec.name, spec.config, (args) =>
+      handler(args, identity, deps),
+    );
+  }
 }
