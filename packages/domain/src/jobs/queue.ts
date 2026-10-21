@@ -7,6 +7,8 @@ export const QUEUES = {
   translateBlock: 'translate-block',
   translateCatalogRecord: 'translate-catalog-record',
   translateOffer: 'translate-offer',
+  orderTimer: 'order-timer',
+  orderNotify: 'order-notify',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -22,6 +24,9 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
     expireInSeconds: 600,
   },
   translateOffer: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 600 },
+  // Short database work; the machine makes a retried or duplicate run a no-op.
+  orderTimer: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
+  orderNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
 };
 
 /**
@@ -54,7 +59,12 @@ export function uuidFrom(key: string): string {
 
 export interface JobQueue {
   /** Inserts a job inside `tx`. A job whose `id` already exists is ignored. */
-  send(name: QueueName, data: object, tx: Executor, options?: { id?: string }): Promise<void>;
+  send(
+    name: QueueName,
+    data: object,
+    tx: Executor,
+    options?: { id?: string; startAfter?: Date },
+  ): Promise<void>;
   /** Sends `data` to every queue subscribed to `event`, inside `tx`. */
   publish(event: string, data: object, tx: Executor): Promise<void>;
 }

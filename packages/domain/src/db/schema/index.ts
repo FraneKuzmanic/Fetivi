@@ -7,6 +7,7 @@ export * from './conversations';
 export * from './info-blocks';
 export * from './metrics';
 export * from './offers';
+export * from './orders';
 export * from './properties';
 export * from './saved-places';
 export * from './sessions';

@@ -8,6 +8,7 @@ export * from './jobs';
 export * from './mail';
 export * from './metrics';
 export * from './offers';
+export * from './orders';
 export * from './projection';
 export * from './property';
 export * from './saved-places';

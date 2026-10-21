@@ -1,0 +1,86 @@
+import { describe, expect, it } from 'vitest';
+import { AVAILABILITY_MODES } from '../offers/vocabulary';
+import { nextStatus, ORDER_ACTIONS } from './transitions';
+import { FINAL_ORDER_STATUSES, ORDER_STATUSES, ORDER_TRIGGERS } from './vocabulary';
+
+// Written out independently of the implementation: `from action trigger mode -> to`.
+// `*` = every availability mode.
+const EXPECTED = `
+awaiting_confirmation guest_confirm guest live -> confirming
+awaiting_confirmation guest_confirm guest allotment -> confirming
+awaiting_confirmation guest_confirm guest on_request -> pending_provider
+awaiting_confirmation guest_confirm admin live -> confirming
+awaiting_confirmation guest_confirm admin allotment -> confirming
+awaiting_confirmation guest_confirm admin on_request -> pending_provider
+awaiting_confirmation expire card_timer * -> expired
+awaiting_confirmation expire admin * -> expired
+awaiting_confirmation cancel guest * -> cancelled
+awaiting_confirmation cancel admin * -> cancelled
+confirming confirm adapter * -> confirmed
+confirming confirm admin * -> confirmed
+confirming fail adapter * -> failed
+confirming fail admin * -> failed
+confirming expire hold_timer * -> expired
+confirming expire admin * -> expired
+pending_provider confirm provider_link * -> confirmed
+pending_provider confirm admin * -> confirmed
+pending_provider decline provider_link * -> declined
+pending_provider decline admin * -> declined
+pending_provider propose provider_link * -> awaiting_confirmation
+pending_provider propose admin * -> awaiting_confirmation
+pending_provider cancel guest * -> cancelled
+pending_provider cancel admin * -> cancelled
+confirmed cancel guest * -> cancelled
+confirmed cancel provider_link * -> cancelled
+confirmed cancel admin * -> cancelled
+confirmed complete completion_timer * -> completed
+confirmed complete admin * -> completed
+`;
+
+const expected = new Map<string, string>();
+for (const line of EXPECTED.trim().split('\n')) {
+  const [lhs, to] = line.split(' -> ') as [string, string];
+  const [from, action, trigger, mode] = lhs.split(' ');
+  const modes = mode === '*' ? AVAILABILITY_MODES : [mode];
+  for (const m of modes) expected.set(`${from} ${action} ${trigger} ${m}`, to);
+}
+
+describe('nextStatus', () => {
+  it('matches the written-out table for every combination', () => {
+    let edges = 0;
+    for (const from of ORDER_STATUSES) {
+      for (const action of ORDER_ACTIONS) {
+        for (const trigger of ORDER_TRIGGERS) {
+          for (const mode of AVAILABILITY_MODES) {
+            const key = `${from} ${action} ${trigger} ${mode}`;
+            const to = nextStatus(from, action, trigger, mode);
+            expect(to, key).toBe(expected.get(key) ?? null);
+            if (to) edges++;
+          }
+        }
+      }
+    }
+    expect(edges).toBe(expected.size);
+  });
+
+  it('gives final statuses no outgoing edge, admin included', () => {
+    for (const from of FINAL_ORDER_STATUSES) {
+      for (const action of ORDER_ACTIONS) {
+        for (const trigger of ORDER_TRIGGERS) {
+          for (const mode of AVAILABILITY_MODES) {
+            expect(nextStatus(from, action, trigger, mode)).toBeNull();
+          }
+        }
+      }
+    }
+  });
+
+  it('sends the guest confirmation to the Provider only for on-request Offers', () => {
+    expect(nextStatus('awaiting_confirmation', 'guest_confirm', 'guest', 'on_request')).toBe(
+      'pending_provider',
+    );
+    expect(nextStatus('awaiting_confirmation', 'guest_confirm', 'guest', 'live')).toBe(
+      'confirming',
+    );
+  });
+});

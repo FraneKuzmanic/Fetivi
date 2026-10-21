@@ -5,11 +5,13 @@ import type { Db } from '../db/client';
 import { accounts } from '../db/schema/accounts';
 import { catalogRecords, catalogTranslations } from '../db/schema/catalog';
 import { infoBlocks } from '../db/schema/info-blocks';
+import { allotmentSlots, offers } from '../db/schema/offers';
 import { properties, units } from '../db/schema/properties';
 import { spaces } from '../db/schema/spaces';
 import type { StayRow } from '../db/schema/stays';
 import { blockTranslations } from '../db/schema/translations';
 import type { JobQueue } from '../jobs/queue';
+import type { AvailabilityMode, OrderKind, PaymentMode, PriceUnit } from '../offers/vocabulary';
 import { GUEST_LANGUAGES, type GuestLanguage } from '../property/vocabulary';
 import { registerStay } from '../stays/store';
 import { hashToken, newToken } from '../tokens';
@@ -245,4 +247,59 @@ export async function seedGuestUnit(
     afterReleaseTitle,
     alwaysTitle,
   };
+}
+
+export interface SeedOrderableOfferOptions {
+  hostId: string;
+  availabilityMode: AvailabilityMode;
+  /** Allotment only: the slot's seats. Default 4. */
+  capacity?: number;
+  /** Allotment only (required there): the slot's start. */
+  startsAt?: Date;
+  /** Default 'booking'; 'request' implies no price and needs on_request. */
+  orderKind?: OrderKind;
+  paymentMode?: PaymentMode;
+  priceUnit?: PriceUnit;
+  /** In cents. Default 2500. */
+  priceMinor?: number;
+}
+
+/**
+ * A host-owned Offer (no translation job, no destination needed) ready to be ordered, with one
+ * allotment slot for allotment Offers.
+ */
+export async function seedOrderableOffer(
+  db: Db,
+  options: SeedOrderableOfferOptions,
+): Promise<{ offerId: string; slotId?: string }> {
+  const { availabilityMode } = options;
+  const orderKind = options.orderKind ?? 'booking';
+  const [offer] = await db
+    .insert(offers)
+    .values({
+      hostId: options.hostId,
+      title: 'Kayak tour',
+      description: 'Around the islands.',
+      cancellationPolicy: 'Free until 24 hours before.',
+      category: 'tour',
+      orderKind,
+      availabilityMode,
+      paymentMode: options.paymentMode ?? 'direct',
+      priceMinor: orderKind === 'request' ? null : (options.priceMinor ?? 2500),
+      priceUnit: options.priceUnit ?? 'person',
+      adapterKind: availabilityMode === 'live' ? 'bokun' : null,
+      externalProductRef:
+        availabilityMode === 'live' ? `bokun-${randomBytes(3).toString('hex')}` : null,
+    })
+    .returning();
+  if (!offer) throw new Error('no offer');
+  if (availabilityMode !== 'allotment') return { offerId: offer.id };
+  if (!options.startsAt) throw new Error('an allotment Offer needs startsAt');
+  const capacity = options.capacity ?? 4;
+  const [slot] = await db
+    .insert(allotmentSlots)
+    .values({ offerId: offer.id, startsAt: options.startsAt, capacity, remaining: capacity })
+    .returning();
+  if (!slot) throw new Error('no slot');
+  return { offerId: offer.id, slotId: slot.id };
 }
