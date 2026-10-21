@@ -85,12 +85,11 @@ const CARD: ConfirmationCardLabels = {
   heading: 'Confirm your booking',
   offer: 'Trip',
   when: 'When',
-  quantity: 'For',
+  quantity: (unit) => (unit === 'person' ? 'People' : unit),
   total: 'Total',
   payment: 'Payment',
   cancellation: 'Cancellation',
   dateTime: (date, local) => (local ? `${date} at ${local.slice(11)}` : date),
-  quantityOf: (n) => `${n} people`,
   price: (minor, currency) =>
     minor === null ? 'Set by the provider' : `${minor / 100} ${currency}`,
   paymentMode: (mode) => (mode === 'direct' ? 'Pay the provider directly' : 'Online'),
@@ -127,7 +126,7 @@ describe('ConfirmationCard', () => {
     for (const fact of [
       'Blue Lagoon boat trip',
       '2026-10-22 at 09:00',
-      '2 people',
+      'People2',
       '90 EUR',
       'Pay the provider directly',
       'Free cancellation up to 24 hours before.',
@@ -300,14 +299,15 @@ const ORDER: OrderSummaryPayload = {
   quantity: 2,
   priceMinor: 9000,
   currency: 'EUR',
+  priceUnit: 'person',
   createdAt: '2026-10-21T10:00:00.000Z',
 };
 
 const RECEIPT: ReceiptLabels = {
   when: 'When',
-  quantity: 'For',
+  quantity: CARD.quantity,
   total: 'Total',
-  booking: 'Booking',
+  status: 'Booking',
   payment: 'Payment',
   reference: 'Reference',
   dateTime: CARD.dateTime,
@@ -325,6 +325,7 @@ describe('ReceiptCard', () => {
       'Confirmed',
       'Pay the provider directly',
       '2026-10-22 at 09:00',
+      'People2',
       '90 EUR',
       'F2B1C3D4',
     ]) {
@@ -332,5 +333,7 @@ describe('ReceiptCard', () => {
     }
     const dots = [...host.querySelectorAll('.fv-status-dot')];
     expect(dots.map((d) => d.getAttribute('aria-hidden'))).toEqual(['true', 'true']);
+    // Confirmed is done; paying the provider is still to do, so the markers differ.
+    expect(dots.map((d) => d.getAttribute('data-tone'))).toEqual(['good', 'wait']);
   });
 });

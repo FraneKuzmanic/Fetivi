@@ -39,35 +39,36 @@ export const choiceLabels = (t: TFunction): ChoiceCardLabels => ({
 });
 
 const ORDER_STATUS_KEYS = {
-  awaiting_confirmation: 'booking.statusAwaiting',
-  confirming: 'booking.statusConfirming',
-  pending_provider: 'booking.statusPending',
-  confirmed: 'booking.statusConfirmed',
-  declined: 'booking.statusDeclined',
-  expired: 'booking.statusExpired',
-  failed: 'booking.statusFailed',
-  cancelled: 'booking.statusCancelled',
-  completed: 'booking.statusCompleted',
+  awaiting_confirmation: 'order.statusAwaiting',
+  confirming: 'order.statusConfirming',
+  pending_provider: 'order.statusPending',
+  confirmed: 'order.statusConfirmed',
+  declined: 'order.statusDeclined',
+  expired: 'order.statusExpired',
+  failed: 'order.statusFailed',
+  cancelled: 'order.statusCancelled',
+  completed: 'order.statusCompleted',
 } as const satisfies Record<OrderStatus, string>;
 
 const PAYMENT_STATUS_KEYS = {
-  none: 'booking.paymentNone',
-  authorized: 'booking.paymentAuthorized',
-  captured: 'booking.paymentCaptured',
-  voided: 'booking.paymentVoided',
-  refund_pending: 'booking.paymentRefundPending',
-  refunded: 'booking.paymentRefunded',
-  failed: 'booking.paymentFailed',
+  none: 'order.paymentNone',
+  authorized: 'order.paymentAuthorized',
+  captured: 'order.paymentCaptured',
+  voided: 'order.paymentVoided',
+  refund_pending: 'order.paymentRefundPending',
+  refunded: 'order.paymentRefunded',
+  failed: 'order.paymentFailed',
 } as const satisfies Record<PaymentStatus, string>;
 
+// The quantity's heading names its unit, so the count needs no plural forms.
 const UNIT_KEYS = {
-  person: 'booking.perPerson',
-  group: 'booking.perGroup',
-  item: 'booking.perItem',
+  person: 'order.people',
+  group: 'order.groups',
+  item: 'order.items',
 } as const satisfies Record<PriceUnit, string>;
 
-/** Dates, times and money of a booking in the interface language. */
-function bookingFormat(t: TFunction, language: string) {
+/** Dates, times and money of an Order in the interface language. */
+function orderFormat(t: TFunction, language: string) {
   // A civil date at UTC noon, formatted in UTC: no day shift in any zone.
   const day = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeZone: 'UTC' });
   const clock = new Intl.DateTimeFormat(language, { timeStyle: 'short', timeZone: 'UTC' });
@@ -78,74 +79,73 @@ function bookingFormat(t: TFunction, language: string) {
     date,
     time,
     dateTime: (civil: string, local: string | null) =>
-      local ? t('booking.dateAt', { date: date(civil), time: time(local) }) : date(civil),
+      local ? t('order.dateAt', { date: date(civil), time: time(local) }) : date(civil),
     price: (minor: number | null, currency: string) =>
       minor === null
-        ? t('booking.priceByProvider')
+        ? t('order.priceByProvider')
         : new Intl.NumberFormat(language, { style: 'currency', currency }).format(minor / 100),
   };
 }
 
 export function confirmationLabels(t: TFunction, language: string): ConfirmationCardLabels {
-  const f = bookingFormat(t, language);
+  const f = orderFormat(t, language);
   return {
-    heading: t('booking.heading'),
-    offer: t('booking.offer'),
-    when: t('booking.when'),
-    quantity: t('booking.quantity'),
-    total: t('booking.total'),
-    payment: t('booking.payment'),
-    cancellation: t('booking.cancellation'),
+    heading: t('order.heading'),
+    offer: t('order.offer'),
+    when: t('order.when'),
+    quantity: (unit) => t(UNIT_KEYS[unit]),
+    total: t('order.total'),
+    payment: t('order.payment'),
+    cancellation: t('order.cancellation'),
     dateTime: f.dateTime,
-    quantityOf: (count, unit) => t(UNIT_KEYS[unit], { count }),
     price: f.price,
-    paymentMode: (mode) => t(mode === 'direct' ? 'booking.payDirect' : 'booking.payOnline'),
-    field: { email: t('booking.email'), name: t('booking.name'), phone: t('booking.phone') },
+    paymentMode: (mode) => t(mode === 'direct' ? 'order.payDirect' : 'order.payOnline'),
+    field: { email: t('order.email'), name: t('order.name'), phone: t('order.phone') },
     invalid: {
-      email: t('booking.invalidEmail'),
-      name: t('booking.invalidName'),
-      phone: t('booking.invalidPhone'),
+      email: t('order.invalidEmail'),
+      name: t('order.invalidName'),
+      phone: t('order.invalidPhone'),
     },
-    note: t('booking.note'),
-    confirm: t('booking.confirm'),
-    cancel: t('booking.cancel'),
-    sending: t('booking.sending'),
+    note: t('order.note'),
+    confirm: t('order.confirm'),
+    cancel: t('order.cancel'),
+    sending: t('order.sending'),
   };
 }
 
 export function pickerLabels(t: TFunction, language: string): AvailabilityPickerLabels {
-  const f = bookingFormat(t, language);
+  const f = orderFormat(t, language);
   return {
-    heading: (date) => t('booking.pickHeading', { date: f.date(date) }),
-    time: (local) => (local ? f.time(local) : t('booking.anyTime')),
-    placesLeft: (count) => t('booking.placesLeft', { count }),
+    heading: (date) => t('order.pickHeading', { date: f.date(date) }),
+    time: (local) => (local ? f.time(local) : t('order.anyTime')),
+    placesLeft: (count) => t('order.placesLeft', { count }),
   };
 }
 
 /** What the guest's pick says in the chat, in their words. */
 export function pickedText(t: TFunction, language: string, date: string, local: string | null) {
-  const f = bookingFormat(t, language);
+  const f = orderFormat(t, language);
   return local
-    ? t('booking.pickStart', { time: f.time(local), date: f.date(date) })
-    : t('booking.pickDay', { date: f.date(date) });
+    ? t('order.pickStart', { time: f.time(local), date: f.date(date) })
+    : t('order.pickDay', { date: f.date(date) });
 }
 
 export function receiptLabels(t: TFunction, language: string): ReceiptLabels {
-  const f = bookingFormat(t, language);
+  const f = orderFormat(t, language);
   return {
-    when: t('booking.when'),
-    quantity: t('booking.quantity'),
-    total: t('booking.total'),
-    booking: t('booking.bookingStatus'),
-    payment: t('booking.payment'),
-    reference: t('booking.reference'),
+    when: t('order.when'),
+    quantity: (unit) => t(UNIT_KEYS[unit]),
+    total: t('order.total'),
+    status: t('order.orderStatus'),
+    payment: t('order.payment'),
+    reference: t('order.reference'),
     dateTime: f.dateTime,
     price: f.price,
     orderStatus: (status) => t(ORDER_STATUS_KEYS[status]),
     // A pay-direct Order has no payment here: the guest pays the provider.
     paymentStatus: (status, mode) =>
       status === 'none' && mode === 'direct'
-        ? t('booking.payDirect')
+        ? t('order.payDirect')
         : t(PAYMENT_STATUS_KEYS[status]),
   };
 }

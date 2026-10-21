@@ -61,6 +61,9 @@ export interface OpenCall {
   requestState: string | null;
 }
 
+/** The result a call gets when the guest moved on without confirming. */
+const NOT_CONFIRMED = 'Not confirmed; nothing was booked.';
+
 const emptyAssistant = (): UIMessage => ({ id: '', role: 'assistant', parts: [] });
 
 /** Applies chunks to a copy of the message, as the browser does with the same chunks. */
@@ -220,8 +223,9 @@ export function createLoop(
       let waiting = false;
       for (const open of fresh) {
         deps.onCall(open.toolName);
-        const outcome = await firstHalf(callOf(open));
-        await emit(outcomeChunks(callOf(open), outcome));
+        const call = callOf(open);
+        const outcome = await firstHalf(call);
+        await emit(outcomeChunks(call, outcome));
         if (outcome.kind === 'ask') waiting = true;
       }
       // A refusal goes back to the model, which explains it in the same response.
@@ -245,12 +249,13 @@ export function createLoop(
     ): Promise<LoopResult> {
       writer.write({ type: 'start' });
       deps.onCall(open.toolName);
+      const call = callOf(open);
       const outcome = await answer({
-        ...callOf(open),
+        ...call,
         requestState: open.requestState,
         answer: { action: guest.action, content: guest.content },
       });
-      await emit(outcomeChunks(callOf(open), outcome));
+      await emit(outcomeChunks(call, outcome));
       // A card shown again, or another card still open: the guest answers next.
       if (outcome.kind !== 'ask' && openCalls(current, deps.paused).length === 0) await runModel();
       writer.write({ type: 'finish' });
@@ -275,7 +280,7 @@ export async function cancelOpenCalls(
   const chunks: UIMessageChunk[] = [];
   for (const call of open) {
     const paused = pausedCall(deps.clients, call);
-    let outcome: Outcome = { kind: 'error', errorText: 'Not confirmed; nothing was booked.' };
+    let outcome: Outcome = { kind: 'error', errorText: NOT_CONFIRMED };
     if (call.requestState !== null) {
       deps.onCall(call.toolName);
       outcome = await answer({
@@ -285,8 +290,7 @@ export async function cancelOpenCalls(
       });
     }
     // The server asking again cannot happen on a cancel; it would still leave a dangling call.
-    if (outcome.kind === 'ask')
-      outcome = { kind: 'error', errorText: 'Not confirmed; nothing was booked.' };
+    if (outcome.kind === 'ask') outcome = { kind: 'error', errorText: NOT_CONFIRMED };
     chunks.push(...outcomeChunks(paused, outcome));
   }
   return applyChunks(last, chunks);

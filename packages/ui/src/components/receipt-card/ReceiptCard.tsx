@@ -1,12 +1,13 @@
-import type { PaymentMode } from '@fetivi/domain/offer-vocabulary';
+import type { PaymentMode, PriceUnit } from '@fetivi/domain/offer-vocabulary';
 import type { OrderStatus, PaymentStatus } from '@fetivi/domain/order-vocabulary';
 import type { OrderSummaryPayload } from '../../payloads';
 
 export interface ReceiptLabels {
   when: string;
-  quantity: string;
+  /** The quantity's heading, named by its unit. */
+  quantity: (unit: PriceUnit) => string;
   total: string;
-  booking: string;
+  status: string;
   payment: string;
   reference: string;
   dateTime: (date: string, startsAtLocal: string | null) => string;
@@ -30,7 +31,8 @@ const ORDER_TONE: Record<OrderStatus, Tone> = {
 };
 
 const PAYMENT_TONE: Record<PaymentStatus, Tone> = {
-  none: 'good',
+  // Nothing paid through Fetivi: the guest still pays the provider.
+  none: 'wait',
   authorized: 'wait',
   captured: 'good',
   voided: 'off',
@@ -60,7 +62,7 @@ export function ReceiptCard({
       <h3 className="fv-receipt-title">{order.offerTitle}</h3>
       <dl className="fv-receipt-facts">
         <div>
-          <dt>{labels.booking}</dt>
+          <dt>{labels.status}</dt>
           <dd>
             <Status tone={ORDER_TONE[order.status]} text={labels.orderStatus(order.status)} />
           </dd>
@@ -79,7 +81,7 @@ export function ReceiptCard({
           <dd>{labels.dateTime(order.date, order.startsAtLocal)}</dd>
         </div>
         <div>
-          <dt>{labels.quantity}</dt>
+          <dt>{labels.quantity(order.priceUnit)}</dt>
           <dd>{order.quantity}</dd>
         </div>
         <div>

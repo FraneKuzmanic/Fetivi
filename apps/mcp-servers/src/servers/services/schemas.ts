@@ -77,6 +77,7 @@ const orderSummary = z.object({
   quantity: z.number(),
   priceMinor: z.number().nullable().describe('The total in cents.'),
   currency: z.string(),
+  priceUnit: z.enum(PRICE_UNITS).describe('What quantity counts.'),
   createdAt: z.string(),
 });
 

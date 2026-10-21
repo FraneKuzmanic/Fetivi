@@ -38,6 +38,8 @@ html {
   font-size: 100%;
   /* Keeps a focused element clear of the fixed tab bar (labels may wrap to two lines). */
   scroll-padding-bottom: calc(var(--tabbar) + 2.5rem);
+  /* And clear of the sticky header, with room for a field's label above it. */
+  scroll-padding-top: 5rem;
 }
 
 /* In Chat the composer sits above the tab bar too. */

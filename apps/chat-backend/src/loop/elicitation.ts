@@ -3,8 +3,14 @@ import {
   type CreateOrderDraft,
   type McpServerName,
   ORDER_DRAFT_META_KEY,
+  type OrderSummary,
 } from '@fetivi/domain';
-import { type ElicitationPayload, elicitationPayload, type OrderDraft } from '@fetivi/ui/payloads';
+import {
+  type ElicitationPayload,
+  elicitationPayload,
+  type OrderDraft,
+  type OrderSummaryPayload,
+} from '@fetivi/ui/payloads';
 import {
   type CallToolResult,
   type Client,
@@ -19,12 +25,19 @@ import { textOf } from '../mcp/tools';
 // nothing between them: `requestState` travels in the stored message and goes back byte for byte.
 // Never log `requestState` or the guest's answer.
 
-// A drift between the card's draft schema and the stored draft fails typecheck, not a card.
+// A drift between the cards' schemas and the domain's types fails typecheck, not a card.
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
-const _draftMatches: Same<OrderDraft, CreateOrderDraft & { pendingId: string }> = true;
-void _draftMatches;
+const _cardsMatch: [
+  Same<OrderDraft, CreateOrderDraft & { pendingId: string }>,
+  Same<OrderSummaryPayload, OrderSummary>,
+] = [true, true];
+void _cardsMatch;
 
-/** The guest's answer to a card, as the browser sends it. Form mode: email, name and phone only. */
+/**
+ * The guest's answer to a card, as the browser sends it. Form mode: email, name and phone only.
+ * `decline` is MCP's explicit "no"; the card's Not now sends `cancel`, which the server treats
+ * the same way.
+ */
 export const guestAnswer = z.strictObject({
   toolCallId: z.string().min(1).max(100),
   action: z.enum(['accept', 'decline', 'cancel']),

@@ -8,12 +8,12 @@ export interface ConfirmationCardLabels {
   heading: string;
   offer: string;
   when: string;
-  quantity: string;
+  /** The quantity's heading, named by its unit. */
+  quantity: (unit: PriceUnit) => string;
   total: string;
   payment: string;
   cancellation: string;
   dateTime: (date: string, startsAtLocal: string | null) => string;
-  quantityOf: (quantity: number, unit: PriceUnit) => string;
   /** null: the provider sets the price. */
   price: (priceMinor: number | null, currency: string) => string;
   paymentMode: (mode: PaymentMode) => string;
@@ -40,7 +40,7 @@ const INPUT: Record<ContactField, { type: string; autoComplete: string; inputMod
 };
 
 /**
- * The booking confirmation: every fact comes from the stored draft, never from model text, and
+ * The Order confirmation: every fact comes from the stored draft, never from model text, and
  * nothing is sent before Confirm. Errors show on submit, tied to their field; the first invalid
  * field takes focus. The card never takes focus on its own.
  */
@@ -89,7 +89,7 @@ export function ConfirmationCard({
   const facts: [string, string][] = [
     [labels.offer, draft.offerTitle],
     [labels.when, labels.dateTime(draft.date, draft.startsAtLocal)],
-    [labels.quantity, labels.quantityOf(draft.quantity, draft.priceUnit)],
+    [labels.quantity(draft.priceUnit), String(draft.quantity)],
     [labels.total, labels.price(draft.priceMinor, draft.currency)],
     [labels.payment, labels.paymentMode(draft.paymentMode)],
     [labels.cancellation, draft.cancellationPolicy],

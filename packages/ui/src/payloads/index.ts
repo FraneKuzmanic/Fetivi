@@ -93,6 +93,7 @@ export const orderSummary = z.object({
   quantity: z.number(),
   priceMinor: z.number().nullable(),
   currency: z.string(),
+  priceUnit: z.enum(PRICE_UNITS),
   createdAt: z.string(),
 });
 

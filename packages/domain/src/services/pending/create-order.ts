@@ -9,7 +9,7 @@ import { properties, units } from '../../db/schema/properties';
 import { spaces } from '../../db/schema/spaces';
 import { stays } from '../../db/schema/stays';
 import { type GuestOffer, type GuestOfferScope, getGuestOffer } from '../../offers/guest';
-import type { PaymentMode } from '../../offers/vocabulary';
+import type { PaymentMode, PriceUnit } from '../../offers/vocabulary';
 import { createOrder, getOrder, type OrderDeps, OrderRuleError } from '../../orders/machine';
 import type { OrderStatus, PaymentStatus } from '../../orders/vocabulary';
 import type { GuestLanguage } from '../../property/vocabulary';
@@ -92,6 +92,7 @@ export interface OrderSummary {
   quantity: number;
   priceMinor: number | null;
   currency: string;
+  priceUnit: PriceUnit;
   createdAt: string;
 }
 
@@ -454,6 +455,7 @@ async function summaries(
     quantity: proposal.quantity,
     priceMinor: proposal.priceMinor,
     currency: proposal.currency,
+    priceUnit: order.priceUnit,
     createdAt: order.createdAt.toISOString(),
   }));
 }

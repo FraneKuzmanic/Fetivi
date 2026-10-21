@@ -35,7 +35,13 @@ export function Shell({
       </header>
       <main id="main" className="shell-main">
         {children ??
-          (tab === 'trip' ? <TripTab /> : tab === 'guide' ? <EmptyTab tab={tab} /> : <ChatTab />)}
+          (tab === 'chat' ? (
+            <ChatTab />
+          ) : tab === 'trip' ? (
+            <TripTab />
+          ) : (
+            <EmptyTab tab={tab ?? 'chat'} />
+          ))}
       </main>
       <TabBar unread={unread} />
     </div>

@@ -81,6 +81,8 @@ describe('GET /api/orders', () => {
       status: 'confirmed',
       paymentStatus: 'none',
       offerTitle: '[en] Blue Lagoon boat trip',
+      // The receipt names what the quantity counts.
+      priceUnit: 'person',
     });
 
     // Another space of the same Stay sees nothing of these.

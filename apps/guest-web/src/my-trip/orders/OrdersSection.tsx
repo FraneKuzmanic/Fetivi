@@ -1,5 +1,5 @@
 import { ReceiptCard } from '@fetivi/ui';
-import { type OrderSummaryPayload, orderSummary } from '@fetivi/ui/payloads';
+import type { OrderSummaryPayload } from '@fetivi/ui/payloads';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { receiptLabels } from '../../chat/render/labels';
@@ -19,12 +19,8 @@ export function OrdersSection() {
   const load = useCallback(() => {
     setOrders({ status: 'loading' });
     getOrders().then(
-      // A stored Order the receipt cannot show is left out rather than breaking the list.
-      (body) =>
-        setOrders({
-          status: 'ready',
-          orders: body.orders.filter((o) => orderSummary.safeParse(o).success),
-        }),
+      // The server checks every Order against the receipt's schema before it answers.
+      (body) => setOrders({ status: 'ready', orders: body.orders }),
       () => setOrders({ status: 'offline' }),
     );
   }, []);

@@ -19,7 +19,7 @@ export const isComponentPart = (
 ): part is { type: typeof COMPONENT_PART_TYPE; id?: string; data: unknown } =>
   part.type === COMPONENT_PART_TYPE;
 
-/** A booking confirmation card's part; its id is the paused tool call's id. */
+/** An Order confirmation card's part; its id is the paused tool call's id. */
 export const isElicitationPart = (
   part: UIMessage['parts'][number],
 ): part is { type: typeof ELICITATION_PART_TYPE; id?: string; data: unknown } =>
@@ -79,6 +79,20 @@ export function chatErrorKey(error: Error): ChatErrorKey {
   if (error.message.includes('space-closed')) return 'chat.errorClosed';
   if (error.message.includes('turn-in-progress')) return 'chat.errorBusy';
   return 'chat.errorTurn';
+}
+
+/**
+ * A failed answer to a card. The server may have stored it before the stream broke, so the chat
+ * reloads and then tells what it shows: an open card can take another tap; with the card gone
+ * (`nothing-to-answer`, or the answer went through) the reloaded answer says the rest.
+ */
+export function answerErrorKey(
+  error: Error,
+  cardOpen: boolean,
+): ChatErrorKey | 'order.errorAnswer' | null {
+  const key = chatErrorKey(error);
+  if (key !== 'chat.errorTurn') return key;
+  return cardOpen ? 'order.errorAnswer' : null;
 }
 
 /**

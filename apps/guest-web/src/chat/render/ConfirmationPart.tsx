@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { confirmationLabels } from './labels';
 
-const CONTACT_FIELDS: readonly ContactField[] = ['email', 'name', 'phone'];
+// The card's own field order: stored parts are jsonb, which does not keep the schema's key order.
+const CARD_FIELDS: readonly ContactField[] = ['email', 'name', 'phone'];
 
 export type CardAnswer = {
   toolName: string;
@@ -14,8 +15,8 @@ export type CardAnswer = {
 };
 
 /**
- * A booking confirmation card from its stored part. The payload is checked again; the form is the
- * server's (email, name and phone only, in its order). Without a draft nothing can be shown, so
+ * An Order confirmation card from its stored part. The payload is checked again; the form holds
+ * the server's fields (email, name and phone only). Without a draft nothing can be shown, so
  * nothing renders and the next message cancels the call.
  */
 export function ConfirmationPart({
@@ -32,9 +33,10 @@ export function ConfirmationPart({
   if (!parsed.success || parsed.data.draft === null) return null;
   const { draft, requestedSchema, toolName, toolCallId } = parsed.data;
   const required = requestedSchema.required ?? [];
-  const fields = Object.keys(requestedSchema.properties)
-    .filter((key): key is ContactField => (CONTACT_FIELDS as readonly string[]).includes(key))
-    .map((name) => ({ name, required: required.includes(name) }));
+  const fields = CARD_FIELDS.filter((name) => name in requestedSchema.properties).map((name) => ({
+    name,
+    required: required.includes(name),
+  }));
   return (
     <ConfirmationCard
       draft={draft}

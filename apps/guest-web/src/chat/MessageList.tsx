@@ -14,13 +14,15 @@ const isBusy = (status: ChatStatus) => status === 'submitted' || status === 'str
 type Card = { key: string; card: unknown; state: 'open' | 'sending' };
 type Segment = { key: string; text: string } | { key: string; data: unknown } | Card;
 
-const isChips = (segment: Segment) =>
-  'data' in segment && (segment.data as { name?: unknown } | null)?.name === 'follow-up-chips';
+const nameOf = (segment: Segment) =>
+  'data' in segment ? (segment.data as { name?: unknown } | null)?.name : undefined;
+const isChips = (segment: Segment) => nameOf(segment) === 'follow-up-chips';
+const isPicker = (segment: Segment) => nameOf(segment) === 'availability-picker';
 
 /**
  * The confirmation cards still waiting: open while the call has no result, sending while the
- * guest's tap is on its way. A tap left on the part after a reply (the server asked again, or the
- * request failed) opens the card again. Answered cards are gone: the receipt or the words tell.
+ * guest's tap is on its way. A tap left on the part after a reply (the server asked again) opens
+ * the card again. Answered cards are gone: the receipt or the words tell.
  */
 function cardsOf(message: UIMessage, busy: boolean): Card[] {
   const cards: Card[] = [];
@@ -40,7 +42,8 @@ function cardsOf(message: UIMessage, busy: boolean): Card[] {
 }
 
 /** Whether an answer ends with a card for the guest to confirm, for the spoken announcement. */
-const asksToConfirm = (message: UIMessage) => cardsOf(message, false).length > 0;
+export const asksToConfirm = (message: UIMessage | undefined) =>
+  message !== undefined && cardsOf(message, false).length > 0;
 
 /**
  * An answer reads as its words first, in one bubble, then any confirmation card, then its
@@ -89,7 +92,7 @@ export function MessageList({
   interactive: boolean;
   onSend: (text: string) => void;
   onSomethingElse: () => void;
-  /** The guest's Confirm or Cancel on a booking card. */
+  /** The guest's Confirm or Cancel on a confirmation card. */
   onAnswer: (answer: CardAnswer) => void;
 }) {
   const { t } = useTranslation();
@@ -127,7 +130,7 @@ export function MessageList({
       [
         messageText(last),
         count > 0 ? t('components.placesShown', { count }) : '',
-        asksToConfirm(last) ? t('booking.cardShown') : '',
+        asksToConfirm(last) ? t('order.cardShown') : '',
       ]
         .filter(Boolean)
         .join(' '),
@@ -156,6 +159,9 @@ export function MessageList({
           if (segments.length === 0) return null;
           const firstOfRun = messages[i - 1]?.role !== 'assistant';
           const latest = interactive && i === messages.length - 1;
+          // Once an answer holds a confirmation card, its starts are history: a pick there would
+          // cancel the card, and after the tap its places left are out of date.
+          const pickerLive = latest && !m.parts.some(isElicitationPart);
           let named = false;
           return (
             <div key={m.id} className="fetivi-row">
@@ -179,7 +185,7 @@ export function MessageList({
                       <ComponentPart
                         key={segment.key}
                         data={segment.data}
-                        latest={latest}
+                        latest={isPicker(segment) ? pickerLive : latest}
                         onSend={onSend}
                         onSomethingElse={onSomethingElse}
                       />

@@ -6,7 +6,7 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import '../i18n';
 import { SpaceProvider } from '../space';
-import { ChatView } from './ChatTab';
+import { ChatTab, ChatView } from './ChatTab';
 import { hasGuestAnswer } from './chat-api';
 
 const DRAFT = {
@@ -41,6 +41,7 @@ const ORDER = {
   quantity: 2,
   priceMinor: 9000,
   currency: 'EUR',
+  priceUnit: 'person',
   createdAt: '2026-10-21T10:00:00.000Z',
 };
 
@@ -68,9 +69,10 @@ const paused = (): UIMessage[] => [
           message: 'Book Blue Lagoon boat trip?',
           requestedSchema: {
             type: 'object',
+            // Stored as jsonb, which sorts keys: name comes back before email.
             properties: {
-              email: { type: 'string', format: 'email' },
               name: { type: 'string' },
+              email: { type: 'string', format: 'email' },
             },
             required: ['email', 'name'],
           },
@@ -78,6 +80,31 @@ const paused = (): UIMessage[] => [
           draft: DRAFT,
         },
       },
+    ] as UIMessage['parts'],
+  },
+];
+
+/** The stored history once the tap went through: the receipt and the words, no card. */
+const answered = (): UIMessage[] => [
+  paused()[0] as UIMessage,
+  {
+    id: 'a1',
+    role: 'assistant',
+    parts: [
+      { type: 'step-start' },
+      {
+        type: 'tool-create_order',
+        toolCallId: 'call-order',
+        state: 'output-available',
+        input: { offerId: 'o-1', date: '2026-10-22', quantity: 2 },
+        output: { outcome: 'ordered', order: ORDER },
+      },
+      {
+        type: 'data-component',
+        id: 'call-order',
+        data: { name: 'receipt-card', payload: { order: ORDER } },
+      },
+      { type: 'text', text: 'Your boat trip is booked.' },
     ] as UIMessage['parts'],
   },
 ];
@@ -124,7 +151,7 @@ afterEach(() => {
   calls.length = 0;
 });
 
-function stubBackend(chat: () => Response) {
+function stubBackend(chat: () => Response, ...histories: (() => UIMessage[])[]) {
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
@@ -135,11 +162,17 @@ function stubBackend(chat: () => Response) {
       });
     }
     if (url === '/api/chat' && method === 'POST') return chat();
+    if (url === '/api/chat') {
+      const messages = (histories.length > 1 ? histories.shift() : histories[0])?.() ?? [];
+      return new Response(JSON.stringify({ messages }), {
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     return new Response(null, { status: 404 });
   });
 }
 
-async function mount(initial: UIMessage[]) {
+async function mount(initial: UIMessage[] | 'tab') {
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
@@ -157,7 +190,7 @@ async function mount(initial: UIMessage[]) {
             },
           }}
         >
-          <ChatView initial={initial} />
+          {initial === 'tab' ? <ChatTab /> : <ChatView initial={initial} />}
         </SpaceProvider>
       </MemoryRouter>,
     ),
@@ -184,7 +217,12 @@ describe('booking confirmation in the guest app', () => {
     const card = host.querySelector('.fv-confirm');
     expect(card?.textContent).toContain('Blue Lagoon boat trip');
     expect(card?.textContent).toContain('Free cancellation up to 24 hours before.');
-    expect(card?.textContent).toContain('2 × person');
+    expect(card?.textContent).toContain('People2');
+    // The card's own order, whatever order the stored schema's keys come back in.
+    const names = [...host.querySelectorAll('.fv-confirm input')].map((i) =>
+      i.getAttribute('name'),
+    );
+    expect(names).toEqual(['email', 'name']);
 
     await type(input('email'), 'guest@example.test');
     await type(input('name'), 'Ana');
@@ -198,6 +236,8 @@ describe('booking confirmation in the guest app', () => {
       expect(host.textContent).toContain('Your boat trip is booked.');
     });
     expect(host.querySelector('.fv-confirm')).toBeNull();
+    // Focus does not fall to the page when the card goes: the guest carries on in the composer.
+    await vi.waitFor(() => expect(document.activeElement?.id).toBe('chat-input'));
     expect(chatPosts().map((c) => c.body)).toEqual([
       {
         answer: {
@@ -212,15 +252,17 @@ describe('booking confirmation in the guest app', () => {
     expect(chatPosts()).toHaveLength(1);
   });
 
-  it('a failed answer keeps the guest message and opens the card again', async () => {
+  it('a failed answer reloads the chat; the card still open takes another tap', async () => {
     stubBackend(
       () =>
         new Response(JSON.stringify({ error: 'turn-failed' }), {
           status: 502,
           headers: { 'content-type': 'application/json' },
         }),
+      paused,
     );
-    await mount(paused());
+    await mount('tab');
+    await vi.waitFor(() => expect(host.querySelector('.fv-confirm-no')).not.toBeNull());
     await act(async () => {
       host
         .querySelector<HTMLButtonElement>('.fv-confirm-no')
@@ -232,8 +274,59 @@ describe('booking confirmation in the guest app', () => {
     expect(chatPosts().map((c) => c.body)).toEqual([
       { answer: { toolCallId: 'call-order', action: 'cancel' } },
     ]);
+    // The history was loaded again: once on landing, once after the failure.
+    expect(calls.filter((c) => c.url === '/api/chat' && c.method === 'GET')).toHaveLength(2);
     expect(host.textContent).toContain('Book the boat trip for two');
     expect(host.querySelector('.fv-confirm-yes')).not.toBeNull();
+    expect(host.querySelector('[role="alert"] button')).toBeNull();
+  });
+
+  it('an answer the server already took shows the stored Order, not "tap again"', async () => {
+    // The stream broke after the server stored the answer: the next tap gets 409.
+    stubBackend(
+      () =>
+        new Response(JSON.stringify({ error: 'nothing-to-answer' }), {
+          status: 409,
+          headers: { 'content-type': 'application/json' },
+        }),
+      paused,
+      answered,
+    );
+    await mount('tab');
+    await vi.waitFor(() => expect(host.querySelector('.fv-confirm')).not.toBeNull());
+    await type(input('email'), 'guest@example.test');
+    await type(input('name'), 'Ana');
+    await act(async () => {
+      input('name').form?.requestSubmit();
+    });
+    await vi.waitFor(() => {
+      expect(host.querySelector('.fv-receipt')?.textContent).toContain('Confirmed');
+    });
+    expect(host.querySelector('.fv-confirm')).toBeNull();
+    expect(host.querySelector('[role="alert"]')).toBeNull();
+    expect(chatPosts()).toHaveLength(1);
+  });
+
+  it('the availability picker of an answer with a card is read-only', async () => {
+    stubBackend(resumeResponse);
+    const [user, assistant] = paused() as [UIMessage, UIMessage];
+    assistant.parts.push({
+      type: 'data-component',
+      id: 'call-availability',
+      data: {
+        name: 'availability-picker',
+        payload: {
+          offerId: 'o-1',
+          date: '2026-10-22',
+          quantity: 2,
+          starts: [{ slotId: 's-1', startsAtLocal: '2026-10-22T09:00', remaining: 10 }],
+        },
+      },
+    } as UIMessage['parts'][number]);
+    await mount([user, assistant]);
+    expect(host.querySelector('.fv-confirm')).not.toBeNull();
+    expect(host.querySelector('.fv-choice')?.textContent).toContain('Places left: 10');
+    expect(host.querySelector('[role="radio"]')).toBeNull();
   });
 });
 

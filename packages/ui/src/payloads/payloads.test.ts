@@ -108,6 +108,7 @@ const ORDER: OrderSummaryPayload = {
   quantity: 2,
   priceMinor: 9000,
   currency: 'EUR',
+  priceUnit: 'person',
   createdAt: '2026-10-21T10:00:00.000Z',
 };
 

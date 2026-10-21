@@ -96,7 +96,7 @@ function register<I extends z.ZodObject, O extends z.ZodObject>(
   name: string,
   config: GuestToolConfig<I, O>,
   callback: (args: z.infer<I>, ctx: ServerContext) => Promise<CallToolResult | InputRequiredResult>,
-  _meta?: Record<string, unknown>,
+  meta?: Record<string, unknown>,
 ): RegisteredTool {
   assertNoIdentityArgs(name, config.inputSchema);
   return server.registerTool<O, I>(
@@ -107,7 +107,7 @@ function register<I extends z.ZodObject, O extends z.ZodObject>(
       inputSchema: config.inputSchema,
       outputSchema: config.outputSchema,
       annotations: config.annotations,
-      ...(_meta ? { _meta } : {}),
+      ...(meta ? { _meta: meta } : {}),
     },
     // The SDK's callback type is conditional on the schema type, which TypeScript cannot resolve
     // for a generic `I`; the callback is typed against `z.infer<I>` directly.
