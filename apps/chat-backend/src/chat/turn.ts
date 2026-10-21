@@ -13,6 +13,7 @@ import {
   type ResolvedSpace,
   recordTurnMetrics,
   scopesFor,
+  UNIT_RESOURCE_URI,
 } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
 import {
@@ -36,9 +37,6 @@ import {
 } from '../prompt/prompt';
 import { mintServerTokens, type TokenConfig } from '../tokens/mint';
 import { CHAT_MODEL_ID, CHAT_PROVIDER_OPTIONS, MAX_OUTPUT_TOKENS, MAX_STEPS } from './model';
-
-/** The stay server's unit record; kept here so production code never imports mcp-servers. */
-export const UNIT_RESOURCE_URI = 'fetivi://stay/unit';
 
 export interface ChatDeps {
   db: Db;
@@ -122,9 +120,6 @@ export async function runTurn(
     );
     const history = await loadMessages(db, conversation.id);
 
-    const newMessages: UIMessage[] = [];
-    const change = projectionChangeNote(conversation.projection, projection);
-    if (change) newMessages.push(textMessage('system', change));
     const note = situationNote({
       now: startedAt,
       timezone: projection.property.timezone,
@@ -132,8 +127,14 @@ export async function runTurn(
       checkout: projection.stay.checkout,
       phase: ctx.phase,
     });
-    if (note !== conversation.situationNote) newMessages.push(textMessage('system', note));
-    newMessages.push(textMessage('user', text));
+    const notes = [
+      projectionChangeNote(conversation.projection, projection),
+      note === conversation.situationNote ? null : note,
+    ].filter((n) => n !== null);
+    // Anthropic takes a mid-conversation system message only right after a user message, and not
+    // two in a row: so the notes go after the guest's text, joined into one message.
+    const newMessages: UIMessage[] = [textMessage('user', text)];
+    if (notes.length > 0) newMessages.push(textMessage('system', notes.join('\n\n')));
 
     const scopes = Object.fromEntries(
       MCP_SERVERS.map((s) => [s, scopesFor(s, ctx).join(' ')]),

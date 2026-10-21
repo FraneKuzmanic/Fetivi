@@ -12,7 +12,7 @@ import type { GuestProjection } from '../../projection/projection';
 import { spaces } from './spaces';
 
 export const messageRole = pgEnum('message_role', ['system', 'user', 'assistant']);
-/** 'inbox' is reserved for notifications in the chat thread (one table for thread and badge). */
+/** 'inbox' is reserved for notifications in the Conversation (one table for chat and badge). */
 export const messageKind = pgEnum('message_kind', ['chat', 'inbox']);
 
 /**
@@ -60,4 +60,3 @@ export const messages = pgTable(
 );
 
 export type MessageRow = typeof messages.$inferSelect;
-export type NewMessage = typeof messages.$inferInsert;

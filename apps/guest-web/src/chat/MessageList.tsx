@@ -14,7 +14,6 @@ const isBusy = (status: ChatStatus) => status === 'submitted' || status === 'str
  */
 export function MessageList({ messages, status }: { messages: UIMessage[]; status: ChatStatus }) {
   const { t } = useTranslation();
-  const end = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
   const previous = useRef(status);
   const [announcement, setAnnouncement] = useState('');
@@ -32,7 +31,10 @@ export function MessageList({ messages, status }: { messages: UIMessage[]; statu
   // welcome.
   // biome-ignore lint/correctness/useExhaustiveDependencies: new content is the trigger.
   useEffect(() => {
-    if (stick.current && messages.length > 0) end.current?.scrollIntoView({ block: 'end' });
+    // To the page's end, not the last message's: the composer and tab bar cover the bottom.
+    if (stick.current && messages.length > 0) {
+      window.scrollTo({ top: document.documentElement.scrollHeight });
+    }
   }, [messages, status]);
 
   useEffect(() => {
@@ -73,7 +75,6 @@ export function MessageList({ messages, status }: { messages: UIMessage[]; statu
           );
         })}
         {typing && <p className="typing">{t('chat.typing')}</p>}
-        <div ref={end} />
       </div>
       <div className="visually-hidden" role="status" aria-live="polite">
         {announcement}

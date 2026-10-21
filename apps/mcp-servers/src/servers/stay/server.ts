@@ -3,11 +3,10 @@ import {
   type GuestIdentity,
   loadGuestProjection,
   ProjectionRuleError,
+  UNIT_RESOURCE_URI,
 } from '@fetivi/domain';
 import { McpServer, ResourceNotFoundError } from '@modelcontextprotocol/server';
 import { SERVER_VERSION } from '../version';
-
-export const UNIT_RESOURCE_URI = 'fetivi://stay/unit';
 
 /**
  * The `stay` server for one guest. The resource URI carries no ids: the unit and Stay come only

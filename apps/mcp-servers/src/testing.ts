@@ -8,7 +8,6 @@ import {
   type GuestIdentity,
   guestClaimsFor,
   loadSituation,
-  MCP_SERVERS,
   type McpServerName,
   type SpaceContext,
   serverUrl,
@@ -26,12 +25,8 @@ import {
   SignJWT,
 } from 'jose';
 import { z } from 'zod';
-import { buildApp } from './app';
-import { createGuestTokenVerifier } from './auth/verifier';
+import { buildApp, mountServers } from './app';
 import { loadConfig } from './config';
-import { buildEmptyServer } from './servers/empty';
-import { mountServer } from './servers/mount';
-import { buildStayServer } from './servers/stay/server';
 import { registerGuestTool } from './servers/tool';
 import { SERVER_VERSION } from './servers/version';
 
@@ -142,38 +137,9 @@ export function mcpPost(app: FastifyInstance, path: string, token: string | null
 }
 
 /** The four servers as buildApp mounts them, for other apps' tests; `overrides` swaps a server. */
-export function buildMcpTestApp(opts: {
-  db: Db;
-  keys: JWTVerifyGetKey;
-  issuer: string;
-  publicBase: string;
-  /** For the projection's release gate only; the SDK checks token expiry on the real clock. */
-  now: () => Date;
-  overrides?: Partial<Record<McpServerName, (identity: GuestIdentity) => McpServer>>;
-}): FastifyInstance {
-  const { db, now } = opts;
+export function buildMcpTestApp(opts: Parameters<typeof mountServers>[1]): FastifyInstance {
   const app = createMcpFastifyApp({ host: '127.0.0.1', allowedHosts: ['127.0.0.1', 'localhost'] });
-  for (const name of MCP_SERVERS) {
-    const verifier = createGuestTokenVerifier({
-      keys: opts.keys,
-      issuer: opts.issuer,
-      audience: serverUrl(opts.publicBase, name),
-    });
-    const override = opts.overrides?.[name];
-    mountServer(app, {
-      name,
-      publicBase: opts.publicBase,
-      verifier,
-      ...(override
-        ? { requiredScopes: [], factory: override }
-        : name === 'stay'
-          ? {
-              requiredScopes: ['unit:read'],
-              factory: (identity) => buildStayServer(identity, { db, now }),
-            }
-          : { requiredScopes: [], factory: () => buildEmptyServer(name) }),
-    });
-  }
+  mountServers(app, opts);
   return app;
 }
 

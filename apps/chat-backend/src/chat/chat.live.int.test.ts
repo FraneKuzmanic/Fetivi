@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type ChatTestApp, createChatTestApp, enterSpace, readStream, write } from '../testing';
 import { createChatModel } from './model';
 
-// Three real Sonnet 5.5 turns on the seeded unit, about $0.05. Opt-in only (vitest does not load
+// Four real Sonnet 5.5 turns on the seeded unit, about $0.05. Opt-in only (vitest does not load
 // the root .env):
 // FETIVI_LIVE_TESTS=1 node --env-file=.env ./node_modules/vitest/vitest.mjs run --project integration apps/chat-backend/src/chat/chat.live.int.test.ts
 const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -57,6 +57,14 @@ describe.skipIf(!live)('live chat turn (Sonnet 5.5)', () => {
     console.info('turn 3:', dinner);
     expect(dinner.length).toBeGreaterThan(0);
 
+    // A language switch adds a system note mid-conversation, which Anthropic accepts only
+    // after a user message.
+    const patched = await write('PATCH', t.app, '/api/space', { language: 'hr' }, { cookie });
+    expect(patched.statusCode).toBe(200);
+    const croatian = await answer(cookie, 'Where do I park?');
+    console.info('turn 4:', croatian);
+    expect(croatian.length).toBeGreaterThan(0);
+
     const conversation = await findConversation(t.db, space.space.id);
     if (!conversation) throw new Error('no conversation');
     const rows = await t.db
@@ -69,7 +77,7 @@ describe.skipIf(!live)('live chat turn (Sonnet 5.5)', () => {
         `metrics turn ${i + 1}: input ${r.inputTokens}, cache read ${r.cacheReadTokens}, cache write ${r.cacheWriteTokens}, output ${r.outputTokens}, wall ${r.wallMs} ms, mcp ${r.mcpMs} ms`,
       );
     }
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(4);
     expect(rows[1]?.cacheReadTokens).toBeGreaterThan(0);
   }, 180_000);
 });

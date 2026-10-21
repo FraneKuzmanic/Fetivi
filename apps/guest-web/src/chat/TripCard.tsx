@@ -27,6 +27,8 @@ export function TripCard({
           onClick={() => {
             skipTripCard(storageKey);
             setSkipped(true);
+            // The button is about to go: keep the reading position at the top of the tab.
+            document.getElementById('tab-title')?.focus();
           }}
         >
           {t('chat.tripSkip')}

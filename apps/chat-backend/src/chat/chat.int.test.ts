@@ -102,6 +102,17 @@ type Prompt = MockLanguageModelV4['doStreamCalls'][number]['prompt'];
 const systemTexts = (prompt: Prompt) =>
   prompt.filter((m) => m.role === 'system').map((m) => m.content as string);
 
+/**
+ * Anthropic's rule for system messages inside the conversation: each one must follow a user
+ * message (the leading ones become the top-level system). The mocked model would accept anything.
+ */
+function expectAnthropicSystemOrder(prompt: Prompt) {
+  const firstOther = prompt.findIndex((m) => m.role !== 'system');
+  prompt.forEach((m, i) => {
+    if (m.role === 'system' && i > firstOther) expect(prompt[i - 1]?.role).toBe('user');
+  });
+}
+
 describe('POST /api/chat', () => {
   it('runs a tool call through MCP with this turn’s token, then answers and stores the turn', async () => {
     const model = mockModel([toolStep(), textStep('The Wi-Fi is in the hall.')]);
@@ -132,9 +143,9 @@ describe('POST /api/chat', () => {
     expect(JSON.stringify(model.doStreamCalls[1]?.prompt)).toContain('catalog:read');
 
     const { conversation, rows } = await stored(t, space.space.id);
-    expect(rows.map((r) => r.role)).toEqual(['system', 'user', 'assistant']);
-    expect(textOf(rows[0])).toMatch(/^Situation: it is /);
-    expect(textOf(rows[1])).toBe('What about the wifi?');
+    expect(rows.map((r) => r.role)).toEqual(['user', 'system', 'assistant']);
+    expect(textOf(rows[0])).toBe('What about the wifi?');
+    expect(textOf(rows[1])).toMatch(/^Situation: it is /);
     expect(textOf(rows[2])).toBe('The Wi-Fi is in the hall.');
     const toolPart = rows[2]?.parts.find((p) => p.type === 'tool-probe_situation');
     expect(toolPart).toMatchObject({
@@ -143,13 +154,13 @@ describe('POST /api/chat', () => {
       input: { topic: 'wifi' },
       output: { topic: 'wifi', language: 'en' },
     });
-    expect(conversation.situationNote).toBe(textOf(rows[0]));
+    expect(conversation.situationNote).toBe(textOf(rows[1]));
 
     const history = await get(t.app, '/api/chat', cookie);
     expect(history.statusCode).toBe(200);
     const messages = history.json<{ messages: { id: string; role: string }[] }>().messages;
     expect(messages.map((m) => [m.id, m.role])).toEqual([
-      [rows[1]?.id, 'user'],
+      [rows[0]?.id, 'user'],
       [rows[2]?.id, 'assistant'],
     ]);
 
@@ -206,6 +217,7 @@ describe('POST /api/chat', () => {
     expect(p3[0]).toEqual(p1[0]);
     expect(systemTexts(p3)).toHaveLength(3);
     expect(systemTexts(p3)[2]).toMatch(/^Situation: it is /);
+    for (const p of [p1, p2, p3]) expectAnthropicSystemOrder(p);
     const after = await stored(t, space.space.id);
     expect(after.conversation.systemPrompt).toBe(conversation.systemPrompt);
     expect(after.rows.map((r) => r.seq)).toEqual(after.rows.map((_, i) => i + 1));
@@ -228,6 +240,9 @@ describe('POST /api/chat', () => {
     const note = systemTexts(prompt).find((s) => s.includes('<unit_record_update>')) ?? '';
     expect(note).toContain(seed.secrets.wifiPassword);
     expect(note).toContain(seed.secrets.doorCode);
+    // The change and the new situation travel as one system message after the guest's text.
+    expect(note).toMatch(/\n\nSituation: it is /);
+    expectAnthropicSystemOrder(prompt);
     const update = JSON.parse(note.split('\n')[2] ?? '{}');
     expect(Object.keys(update)).toEqual(
       expect.arrayContaining(['stay', 'arrival', 'wifi', 'contacts', 'blocks']),
@@ -253,6 +268,7 @@ describe('POST /api/chat', () => {
     expect(update.language).toBe('de');
     expect(note).toContain(seed.alwaysTitle('de'));
     expect(note).toContain('answer in German from now on');
+    expectAnthropicSystemOrder(p2 ?? []);
   });
 
   it('stores nothing when the model fails, and the next turn works', async () => {
@@ -276,8 +292,8 @@ describe('POST /api/chat', () => {
     const ok = await send(t, cookie, 'hello again');
     expect(readStream(ok).find((c) => c.type === 'text-delta')).toMatchObject({ delta: 'fine' });
     const { rows } = await stored(t, space.space.id);
-    expect(rows.map((r) => r.role)).toEqual(['system', 'user', 'assistant']);
-    expect(textOf(rows[1])).toBe('hello again');
+    expect(rows.map((r) => r.role)).toEqual(['user', 'system', 'assistant']);
+    expect(textOf(rows[0])).toBe('hello again');
   });
 
   it('sends no arrival secret or host-only value to the model before the release', async () => {

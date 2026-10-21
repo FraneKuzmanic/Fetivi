@@ -5,10 +5,10 @@ export const EGRESS_ALLOWLIST: readonly string[] = ['api.anthropic.com'];
 
 export const egress = createEgress({ allowlist: EGRESS_ALLOWLIST });
 
-/** Egress for the MCP servers: their host, plain http allowed for a localhost URL (dev). */
+/** Egress for the MCP servers: only their host, plain http allowed for a localhost URL (dev). */
 export function mcpEgress(url: URL) {
   return createEgress({
-    allowlist: [...EGRESS_ALLOWLIST, url.hostname],
+    allowlist: [url.hostname],
     allowInsecureLocalhost: true,
   });
 }

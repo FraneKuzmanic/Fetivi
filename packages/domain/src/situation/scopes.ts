@@ -50,3 +50,6 @@ export function scopesFor(server: McpServerName, s: Situation): Scope[] {
 export function serverUrl(base: string, server: McpServerName): string {
   return `${base.replace(/\/+$/, '')}/${server}`;
 }
+
+/** The `stay` server's unit record resource. */
+export const UNIT_RESOURCE_URI = 'fetivi://stay/unit';

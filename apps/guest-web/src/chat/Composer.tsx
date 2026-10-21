@@ -3,6 +3,13 @@ import type { FormEvent, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
+ * Enter sends, as the keyboard's "send" key promises; Shift+Enter adds a line. Enter that ends an
+ * IME composition or dictation only commits the text.
+ */
+export const sendsOnKey = (key: { key: string; shiftKey: boolean; isComposing: boolean }) =>
+  key.key === 'Enter' && !key.shiftKey && !key.isComposing;
+
+/**
  * The text box stays editable while Fetivi answers (never disabled or read-only), so the phone
  * keyboard and its dictation keep working; only the send button waits.
  */
@@ -27,7 +34,13 @@ export function Composer({
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+    if (
+      sendsOnKey({
+        key: event.key,
+        shiftKey: event.shiftKey,
+        isComposing: event.nativeEvent.isComposing,
+      })
+    ) {
       event.preventDefault();
       submit();
     }

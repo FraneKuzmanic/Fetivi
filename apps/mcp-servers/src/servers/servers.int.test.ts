@@ -1,4 +1,10 @@
-import { MCP_SERVERS, type McpServerName, SCOPES, serverUrl } from '@fetivi/domain';
+import {
+  MCP_SERVERS,
+  type McpServerName,
+  SCOPES,
+  serverUrl,
+  UNIT_RESOURCE_URI,
+} from '@fetivi/domain';
 import { seedGuestUnit } from '@fetivi/domain/testing';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -10,7 +16,6 @@ import {
   TEST_BASE,
   type TestServer,
 } from '../testing';
-import { UNIT_RESOURCE_URI } from './stay/server';
 
 let t: TestServer;
 

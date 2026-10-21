@@ -4,9 +4,9 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
+import { UNIT_RESOURCE_URI } from '@fetivi/domain';
 import { seedGuestUnit } from '@fetivi/domain/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { UNIT_RESOURCE_URI } from './servers/stay/server';
 import { contextOf, createTestServer, signToken, type TestServer } from './testing';
 
 // MCP Inspector CLI smoke test of /stay: conformance against the official tool, in `pnpm validate`.

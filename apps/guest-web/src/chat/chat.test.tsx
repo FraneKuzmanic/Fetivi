@@ -7,6 +7,7 @@ import type { Space } from '../api';
 import { locales, setLanguage } from '../i18n';
 import { SpaceProvider } from '../space';
 import { ChatView } from './ChatTab';
+import { sendsOnKey } from './Composer';
 import { chatErrorKey, lastUserText, messageText } from './chat-api';
 import { tripCardSkipped } from './trip-card';
 
@@ -122,6 +123,15 @@ describe('chat helpers', () => {
     expect(chatErrorKey(new Error('{"error":"turn-in-progress"}'))).toBe('chat.errorBusy');
     expect(chatErrorKey(new Error('turn-failed'))).toBe('chat.errorTurn');
     expect(chatErrorKey(new Error('Failed to fetch'))).toBe('chat.errorTurn');
+  });
+
+  it('sends on Enter, but not on Shift+Enter or while composing', () => {
+    const key = (k: string, shiftKey = false, isComposing = false) =>
+      sendsOnKey({ key: k, shiftKey, isComposing });
+    expect(key('Enter')).toBe(true);
+    expect(key('Enter', true)).toBe(false);
+    expect(key('Enter', false, true)).toBe(false);
+    expect(key('a')).toBe(false);
   });
 
   it('treats unavailable storage as a trip card not skipped', () => {
