@@ -26,11 +26,20 @@ import type {
   HostBlockCategory,
   MediaKind,
   ParkingType,
+  PropertyType,
   SourceLanguage,
   TranslationError,
   TranslationOrigin,
   TranslationStatus,
 } from '@fetivi/domain/vocabulary';
+import type {
+  GoLiveItem,
+  WizardFieldId,
+  WizardLevel,
+  WizardProgress,
+  WizardPromptKey,
+  WizardStepId,
+} from '@fetivi/domain/wizard';
 
 export class ApiError extends Error {
   override name = 'ApiError';
@@ -72,7 +81,7 @@ export async function upload<T>(path: string, file: File): Promise<T> {
 }
 
 export interface Me {
-  account: { id: string; email: string; role: 'host' | 'admin' };
+  account: { id: string; email: string; role: 'host' | 'admin'; language: GuestLanguage };
   actingAs: { id: string; email: string } | null;
 }
 
@@ -130,6 +139,8 @@ export interface Block {
   revision: number;
   translation: BlockTranslation;
   replacesBlockId: string | null;
+  /** The setup-wizard prompt the block answers, if any. */
+  wizardKey: WizardPromptKey | null;
   position: number;
   createdAt: string;
   updatedAt: string;
@@ -176,6 +187,8 @@ export interface BlockInput {
   visibility?: BlockVisibility;
   position?: number;
   replacesBlockId?: string | null;
+  /** Create only. */
+  wizardKey?: WizardPromptKey | null;
 }
 
 export interface SecretWarning {
@@ -193,12 +206,13 @@ export interface PropertySummary {
   name: string;
   city: string | null;
   approved: boolean;
-  units: { id: string; name: string; hasQr: boolean }[];
+  units: { id: string; name: string; hasQr: boolean; live: boolean }[];
 }
 
 export interface PropertyDetail extends CoreValues {
   id: string;
   name: string;
+  propertyType: PropertyType | null;
   addressLine: string | null;
   city: string | null;
   postalCode: string | null;
@@ -223,6 +237,8 @@ export interface UnitDetail extends CoreValues {
   name: string;
   qrSlug: string | null;
   qrLink: string | null;
+  /** Has its QR slug: approved and the go-live minimum was met. */
+  live: boolean;
   approved: boolean;
   timezone: string;
   noWifi: boolean;
@@ -265,6 +281,22 @@ export type UnitPatch = Partial<
     | 'arrivalReleaseDaysBefore'
   >
 >;
+
+/** GET /api/host/units/:id/wizard. */
+export interface WizardStatus {
+  unitId: string;
+  propertyId: string;
+  unitName: string;
+  propertyName: string;
+  propertyType: PropertyType | null;
+  approved: boolean;
+  live: boolean;
+  /** Visible fields only. */
+  fields: Partial<Record<WizardFieldId, { level: WizardLevel; filled: boolean }>>;
+  progress: WizardProgress;
+  resumeStep: WizardStepId | null;
+  goLive: { ready: boolean; missing: GoLiveItem[] };
+}
 
 export type StayPhase = 'upcoming' | 'in_stay' | 'ended';
 
@@ -333,6 +365,7 @@ export const auth = {
   requestReset: (email: string) => post('/api/auth/password-reset/request', { email }),
   confirmReset: (token: string, password: string) =>
     post('/api/auth/password-reset/confirm', { token, password }),
+  setLanguage: (language: GuestLanguage) => put<Me>('/api/auth/me/language', { language }),
 };
 
 export const admin = {
@@ -395,6 +428,8 @@ export const host = {
     patch<{ media: BlockMedia; block: Block }>(`/api/host/media/${id}`, { caption }),
   deleteMedia: (id: string) => remove(`/api/host/media/${id}`),
   mediaUrl: (id: string) => `/api/host/media/${id}`,
+  wizard: (id: string) => api<WizardStatus>(`/api/host/units/${id}/wizard`),
+  goLive: (id: string) => post<WizardStatus>(`/api/host/units/${id}/go-live`),
   qrUrl: (unitId: string, format: 'svg' | 'png') => `/api/host/units/${unitId}/qr?format=${format}`,
   stays: (params: { unitId?: string; past?: boolean } = {}) => {
     const query = new URLSearchParams();

@@ -8,10 +8,11 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { GUEST_LANGUAGES, TRANSLATION_ORIGINS } from '../../property/vocabulary';
+import { TRANSLATION_ORIGINS } from '../../property/vocabulary';
+import { guestLanguage } from './enums';
 import { infoBlocks } from './info-blocks';
 
-export const guestLanguage = pgEnum('guest_language', GUEST_LANGUAGES);
+export { guestLanguage };
 export const translationOrigin = pgEnum('translation_origin', TRANSLATION_ORIGINS);
 
 /** One guest language's title and body of an Info block, for one source revision. */

@@ -31,6 +31,8 @@ describe('backoffice-web App', () => {
       '/',
       '/properties/new',
       '/units/x',
+      '/units/x/setup',
+      '/units/x/setup/arrival_access',
       '/stays',
       '/stays/new',
       '/stays/x',

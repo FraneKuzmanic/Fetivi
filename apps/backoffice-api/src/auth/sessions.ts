@@ -54,6 +54,7 @@ export async function resolveSession(db: Db, token: string, now: Date): Promise<
         id: accounts.id,
         email: accounts.email,
         role: accounts.role,
+        language: accounts.uiLanguage,
         suspendedAt: accounts.suspendedAt,
       },
       actingAs: { id: actingHost.id, email: actingHost.email },
@@ -80,7 +81,12 @@ export async function resolveSession(db: Db, token: string, now: Date): Promise<
 
   return {
     sessionId: id,
-    account: { id: account.id, email: account.email, role: account.role },
+    account: {
+      id: account.id,
+      email: account.email,
+      role: account.role,
+      language: account.language,
+    },
     actingAs: row.actingAs?.id ? { id: row.actingAs.id, email: row.actingAs.email } : null,
   };
 }

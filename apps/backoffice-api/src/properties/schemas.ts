@@ -8,8 +8,10 @@ import {
   type HostBlockCategory,
   LIMITS,
   PARKING_TYPES,
+  PROPERTY_TYPES,
   stripMarkdownHtml,
   stripMarkup,
+  WIZARD_PROMPT_KEYS,
 } from '@fetivi/domain';
 import { z } from 'zod';
 
@@ -83,6 +85,7 @@ const coreFields = {
 
 const propertyFields = z.strictObject({
   name: line(LIMITS.name),
+  propertyType: z.enum(PROPERTY_TYPES).nullable(),
   addressLine: optionalLine(LIMITS.shortText),
   city: optionalLine(LIMITS.shortText),
   postalCode: optionalLine(LIMITS.shortText),
@@ -148,8 +151,12 @@ const blockFields = {
 };
 
 export const BlockCreate = z
-  .strictObject(blockFields)
-  .partial({ visibility: true, position: true });
+  .strictObject({
+    ...blockFields,
+    /** Set on create only: the wizard prompt the block answers. */
+    wizardKey: z.enum(WIZARD_PROMPT_KEYS).nullable(),
+  })
+  .partial({ visibility: true, position: true, wizardKey: true });
 export const UnitBlockCreate = BlockCreate.extend({
   replacesBlockId: z.uuid().nullable().optional(),
 });

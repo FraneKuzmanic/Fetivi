@@ -1,3 +1,5 @@
+import { accounts, GUEST_LANGUAGES, type GuestLanguage } from '@fetivi/domain';
+import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Principal } from './access';
@@ -21,7 +23,7 @@ import {
 } from './sessions';
 
 export interface Me {
-  account: { id: string; email: string; role: 'host' | 'admin' };
+  account: { id: string; email: string; role: 'host' | 'admin'; language: GuestLanguage };
   actingAs: { id: string; email: string } | null;
 }
 
@@ -33,6 +35,7 @@ const Credentials = z.object({ email: Email, password: z.string().min(1).max(102
 const SignUpBody = z.object({ email: Email, password: Password });
 const EmailBody = z.object({ email: Email });
 const TokenBody = z.object({ token: z.string().min(1).max(256) });
+const LanguageBody = z.strictObject({ language: z.enum(GUEST_LANGUAGES) });
 const ResetBody = z.object({ token: z.string().min(1).max(256), password: Password });
 
 export async function authRoutes(app: FastifyInstance, deps: AccountDeps): Promise<void> {
@@ -83,4 +86,15 @@ export async function authRoutes(app: FastifyInstance, deps: AccountDeps): Promi
   });
 
   app.get('/api/auth/me', authed, async (request) => toMe(principalOf(request)));
+
+  /** The signed-in person's own language; an acting admin changes theirs, not the host's. */
+  app.put('/api/auth/me/language', authed, async (request) => {
+    const principal = principalOf(request);
+    const { language } = LanguageBody.parse(request.body);
+    await deps.db
+      .update(accounts)
+      .set({ uiLanguage: language, updatedAt: deps.now() })
+      .where(eq(accounts.id, principal.account.id));
+    return toMe({ ...principal, account: { ...principal.account, language } });
+  });
 }

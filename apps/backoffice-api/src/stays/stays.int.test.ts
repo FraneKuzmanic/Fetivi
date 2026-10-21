@@ -5,6 +5,7 @@ import { createAdmin } from '../cli/create-admin';
 import {
   createTestApp,
   del,
+  fillGoLiveMinimum,
   GUEST_TEST_ORIGIN,
   get,
   loginAs,
@@ -39,8 +40,11 @@ async function host(email: string) {
   return { id: await idOf(email), cookie: await loginAs(t, email) };
 }
 
-/** A property with one unit; approved (so the unit is live) unless told otherwise. */
-async function unitOf(cookie: string, approve = true) {
+/**
+ * A property with one unit; approved unless told otherwise. The unit meets the go-live minimum
+ * (so approval makes it live) unless `ready` is false.
+ */
+async function unitOf(cookie: string, approve = true, ready = true) {
   const property = await post(t.app, '/api/host/properties', { name: 'Villa Mare' }, cookie);
   expect(property.statusCode).toBe(201);
   const propertyId = property.json().id as string;
@@ -51,6 +55,7 @@ async function unitOf(cookie: string, approve = true) {
     cookie,
   );
   expect(unit.statusCode).toBe(201);
+  if (ready) await fillGoLiveMinimum(t.app, cookie, { propertyId, unitId: unit.json().id });
   if (approve) {
     const approved = await post(
       t.app,
@@ -116,6 +121,13 @@ describe('registering a Stay', () => {
 
   it('refuses a unit of a property Fetivi has not approved', async () => {
     const unit = await unitOf(hostA.cookie, false);
+    const r = await register(unit.id);
+    expect(r.statusCode).toBe(409);
+    expect(r.json()).toEqual({ error: 'unit-not-live' });
+  });
+
+  it('refuses an approved unit below the go-live minimum', async () => {
+    const unit = await unitOf(hostA.cookie, true, false);
     const r = await register(unit.id);
     expect(r.statusCode).toBe(409);
     expect(r.json()).toEqual({ error: 'unit-not-live' });

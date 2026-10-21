@@ -30,6 +30,7 @@ export type EffectiveUnit = SharedCore &
     | 'timezone'
     | 'buildingDoorCode'
     | 'approvedAt'
+    | 'propertyType'
   > &
   Pick<
     UnitRow,
@@ -118,6 +119,7 @@ export function effectiveUnit(input: EffectiveUnitInput): EffectiveUnit {
     timezone: property.timezone,
     buildingDoorCode: property.buildingDoorCode,
     approvedAt: property.approvedAt,
+    propertyType: property.propertyType,
     qrSlug: unit.qrSlug,
     noWifi: unit.noWifi,
     wifiNetwork: unit.wifiNetwork,

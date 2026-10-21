@@ -274,6 +274,7 @@ export function blockOut(b: BlockRow, media: readonly BlockMediaRow[] = []) {
       sourceLanguage: b.sourceLanguage,
     },
     replacesBlockId: b.replacesBlockId,
+    wizardKey: b.wizardKey,
     position: b.position,
     createdAt: b.createdAt.toISOString(),
     updatedAt: b.updatedAt.toISOString(),
@@ -305,6 +306,7 @@ export async function propertyDetail(db: Executor, property: PropertyRow) {
   return {
     id: property.id,
     name: property.name,
+    propertyType: property.propertyType,
     addressLine: property.addressLine,
     city: property.city,
     postalCode: property.postalCode,
@@ -362,6 +364,8 @@ export async function unitDetail(
     name: unit.name,
     qrSlug: unit.qrSlug,
     qrLink: unit.qrSlug ? unitLink(guestOrigin, unit.qrSlug) : null,
+    /** Live once the go-live check issued the slug (ADR 0004). */
+    live: unit.qrSlug !== null,
     approved: property.approvedAt !== null,
     timezone: property.timezone,
     ...coreOut(unit),
@@ -420,6 +424,6 @@ export async function listProperties(db: Db, hostId: string) {
     approved: p.approvedAt !== null,
     units: unitRows
       .filter((u) => u.propertyId === p.id)
-      .map((u) => ({ id: u.id, name: u.name, hasQr: u.qrSlug !== null })),
+      .map((u) => ({ id: u.id, name: u.name, hasQr: u.qrSlug !== null, live: u.qrSlug !== null })),
   }));
 }

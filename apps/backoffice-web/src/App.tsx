@@ -18,6 +18,7 @@ import { NewStayPage } from './host/stays/NewStayPage';
 import { StayPage } from './host/stays/StayPage';
 import { StaysPage } from './host/stays/StaysPage';
 import { UnitPage } from './host/UnitPage';
+import { WizardPage } from './host/wizard/WizardPage';
 import { SessionProvider } from './session';
 import { AdminHome } from './shell/AdminHome';
 import { AuditPage } from './shell/AuditPage';
@@ -83,6 +84,22 @@ export function App() {
           element={
             <Page area="host">
               <UnitPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/units/:id/setup"
+          element={
+            <Page area="host">
+              <WizardPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/units/:id/setup/:stepId"
+          element={
+            <Page area="host">
+              <WizardPage />
             </Page>
           }
         />

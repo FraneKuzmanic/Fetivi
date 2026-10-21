@@ -1,9 +1,10 @@
-import { LIMITS } from '@fetivi/domain/vocabulary';
+import { LIMITS, PROPERTY_TYPES } from '@fetivi/domain/vocabulary';
 import { CaretRight, Plus, QrCode } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { host, type PropertyDetail, type PropertyPatch } from '../api';
-import { NumberField, Section, TextField } from '../forms/fields';
+import { NumberField, Section, SelectField, TextField } from '../forms/fields';
+import { PROPERTY_TYPE_LABELS } from '../forms/labels';
 import { sectionBody } from '../forms/patch';
 import { useAction } from '../useAction';
 import { AmenitiesEditor } from './AmenitiesEditor';
@@ -118,7 +119,15 @@ export function PropertyPage() {
         ? null
         : ({ lat: coords.lat, lng: coords.lng } as { lat: number; lng: number });
     setDraft((d) => (d ? { ...d, location } : d));
-    const keys = ['name', 'addressLine', 'city', 'postalCode', 'country', 'timezone'] as const;
+    const keys = [
+      'name',
+      'propertyType',
+      'addressLine',
+      'city',
+      'postalCode',
+      'country',
+      'timezone',
+    ] as const;
     const saved = await host.updateProperty(id, { ...sectionBody(draft, keys), location });
     setDetail(saved);
     setDraft((d) => (d ? { ...d, ...sectionBody(saved, [...keys, 'location']) } : d));
@@ -150,6 +159,15 @@ export function PropertyPage() {
             maxLength={LIMITS.name}
             required
             onChange={(v) => set('name')(v ?? '')}
+          />
+          <SelectField
+            label="Property type"
+            hint="Decides which questions the setup wizard asks."
+            value={draft.propertyType}
+            options={PROPERTY_TYPES}
+            labels={PROPERTY_TYPE_LABELS}
+            emptyLabel="Not set"
+            onChange={set('propertyType')}
           />
           <TextField
             label="Street address"

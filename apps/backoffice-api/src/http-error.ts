@@ -15,6 +15,7 @@ export type ErrorCode =
   | 'not-found'
   | 'email-taken'
   | 'not-approved'
+  | 'not-ready'
   | 'stale-revision'
   | 'translation-not-failed'
   | 'destination-not-empty'

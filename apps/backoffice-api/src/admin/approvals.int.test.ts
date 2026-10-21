@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAdmin } from '../cli/create-admin';
 import {
   createTestApp,
+  fillGoLiveMinimum,
   GUEST_TEST_ORIGIN,
   get,
   loginAs,
@@ -34,6 +35,7 @@ const unitOf = async (id: string) => (await get(t.app, `/api/host/units/${id}`, 
 describe('property approval', () => {
   let propertyId: string;
   let unitIds: string[];
+  let incompleteId: string;
 
   beforeAll(async () => {
     const property = await post(
@@ -53,6 +55,16 @@ describe('property approval', () => {
       );
       unitIds.push(unit.json().id);
     }
+    // Only the first two meet the go-live minimum; the third stays incomplete.
+    for (const unitId of unitIds)
+      await fillGoLiveMinimum(t.app, hostCookie, { propertyId, unitId });
+    const incomplete = await post(
+      t.app,
+      `/api/host/properties/${propertyId}/units`,
+      { name: 'Apartment 9' },
+      hostCookie,
+    );
+    incompleteId = incomplete.json().id;
   });
 
   it('keeps hosts out of the approval routes', async () => {
@@ -71,7 +83,7 @@ describe('property approval', () => {
     expect(unit).toMatchObject({ qrSlug: null, qrLink: null, approved: false });
     const qr = await get(t.app, `/api/host/units/${unitIds[0]}/qr`, hostCookie);
     expect(qr.statusCode).toBe(409);
-    expect(qr.json()).toEqual({ error: 'not-approved' });
+    expect(qr.json()).toEqual({ error: 'unit-not-live' });
   });
 
   it('lists the pending property with its host', async () => {
@@ -82,7 +94,7 @@ describe('property approval', () => {
         name: 'Villa Mare',
         city: 'Trogir',
         hostEmail: 'a@example.test',
-        unitCount: 2,
+        unitCount: 3,
         approvedAt: null,
       }),
     ]);
@@ -90,7 +102,7 @@ describe('property approval', () => {
     expect(approved.json().properties).toEqual([]);
   });
 
-  it('approves once, giving every unit a permanent slug', async () => {
+  it('approves once, giving every ready unit a permanent slug', async () => {
     const r = await post(
       t.app,
       `/api/admin/properties/${propertyId}/approve`,
@@ -106,6 +118,8 @@ describe('property approval', () => {
       expect(unit.approved).toBe(true);
     }
     expect(units[0].qrSlug).not.toBe(units[1].qrSlug);
+    // A unit below the go-live minimum is approved but not live.
+    expect(await unitOf(incompleteId)).toMatchObject({ approved: true, live: false, qrSlug: null });
 
     const list = await get(t.app, '/api/admin/properties?status=approved', adminCookie);
     const approvedAt = list.json().properties[0].approvedAt;
@@ -123,14 +137,14 @@ describe('property approval', () => {
     expect((await unitOf(unitIds[0] ?? '')).qrSlug).toBe(units[0].qrSlug);
   });
 
-  it('gives a unit created after approval its slug at once', async () => {
+  it('gives a unit created after approval no slug until it goes live', async () => {
     const r = await post(
       t.app,
       `/api/host/properties/${propertyId}/units`,
       { name: 'Apartment 3' },
       hostCookie,
     );
-    expect(r.json().qrSlug).toMatch(/^[a-z2-9]{12}$/);
+    expect(r.json()).toMatchObject({ qrSlug: null, live: false, approved: true });
   });
 
   it('serves the QR code as SVG and PNG downloads', async () => {

@@ -24,6 +24,7 @@ import type {
   CheckInMethod,
   GuestLanguage,
   ParkingType,
+  PropertyType,
   SharedCoreField,
   TranslationError,
   TranslationOrigin,
@@ -97,6 +98,15 @@ export const PARKING_LABELS: Record<ParkingType, string> = {
   free_street: 'Free street parking',
   paid_street: 'Paid street parking',
   public_garage: 'Public garage nearby',
+};
+
+export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
+  apartment: 'Apartment',
+  studio: 'Studio',
+  house: 'House',
+  villa: 'Villa',
+  room: 'Room',
+  guesthouse: 'Guesthouse',
 };
 
 export const BED_LABELS: Record<BedType, string> = {

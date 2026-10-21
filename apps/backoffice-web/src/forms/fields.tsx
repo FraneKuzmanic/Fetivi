@@ -7,19 +7,22 @@ import { useAction } from '../useAction';
 interface FieldProps {
   label: string;
   hint?: ReactNode;
+  /** Keeps the label for screen readers only, where a heading above already shows it. */
+  hideLabel?: boolean;
 }
 
 /** A labelled control; `children` renders the control with the id and description it is given. */
 function Field({
   label,
   hint,
+  hideLabel,
   children,
 }: FieldProps & { children: (ids: { id: string; describedBy?: string }) => ReactNode }) {
   const id = useId();
   const hintId = `${id}-hint`;
   return (
     <div className="field">
-      <label className="field-label" htmlFor={id}>
+      <label className={hideLabel ? 'field-label visually-hidden' : 'field-label'} htmlFor={id}>
         {label}
       </label>
       {children(hint ? { id, describedBy: hintId } : { id })}
@@ -31,6 +34,7 @@ function Field({
 export function TextField({
   label,
   hint,
+  hideLabel,
   value,
   onChange,
   maxLength,
@@ -48,7 +52,7 @@ export function TextField({
   autoComplete?: string;
 }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} hideLabel={hideLabel}>
       {(ids) => (
         <input
           id={ids.id}
@@ -69,6 +73,7 @@ export function TextField({
 export function TextArea({
   label,
   hint,
+  hideLabel,
   value,
   onChange,
   maxLength,
@@ -86,7 +91,7 @@ export function TextArea({
   monospace?: boolean;
 }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} hideLabel={hideLabel}>
       {(ids) => (
         <textarea
           id={ids.id}
@@ -107,6 +112,7 @@ export function TextArea({
 export function NumberField({
   label,
   hint,
+  hideLabel,
   value,
   onChange,
   min,
@@ -122,7 +128,7 @@ export function NumberField({
   placeholder?: string;
 }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} hideLabel={hideLabel}>
       {(ids) => (
         <input
           id={ids.id}
@@ -144,11 +150,12 @@ export function NumberField({
 export function TimeField({
   label,
   hint,
+  hideLabel,
   value,
   onChange,
 }: FieldProps & { value: string | null; onChange: (value: string | null) => void }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} hideLabel={hideLabel}>
       {(ids) => (
         <input
           id={ids.id}
@@ -165,6 +172,7 @@ export function TimeField({
 export function SelectField<T extends string>({
   label,
   hint,
+  hideLabel,
   value,
   onChange,
   options,
@@ -182,7 +190,7 @@ export function SelectField<T extends string>({
   required?: boolean;
 }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} hideLabel={hideLabel}>
       {(ids) => (
         <select
           id={ids.id}
@@ -207,16 +215,21 @@ export function SelectField<T extends string>({
 export function TriStateField({
   label,
   hint,
+  hideLabel,
   value,
   onChange,
   nullLabel = 'Not set',
+  yesLabel = 'Yes',
+  noLabel = 'No',
 }: FieldProps & {
   value: boolean | null;
   onChange: (value: boolean | null) => void;
   nullLabel?: string;
+  yesLabel?: string;
+  noLabel?: string;
 }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} hideLabel={hideLabel}>
       {(ids) => (
         <select
           id={ids.id}
@@ -225,8 +238,8 @@ export function TriStateField({
           onChange={(e) => onChange(e.target.value === '' ? null : e.target.value === 'yes')}
         >
           <option value="">{nullLabel}</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
+          <option value="yes">{yesLabel}</option>
+          <option value="no">{noLabel}</option>
         </select>
       )}
     </Field>

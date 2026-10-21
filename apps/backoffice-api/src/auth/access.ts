@@ -1,9 +1,12 @@
+import type { GuestLanguage } from '@fetivi/domain';
+
 export type Access = 'public' | 'authenticated' | 'host' | 'admin';
 export type Role = 'host' | 'admin';
 
 export interface Principal {
   sessionId: string;
-  account: { id: string; email: string; role: Role };
+  /** `language`: the person's back-office language, which the setup wizard follows. */
+  account: { id: string; email: string; role: Role; language: GuestLanguage };
   actingAs: { id: string; email: string } | null;
 }
 

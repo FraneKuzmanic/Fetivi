@@ -5,6 +5,7 @@ import { infoBlocks } from '../db/schema/info-blocks';
 import { blockTranslations } from '../db/schema/translations';
 import { EVENTS, type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
 import type { BlockRow } from '../property/effective';
+import { allBlocksPublished } from '../property/go-live';
 import { loadEffectiveUnit } from '../property/load';
 import {
   GUEST_LANGUAGES,
@@ -418,5 +419,5 @@ export async function listTranslations(db: Executor, block: BlockRow): Promise<T
 export async function translationsDone(db: Db, unitId: string): Promise<boolean> {
   const unit = await loadEffectiveUnit(db, unitId);
   if (!unit) return false;
-  return unit.blocks.every((b) => b.publishedRevision === b.revision);
+  return allBlocksPublished(unit.blocks);
 }

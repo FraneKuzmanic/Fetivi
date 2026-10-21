@@ -6,6 +6,7 @@
     ".": "./src/index.ts",
     "./testing": "./src/testing/index.ts",
     "./vocabulary": "./src/property/vocabulary.ts",
+    "./wizard": "./src/property/wizard.ts",
     "./catalog-vocabulary": "./src/catalog/vocabulary.ts",
     "./offer-vocabulary": "./src/offers/vocabulary.ts",
     "./order-vocabulary": "./src/orders/vocabulary.ts",

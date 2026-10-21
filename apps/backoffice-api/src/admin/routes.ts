@@ -7,6 +7,7 @@ import { toMe } from '../auth/routes';
 import { deleteSessionsOf, setActingAs } from '../auth/sessions';
 import { HttpError } from '../http-error';
 import { issueSlug } from '../properties/store';
+import { readyUnitIds } from '../properties/wizard';
 
 export interface AdminDeps {
   db: Db;
@@ -134,10 +135,15 @@ export async function adminRoutes(app: FastifyInstance, deps: AdminDeps): Promis
     };
   });
 
-  /** One-way and idempotent: approving again keeps the first approval and every slug. */
+  /**
+   * One-way and idempotent: approving again keeps the first approval and every slug. Approving
+   * makes ready units live; the others go live from the setup wizard (ADR 0004).
+   */
   app.post('/api/admin/properties/:id/approve', admin, async (request, reply) => {
     const principal = principalOf(request);
     const { id } = IdParams.parse(request.params);
+    // Read before the transaction: approving changes no unit data.
+    const ready = await readyUnitIds(db, id);
     await db.transaction(async (tx) => {
       const [property] = await tx
         .select({ id: properties.id })
@@ -150,11 +156,7 @@ export async function adminRoutes(app: FastifyInstance, deps: AdminDeps): Promis
         .update(properties)
         .set({ approvedAt: now, approvedBy: principal.account.id, updatedAt: now })
         .where(and(eq(properties.id, id), isNull(properties.approvedAt)));
-      const slugless = await tx
-        .select({ id: units.id })
-        .from(units)
-        .where(and(eq(units.propertyId, id), isNull(units.qrSlug)));
-      for (const unit of slugless) await issueSlug(tx, unit.id);
+      for (const unitId of ready) await issueSlug(tx, unitId);
     });
     return reply.status(204).send();
   });

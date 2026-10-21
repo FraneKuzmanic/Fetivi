@@ -14,11 +14,17 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { parseEWKB } from 'drizzle-orm/pg-core/columns/postgis_extension/utils';
-import { type Bed, CHECK_IN_METHODS, PARKING_TYPES } from '../../property/vocabulary';
+import {
+  type Bed,
+  CHECK_IN_METHODS,
+  PARKING_TYPES,
+  PROPERTY_TYPES,
+} from '../../property/vocabulary';
 import { accounts } from './accounts';
 
 export const checkInMethod = pgEnum('check_in_method', CHECK_IN_METHODS);
 export const parkingType = pgEnum('parking_type', PARKING_TYPES);
+export const propertyType = pgEnum('property_type', PROPERTY_TYPES);
 
 /**
  * A WGS 84 point, x = longitude, y = latitude. Drizzle's own `geometry()` drops the SRID from
@@ -65,6 +71,8 @@ export const properties = pgTable(
       .notNull()
       .references(() => accounts.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    /** Null until the host chooses it in the setup wizard. */
+    propertyType: propertyType('property_type'),
     addressLine: text('address_line'),
     city: text('city'),
     postalCode: text('postal_code'),
@@ -76,7 +84,7 @@ export const properties = pgTable(
     /** Secret. */
     buildingDoorCode: text('building_door_code'),
     ...sharedCoreColumns(),
-    /** Set once by an admin; units get their QR slugs from then on. */
+    /** Set once by an admin; units can go live from then on. */
     approvedAt: timestamp('approved_at', { withTimezone: true }),
     approvedBy: uuid('approved_by').references(() => accounts.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -96,7 +104,7 @@ export const units = pgTable(
       .notNull()
       .references(() => properties.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    /** The permanent guest link; issued when the property is approved, never changed. */
+    /** The permanent guest link; issued when the unit goes live (ADR 0004), never changed. */
     qrSlug: text('qr_slug').unique(),
     ...sharedCoreColumns(),
     noWifi: boolean('no_wifi').notNull().default(false),

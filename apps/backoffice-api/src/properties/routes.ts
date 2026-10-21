@@ -41,7 +41,6 @@ import {
   findOwnedBlock,
   findOwnedProperty,
   findOwnedUnit,
-  issueSlug,
   listProperties,
   mediaByBlock,
   ownedPropertyIds,
@@ -51,6 +50,7 @@ import {
   saveBlock,
   unitDetail,
 } from './store';
+import { goLiveUnit, wizardStatus } from './wizard';
 
 export interface PropertyDeps {
   db: Db;
@@ -159,19 +159,9 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     const hostId = hostIdOf(request);
     const property = await findOwnedProperty(db, hostId, idOf(request));
     const { name } = UnitCreate.parse(request.body);
-    const unit = await db.transaction(async (tx) => {
-      // Locked against a concurrent approval, which would miss a unit inserted after its read.
-      const [current] = await tx
-        .select({ approvedAt: properties.approvedAt })
-        .from(properties)
-        .where(eq(properties.id, property.id))
-        .for('share');
-      const [row] = await tx.insert(units).values({ propertyId: property.id, name }).returning();
-      if (!row) throw new Error('unit insert returned nothing');
-      // Under an approved property a new unit is live at once.
-      if (current?.approvedAt) await issueSlug(tx, row.id);
-      return row;
-    });
+    // A new unit goes live through the go-live check, even under an approved property.
+    const [unit] = await db.insert(units).values({ propertyId: property.id, name }).returning();
+    if (!unit) throw new Error('unit insert returned nothing');
     return reply
       .status(201)
       .send(await unitDetail(db, await findOwnedUnit(db, hostId, unit.id), guestOrigin));
@@ -246,10 +236,22 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     return { hiddenBlockIds: blockIds };
   });
 
+  // --- Setup wizard and go-live ---------------------------------------------------------------
+
+  app.get('/api/host/units/:id/wizard', host, async (request) =>
+    wizardStatus(db, await findOwnedUnit(db, hostIdOf(request), idOf(request))),
+  );
+
+  app.post('/api/host/units/:id/go-live', host, async (request) => {
+    const owned = await findOwnedUnit(db, hostIdOf(request), idOf(request));
+    await goLiveUnit(db, owned.unit.id);
+    return wizardStatus(db, owned);
+  });
+
   app.get('/api/host/units/:id/qr', host, async (request, reply) => {
     const { unit } = await findOwnedUnit(db, hostIdOf(request), idOf(request));
     const { format } = QrQuery.parse(request.query);
-    if (!unit.qrSlug) throw new HttpError(409, 'not-approved');
+    if (!unit.qrSlug) throw new HttpError(409, 'unit-not-live');
     const { body, contentType } = await renderQr(unitLink(guestOrigin, unit.qrSlug), format);
     return reply
       .header('content-type', contentType)
@@ -272,20 +274,23 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
   app.post('/api/host/units/:id/blocks', host, async (request, reply) => {
     const { unit } = await findOwnedUnit(db, hostIdOf(request), idOf(request));
     const body = UnitBlockCreate.parse(request.body);
+    let wizardKey: string | null | undefined = body.wizardKey;
     if (body.replacesBlockId) {
       // Only a block of the unit's own property can be replaced.
       const [replaced] = await db
-        .select({ id: infoBlocks.id })
+        .select({ id: infoBlocks.id, wizardKey: infoBlocks.wizardKey })
         .from(infoBlocks)
         .where(
           and(eq(infoBlocks.id, body.replacesBlockId), eq(infoBlocks.propertyId, unit.propertyId)),
         );
       if (!replaced) throw new HttpError(400, 'invalid-input');
+      // The replacement answers the same wizard prompt unless the body says otherwise.
+      if (wizardKey === undefined) wizardKey = replaced.wizardKey;
     }
     if ((await countBlocks(db, { unitId: unit.id })) >= LIMITS.blocksPerOwner) {
       throw new HttpError(400, 'invalid-input');
     }
-    const block = await saveBlock(db, queue, { insert: { ...body, unitId: unit.id } });
+    const block = await saveBlock(db, queue, { insert: { ...body, wizardKey, unitId: unit.id } });
     return reply.status(201).send(await blockResult(db, block));
   });
 

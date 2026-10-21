@@ -9,7 +9,7 @@ An account that runs one or more Properties and enters the information guests ar
 _Avoid_: Owner, landlord, user
 
 **Property**:
-A place a Host rents out, at one address and in one time zone, holding the content its Units share.
+A place a Host rents out, at one address and in one time zone, of one Property type, holding the content its Units share.
 _Avoid_: Building (except in the physical sense), listing
 
 **Unit**:
@@ -31,8 +31,18 @@ One guest language's version of an Info block's title, text and Block media capt
 The revision of an Info block guests see; it moves forward only when all seven languages exist for a newer revision.
 
 **QR link**:
-A Unit's permanent guest link, issued once the admin approves its Property and printed as a QR code.
+A Unit's permanent guest link, issued when the Unit goes live (see Go-live minimum) and printed as a QR code.
 _Avoid_: Invite link, booking link
+
+**Go-live minimum**:
+What a Unit needs before it goes live: approved Property, address, check-in time, check-in method and access instructions, checkout time, Wi-Fi or "no Wi-Fi", host phone, and every Info block's current revision published. Live is one-way.
+_Avoid_: Launch checklist
+
+**Property type**:
+Apartment, studio, house, villa, room or guesthouse; decides which setup questions a Host is asked.
+
+**Setup wizard**:
+The guided per-Unit form, one step per Guide section, each field marked Required, Recommended or Optional.
 
 ## Local knowledge
 

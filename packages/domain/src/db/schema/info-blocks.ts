@@ -52,6 +52,8 @@ export const infoBlocks = pgTable(
     replacesBlockId: uuid('replaces_block_id').references((): AnyPgColumn => infoBlocks.id, {
       onDelete: 'set null',
     }),
+    /** The wizard prompt this block answers (ticket 20); null for blocks written outside the wizard. */
+    wizardKey: text('wizard_key'),
     position: integer('position').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

@@ -4,3 +4,4 @@ export * from './sanitize';
 export * from './secrets';
 export * from './slug';
 export * from './vocabulary';
+export * from './wizard';

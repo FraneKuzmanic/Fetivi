@@ -1,4 +1,5 @@
 import { index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { guestLanguage } from './enums';
 
 export const accountRole = pgEnum('account_role', ['host', 'admin']);
 
@@ -10,6 +11,8 @@ export const accounts = pgTable('accounts', {
   role: accountRole('role').notNull(),
   emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
   suspendedAt: timestamp('suspended_at', { withTimezone: true }),
+  /** The back-office language this person reads the setup wizard in (ticket 20). */
+  uiLanguage: guestLanguage('ui_language').notNull().default('en'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

@@ -179,7 +179,12 @@ export async function login(
     token,
     principal: {
       sessionId: id,
-      account: { id: account.id, email: account.email, role: account.role },
+      account: {
+        id: account.id,
+        email: account.email,
+        role: account.role,
+        language: account.uiLanguage,
+      },
       actingAs: null,
     },
   };

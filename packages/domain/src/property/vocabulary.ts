@@ -44,6 +44,17 @@ export const PARKING_TYPES = [
 ] as const;
 export type ParkingType = (typeof PARKING_TYPES)[number];
 
+/** What kind of place the host rents. Drives which setup wizard questions are asked (ticket 20). */
+export const PROPERTY_TYPES = [
+  'apartment',
+  'studio',
+  'house',
+  'villa',
+  'room',
+  'guesthouse',
+] as const;
+export type PropertyType = (typeof PROPERTY_TYPES)[number];
+
 export const BED_TYPES = ['double', 'single', 'sofa_bed', 'bunk', 'crib'] as const;
 export type BedType = (typeof BED_TYPES)[number];
 export interface Bed {

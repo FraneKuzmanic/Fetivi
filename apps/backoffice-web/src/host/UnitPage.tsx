@@ -1,8 +1,15 @@
 import { BED_TYPES, type HostBlockCategory, LIMITS } from '@fetivi/domain/vocabulary';
-import { DownloadSimple, Plus, Trash } from '@phosphor-icons/react';
+import { CaretRight, DownloadSimple, Plus, Trash } from '@phosphor-icons/react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { type Block, host, type SecretWarning, type UnitDetail, type UnitPatch } from '../api';
+import {
+  type Block,
+  host,
+  type SecretWarning,
+  type UnitDetail,
+  type UnitPatch,
+  type WizardStatus,
+} from '../api';
 import { CheckboxField, NumberField, Section, SelectField, TextField } from '../forms/fields';
 import { BED_LABELS, CATEGORY_LABELS } from '../forms/labels';
 import { sectionBody } from '../forms/patch';
@@ -13,6 +20,9 @@ import { BlockList, preview } from './BlockList';
 import { CORE_SECTIONS, CoreField } from './CoreFields';
 import { TranslationChip } from './translations/TranslationChip';
 import { usePendingRefresh } from './translations/usePendingRefresh';
+import { CompletenessBar } from './wizard/CompletenessBar';
+import { useWizardCopy } from './wizard/copy';
+import { GoLivePanel } from './wizard/GoLivePanel';
 
 type Draft = Required<UnitPatch>;
 
@@ -29,13 +39,15 @@ export function UnitPage() {
   const { busy, error, run } = useAction();
   const [detail, setDetail] = useState<UnitDetail | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [status, setStatus] = useState<WizardStatus | null>(null);
 
   const load = useCallback(
     () =>
       run(async () => {
-        const fresh = await host.unit(id);
+        const [fresh, wizard] = await Promise.all([host.unit(id), host.wizard(id)]);
         setDetail(fresh);
         setDraft(fresh);
+        setStatus(wizard);
       }),
     [id, run],
   );
@@ -63,7 +75,11 @@ export function UnitPage() {
     setDraft((d) => (d ? { ...d, ...sectionBody(saved, keys) } : d));
   };
 
-  const refresh = async () => setDetail(await host.unit(id));
+  const refresh = async () => {
+    const [fresh, wizard] = await Promise.all([host.unit(id), host.wizard(id)]);
+    setDetail(fresh);
+    setStatus(wizard);
+  };
 
   return (
     <>
@@ -78,6 +94,19 @@ export function UnitPage() {
       {error ? <p role="alert">{error}</p> : null}
 
       <div className="editor">
+        {status ? (
+          <SetupPanels
+            status={status}
+            busy={busy}
+            onGoLive={() =>
+              void run(async () => {
+                await host.goLive(id);
+                await refresh();
+              })
+            }
+            onRefresh={async () => setStatus(await host.wizard(id))}
+          />
+        ) : null}
         <QrPanel detail={detail} />
         <StaysPanel detail={detail} />
 
@@ -248,12 +277,43 @@ export function UnitPage() {
   );
 }
 
+/** Completeness and the go-live checklist, in the viewer's back-office language. */
+function SetupPanels({
+  status,
+  busy,
+  onGoLive,
+  onRefresh,
+}: {
+  status: WizardStatus;
+  busy: boolean;
+  onGoLive: () => void;
+  onRefresh: () => Promise<void>;
+}) {
+  const { ui } = useWizardCopy();
+  const headingId = useId();
+  return (
+    <>
+      <section className="panel" aria-labelledby={headingId}>
+        <h2 id={headingId}>{ui.setup}</h2>
+        <CompletenessBar {...status.progress} />
+        <div className="actions">
+          <Link className="button primary" to={`/units/${status.unitId}/setup`}>
+            {ui.openWizard}
+            <CaretRight aria-hidden="true" />
+          </Link>
+        </div>
+      </section>
+      <GoLivePanel status={status} busy={busy} onGoLive={onGoLive} onRefresh={onRefresh} />
+    </>
+  );
+}
+
 function QrPanel({ detail }: { detail: UnitDetail }) {
   if (!detail.qrSlug || !detail.qrLink) {
     return (
       <section className="panel">
         <h2>QR code</h2>
-        <p className="muted">Issued after Fetivi approves the property.</p>
+        <p className="muted">Issued when the unit goes live.</p>
       </section>
     );
   }
@@ -298,7 +358,7 @@ function StaysPanel({ detail }: { detail: UnitDetail }) {
           </div>
         </>
       ) : (
-        <p className="muted">Stays can be registered once Fetivi approves the property.</p>
+        <p className="muted">Stays can be registered once the unit is live.</p>
       )}
     </section>
   );

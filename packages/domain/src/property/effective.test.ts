@@ -17,6 +17,7 @@ function property(overrides: Partial<PropertyRow> = {}): PropertyRow {
     id: 'p1',
     hostId: 'h1',
     name: 'Villa Mare',
+    propertyType: null,
     addressLine: 'Obala 1',
     city: 'Trogir',
     postalCode: '21220',
@@ -72,6 +73,7 @@ function block(overrides: Partial<BlockRow>): BlockRow {
     translationError: null,
     sourceLanguage: null,
     replacesBlockId: null,
+    wizardKey: null,
     position: 0,
     createdAt: new Date(at.getTime() + seq * 1000),
     updatedAt: at,
@@ -93,6 +95,12 @@ function input(overrides: Partial<EffectiveUnitInput> = {}): EffectiveUnitInput 
 }
 
 describe('effectiveUnit core fields', () => {
+  it('passes the property type through', () => {
+    expect(
+      effectiveUnit(input({ property: property({ propertyType: 'villa' }) })).propertyType,
+    ).toBe('villa');
+  });
+
   it('inherits a field the unit leaves null', () => {
     const e = effectiveUnit(input({ property: property({ checkInTime: '15:00:00' }) }));
     expect(e.checkInTime).toBe('15:00:00');

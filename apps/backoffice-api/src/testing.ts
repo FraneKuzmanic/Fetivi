@@ -143,3 +143,31 @@ export async function loginAs(t: TestApp, email: string, password = PASSWORD) {
   }
   return cookieFrom(response);
 }
+
+/** The property fields of the go-live minimum (ticket 20). */
+export const GO_LIVE_PROPERTY = {
+  addressLine: 'Obala 1',
+  city: 'Trogir',
+  checkInTime: '15:00',
+  checkoutTime: '10:00',
+  checkInMethod: 'lockbox',
+  accessInstructions: 'The key box is left of the blue gate.',
+  hostPhone: '+385 91 000 0000',
+} as const;
+
+/** Fills the go-live minimum of a unit with no blocks, so approval or go-live makes it live. */
+export async function fillGoLiveMinimum(
+  app: FastifyInstance,
+  cookie: string,
+  ids: { propertyId: string; unitId: string },
+) {
+  const property = await patch(
+    app,
+    `/api/host/properties/${ids.propertyId}`,
+    GO_LIVE_PROPERTY,
+    cookie,
+  );
+  if (property.statusCode !== 200) throw new Error(`property patch failed: ${property.body}`);
+  const unit = await patch(app, `/api/host/units/${ids.unitId}`, { noWifi: true }, cookie);
+  if (unit.statusCode !== 200) throw new Error(`unit patch failed: ${unit.body}`);
+}
