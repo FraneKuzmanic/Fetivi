@@ -1,4 +1,5 @@
 import { createDb } from '@fetivi/domain';
+import { noopQueue } from '@fetivi/domain/testing';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { loadConfig } from './config';
@@ -14,7 +15,7 @@ afterAll(async () => {
 
 describe('mcp-servers', () => {
   const config = loadConfig({});
-  const deps = { config, db, keys: keys.keys };
+  const deps = { config, db, keys: keys.keys, queue: noopQueue };
 
   it('answers /health for an allowed Host header', async () => {
     const app = buildApp(deps);
@@ -55,5 +56,14 @@ describe('mcp-servers', () => {
       GUEST_TOKEN_JWKS_URL: 'http://127.0.0.1:3000/.well-known/jwks.json',
     });
     expect(() => loadConfig({ GUEST_TOKEN_JWKS_URL: 'not a url' })).toThrow();
+  });
+
+  it('refuses the dev requestState secret, or a short one, in production', () => {
+    expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow('REQUEST_STATE_SECRET');
+    expect(() => loadConfig({ REQUEST_STATE_SECRET: 'short' })).toThrow();
+    const secret = 'x'.repeat(32);
+    expect(
+      loadConfig({ NODE_ENV: 'production', REQUEST_STATE_SECRET: secret }).REQUEST_STATE_SECRET,
+    ).toBe(secret);
   });
 });

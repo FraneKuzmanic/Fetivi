@@ -76,6 +76,9 @@ const placeSummary = z.object({
   ...placeBase,
   summary: z.string(),
   open: z.enum(['open', 'closed', 'unknown']).nullable(),
+  offerIds: z
+    .array(z.string())
+    .describe('Offers that can be arranged here through services; empty when none.'),
 });
 const placeDetail = z.object({
   ...placeBase,

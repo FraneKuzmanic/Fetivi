@@ -5,7 +5,13 @@ import type { Db } from '../db/client';
 import { accounts } from '../db/schema/accounts';
 import { catalogRecords, catalogTranslations, destinations } from '../db/schema/catalog';
 import { infoBlocks } from '../db/schema/info-blocks';
-import { allotmentSlots, offers, type ProviderRow, providers } from '../db/schema/offers';
+import {
+  allotmentSlots,
+  offers,
+  offerTranslations,
+  type ProviderRow,
+  providers,
+} from '../db/schema/offers';
 import { properties, units } from '../db/schema/properties';
 import { spaces } from '../db/schema/spaces';
 import type { StayRow } from '../db/schema/stays';
@@ -14,6 +20,7 @@ import type { JobQueue } from '../jobs/queue';
 import type {
   AvailabilityMode,
   ContactFields,
+  OfferCategory,
   OrderKind,
   PaymentMode,
   PriceUnit,
@@ -303,6 +310,12 @@ export interface SeedOrderableOfferOptions {
   priceUnit?: PriceUnit;
   /** In cents. Default 2500. */
   priceMinor?: number;
+  /** A catalog place in the Offer's destination. */
+  placeId?: string;
+  /** Default 'tour'. */
+  category?: OfferCategory;
+  /** Default 'Kayak tour'. */
+  title?: string;
 }
 
 /**
@@ -326,10 +339,11 @@ export async function seedOrderableOffer(
       providerId: options.providerId,
       destinationId,
       contactFields: options.contactFields,
-      title: 'Kayak tour',
+      placeId: options.placeId,
+      title: options.title ?? 'Kayak tour',
       description: 'Around the islands.',
       cancellationPolicy: 'Free until 24 hours before.',
-      category: 'tour',
+      category: options.category ?? 'tour',
       orderKind,
       availabilityMode,
       paymentMode: options.paymentMode ?? 'direct',
@@ -350,4 +364,28 @@ export async function seedOrderableOffer(
     .returning();
   if (!slot) throw new Error('no slot');
   return { offerId: offer.id, slotId: slot.id };
+}
+
+/** Test-only: publishes an Offer in every guest language as if its translation job had run. */
+export async function publishOffer(db: Db, offerId: string): Promise<void> {
+  const [offer] = await db.select().from(offers).where(eq(offers.id, offerId));
+  if (!offer) throw new Error('no offer');
+  await db
+    .insert(offerTranslations)
+    .values(
+      GUEST_LANGUAGES.map((l) => ({
+        offerId: offer.id,
+        revision: offer.revision,
+        language: l,
+        title: `[${l}] ${offer.title}`,
+        body: offer.description,
+        cancellationPolicy: offer.cancellationPolicy,
+        origin: l === 'en' ? ('source' as const) : ('machine' as const),
+      })),
+    )
+    .onConflictDoNothing();
+  await db
+    .update(offers)
+    .set({ publishedRevision: offer.revision, translationStatus: 'published' })
+    .where(eq(offers.id, offer.id));
 }

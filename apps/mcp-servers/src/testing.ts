@@ -1,6 +1,8 @@
 import type { AddressInfo } from 'node:net';
 import {
+  createJobQueue,
   type Db,
+  ensureQueues,
   GUEST_LANGUAGES,
   GUEST_TOKEN_ALG,
   GUEST_TOKEN_TTL_SECONDS,
@@ -12,7 +14,7 @@ import {
   type SpaceContext,
   serverUrl,
 } from '@fetivi/domain';
-import { createTestDatabase, type TestDatabase } from '@fetivi/domain/testing';
+import { createTestDatabase, noopQueue, type TestDatabase } from '@fetivi/domain/testing';
 import { createMcpFastifyApp } from '@modelcontextprotocol/fastify';
 import { McpServer } from '@modelcontextprotocol/server';
 import type { FastifyInstance } from 'fastify';
@@ -24,6 +26,7 @@ import {
   type JWTVerifyGetKey,
   SignJWT,
 } from 'jose';
+import { PgBoss } from 'pg-boss';
 import { z } from 'zod';
 import { buildApp, mountServers } from './app';
 import { loadConfig } from './config';
@@ -32,6 +35,8 @@ import { SERVER_VERSION } from './servers/version';
 
 export const TEST_BASE = 'http://mcp.test';
 export const TEST_ISSUER = 'http://chat.test';
+/** The fixed test HMAC key of the elicitation `requestState`. */
+export const TEST_REQUEST_STATE_SECRET = 'test-request-state-secret-0123456789abcdef';
 
 export interface TestKeys {
   privateKey: CryptoKey;
@@ -90,6 +95,8 @@ export interface TestServer {
   db: Db;
   testDb: TestDatabase;
   keys: TestKeys;
+  /** Send-only, on the test database: jobs the Order machine enqueues land in `pgboss.job`. */
+  boss: PgBoss;
   /** Set when started with `listen: true`. */
   url: string;
   close: () => Promise<void>;
@@ -101,8 +108,22 @@ export async function createTestServer(
 ): Promise<TestServer> {
   const testDb = await createTestDatabase();
   const keys = await createTestKeys();
-  const config = loadConfig({ MCP_PUBLIC_URL: TEST_BASE, GUEST_TOKEN_ISSUER: TEST_ISSUER });
-  const app = buildApp({ config, db: testDb.db, keys: keys.keys, now: options.now });
+  const boss = new PgBoss({ connectionString: testDb.url, supervise: false, schedule: false });
+  boss.on('error', console.error);
+  await boss.start();
+  await ensureQueues(boss);
+  const config = loadConfig({
+    MCP_PUBLIC_URL: TEST_BASE,
+    GUEST_TOKEN_ISSUER: TEST_ISSUER,
+    REQUEST_STATE_SECRET: TEST_REQUEST_STATE_SECRET,
+  });
+  const app = buildApp({
+    config,
+    db: testDb.db,
+    keys: keys.keys,
+    queue: createJobQueue(boss),
+    now: options.now,
+  });
   let url = '';
   if (options.listen) {
     await app.listen({ host: '127.0.0.1', port: 0 });
@@ -115,9 +136,11 @@ export async function createTestServer(
     db: testDb.db,
     testDb,
     keys,
+    boss,
     url,
     close: async () => {
       await app.close();
+      await boss.stop({ graceful: false, timeout: 1000 });
       await testDb.drop();
     },
   };
@@ -138,10 +161,22 @@ export function mcpPost(app: FastifyInstance, path: string, token: string | null
   });
 }
 
-/** The four servers as buildApp mounts them, for other apps' tests; `overrides` swaps a server. */
-export function buildMcpTestApp(opts: Parameters<typeof mountServers>[1]): FastifyInstance {
+type MountOptions = Parameters<typeof mountServers>[1];
+
+/**
+ * The four servers as buildApp mounts them, for other apps' tests; `overrides` swaps a server.
+ * Jobs are dropped and the requestState key is fixed unless given.
+ */
+export function buildMcpTestApp(
+  opts: Omit<MountOptions, 'queue' | 'requestStateSecret'> &
+    Partial<Pick<MountOptions, 'queue' | 'requestStateSecret'>>,
+): FastifyInstance {
   const app = createMcpFastifyApp({ host: '127.0.0.1', allowedHosts: ['127.0.0.1', 'localhost'] });
-  mountServers(app, opts);
+  mountServers(app, {
+    queue: noopQueue,
+    requestStateSecret: TEST_REQUEST_STATE_SECRET,
+    ...opts,
+  });
   return app;
 }
 

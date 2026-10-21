@@ -5,9 +5,14 @@ import {
   createTestDatabase,
   noopQueue,
   publishCatalog,
+  publishOffer,
   type SeededGuestUnit,
+  seedDestination,
   seedGuestUnit,
+  seedOrderableOffer,
+  seedProvider,
   type TestDatabase,
+  TROGIR,
 } from '../testing';
 import { fromLocalDateTime } from '../time';
 import {
@@ -357,5 +362,94 @@ describe('recommendation counter', () => {
     const days = (await testDb.db.select().from(catalogRecommendations)).map((r) => r.day);
     expect(days.length).toBeGreaterThan(0);
     for (const d of days) expect(d).toBe('2027-07-11');
+  });
+});
+
+describe('bookable boost', () => {
+  let dest: string;
+  const place = async (title: string, location = TROGIR) => {
+    const [r] = await testDb.db
+      .insert(catalogRecords)
+      .values({
+        destinationId: dest,
+        kind: 'place',
+        placeCategory: 'beach',
+        title,
+        description: 'A cove.',
+        location,
+      })
+      .returning();
+    if (!r) throw new Error('no place');
+    return r.id;
+  };
+  const linkProvider = async (
+    placeId: string,
+    opts: { commissionBp?: number; destinationId?: string } = {},
+  ) => {
+    const provider = await seedProvider(testDb.db, { commissionBp: opts.commissionBp ?? 0 });
+    const { offerId } = await seedOrderableOffer(testDb.db, {
+      providerId: provider.id,
+      destinationId: opts.destinationId ?? dest,
+      availabilityMode: 'on_request',
+      placeId,
+    });
+    await publishOffer(testDb.db, offerId);
+    return offerId;
+  };
+  const search = () =>
+    searchPlaces(testDb.db, scopeOf(summerGuest, { destinationId: dest }), { limit: 10 }, SUMMER);
+  const order = async () => (await search())?.results.map((p) => p.id) ?? [];
+
+  beforeAll(async () => {
+    dest = await seedDestination(testDb.db);
+  });
+
+  it('puts the bookable one of two equal places first, with offerIds', async () => {
+    const a = await place('Twin A');
+    const b = await place('Twin B');
+    await publishCatalog(testDb.db, dest);
+    const [, second] = await order();
+    const other = second === a ? b : a;
+    const offerId = await linkProvider(second as string);
+    const results = (await search())?.results ?? [];
+    expect(results[0]?.id).toBe(second);
+    expect(results[0]?.offerIds).toEqual([offerId]);
+    expect(results.find((p) => p.id === other)?.offerIds).toEqual([]);
+  });
+
+  it('never lifts a clearly worse fit, and ignores other hosts and destinations', async () => {
+    const near = await place('Near', TROGIR);
+    const far = await place('Far', { x: TROGIR.x + 0.37, y: TROGIR.y });
+    await publishCatalog(testDb.db, dest);
+    await linkProvider(far);
+    const ids = await order();
+    expect(ids.indexOf(near)).toBeLessThan(ids.indexOf(far));
+
+    const elsewhere = await seedDestination(testDb.db);
+    const outsider = await place('Outsider', TROGIR);
+    await publishCatalog(testDb.db, dest);
+    await linkProvider(outsider, { destinationId: elsewhere });
+    const neighbour = await seedGuestUnit(testDb.db, { now: SUMMER });
+    const { offerId } = await seedOrderableOffer(testDb.db, {
+      hostId: neighbour.hostId,
+      availabilityMode: 'on_request',
+      placeId: outsider,
+    });
+    await publishOffer(testDb.db, offerId);
+    const results = (await search())?.results ?? [];
+    expect(results.find((p) => p.id === outsider)?.offerIds).toEqual([]);
+  });
+
+  it('gives the same position for a high- and a zero-commission Offer', async () => {
+    const solo = await seedDestination(testDb.db);
+    dest = solo;
+    const x = await place('Commission X');
+    const y = await place('Commission Y');
+    await publishCatalog(testDb.db, dest);
+    const before = await order();
+    await linkProvider(x, { commissionBp: 9000 });
+    await linkProvider(y, { commissionBp: 0 });
+    expect(await order()).toEqual(before);
+    expect(before.sort()).toEqual([x, y].sort());
   });
 });

@@ -15,6 +15,7 @@ import {
 } from '../db/schema/catalog';
 import { properties, units } from '../db/schema/properties';
 import { stays } from '../db/schema/stays';
+import { offerIdsByPlace } from '../offers/guest';
 import type { GuestLanguage } from '../property/vocabulary';
 import { type CivilDate, toLocalDateTime } from '../time';
 import { inSeason, monthDayOf, type OpenState, openStateAt } from './calendar';
@@ -85,6 +86,8 @@ export interface PlaceSummary {
   verifiedAt: string | null;
   staleness: CatalogStaleness;
   sources: CatalogSource[];
+  /** In-scope Offers that can be arranged here; non-empty is the "arrange it here" marker. */
+  offerIds: string[];
 }
 
 export interface PlaceQuery {
@@ -103,7 +106,7 @@ export interface PlaceSearch {
   results: PlaceSummary[];
 }
 
-export interface PlaceDetail extends Omit<PlaceSummary, 'open' | 'summary'> {
+export interface PlaceDetail extends Omit<PlaceSummary, 'open' | 'summary' | 'offerIds'> {
   /** Full translated Markdown. */
   description: string;
   seasons: { from: string; to: string }[];
@@ -391,17 +394,24 @@ export async function searchPlaces(
     rows.map((r) => r.id),
   );
   const md = monthDayOf(date);
+  const offerIds = await offerIdsByPlace(
+    db,
+    { destinationId: scope.destinationId, propertyId: scope.propertyId, language: scope.language },
+    rows.map((r) => r.id),
+  );
   const candidates = rows.flatMap((r) => {
     if (!inSeason(byRecord(seasons, r.id), md)) return [];
     const open = q.openAt ? openStateAt(byRecord(hours, r.id), date, q.openAt) : null;
     if (open === 'closed') return [];
     const base = placeBaseOf(r, now);
     const image = images.find((i) => i.recordId === r.id);
+    const bookableHere = offerIds.get(r.id) ?? [];
     const summary: PlaceSummary = {
       ...base,
       summary: summaryOf(r.body),
       image: image ? imageOf(image) : null,
       open,
+      offerIds: bookableHere,
     };
     return [
       {
@@ -411,6 +421,8 @@ export async function searchPlaces(
         textScore: r.textScore === null ? null : Number(r.textScore),
         staleness: base.staleness.status,
         distanceM: r.distanceM === null ? null : Number(r.distanceM),
+        // Only candidates that passed every filter above get here: the boost is among results that fit.
+        bookable: bookableHere.length > 0,
       },
     ];
   });

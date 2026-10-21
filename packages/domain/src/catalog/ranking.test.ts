@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type RankCandidate, rankPlaces } from './ranking';
+import { BOOKABLE_BOOST, type RankCandidate, rankPlaces, scoreOf } from './ranking';
 
 const candidate = (over: Partial<RankCandidate> & { id: string }): RankCandidate => ({
   category: 'sight',
@@ -69,5 +69,44 @@ describe('rankPlaces', () => {
   it('breaks exact ties by id', () => {
     const list = [candidate({ id: 'z' }), candidate({ id: 'a' }), candidate({ id: 'm' })];
     expect(ids(rankPlaces(list, null))).toEqual(['a', 'm', 'z']);
+  });
+});
+
+describe('bookable boost', () => {
+  it('puts the bookable one of two equal places first', () => {
+    const list = [candidate({ id: 'a' }), candidate({ id: 'b', bookable: true })];
+    expect(ids(rankPlaces(list, null))).toEqual(['b', 'a']);
+  });
+
+  it('breaks a near-tie: a slightly farther bookable place goes first', () => {
+    const list = [
+      candidate({ id: 'near', distanceM: 1000 }),
+      candidate({ id: 'bookable', distanceM: 1500, bookable: true }),
+    ];
+    expect(ids(rankPlaces(list, null))).toEqual(['bookable', 'near']);
+  });
+
+  it('never overtakes a clearly better match', () => {
+    const list = [
+      candidate({ id: 'match', textScore: 0.9 }),
+      candidate({ id: 'bookable', textScore: 0.6, bookable: true }),
+    ];
+    expect(ids(rankPlaces(list, null))).toEqual(['match', 'bookable']);
+  });
+
+  it('never overtakes a fresh place with a never-verified one', () => {
+    const list = [
+      candidate({ id: 'fresh' }),
+      candidate({ id: 'bookable', staleness: 'never_verified', bookable: true }),
+    ];
+    expect(ids(rankPlaces(list, null))).toEqual(['fresh', 'bookable']);
+  });
+
+  it('adds exactly BOOKABLE_BOOST, and nothing when unset or false', () => {
+    const base = candidate({ id: 'x', textScore: 0.7 });
+    expect(scoreOf({ ...base, bookable: true }, null) - scoreOf(base, null)).toBeCloseTo(
+      BOOKABLE_BOOST,
+    );
+    expect(scoreOf({ ...base, bookable: false }, null)).toBe(scoreOf(base, null));
   });
 });

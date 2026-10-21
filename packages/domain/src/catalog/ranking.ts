@@ -12,10 +12,18 @@ export interface RankCandidate {
   textScore: number | null;
   staleness: StalenessStatus;
   distanceM: number | null;
+  /** Linked to an Offer the guest may arrange here. */
+  bookable?: boolean;
 }
 
-/** Fit first (request, then About me), then quality, then distance. No bookable boost yet (16); never commission. */
+/** Fit first (request, then About me), then quality, then distance. */
 export const RANKING_WEIGHTS = { text: 0.5, aboutMe: 0.2, quality: 0.2, proximity: 0.1 } as const;
+
+/**
+ * Bookable only breaks near-ties: never more than BOOKABLE_BOOST, the same for every Offer, and
+ * never commission (the ranking has no commission input at all).
+ */
+export const BOOKABLE_BOOST = 0.05;
 
 const QUALITY: Record<StalenessStatus, number> = {
   fresh: 1,
@@ -35,7 +43,8 @@ export function scoreOf(c: RankCandidate, aboutMe: AboutMeFit | null): number {
     w.text * (c.textScore ?? 0) +
     w.aboutMe * clamp01(aboutMe?.categoryWeights[c.category] ?? 0) +
     w.quality * QUALITY[c.staleness] +
-    w.proximity * proximity(c.distanceM)
+    w.proximity * proximity(c.distanceM) +
+    (c.bookable ? BOOKABLE_BOOST : 0)
   );
 }
 
