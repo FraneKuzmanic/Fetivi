@@ -121,7 +121,7 @@ export async function runTurn(
       startedAt,
     );
     const history = await loadMessages(db, conversation.id);
-    const meNote = aboutMeNote(await getAboutMe(db, spaceId), conversation.aboutMeNote);
+    const aboutMeText = aboutMeNote(await getAboutMe(db, spaceId), conversation.aboutMeNote);
 
     const note = situationNote({
       now: startedAt,
@@ -133,7 +133,7 @@ export async function runTurn(
     const notes = [
       projectionChangeNote(conversation.projection, projection),
       note === conversation.situationNote ? null : note,
-      meNote === conversation.aboutMeNote ? null : meNote,
+      aboutMeText === conversation.aboutMeNote ? null : aboutMeText,
     ].filter((n) => n !== null);
     // Anthropic takes a mid-conversation system message only right after a user message, and not
     // two in a row: so the notes go after the guest's text, joined into one message.
@@ -170,7 +170,7 @@ export async function runTurn(
         messages: [...newMessages, responseMessage].map(toRow),
         projection,
         situationNote: note,
-        aboutMeNote: meNote ?? conversation.aboutMeNote,
+        aboutMeNote: aboutMeText ?? conversation.aboutMeNote,
         now: deps.now(),
       });
       await recordTurnMetrics(db, {

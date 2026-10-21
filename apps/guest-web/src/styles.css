@@ -40,6 +40,11 @@ html {
   scroll-padding-bottom: calc(var(--tabbar) + 2.5rem);
 }
 
+/* In Chat the composer sits above the tab bar too. */
+html:has(.composer) {
+  scroll-padding-bottom: calc(var(--tabbar) + 6rem);
+}
+
 body {
   margin: 0;
   font-family: var(--font);
@@ -666,7 +671,8 @@ input {
   align-self: flex-start;
 }
 
-.about-me-closed {
+.about-me-closed,
+.about-me-not-set {
   color: var(--gray-500);
 }
 

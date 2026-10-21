@@ -446,8 +446,11 @@ describe('About me in the conversation', () => {
     await send(t, cookie, 'We eat halal, remember that');
     const { rows } = await stored(t, space.space.id);
     const part = rows.flatMap((r) => r.parts).find((p) => p.type === 'tool-update_about_me');
-    expect(part).toBeDefined();
-    expect(part?.state).not.toBe('output-available');
+    expect(part).toMatchObject({ state: 'output-error' });
+    // The cause is the tool's strict input schema, and the model is told so.
+    expect(JSON.stringify(model.doStreamCalls[1]?.prompt.at(-1))).toContain(
+      'Invalid arguments for tool update_about_me: Unrecognized key: \\"needs\\"',
+    );
     const read = await get(t.app, '/api/about-me', cookie);
     expect(read.json()).toMatchObject({ aboutMe: { needs: [] } });
   });

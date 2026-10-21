@@ -10,6 +10,42 @@ import { isMultiple, labelKey, STEPS, type Step, TripFlow, valuesOf, withValues 
 
 type Load = { status: 'loading' } | { status: 'offline' } | { status: 'ready'; value: AboutMe };
 
+/**
+ * Saves whole About me values one after another, in tap order. Every save carries all earlier
+ * changes, so only the newest one decides what the screen shows once it settles: the server's value,
+ * or the last confirmed one if it failed. An older failure followed by a newer save changes nothing.
+ */
+export function saveQueue(
+  send: (value: AboutMe) => Promise<AboutMe>,
+  settle: (shown: AboutMe | null, failed: boolean) => void,
+) {
+  let chain = Promise.resolve();
+  let latest = 0;
+  let confirmed: AboutMe | null = null;
+  return {
+    /** Records a value the server is known to hold (a load, or the flow's own saves). */
+    confirm(value: AboutMe) {
+      confirmed = value;
+    },
+    save(next: AboutMe): Promise<void> {
+      latest += 1;
+      const id = latest;
+      chain = chain.then(() =>
+        send(next).then(
+          (value) => {
+            confirmed = value;
+            if (id === latest) settle(value, false);
+          },
+          () => {
+            if (id === latest) settle(confirmed, true);
+          },
+        ),
+      );
+      return chain;
+    },
+  };
+}
+
 /** Everything kept about this Space's guests, each item changeable and removable. */
 export function AboutMePage({ initial }: { initial?: AboutMe }) {
   const { t } = useTranslation();
@@ -22,20 +58,25 @@ export function AboutMePage({ initial }: { initial?: AboutMe }) {
   const [editing, setEditing] = useState<Step['field'] | null>(null);
   const [flow, setFlow] = useState(false);
   const [failed, setFailed] = useState(false);
-  // The last value the server confirmed, and the chain that keeps saves in tap order.
-  const confirmed = useRef<AboutMe | null>(initial ?? null);
-  const queue = useRef<Promise<void>>(Promise.resolve());
+  const [queue] = useState(() => {
+    const q = saveQueue(saveAboutMe, (shown, failed) => {
+      if (shown) setLoad({ status: 'ready', value: shown });
+      setFailed(failed);
+    });
+    if (initial) q.confirm(initial);
+    return q;
+  });
 
   const fetchValue = useCallback(() => {
     setLoad({ status: 'loading' });
     getAboutMe().then(
       (value) => {
-        confirmed.current = value;
+        queue.confirm(value);
         setLoad({ status: 'ready', value });
       },
       () => setLoad({ status: 'offline' }),
     );
-  }, []);
+  }, [queue]);
 
   useEffect(() => {
     if (!initial) fetchValue();
@@ -47,17 +88,7 @@ export function AboutMePage({ initial }: { initial?: AboutMe }) {
   const save = (next: AboutMe) => {
     setFailed(false);
     setLoad({ status: 'ready', value: next });
-    queue.current = queue.current.then(() =>
-      saveAboutMe(next).then(
-        (value) => {
-          confirmed.current = value;
-        },
-        () => {
-          if (confirmed.current) setLoad({ status: 'ready', value: confirmed.current });
-          setFailed(true);
-        },
-      ),
-    );
+    void queue.save(next);
   };
 
   let body: ReactNode;
@@ -76,7 +107,7 @@ export function AboutMePage({ initial }: { initial?: AboutMe }) {
       <TripFlow
         initial={load.value}
         onFinish={(value) => {
-          confirmed.current = value;
+          queue.confirm(value);
           setLoad({ status: 'ready', value });
           setFlow(false);
           heading.current?.focus();
@@ -176,28 +207,28 @@ function FieldSection({
           multiple={isMultiple(step.field)}
           onChange={set}
         />
+      ) : codes.length === 0 ? (
+        <p className="about-me-not-set">{t('aboutMe.notSet')}</p>
       ) : (
-        codes.length > 0 && (
-          <ul className="about-me-items">
-            {codes.map((code) => (
-              <li key={code}>
-                <span>{labelOf(code)}</span>
-                <button
-                  type="button"
-                  className="icon-button about-me-remove"
-                  aria-label={t('aboutMe.remove', { item: labelOf(code) })}
-                  onClick={() => {
-                    set(codes.filter((c) => c !== code));
-                    // The button is about to go: keep the reading position in this section.
-                    heading.current?.focus();
-                  }}
-                >
-                  <X aria-hidden="true" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )
+        <ul className="about-me-items">
+          {codes.map((code) => (
+            <li key={code}>
+              <span>{labelOf(code)}</span>
+              <button
+                type="button"
+                className="icon-button about-me-remove"
+                aria-label={t('aboutMe.remove', { item: labelOf(code) })}
+                onClick={() => {
+                  set(codes.filter((c) => c !== code));
+                  // The button is about to go: keep the reading position in this section.
+                  heading.current?.focus();
+                }}
+              >
+                <X aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );

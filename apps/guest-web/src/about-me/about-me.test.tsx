@@ -15,8 +15,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { Space } from '../api';
 import { locales, setLanguage } from '../i18n';
 import { SpaceProvider } from '../space';
-import { AboutMePage } from './AboutMePage';
-import { ChoiceGroup } from './ChoiceGroup';
+import { AboutMePage, saveQueue } from './AboutMePage';
+import { ChoiceGroup, radioMove } from './ChoiceGroup';
 import { STEPS, TripFlow } from './TripFlow';
 
 afterEach(() => setLanguage('en'));
@@ -78,6 +78,31 @@ describe('ChoiceGroup', () => {
     expect(multi.match(/aria-pressed="true"/g)).toHaveLength(2);
     expect(multi).not.toContain('role="radio"');
   });
+
+  it('makes a radio group one Tab stop: the chosen option, else the first', () => {
+    const tabStops = (selected: string[]) =>
+      render(
+        <ChoiceGroup
+          labelId="q"
+          codes={PACES}
+          labelOf={(c) => c}
+          selected={selected as never}
+          multiple={false}
+          onChange={() => {}}
+        />,
+      ).match(/tabindex="(-1|0)"/g);
+    expect(tabStops(['mixed'])).toEqual(['tabindex="-1"', 'tabindex="0"', 'tabindex="-1"']);
+    expect(tabStops([])).toEqual(['tabindex="0"', 'tabindex="-1"', 'tabindex="-1"']);
+  });
+
+  it('moves through a radio group with the arrow keys, wrapping at the ends', () => {
+    expect(radioMove('ArrowRight', 0, 3)).toBe(1);
+    expect(radioMove('ArrowDown', 2, 3)).toBe(0);
+    expect(radioMove('ArrowLeft', 0, 3)).toBe(2);
+    expect(radioMove('ArrowUp', 1, 3)).toBe(0);
+    expect(radioMove('Tab', 1, 3)).toBeNull();
+    expect(radioMove('Enter', 1, 3)).toBeNull();
+  });
 });
 
 describe('TripFlow', () => {
@@ -110,7 +135,7 @@ describe('TripFlow', () => {
   });
 
   it('ends on needs under the one-line note, with Back and Done', () => {
-    const out = render(<TripFlow initial={FULL} step={4} onFinish={() => {}} />);
+    const out = render(<TripFlow initial={FULL} startStep={4} onFinish={() => {}} />);
     expect(out).toContain('Question 5 of 5');
     expect(out).toContain(html(en.aboutMe.needsTitle));
     expect(out).toContain(html(en.aboutMe.needsNote));
@@ -149,9 +174,18 @@ describe('AboutMePage', () => {
     expect(out).not.toContain(html(en.aboutMe.budgetTitle));
   });
 
+  it('says so for a question not answered yet', () => {
+    const out = render(<AboutMePage initial={{ ...FULL, pace: null }} />);
+    expect(out.match(new RegExp(`>${html(en.aboutMe.notSet)}<`, 'g'))).toHaveLength(1);
+    expect(out.indexOf(html(en.aboutMe.notSet))).toBeGreaterThan(
+      out.indexOf(html(en.aboutMe.paceTitle)),
+    );
+  });
+
   it('invites the guest to start when nothing is saved', () => {
     const out = render(<AboutMePage initial={EMPTY_ABOUT_ME} />);
     expect(out).toContain(html(en.aboutMe.empty));
+    expect(out.match(new RegExp(`>${html(en.aboutMe.notSet)}<`, 'g'))).toHaveLength(5);
     expect(out).toContain(`>${html(en.aboutMe.start)}<`);
     expect(out).not.toContain('aria-label="Remove');
     expect(out.match(/>Change</g)).toHaveLength(5);
@@ -164,5 +198,62 @@ describe('AboutMePage', () => {
         html(locales[language].aboutMe.title),
       );
     }
+  });
+});
+
+describe('saveQueue', () => {
+  const value = (budget: AboutMe['budget']): AboutMe => ({ ...EMPTY_ABOUT_ME, budget });
+  type Pending = { next: AboutMe; resolve: (v: AboutMe) => void; reject: () => void };
+
+  const setup = () => {
+    const pending: Pending[] = [];
+    const settled: [AboutMe | null, boolean][] = [];
+    const queue = saveQueue(
+      (next) =>
+        new Promise<AboutMe>((resolve, reject) =>
+          pending.push({ next, resolve, reject: () => reject(new Error('offline')) }),
+        ),
+      (shown, failed) => settled.push([shown, failed]),
+    );
+    queue.confirm(value(null));
+    // Lets the chain reach the next send.
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    return { pending, settled, queue, tick };
+  };
+
+  it('sends saves one at a time, in tap order', async () => {
+    const { pending, queue, tick } = setup();
+    void queue.save(value('simple'));
+    void queue.save(value('mid'));
+    await tick();
+    expect(pending.map((p) => p.next.budget)).toEqual(['simple']);
+    pending[0]?.resolve(value('simple'));
+    await tick();
+    expect(pending.map((p) => p.next.budget)).toEqual(['simple', 'mid']);
+  });
+
+  it('puts the confirmed value back when the newest save fails', async () => {
+    const { pending, settled, queue, tick } = setup();
+    void queue.save(value('simple'));
+    await tick();
+    pending[0]?.reject();
+    await tick();
+    expect(settled).toEqual([[value(null), true]]);
+  });
+
+  it('keeps an older failed change that a newer save stored after all', async () => {
+    const { pending, settled, queue, tick } = setup();
+    const a = { ...value(null), pace: 'easy' as const };
+    const b = { ...a, budget: 'mid' as const };
+    void queue.save(a);
+    void queue.save(b);
+    await tick();
+    pending[0]?.reject();
+    await tick();
+    // The older failure does not roll the screen back while a newer save is on its way.
+    expect(settled).toEqual([]);
+    pending[1]?.resolve(b);
+    await tick();
+    expect(settled).toEqual([[b, false]]);
   });
 });

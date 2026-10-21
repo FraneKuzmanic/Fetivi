@@ -67,6 +67,7 @@ export const en = {
     empty: "You haven't told me about your trip yet.",
     start: 'Tell me about your trip',
     change: 'Change',
+    notSet: 'Not set yet',
     done: 'Done',
     remove: 'Remove {{item}}',
     closedNote: 'Your stay has ended. You can still remove anything here.',

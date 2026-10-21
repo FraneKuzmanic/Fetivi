@@ -69,6 +69,7 @@ export const pl: Messages = {
     empty: 'Nie opowiedziałeś mi jeszcze o swojej podróży.',
     start: 'Opowiedz mi o swojej podróży',
     change: 'Zmień',
+    notSet: 'Jeszcze nie podano',
     done: 'Gotowe',
     remove: 'Usuń: {{item}}',
     closedNote: 'Twój pobyt się zakończył. Nadal możesz tu wszystko usunąć.',

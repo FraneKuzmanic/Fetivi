@@ -71,6 +71,7 @@ export const de: Messages = {
     empty: 'Sie haben mir noch nichts über Ihre Reise erzählt.',
     start: 'Erzählen Sie mir von Ihrer Reise',
     change: 'Ändern',
+    notSet: 'Noch nicht angegeben',
     done: 'Fertig',
     remove: '{{item}} entfernen',
     closedNote: 'Ihr Aufenthalt ist beendet. Sie können hier weiterhin alles entfernen.',

@@ -70,6 +70,7 @@ export const fr: Messages = {
     empty: 'Vous ne m’avez pas encore parlé de votre voyage.',
     start: 'Parlez-moi de votre voyage',
     change: 'Modifier',
+    notSet: 'Pas encore indiqué',
     done: 'Terminé',
     remove: 'Retirer {{item}}',
     closedNote: 'Votre séjour est terminé. Vous pouvez encore tout retirer ici.',

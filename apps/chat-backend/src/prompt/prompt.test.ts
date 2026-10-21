@@ -80,6 +80,12 @@ describe('system text', () => {
     expect(buildSystemText(structuredClone(projection))).toBe(a);
   });
 
+  it('points guests to About me where the header actually has it', () => {
+    // The header has a single person icon; the menu comes later (ticket 26).
+    expect(INSTRUCTIONS).toContain('under About me, the person icon at the top of the screen.');
+    expect(INSTRUCTIONS).not.toContain('menu');
+  });
+
   it('puts the cache breakpoint on its single block', () => {
     expect(systemInstructions('text')).toEqual([
       {

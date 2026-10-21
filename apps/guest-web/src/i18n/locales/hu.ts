@@ -69,6 +69,7 @@ export const hu: Messages = {
     empty: 'Még nem meséltél az utazásodról.',
     start: 'Mesélj az utazásodról',
     change: 'Módosítás',
+    notSet: 'Még nincs megadva',
     done: 'Kész',
     remove: '{{item}} törlése',
     closedNote: 'A tartózkodásod véget ért. Itt továbbra is bármit törölhetsz.',

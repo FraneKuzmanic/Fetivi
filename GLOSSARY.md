@@ -113,3 +113,11 @@ _Avoid_: guest view, public record
 **Conversation**:
 One Space's ongoing chat with Fetivi: the guest's messages, Fetivi's answers and the notes that tell the model what changed. Each Space has exactly one, read-only once the Space closes.
 _Avoid_: chat session, thread
+
+**About me**:
+What a Space's guests chose to share about their trip — who is travelling, interests, pace, budget feel and Needs — kept per Space, always visible to them, and changeable and removable by them. Fetivi may save the ordinary preferences it hears in the Conversation; it never saves a Need.
+_Avoid_: profile, preferences, persona
+
+**Need**:
+A special-category About me item (diet for health or religious reasons, accessibility). Stored only when the guest taps it in themselves; a Need Fetivi only heard about is used in that Conversation and never saved.
+_Avoid_: restriction, requirement

@@ -69,6 +69,7 @@ export const hr: Messages = {
     empty: 'Još mi niste ništa rekli o svom putovanju.',
     start: 'Recite mi o svom putovanju',
     change: 'Promijeni',
+    notSet: 'Još nije postavljeno',
     done: 'Gotovo',
     remove: 'Ukloni: {{item}}',
     closedNote: 'Vaš boravak je završio. Ovdje i dalje možete bilo što ukloniti.',

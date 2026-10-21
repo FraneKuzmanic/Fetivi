@@ -116,8 +116,8 @@ export async function replaceAboutMe(
 ): Promise<AboutMe> {
   return writeAboutMe(db, spaceId, now, (current) => {
     if (opts.removalsOnly) {
-      const keptOrCleared = <T>(was: T | null, now: T | null) => now === null || now === was;
-      const subset = <T>(was: readonly T[], now: readonly T[]) => now.every((c) => was.includes(c));
+      const keptOrCleared = <T>(was: T | null, is: T | null) => is === null || is === was;
+      const subset = <T>(was: readonly T[], is: readonly T[]) => is.every((c) => was.includes(c));
       const ok =
         keptOrCleared(current.party, next.party) &&
         keptOrCleared(current.pace, next.pace) &&

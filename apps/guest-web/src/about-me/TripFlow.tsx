@@ -68,27 +68,28 @@ type Load = { status: 'loading' } | { status: 'offline' } | { status: 'ready'; s
 export function TripFlow({
   onFinish,
   initial,
-  step: initialStep = 0,
+  startStep = 0,
 }: {
   /** Called once after the last question with the saved value. */
   onFinish: (aboutMe: AboutMe) => void;
   /** Tests start from a known value; the app loads it. */
   initial?: AboutMe;
   /** Tests open a given question (0–4). */
-  step?: number;
+  startStep?: number;
 }) {
   const { t } = useTranslation();
   const [load, setLoad] = useState<Load>(
     initial ? { status: 'ready', saved: initial } : { status: 'loading' },
   );
-  const [index, setIndex] = useState(initialStep);
+  const [index, setIndex] = useState(startStep);
   const [selection, setSelection] = useState<string[]>(() =>
-    initial ? valuesOf(initial, STEPS[initialStep]?.field ?? 'party') : [],
+    initial ? valuesOf(initial, STEPS[startStep]?.field ?? 'party') : [],
   );
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   const titleId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
+  const question = useRef<HTMLElement>(null);
   const thanks = useRef<HTMLDivElement>(null);
   const fetchSaved = useCallback(() => {
     setLoad({ status: 'loading' });
@@ -106,12 +107,15 @@ export function TripFlow({
   }, [initial, fetchSaved]);
 
   // The flow opens on a tap, and each new question (and the thanks) starts the reading position
-  // at its heading.
+  // at its heading. The whole question is then brought into view, so its options and buttons are
+  // not left below the screen (or under the composer).
   const ready = load.status === 'ready';
   useEffect(() => {
     if (!ready) return;
-    if (index < STEPS.length) heading.current?.focus();
-    else thanks.current?.focus();
+    if (index < STEPS.length) {
+      heading.current?.focus();
+      question.current?.scrollIntoView({ block: 'nearest' });
+    } else thanks.current?.focus();
   }, [index, ready]);
 
   if (load.status === 'loading') return <p className="status">{t('common.loading')}</p>;
@@ -164,7 +168,7 @@ export function TripFlow({
   const last = index === STEPS.length - 1;
   const multiple = isMultiple(step.field);
   return (
-    <section className="trip-flow" aria-labelledby={titleId}>
+    <section className="trip-flow" aria-labelledby={titleId} ref={question}>
       <p className="trip-flow-progress" aria-live="polite">
         {t('aboutMe.step', { current: index + 1, total: STEPS.length })}
       </p>
