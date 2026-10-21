@@ -67,7 +67,7 @@ export function buildLocalServer(
     {
       title: 'Search places',
       description:
-        "Find checked places and day trips in the guest's destination: beaches, sights, restaurants, cafés and bars, nature, activities, shops, nightlife, and day trips with travel time. Results are ranked best first, in season on the given day, with distance from the apartment, when each was last verified and its sources. Use a category when the guest names one.",
+        "Find checked places and day trips in the guest's destination: beaches, sights, restaurants, cafés and bars, nature, activities, shops, nightlife, and day trips with travel time. Results are ranked best first, in season on the given day, with distance from the property, when each was last verified and its sources. Use a category when the guest names one.",
       scope: 'catalog:read',
       inputSchema: searchPlacesInput,
       outputSchema: searchPlacesOutput,

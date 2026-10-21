@@ -200,20 +200,22 @@ const distanceOf = (o: Origin) => {
     : sql<number | null>`null::float8`;
 };
 
-/** The best trigram match of the words against the source text and every published translation. */
+/**
+ * The best trigram match of the words against every published translation, the source language
+ * among them. The record's own title and description are left out: they may hold an unpublished edit.
+ */
 function textScoreOf(query: string | undefined): SQL<number> | null {
   const q = query?.trim().toLowerCase();
   if (!q) return null;
-  return sql<number>`greatest(
-    word_similarity(${q}::text, ${catalogRecords.title}),
-    word_similarity(${q}::text, ${catalogRecords.description}),
-    coalesce((select max(greatest(word_similarity(${q}::text, x.title), word_similarity(${q}::text, x.body)))
+  return sql<number>`coalesce((select max(greatest(word_similarity(${q}::text, x.title), word_similarity(${q}::text, x.body)))
       from catalog_translations x
-      where x.record_id = ${catalogRecords.id} and x.revision = ${catalogRecords.publishedRevision}), 0)
-  )`;
+      where x.record_id = ${catalogRecords.id} and x.revision = ${catalogRecords.publishedRevision}), 0)`;
 }
 
-/** Records of the scope's destination with a published translation in the guest's language. */
+const textMatches = (textScore: SQL<number> | null) =>
+  textScore ? sql`${textScore} >= ${TEXT_MATCH_MIN}` : undefined;
+
+/** Published records of the scope's destination; `translationJoin` picks the guest's language. */
 const visibleIn = (scope: CatalogScope) =>
   and(
     eq(catalogRecords.destinationId, scope.destinationId),
@@ -298,6 +300,38 @@ async function rowsFor(db: Executor, ids: string[]) {
 const byRecord = <T extends { recordId: string }>(rows: T[], id: string) =>
   rows.filter((r) => r.recordId === id);
 
+interface PlaceRow {
+  id: string;
+  kind: CatalogKind;
+  placeCategory: PlaceCategory | null;
+  title: string;
+  location: { x: number; y: number } | null;
+  address: string | null;
+  phone: string | null;
+  websiteUrl: string | null;
+  travelMinutes: number | null;
+  verifiedAt: Date | null;
+  fieldSources: Partial<Record<string, string>>;
+  distanceM: unknown;
+}
+
+/** The fields a place summary and a place detail share. */
+const placeBaseOf = (r: PlaceRow, now: Date) => ({
+  id: r.id,
+  kind: r.kind as 'place' | 'day_trip',
+  category: r.kind === 'day_trip' ? ('day_trip' as const) : (r.placeCategory as PlaceCategory),
+  title: r.title,
+  location: latLngOf(r.location),
+  distanceKm: kmOf(r.distanceM),
+  travelMinutes: r.travelMinutes,
+  address: r.address,
+  phone: r.phone,
+  websiteUrl: r.websiteUrl,
+  verifiedAt: r.verifiedAt?.toISOString() ?? null,
+  staleness: stalenessFor({ ...r, endsAt: null }, now),
+  sources: sourcesOf(r.fieldSources),
+});
+
 const placeColumns = (origin: Origin) => ({
   id: catalogRecords.id,
   kind: catalogRecords.kind,
@@ -344,7 +378,7 @@ export async function searchPlaces(
         : sql`false`,
     );
   }
-  if (textScore) conditions.push(sql`${textScore} >= ${TEXT_MATCH_MIN}`);
+  conditions.push(textMatches(textScore));
 
   const rows = await db
     .select({ ...placeColumns(origin), textScore: textScore ?? sql<null>`null` })
@@ -361,37 +395,22 @@ export async function searchPlaces(
     if (!inSeason(byRecord(seasons, r.id), md)) return [];
     const open = q.openAt ? openStateAt(byRecord(hours, r.id), date, q.openAt) : null;
     if (open === 'closed') return [];
-    const staleness = stalenessFor({ ...r, endsAt: null }, now);
-    const distanceM = r.distanceM === null ? null : Number(r.distanceM);
-    const category: PlaceCategory | 'day_trip' =
-      r.kind === 'day_trip' ? 'day_trip' : (r.placeCategory as PlaceCategory);
+    const base = placeBaseOf(r, now);
     const image = images.find((i) => i.recordId === r.id);
     const summary: PlaceSummary = {
-      id: r.id,
-      kind: r.kind as 'place' | 'day_trip',
-      category,
-      title: r.title,
+      ...base,
       summary: summaryOf(r.body),
-      location: latLngOf(r.location),
-      distanceKm: kmOf(distanceM),
-      travelMinutes: r.travelMinutes,
-      address: r.address,
-      phone: r.phone,
-      websiteUrl: r.websiteUrl,
       image: image ? imageOf(image) : null,
       open,
-      verifiedAt: r.verifiedAt?.toISOString() ?? null,
-      staleness,
-      sources: sourcesOf(r.fieldSources),
     };
     return [
       {
         summary,
         id: r.id,
-        category,
+        category: base.category,
         textScore: r.textScore === null ? null : Number(r.textScore),
-        staleness: staleness.status,
-        distanceM,
+        staleness: base.staleness.status,
+        distanceM: r.distanceM === null ? null : Number(r.distanceM),
       },
     ];
   });
@@ -432,17 +451,8 @@ export async function getPlace(
   const mmdd = (m: number, d: number) =>
     `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   return {
-    id: r.id,
-    kind: r.kind as 'place' | 'day_trip',
-    category: r.kind === 'day_trip' ? 'day_trip' : (r.placeCategory as PlaceCategory),
-    title: r.title,
+    ...placeBaseOf(r, now),
     description: r.body,
-    location: latLngOf(r.location),
-    distanceKm: kmOf(r.distanceM),
-    travelMinutes: r.travelMinutes,
-    address: r.address,
-    phone: r.phone,
-    websiteUrl: r.websiteUrl,
     image: images[0] ? imageOf(images[0]) : null,
     images: images.map(imageOf),
     seasons: seasons.map((s) => ({
@@ -459,9 +469,6 @@ export async function getPlace(
         validTo: h.validTo,
       })),
     inSeasonToday: inSeason(seasons, monthDayOf(seasonDate(origin, now))),
-    verifiedAt: r.verifiedAt?.toISOString() ?? null,
-    staleness: stalenessFor({ ...r, endsAt: null }, now),
-    sources: sourcesOf(r.fieldSources),
   };
 }
 
@@ -516,7 +523,7 @@ export async function searchEvents(
         lt(catalogRecords.startsAt, end.toJSDate()),
         gt(catalogRecords.endsAt, start.toJSDate()),
         gt(catalogRecords.endsAt, now),
-        textScore ? sql`${textScore} >= ${TEXT_MATCH_MIN}` : undefined,
+        textMatches(textScore),
       ),
     )
     .orderBy(asc(catalogRecords.startsAt), asc(catalogRecords.id))
@@ -575,7 +582,7 @@ export async function listTransportNotes(
         visibleIn(scope),
         eq(catalogRecords.kind, 'transport_note'),
         q.mode ? eq(catalogRecords.transportMode, q.mode) : undefined,
-        textScore ? sql`${textScore} >= ${TEXT_MATCH_MIN}` : undefined,
+        textMatches(textScore),
       ),
     )
     .orderBy(asc(catalogTranslations.title), asc(catalogRecords.id));

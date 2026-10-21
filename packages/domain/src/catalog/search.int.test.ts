@@ -9,6 +9,7 @@ import {
   seedGuestUnit,
   type TestDatabase,
 } from '../testing';
+import { fromLocalDateTime } from '../time';
 import {
   type CatalogScope,
   getPlace,
@@ -62,6 +63,19 @@ beforeAll(async () => {
     WINTER,
   );
   hiddenCoveId = hidden.id;
+  await createCatalogRecord(
+    db,
+    noopQueue,
+    {
+      destinationId: trogirId,
+      kind: 'event',
+      title: 'Morning klapa concert',
+      description: 'Klapa singing on the waterfront.',
+      startsAt: fromLocalDateTime('2027-07-09T09:00', 'Europe/Zagreb'),
+      endsAt: fromLocalDateTime('2027-07-09T11:00', 'Europe/Zagreb'),
+    },
+    WINTER,
+  );
   await publishCatalog(db, trogirId);
   // Published by publishCatalog above; reset so it stays unpublished.
   await db
@@ -190,6 +204,32 @@ describe('searchPlaces', () => {
     expect(await getPlace(testDb.db, summer(), hiddenCoveId, SUMMER)).toBeNull();
   });
 
+  it('checks the season on check-in day before arrival', async () => {
+    // The summer guest checks in two days after SUMMER.
+    expect((await searchPlaces(testDb.db, summer(), {}, SUMMER))?.date).toBe('2027-07-12');
+  });
+
+  it('never matches words from an unpublished edit', async () => {
+    const id = idOf['Copacabana beach'] as string;
+    const [before] = await testDb.db.select().from(catalogRecords).where(eq(catalogRecords.id, id));
+    if (!before) throw new Error('no record');
+    await testDb.db
+      .update(catalogRecords)
+      .set({ title: 'Xylophone grotto', description: 'Xylophone grotto.', revision: 2 })
+      .where(eq(catalogRecords.id, id));
+    try {
+      const r = await searchPlaces(testDb.db, summer(), { query: 'xylophone' }, SUMMER);
+      expect(r?.results).toEqual([]);
+      const beach = await searchPlaces(testDb.db, summer(), { category: 'beach' }, SUMMER);
+      expect(titles(beach)).toEqual(['Copacabana beach']);
+    } finally {
+      await testDb.db
+        .update(catalogRecords)
+        .set({ title: before.title, description: before.description, revision: before.revision })
+        .where(eq(catalogRecords.id, id));
+    }
+  });
+
   it('returns null when the Stay does not belong to the property', async () => {
     const scope = scopeOf(summerGuest, { propertyId: winterGuest.propertyId });
     expect(await searchPlaces(testDb.db, scope, {}, SUMMER)).toBeNull();
@@ -244,6 +284,17 @@ describe('searchEvents', () => {
     expect((await searchEvents(testDb.db, winter(), {}, WINTER))?.results).toEqual([]);
   });
 
+  it('drops events that have already ended', async () => {
+    const early = new Date('2027-07-09T06:00:00Z');
+    const before = await searchEvents(testDb.db, summer(), {}, early);
+    expect(before?.results.map((e) => e.title)).toEqual([
+      '[de] Trogir Summer of Culture',
+      '[de] Morning klapa concert',
+    ]);
+    const after = await searchEvents(testDb.db, summer(), {}, SUMMER);
+    expect(after?.results.map((e) => e.title)).not.toContain('[de] Morning klapa concert');
+  });
+
   it('never widens the window with from and to', async () => {
     const wide = await searchEvents(
       testDb.db,
@@ -296,5 +347,15 @@ describe('recommendation counter', () => {
 
     await getPlace(testDb.db, summer(), ids[0] as string, SUMMER);
     for (const c of await counts()) expect(c.count).toBe(2);
+  });
+
+  it("counts on the destination's day, not the UTC day", async () => {
+    await testDb.db.delete(catalogRecommendations);
+    // 23:30 UTC on 10 July is 01:30 on 11 July in Zagreb.
+    const lateUtc = new Date('2027-07-10T23:30:00Z');
+    await searchPlaces(testDb.db, summer(), { category: 'sight' }, lateUtc);
+    const days = (await testDb.db.select().from(catalogRecommendations)).map((r) => r.day);
+    expect(days.length).toBeGreaterThan(0);
+    for (const d of days) expect(d).toBe('2027-07-11');
   });
 });
