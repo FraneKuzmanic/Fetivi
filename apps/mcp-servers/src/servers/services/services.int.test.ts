@@ -436,6 +436,33 @@ describe('create_order', () => {
     }
   });
 
+  it('a decline or an empty answer after the tap reports the Order, not "not ordered"', async () => {
+    const asked = await firstHalf(guest, boatArgs());
+    const done = await resume(guest, boatArgs(), asked.requestState, accept);
+    const id = (done.structuredContent as { order: { id: string } }).order.id;
+    for (const answer of [{ action: 'decline' }, { action: 'accept', content: {} }] as const) {
+      const late = await resume(guest, boatArgs(), asked.requestState, answer);
+      expect(late.structuredContent).toMatchObject({ outcome: 'ordered', order: { id } });
+    }
+    expect((await orderById(id))?.status).toBe('confirmed');
+  });
+
+  it('an empty answer after the TTL refuses instead of re-asking', async () => {
+    const asked = await firstHalf(guest, boatArgs());
+    const real = clock;
+    clock = new Date(real.getTime() + 11 * 60_000);
+    try {
+      const late = await resume(guest, boatArgs(), asked.requestState, {
+        action: 'accept',
+        content: {},
+      });
+      expect(late.isError).toBe(true);
+      expect(errorText(late)).toContain('expired');
+    } finally {
+      clock = real;
+    }
+  });
+
   it('re-asks on an invalid answer', async () => {
     const asked = await firstHalf(guest, boatArgs());
     const again = (await resume(guest, boatArgs(), asked.requestState, {

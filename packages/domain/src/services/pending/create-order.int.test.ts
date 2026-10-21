@@ -280,6 +280,20 @@ describe('completeOrder', () => {
     expect(await ordersOf(offerId)).toHaveLength(0);
   });
 
+  it('a start that passed between the halves releases the record', async () => {
+    clock = new Date(AT_09.getTime() - 5 * 60_000);
+    try {
+      const { offerId, pendingId } = await prepared();
+      // Tapped at 09:02, still inside the ten-minute TTL.
+      clock = new Date(AT_09.getTime() + 2 * 60_000);
+      expect(await codeOf(complete(pendingId))).toBe('start-passed');
+      expect((await pendingRow(pendingId))?.state).toBe('released');
+      expect(await ordersOf(offerId)).toHaveLength(0);
+    } finally {
+      clock = NOW;
+    }
+  });
+
   it('another space cannot complete it', async () => {
     const { offerId, pendingId } = await prepared();
     expect(await codeOf(complete(pendingId, neighbour))).toBe('not-found');

@@ -6,6 +6,7 @@ import {
   type GuestIdentity,
   type GuestOfferScope,
   getPendingDraft,
+  getSpaceOrder,
   type JobQueue,
   listGuestOffers,
   listSpaceOrders,
@@ -172,13 +173,25 @@ export function buildServicesServer(
         requestState: await codec.mint({ pendingId }, request),
       });
 
+    /** A record an earlier tap already consumed: its Order, never a "not ordered". */
+    const alreadyOrdered = async (orderId: string) => {
+      const order = await getSpaceOrder(db, identity.spaceId, identity.language, orderId);
+      if (!order) throw new ClaimMismatchError('not-found');
+      return { outcome: 'ordered' as const, order };
+    };
+
     /** The guest's answer: only the stored record and the answer count, never the arguments. */
     const resume = async (pendingId: string, request: ServerContext) => {
       const pending = await getPendingDraft(db, pendingId, identity.spaceId);
       if (!pending) throw new ClaimMismatchError('not-found');
       const answer = inputResponse(request.mcpReq.inputResponses, CONFIRM_KEY);
       if (answer.kind === 'elicit' && answer.action !== 'accept') {
-        await releasePendingOrder(db, { pendingId, spaceId: identity.spaceId, now: now() });
+        const state = await releasePendingOrder(db, {
+          pendingId,
+          spaceId: identity.spaceId,
+          now: now(),
+        });
+        if (state === 'consumed') return alreadyOrdered(pending.orderId);
         return { outcome: 'not_ordered' as const, order: null };
       }
       const contact = acceptedContent(
@@ -187,8 +200,13 @@ export function buildServicesServer(
         contactSchemaFor(pending.draft.contactFields),
       );
       if (!contact) {
+        // A missing or invalid answer gets the same card again, only while the record is open.
+        if (pending.state === 'consumed') return alreadyOrdered(pending.orderId);
         if (pending.state === 'released') throw new GuestToolError(REFUSALS.released);
-        // A missing or invalid answer gets the same card again.
+        if (pending.expiresAt <= now()) {
+          await releasePendingOrder(db, { pendingId, spaceId: identity.spaceId, now: now() });
+          throw new GuestToolError(REFUSALS.expired);
+        }
         return ask(pendingId, pending.draft, request);
       }
       const { order } = await refusing(() =>

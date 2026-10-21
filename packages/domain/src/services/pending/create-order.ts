@@ -97,6 +97,8 @@ export interface OrderSummary {
 
 const CIVIL_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const isQuantity = (n: number) => Number.isInteger(n) && n >= 1 && n <= 999;
+const todayIn = (now: Date, zone: string) =>
+  DateTime.fromJSDate(now, { zone }).toISODate() as string;
 
 async function stayContext(db: Executor, spaceId: string) {
   const [row] = await db
@@ -132,7 +134,7 @@ async function startsOf(
     throw new ServiceRuleError('date-outside-stay');
   }
   const now = deps.now();
-  if (input.date < (DateTime.fromJSDate(now, { zone: stay.zone }).toISODate() as string)) {
+  if (input.date < todayIn(now, stay.zone)) {
     throw new ServiceRuleError('date-past');
   }
   if (!isQuantity(input.quantity)) throw new ServiceRuleError('invalid-input');
@@ -239,13 +241,23 @@ export async function getPendingDraft(
   db: Executor,
   pendingId: string,
   spaceId: string,
-): Promise<{ state: PendingState; expiresAt: Date; draft: CreateOrderDraft } | null> {
+): Promise<{
+  state: PendingState;
+  expiresAt: Date;
+  orderId: string;
+  draft: CreateOrderDraft;
+} | null> {
   const [row] = await db
     .select()
     .from(pendingActions)
     .where(and(eq(pendingActions.id, pendingId), eq(pendingActions.spaceId, spaceId)));
   if (row?.kind !== 'create_order') return null;
-  return { state: row.state, expiresAt: row.expiresAt, draft: parsePayload(row) };
+  return {
+    state: row.state,
+    expiresAt: row.expiresAt,
+    orderId: row.orderId,
+    draft: parsePayload(row),
+  };
 }
 
 export interface GuestContact {
@@ -303,6 +315,18 @@ export async function completeOrder(
       return { ok: false, code: 'expired' };
     }
     const draft = parsePayload(row);
+    // A card tapped late can outlive its day or its start: the first half's checks again.
+    const { zone } = await stayContext(tx, row.spaceId);
+    const passed =
+      draft.date < todayIn(now, zone)
+        ? 'date-past'
+        : draft.startsAt && new Date(draft.startsAt) <= now
+          ? 'start-passed'
+          : null;
+    if (passed) {
+      await markPending(tx, row.id, 'released', now);
+      return { ok: false, code: passed };
+    }
     const contact = contactFor(draft, input.contact);
     if (!contact) return { ok: false, code: 'invalid-input' };
     // The scope can change between the halves (the Offer unpublished, the host's opt-out).
@@ -422,6 +446,17 @@ async function summaries(
     currency: proposal.currency,
     createdAt: order.createdAt.toISOString(),
   }));
+}
+
+/** One Order of the space, titled in `language`; null when it is not the space's. */
+export async function getSpaceOrder(
+  db: Executor,
+  spaceId: string,
+  language: GuestLanguage,
+  orderId: string,
+): Promise<OrderSummary | null> {
+  const [order] = await summaries(db, spaceId, language, orderId);
+  return order ?? null;
 }
 
 /** The space's Orders, newest first, titled in `language`. */
