@@ -49,6 +49,9 @@ When the admin last checked every field of a Catalog record; one date for the wh
 **Staleness budget**:
 How long after its Verification date a Catalog record stays trustworthy, set per Place category or kind. Events have none; they end.
 
+**Recommendation count**:
+How many times a place or day trip was returned by a guest's place search, counted per day in the Destination's time zone. It tells the admin which records to re-check first.
+
 ## Services
 
 **Order**:

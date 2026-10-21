@@ -96,11 +96,13 @@ export interface TestServer {
 }
 
 /** The MCP server process on its own test database, signed tokens from a test key. */
-export async function createTestServer(options: { listen?: boolean } = {}): Promise<TestServer> {
+export async function createTestServer(
+  options: { listen?: boolean; now?: () => Date } = {},
+): Promise<TestServer> {
   const testDb = await createTestDatabase();
   const keys = await createTestKeys();
   const config = loadConfig({ MCP_PUBLIC_URL: TEST_BASE, GUEST_TOKEN_ISSUER: TEST_ISSUER });
-  const app = buildApp({ config, db: testDb.db, keys: keys.keys });
+  const app = buildApp({ config, db: testDb.db, keys: keys.keys, now: options.now });
   let url = '';
   if (options.listen) {
     await app.listen({ host: '127.0.0.1', port: 0 });

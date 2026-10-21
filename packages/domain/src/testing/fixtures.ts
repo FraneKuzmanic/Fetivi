@@ -1,18 +1,51 @@
 import { randomBytes } from 'node:crypto';
+import { eq } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { Db } from '../db/client';
 import { accounts } from '../db/schema/accounts';
+import { catalogRecords, catalogTranslations } from '../db/schema/catalog';
 import { infoBlocks } from '../db/schema/info-blocks';
 import { properties, units } from '../db/schema/properties';
 import { spaces } from '../db/schema/spaces';
 import type { StayRow } from '../db/schema/stays';
 import { blockTranslations } from '../db/schema/translations';
+import type { JobQueue } from '../jobs/queue';
 import { GUEST_LANGUAGES, type GuestLanguage } from '../property/vocabulary';
 import { registerStay } from '../stays/store';
 import { hashToken, newToken } from '../tokens';
 
 export const TROGIR = { x: 16.2516, y: 43.5167 };
 const ZONE = 'Europe/Zagreb';
+
+/** A job queue that drops every job, for tests that write through the store without pg-boss. */
+export const noopQueue: JobQueue = { send: async () => {}, publish: async () => {} };
+
+/** Test-only: publishes every record as if its translation job had run. */
+export async function publishCatalog(db: Db, destinationId: string): Promise<void> {
+  const records = await db
+    .select()
+    .from(catalogRecords)
+    .where(eq(catalogRecords.destinationId, destinationId));
+  for (const record of records) {
+    await db
+      .insert(catalogTranslations)
+      .values(
+        GUEST_LANGUAGES.map((l) => ({
+          recordId: record.id,
+          revision: record.revision,
+          language: l,
+          title: `[${l}] ${record.title}`,
+          body: `[${l}] ${record.description}`,
+          origin: l === 'en' ? ('source' as const) : ('machine' as const),
+        })),
+      )
+      .onConflictDoNothing();
+    await db
+      .update(catalogRecords)
+      .set({ publishedRevision: record.revision, translationStatus: 'published' })
+      .where(eq(catalogRecords.id, record.id));
+  }
+}
 
 export interface SeedGuestUnitOptions {
   /** The instant the Stay is registered at; dates are relative to it. Default: now. */

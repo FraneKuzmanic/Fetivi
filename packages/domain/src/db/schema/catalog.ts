@@ -236,7 +236,24 @@ export const placeOpenDataSources = pgTable(
   (t) => [primaryKey({ columns: [t.recordId, t.source] })],
 );
 
+/** How often a place was recommended, per day in the destination's zone (feeds the staleness queue). */
+export const catalogRecommendations = pgTable(
+  'catalog_recommendations',
+  {
+    recordId: uuid('record_id')
+      .notNull()
+      .references(() => catalogRecords.id, { onDelete: 'cascade' }),
+    day: date('day', { mode: 'string' }).notNull(),
+    count: integer('count').notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.recordId, t.day] }),
+    check('catalog_recommendations_count_check', sql`${t.count} >= 0`),
+  ],
+);
+
 export type DestinationRow = typeof destinations.$inferSelect;
+export type CatalogRecommendationRow = typeof catalogRecommendations.$inferSelect;
 export type CatalogRecordRow = typeof catalogRecords.$inferSelect;
 export type CatalogTranslationRow = typeof catalogTranslations.$inferSelect;
 export type CatalogSeasonRow = typeof catalogSeasons.$inferSelect;

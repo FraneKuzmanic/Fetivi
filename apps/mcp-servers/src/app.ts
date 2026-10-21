@@ -3,6 +3,7 @@ import {
   type GuestIdentity,
   MCP_SERVERS,
   type McpServerName,
+  type Scope,
   serverUrl,
 } from '@fetivi/domain';
 import { createMcpFastifyApp } from '@modelcontextprotocol/fastify';
@@ -12,6 +13,7 @@ import type { JWTVerifyGetKey } from 'jose';
 import { createGuestTokenVerifier } from './auth/verifier';
 import type { Config } from './config';
 import { buildEmptyServer } from './servers/empty';
+import { buildLocalServer } from './servers/local/server';
 import { mountServer } from './servers/mount';
 import { buildStayServer } from './servers/stay/server';
 
@@ -20,7 +22,7 @@ export interface AppDeps {
   db: Db;
   /** The chat backend's guest token keys (remote JWKS in production). */
   keys: JWTVerifyGetKey;
-  /** For the projection's release gate only; token checks always run on the real clock. */
+  /** For the projection's release gate and catalog dates; token checks always run on the real clock. */
   now?: () => Date;
 }
 
@@ -52,6 +54,20 @@ export function mountServers(
   },
 ) {
   const { db, now } = opts;
+  // `local` needs no scope at the gate: outside a destination the token has no catalog:read, yet
+  // the server still answers (an empty list now, web_fallback_search in 31); tools check per call.
+  const servers: Record<
+    McpServerName,
+    { requiredScopes: Scope[]; factory: (identity: GuestIdentity) => McpServer }
+  > = {
+    stay: {
+      requiredScopes: ['unit:read'],
+      factory: (identity) => buildStayServer(identity, { db, now }),
+    },
+    local: { requiredScopes: [], factory: (identity) => buildLocalServer(identity, { db, now }) },
+    services: { requiredScopes: [], factory: () => buildEmptyServer('services') },
+    trip: { requiredScopes: [], factory: () => buildEmptyServer('trip') },
+  };
   for (const name of MCP_SERVERS) {
     const verifier = createGuestTokenVerifier({
       keys: opts.keys,
@@ -63,14 +79,7 @@ export function mountServers(
       name,
       publicBase: opts.publicBase,
       verifier,
-      ...(override
-        ? { requiredScopes: [], factory: override }
-        : name === 'stay'
-          ? {
-              requiredScopes: ['unit:read'],
-              factory: (identity) => buildStayServer(identity, { db, now }),
-            }
-          : { requiredScopes: [], factory: () => buildEmptyServer(name) }),
+      ...(override ? { requiredScopes: [], factory: override } : servers[name]),
     });
   }
 }

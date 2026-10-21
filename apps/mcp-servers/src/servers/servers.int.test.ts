@@ -139,9 +139,9 @@ describe('protected resource metadata', () => {
 });
 
 describe('servers over HTTP', () => {
-  it('serves an empty tool list on local, services and trip', async () => {
+  it('serves an empty tool list on services and trip', async () => {
     const { ctx } = await seed();
-    for (const server of ['local', 'services', 'trip'] as const) {
+    for (const server of ['services', 'trip'] as const) {
       const client = await connect(server, await signToken(t.keys, { server, ctx }));
       expect(client.getProtocolEra()).toBe('modern');
       expect((await client.listTools()).tools).toEqual([]);
