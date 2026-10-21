@@ -87,6 +87,10 @@ _Avoid_: Departure, session, timeslot
 How long a Provider has to answer an on-request Order, counted only within the Offer's daily response hours and always ending under 4 days after the request.
 _Avoid_: SLA
 
+**Provider link**:
+The unguessable per-Order link a Provider receives by email, opening a no-login page bound to the Order's current proposal; valid until the Order is final.
+_Avoid_: Magic link, login link
+
 **Stay**:
 One guest party's registered visit to a unit, from check-in to checkout, identified by its PIN.
 _Avoid_: Reservation, booking

@@ -14,6 +14,7 @@ import type {
   OrderKind,
   PaymentMode,
   PriceUnit,
+  ProviderLanguage,
 } from '@fetivi/domain/offer-vocabulary';
 import type {
   Amenity,
@@ -570,6 +571,7 @@ export interface Provider {
   name: string;
   email: string;
   whatsappPhone: string | null;
+  language: ProviderLanguage;
   taxNumber: string | null;
   /** Basis points: 1250 = 12.5 %. */
   commissionBp: number;
@@ -585,6 +587,7 @@ export interface ProviderInput {
   name: string;
   email: string;
   whatsappPhone?: string | null;
+  language?: ProviderLanguage;
   taxNumber?: string | null;
   commissionBp?: number;
   dealNotes?: string | null;

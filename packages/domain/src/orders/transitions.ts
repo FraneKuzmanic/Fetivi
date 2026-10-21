@@ -79,14 +79,35 @@ export function actionTarget(
 }
 
 /**
- * The notification each status requires on entry. `awaiting_confirmation` is notified only when
- * a proposal leads there (`order_new_proposal`, sent by the machine), not on creation.
+ * The notifications a status change requires, in the order they are enqueued. Creation into
+ * `awaiting_confirmation` notifies nobody; a later proposal leading there tells the guest.
  */
-export const REQUIRED_NOTIFICATION: Partial<Record<OrderStatus, OrderNotification>> = {
-  pending_provider: 'provider_request',
-  confirmed: 'order_confirmed',
-  declined: 'order_declined',
-  expired: 'order_expired',
-  failed: 'order_failed',
-  cancelled: 'order_cancelled',
-};
+export function requiredNotifications(
+  from: OrderStatus | null,
+  to: OrderStatus,
+  trigger: OrderTrigger,
+): OrderNotification[] {
+  switch (to) {
+    case 'awaiting_confirmation':
+      return from === null ? [] : ['order_new_proposal'];
+    case 'pending_provider':
+      return ['provider_request'];
+    case 'confirmed':
+      return from === 'confirming'
+        ? ['order_confirmed', 'provider_confirmed']
+        : ['order_confirmed'];
+    case 'declined':
+      return ['order_declined'];
+    case 'expired':
+      return ['order_expired'];
+    case 'failed':
+      return ['order_failed'];
+    case 'cancelled':
+      return trigger === 'provider_link'
+        ? ['order_cancelled', 'admin_provider_cancelled']
+        : ['order_cancelled'];
+    case 'confirming':
+    case 'completed':
+      return [];
+  }
+}

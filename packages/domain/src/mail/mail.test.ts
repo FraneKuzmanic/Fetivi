@@ -22,4 +22,18 @@ describe('mail transports', () => {
     expect(lines[0]).toContain('Hello');
     expect(lines[0]).toContain('https://x.test/?token=abc');
   });
+
+  it('console mailer prints the idempotency key, and the memory mailer keeps it', async () => {
+    const lines: string[] = [];
+    await createConsoleMailer((line) => lines.push(line)).send({
+      to: 'a@example.test',
+      subject: 'Hi',
+      text: 'x',
+      idempotencyKey: 'order:1:notify',
+    });
+    expect(lines[0]).toContain('Idempotency-Key: order:1:notify');
+    const memory = createMemoryMailer();
+    await memory.send({ to: 'a@example.test', subject: 'Hi', text: 'x', idempotencyKey: 'k' });
+    expect(memory.sent[0]?.idempotencyKey).toBe('k');
+  });
 });

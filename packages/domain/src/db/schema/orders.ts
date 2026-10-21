@@ -112,6 +112,8 @@ export const orderProposals = pgTable(
     /** When the guest's confirmation card stops working; null when confirmed at creation. */
     cardExpiresAt: timestamp('card_expires_at', { withTimezone: true }),
     supersededAt: timestamp('superseded_at', { withTimezone: true }),
+    /** When the Provider tapped Got it for these terms. */
+    providerAcknowledgedAt: timestamp('provider_acknowledged_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

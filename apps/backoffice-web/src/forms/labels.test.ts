@@ -14,6 +14,7 @@ import {
   ORDER_KINDS,
   PAYMENT_MODES,
   PRICE_UNITS,
+  PROVIDER_LANGUAGES,
 } from '@fetivi/domain/offer-vocabulary';
 import {
   AMENITIES,
@@ -48,6 +49,7 @@ import {
   PAYMENT_MODE_LABELS,
   PLACE_CATEGORY_LABELS,
   PRICE_UNIT_LABELS,
+  PROVIDER_LANGUAGE_LABELS,
   SOURCE_FIELD_LABELS,
   STALENESS_LABELS,
   TRANSLATION_ERROR_LABELS,
@@ -87,6 +89,7 @@ describe('labels', () => {
     ['payment modes', PAYMENT_MODES, PAYMENT_MODE_LABELS],
     ['contact fields', CONTACT_FIELDS, CONTACT_FIELDS_LABELS],
     ['price units', PRICE_UNITS, PRICE_UNIT_LABELS],
+    ['provider languages', PROVIDER_LANGUAGES, PROVIDER_LANGUAGE_LABELS],
     ['adapter kinds', ADAPTER_KINDS, ADAPTER_KIND_LABELS],
   ] as const)('names every value of %s', (_name, values, labels) => {
     for (const value of values) {

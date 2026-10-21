@@ -1,4 +1,9 @@
-import { createAnthropicTranslationModel, createDb, createJobQueue } from '@fetivi/domain';
+import {
+  createAnthropicTranslationModel,
+  createConsoleMailer,
+  createDb,
+  createJobQueue,
+} from '@fetivi/domain';
 import { loadConfig } from './config';
 import { egress } from './egress';
 import { createJobs } from './jobs';
@@ -15,7 +20,18 @@ if (!config.ANTHROPIC_API_KEY) {
 }
 const boss = await startJobRunner({
   connectionString: config.DATABASE_URL,
-  jobs: (boss) => createJobs({ db, queue: createJobQueue(boss), model, now: () => new Date() }),
+  jobs: (boss) =>
+    createJobs({
+      db,
+      queue: createJobQueue(boss),
+      model,
+      now: () => new Date(),
+      mailer: createConsoleMailer(),
+      providerLink: {
+        secret: config.PROVIDER_LINK_SECRET,
+        baseUrl: config.PROVIDER_LINK_BASE_URL,
+      },
+    }),
 });
 console.log('job runner started');
 

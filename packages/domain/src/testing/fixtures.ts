@@ -3,15 +3,22 @@ import { eq } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { Db } from '../db/client';
 import { accounts } from '../db/schema/accounts';
-import { catalogRecords, catalogTranslations } from '../db/schema/catalog';
+import { catalogRecords, catalogTranslations, destinations } from '../db/schema/catalog';
 import { infoBlocks } from '../db/schema/info-blocks';
-import { allotmentSlots, offers } from '../db/schema/offers';
+import { allotmentSlots, offers, type ProviderRow, providers } from '../db/schema/offers';
 import { properties, units } from '../db/schema/properties';
 import { spaces } from '../db/schema/spaces';
 import type { StayRow } from '../db/schema/stays';
 import { blockTranslations } from '../db/schema/translations';
 import type { JobQueue } from '../jobs/queue';
-import type { AvailabilityMode, OrderKind, PaymentMode, PriceUnit } from '../offers/vocabulary';
+import type {
+  AvailabilityMode,
+  ContactFields,
+  OrderKind,
+  PaymentMode,
+  PriceUnit,
+  ProviderLanguage,
+} from '../offers/vocabulary';
 import { GUEST_LANGUAGES, type GuestLanguage } from '../property/vocabulary';
 import { registerStay } from '../stays/store';
 import { hashToken, newToken } from '../tokens';
@@ -249,8 +256,42 @@ export async function seedGuestUnit(
   };
 }
 
+/** A Provider with a unique name and email. */
+export async function seedProvider(
+  db: Db,
+  overrides: { language?: ProviderLanguage; commissionBp?: number } = {},
+): Promise<ProviderRow> {
+  const hex = randomBytes(4).toString('hex');
+  const [provider] = await db
+    .insert(providers)
+    .values({ name: `Provider ${hex}`, email: `provider-${hex}@example.test`, ...overrides })
+    .returning();
+  if (!provider) throw new Error('no provider');
+  return provider;
+}
+
+/** A destination with a unique name around Trogir. */
+export async function seedDestination(db: Db): Promise<string> {
+  const [destination] = await db
+    .insert(destinations)
+    .values({
+      name: `Trogir ${randomBytes(4).toString('hex')}`,
+      centre: TROGIR,
+      radiusM: 15_000,
+      timezone: ZONE,
+    })
+    .returning();
+  if (!destination) throw new Error('no destination');
+  return destination.id;
+}
+
 export interface SeedOrderableOfferOptions {
-  hostId: string;
+  /** Exactly one owner: a host or a Provider. */
+  hostId?: string;
+  providerId?: string;
+  /** Provider Offers only; a fresh destination is seeded when omitted. */
+  destinationId?: string;
+  contactFields?: ContactFields;
   availabilityMode: AvailabilityMode;
   /** Allotment only: the slot's seats. Default 4. */
   capacity?: number;
@@ -265,8 +306,8 @@ export interface SeedOrderableOfferOptions {
 }
 
 /**
- * A host-owned Offer (no translation job, no destination needed) ready to be ordered, with one
- * allotment slot for allotment Offers.
+ * An Offer (no translation job) ready to be ordered, with one allotment slot for allotment Offers.
+ * Host-owned unless `providerId` is given.
  */
 export async function seedOrderableOffer(
   db: Db,
@@ -274,10 +315,17 @@ export async function seedOrderableOffer(
 ): Promise<{ offerId: string; slotId?: string }> {
   const { availabilityMode } = options;
   const orderKind = options.orderKind ?? 'booking';
+  if (!options.hostId === !options.providerId) throw new Error('exactly one owner');
+  const destinationId = options.providerId
+    ? (options.destinationId ?? (await seedDestination(db)))
+    : undefined;
   const [offer] = await db
     .insert(offers)
     .values({
       hostId: options.hostId,
+      providerId: options.providerId,
+      destinationId,
+      contactFields: options.contactFields,
       title: 'Kayak tour',
       description: 'Around the islands.',
       cancellationPolicy: 'Free until 24 hours before.',

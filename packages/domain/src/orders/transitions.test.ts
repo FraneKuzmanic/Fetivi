@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AVAILABILITY_MODES } from '../offers/vocabulary';
-import { actionTarget, nextStatus, ORDER_ACTIONS } from './transitions';
+import { actionTarget, nextStatus, ORDER_ACTIONS, requiredNotifications } from './transitions';
 import { FINAL_ORDER_STATUSES, ORDER_STATUSES, ORDER_TRIGGERS } from './vocabulary';
 
 // Written out independently of the implementation: `from action trigger mode -> to`.
@@ -100,5 +100,51 @@ describe('actionTarget', () => {
         }
       }
     }
+  });
+});
+
+describe('requiredNotifications', () => {
+  it('notifies the guest of a later proposal, but nobody on creation', () => {
+    expect(requiredNotifications(null, 'awaiting_confirmation', 'guest')).toEqual([]);
+    expect(requiredNotifications('pending_provider', 'awaiting_confirmation', 'admin')).toEqual([
+      'order_new_proposal',
+    ]);
+  });
+
+  it('asks the Provider when the Order waits for them', () => {
+    expect(requiredNotifications('awaiting_confirmation', 'pending_provider', 'guest')).toEqual([
+      'provider_request',
+    ]);
+  });
+
+  it('tells the Provider of an instant confirmation, but not of their own', () => {
+    expect(requiredNotifications('confirming', 'confirmed', 'adapter')).toEqual([
+      'order_confirmed',
+      'provider_confirmed',
+    ]);
+    expect(requiredNotifications('pending_provider', 'confirmed', 'provider_link')).toEqual([
+      'order_confirmed',
+    ]);
+  });
+
+  it('tells the guest of every final outcome', () => {
+    expect(requiredNotifications('pending_provider', 'declined', 'admin')).toEqual([
+      'order_declined',
+    ]);
+    expect(requiredNotifications('confirming', 'expired', 'hold_timer')).toEqual(['order_expired']);
+    expect(requiredNotifications('confirming', 'failed', 'adapter')).toEqual(['order_failed']);
+    expect(requiredNotifications('confirmed', 'cancelled', 'guest')).toEqual(['order_cancelled']);
+  });
+
+  it("alerts the admin when the Provider can't fulfil", () => {
+    expect(requiredNotifications('confirmed', 'cancelled', 'provider_link')).toEqual([
+      'order_cancelled',
+      'admin_provider_cancelled',
+    ]);
+  });
+
+  it('notifies nobody on entering confirming or completed', () => {
+    expect(requiredNotifications('awaiting_confirmation', 'confirming', 'guest')).toEqual([]);
+    expect(requiredNotifications('confirmed', 'completed', 'completion_timer')).toEqual([]);
   });
 });

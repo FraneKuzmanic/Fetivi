@@ -22,6 +22,7 @@ import {
   ORDER_KINDS,
   PAYMENT_MODES,
   PRICE_UNITS,
+  PROVIDER_LANGUAGES,
 } from '../../offers/vocabulary';
 import { accounts } from './accounts';
 import { catalogRecords, destinations } from './catalog';
@@ -35,6 +36,7 @@ export const paymentMode = pgEnum('payment_mode', PAYMENT_MODES);
 export const contactFields = pgEnum('contact_fields', CONTACT_FIELDS);
 export const priceUnit = pgEnum('price_unit', PRICE_UNITS);
 export const adapterKind = pgEnum('adapter_kind', ADAPTER_KINDS);
+export const providerLanguage = pgEnum('provider_language', PROVIDER_LANGUAGES);
 
 /** A local business the admin has a deal with. It gets each Order by email and has no login. */
 export const providers = pgTable(
@@ -45,6 +47,8 @@ export const providers = pgTable(
     email: text('email').notNull(),
     /** Stored for WhatsApp order links (ticket 48); email is used until then. */
     whatsappPhone: text('whatsapp_phone'),
+    /** The language of the Provider's order emails and order page. */
+    language: providerLanguage('language').notNull().default('hr'),
     taxNumber: text('tax_number'),
     /** The platform's commission in basis points (12.5 % = 1250). */
     commissionBp: integer('commission_bp').notNull().default(0),

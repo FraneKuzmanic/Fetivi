@@ -1,22 +1,40 @@
-import { OFFER_LIMITS } from '@fetivi/domain/offer-vocabulary';
+import {
+  OFFER_LIMITS,
+  PROVIDER_LANGUAGES,
+  type ProviderLanguage,
+} from '@fetivi/domain/offer-vocabulary';
 import { LIMITS } from '@fetivi/domain/vocabulary';
 import { CaretRight, Plus } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { type OfferSummary, type Provider, type ProviderInput, providers } from '../../api';
-import { CheckboxField, NumberField, Section, TextArea, TextField } from '../../forms/fields';
-import { AVAILABILITY_MODE_SHORT, OFFER_CATEGORY_LABELS } from '../../forms/labels';
+import {
+  CheckboxField,
+  NumberField,
+  Section,
+  SelectField,
+  TextArea,
+  TextField,
+} from '../../forms/fields';
+import {
+  AVAILABILITY_MODE_SHORT,
+  OFFER_CATEGORY_LABELS,
+  PROVIDER_LANGUAGE_LABELS,
+} from '../../forms/labels';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
 import { useAction } from '../../useAction';
 import { bpFromPercent, formatPrice, percentFromBp } from './money';
 
 const WHATSAPP_HINT = 'Stored for order links by WhatsApp later; email is used for now.';
+const LANGUAGE_LABEL = 'Language for order emails';
+const LANGUAGE_HINT = 'Also the language of the order page the email links to.';
 
 interface Draft {
   name: string | null;
   email: string | null;
   whatsappPhone: string | null;
+  language: ProviderLanguage;
   taxNumber: string | null;
   commissionPercent: number | null;
   dealNotes: string | null;
@@ -27,6 +45,7 @@ const draftOf = (p: Provider): Draft => ({
   name: p.name,
   email: p.email,
   whatsappPhone: p.whatsappPhone,
+  language: p.language,
   taxNumber: p.taxNumber,
   commissionPercent: percentFromBp(p.commissionBp),
   dealNotes: p.dealNotes,
@@ -60,6 +79,7 @@ export function NewProviderPage() {
   const [name, setName] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [whatsappPhone, setWhatsappPhone] = useState<string | null>(null);
+  const [language, setLanguage] = useState<ProviderLanguage>('hr');
   const [commission, setCommission] = useState<number | null>(0);
 
   function submit(event: FormEvent) {
@@ -69,6 +89,7 @@ export function NewProviderPage() {
         name: name ?? '',
         email: email ?? '',
         whatsappPhone,
+        language,
         commissionBp: bpFromPercent(commission) ?? 0,
       });
       navigate(`/admin/providers/${created.id}`, { replace: true });
@@ -109,6 +130,14 @@ export function NewProviderPage() {
               value={whatsappPhone}
               maxLength={LIMITS.phone}
               onChange={setWhatsappPhone}
+            />
+            <SelectField
+              label={LANGUAGE_LABEL}
+              hint={LANGUAGE_HINT}
+              value={language}
+              options={PROVIDER_LANGUAGES}
+              labels={PROVIDER_LANGUAGE_LABELS}
+              onChange={(value) => setLanguage(value ?? 'hr')}
             />
             <CommissionField value={commission} onChange={setCommission} />
           </div>
@@ -197,10 +226,11 @@ export function ProviderPage() {
 
         <Section
           title="Contact"
-          onSave={save(['name', 'email', 'whatsappPhone', 'taxNumber'], {
+          onSave={save(['name', 'email', 'whatsappPhone', 'language', 'taxNumber'], {
             name: draft.name ?? '',
             email: draft.email ?? '',
             whatsappPhone: draft.whatsappPhone,
+            language: draft.language,
             taxNumber: draft.taxNumber,
           })}
         >
@@ -227,6 +257,14 @@ export function ProviderPage() {
             value={draft.whatsappPhone}
             maxLength={LIMITS.phone}
             onChange={set('whatsappPhone')}
+          />
+          <SelectField
+            label={LANGUAGE_LABEL}
+            hint={LANGUAGE_HINT}
+            value={draft.language}
+            options={PROVIDER_LANGUAGES}
+            labels={PROVIDER_LANGUAGE_LABELS}
+            onChange={(value) => set('language')(value ?? 'hr')}
           />
           <TextField
             label="Tax number"

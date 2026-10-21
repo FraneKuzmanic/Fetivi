@@ -14,6 +14,7 @@ import type {
   OrderKind,
   PaymentMode,
   PriceUnit,
+  ProviderLanguage,
 } from '@fetivi/domain/offer-vocabulary';
 import type {
   Amenity,
@@ -268,6 +269,11 @@ export const CONTACT_FIELDS_LABELS: Record<ContactFields, string> = {
   name: 'Name',
   phone: 'Phone',
   name_and_phone: 'Name and phone',
+};
+
+export const PROVIDER_LANGUAGE_LABELS: Record<ProviderLanguage, string> = {
+  hr: 'Hrvatski',
+  en: 'English',
 };
 
 export const PRICE_UNIT_LABELS: Record<PriceUnit, string> = {

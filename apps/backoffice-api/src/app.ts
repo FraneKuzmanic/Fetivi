@@ -7,6 +7,7 @@ import { catalogRoutes } from './catalog/routes';
 import { hostRoutes } from './host/routes';
 import { registerErrorHandler } from './http-error';
 import { propertyRoutes } from './properties/routes';
+import { providerLinkRoutes } from './provider-link/routes';
 import { providerRoutes } from './providers/routes';
 import { stayRoutes } from './stays/routes';
 
@@ -39,6 +40,7 @@ export function buildApp(deps: AppDeps) {
   app.register(adminRoutes, { db, now });
   app.register(catalogRoutes, { db, queue, now });
   app.register(providerRoutes, { db, queue, now });
+  app.register(providerLinkRoutes, { db, queue, now });
   app.register(stayRoutes, { db, now, guestOrigin });
   return app;
 }

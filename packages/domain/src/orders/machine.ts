@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { Executor, Tx } from '../db/client';
 import { allotmentSlots, providers } from '../db/schema/offers';
 import {
@@ -14,16 +14,19 @@ import { spaces } from '../db/schema/spaces';
 import { stays } from '../db/schema/stays';
 import type { JobQueue } from '../jobs/queue';
 import { lockOfferRow } from '../offers/translation';
+import { allotmentAdapter, restoreSeats } from '../services/adapters/allotment';
+import { AdapterError } from '../services/adapters/interface';
 import { type CivilDate, endOfCivilDay, toLocalDateTime } from '../time';
 import { enqueueNotification, type OrderTimerJobData, scheduleTimer } from './timers';
-import { actionTarget, nextStatus, type OrderAction, REQUIRED_NOTIFICATION } from './transitions';
+import { actionTarget, nextStatus, type OrderAction, requiredNotifications } from './transitions';
 import type { OrderStatus, OrderTrigger, Proposer } from './vocabulary';
 
 // The Order state machine: the only writer of `orders.status` and `orders.payment_status`.
 // Every transition runs in one transaction that locks the Order row, writes the status and its
 // OrderEvent, applies the hold and seat effects, and inserts the next jobs through the same
 // transaction. Passing a transaction as `db` makes this a savepoint inside the caller's.
-// Lock order everywhere: Order row, then slot row (createOrder: Offer, then slot).
+// Allotment seats are taken and returned through the allotment adapter, inside the machine's
+// transaction. Lock order everywhere: Order row, then slot row (createOrder: Offer, then slot).
 // Pay-direct only: Payment status stays `none` (ticket 33 adds payments here).
 
 export interface OrderDeps {
@@ -141,7 +144,7 @@ async function assertSlot(
   return slot;
 }
 
-/** Writes the status, its OrderEvent and the notification the new status requires. */
+/** Writes the status, its OrderEvent and the notifications the change requires. */
 async function writeStatus(
   tx: Tx,
   deps: OrderDeps,
@@ -169,8 +172,9 @@ async function writeStatus(
     note: meta.note,
     createdAt: now,
   });
-  const kind = to === 'awaiting_confirmation' ? 'order_new_proposal' : REQUIRED_NOTIFICATION[to];
-  if (kind) await enqueueNotification(tx, deps.queue, { orderId: order.id, proposalId, kind });
+  for (const kind of requiredNotifications(order.status, to, meta.trigger)) {
+    await enqueueNotification(tx, deps.queue, { orderId: order.id, proposalId, kind });
+  }
   return updated;
 }
 
@@ -237,27 +241,33 @@ async function placeHold(
 ) {
   if (!hold) throw new OrderRuleError('invalid-input');
   if (proposal.slotId) {
-    const taken = await tx
-      .update(allotmentSlots)
-      .set({ remaining: sql`${allotmentSlots.remaining} - ${proposal.quantity}` })
-      .where(
-        and(
-          eq(allotmentSlots.id, proposal.slotId),
-          gte(allotmentSlots.remaining, proposal.quantity),
-        ),
-      )
-      .returning({ id: allotmentSlots.id });
-    if (taken.length === 0) throw new OrderRuleError('sold-out');
+    try {
+      await allotmentAdapter.hold(
+        { db: tx, now: deps.now },
+        {
+          orderId: order.id,
+          proposalId: proposal.id,
+          slotId: proposal.slotId,
+          quantity: proposal.quantity,
+          expiresAt: hold.expiresAt,
+        },
+      );
+    } catch (error) {
+      if (error instanceof AdapterError && error.code === 'sold-out') {
+        throw new OrderRuleError('sold-out');
+      }
+      throw error;
+    }
+  } else {
+    await tx.insert(inventoryHolds).values({
+      orderId: order.id,
+      proposalId: proposal.id,
+      externalRef: hold.externalRef,
+      quantity: proposal.quantity,
+      expiresAt: hold.expiresAt,
+      createdAt: deps.now(),
+    });
   }
-  await tx.insert(inventoryHolds).values({
-    orderId: order.id,
-    proposalId: proposal.id,
-    slotId: proposal.slotId,
-    externalRef: hold.externalRef,
-    quantity: proposal.quantity,
-    expiresAt: hold.expiresAt,
-    createdAt: deps.now(),
-  });
   await scheduleTimer(
     tx,
     deps.queue,
@@ -267,23 +277,8 @@ async function placeHold(
 }
 
 /** Releases the proposal's hold, held or committed, and returns its seats to the slot. */
-async function releaseHold(tx: Tx, deps: OrderDeps, proposalId: string) {
-  const [released] = await tx
-    .update(inventoryHolds)
-    .set({ state: 'released', resolvedAt: deps.now() })
-    .where(
-      and(
-        eq(inventoryHolds.proposalId, proposalId),
-        inArray(inventoryHolds.state, ['held', 'committed']),
-      ),
-    )
-    .returning();
-  if (released?.slotId) {
-    await tx
-      .update(allotmentSlots)
-      .set({ remaining: sql`${allotmentSlots.remaining} + ${released.quantity}` })
-      .where(eq(allotmentSlots.id, released.slotId));
-  }
+function releaseHold(tx: Tx, deps: OrderDeps, proposalId: string) {
+  return restoreSeats({ db: tx, now: deps.now }, proposalId);
 }
 
 /** The effects of entering `confirming` or `pending_provider` after the guest's confirmation. */

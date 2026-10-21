@@ -142,6 +142,7 @@ describe('providers', () => {
       email: 'bookings@mare.example',
       commissionBp: 1_500,
       whatsappPhone: null,
+      language: 'hr',
       stripeConnected: false,
       active: true,
       offerCount: 0,
@@ -150,12 +151,18 @@ describe('providers', () => {
     const patched = await patch(
       t.app,
       `/api/admin/providers/${providerId}`,
-      { whatsappPhone: '+385 91 234 5678', taxNumber: 'HR12345678901', dealNotes: '<b>Net</b> 30' },
+      {
+        whatsappPhone: '+385 91 234 5678',
+        language: 'en',
+        taxNumber: 'HR12345678901',
+        dealNotes: '<b>Net</b> 30',
+      },
       adminCookie,
     );
     expect(patched.statusCode).toBe(200);
     expect(patched.json()).toMatchObject({
       whatsappPhone: '+385 91 234 5678',
+      language: 'en',
       taxNumber: 'HR12345678901',
       dealNotes: 'Net 30',
     });
@@ -168,6 +175,7 @@ describe('providers', () => {
   it.each([
     ['a duplicate name', { name: 'Mare Trogir Boats', email: 'x@example.test' }],
     ['a bad email', { name: 'Other', email: 'not-an-email' }],
+    ['an unknown language', { name: 'Other', email: 'x@example.test', language: 'de' }],
     ['a commission over 100 %', { name: 'Other', email: 'x@example.test', commissionBp: 10_001 }],
     [
       'a Stripe account id',

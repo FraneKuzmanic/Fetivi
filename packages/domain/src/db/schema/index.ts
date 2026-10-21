@@ -6,6 +6,7 @@ export * from './catalog';
 export * from './conversations';
 export * from './info-blocks';
 export * from './metrics';
+export * from './notifications';
 export * from './offers';
 export * from './orders';
 export * from './properties';

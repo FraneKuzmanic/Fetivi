@@ -41,6 +41,12 @@ export type ContactFields = (typeof CONTACT_FIELDS)[number];
 export const PRICE_UNITS = ['person', 'group', 'item'] as const;
 export type PriceUnit = (typeof PRICE_UNITS)[number];
 
+/** The language of a Provider's order emails and order page. */
+export const PROVIDER_LANGUAGES = ['hr', 'en'] as const;
+export type ProviderLanguage = (typeof PROVIDER_LANGUAGES)[number];
+
+export const PROVIDER_DEFAULTS = { language: 'hr' } as const;
+
 /** The Provider booking engines a live Offer can use. */
 export const ADAPTER_KINDS = ['bokun'] as const;
 export type AdapterKind = (typeof ADAPTER_KINDS)[number];

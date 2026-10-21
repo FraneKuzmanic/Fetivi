@@ -90,5 +90,9 @@ export const ORDER_NOTIFICATIONS = [
   'order_new_proposal',
   /** To the admin, who phones the Provider (36). */
   'admin_window_missed',
+  /** To the Provider, with the per-order link, when an instant Order is confirmed (15). */
+  'provider_confirmed',
+  /** To the admin: the Provider tapped Can't fulfil (15). */
+  'admin_provider_cancelled',
 ] as const;
 export type OrderNotification = (typeof ORDER_NOTIFICATIONS)[number];

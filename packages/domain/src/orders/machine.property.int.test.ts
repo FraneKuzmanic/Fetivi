@@ -23,7 +23,7 @@ import {
   runOrderTimer,
 } from './machine';
 import type { OrderTimerJobData } from './timers';
-import { REQUIRED_NOTIFICATION } from './transitions';
+import { requiredNotifications } from './transitions';
 import { isFinalOrderStatus } from './vocabulary';
 
 // Rebuilt from spike S2's property test for the pay-direct invariants: random interleavings of
@@ -427,13 +427,9 @@ class World {
     const actual = notes.map((n) => `${n.data.orderId} ${n.data.proposalId} ${n.data.kind}`);
     const expected: string[] = [];
     for (const e of events) {
-      const kind =
-        e.toStatus === 'awaiting_confirmation'
-          ? e.fromStatus === null
-            ? undefined
-            : 'order_new_proposal'
-          : REQUIRED_NOTIFICATION[e.toStatus];
-      if (kind) expected.push(`${e.orderId} ${e.proposalId} ${kind}`);
+      for (const kind of requiredNotifications(e.fromStatus, e.toStatus, e.trigger)) {
+        expected.push(`${e.orderId} ${e.proposalId} ${kind}`);
+      }
     }
     for (const proposalId of this.windowAlerts) {
       const p = proposals.find((x) => x.id === proposalId);

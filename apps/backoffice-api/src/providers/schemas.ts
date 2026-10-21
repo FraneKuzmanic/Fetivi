@@ -10,6 +10,8 @@ import {
   ORDER_KINDS,
   PAYMENT_MODES,
   PRICE_UNITS,
+  PROVIDER_DEFAULTS,
+  PROVIDER_LANGUAGES,
 } from '@fetivi/domain';
 import { z } from 'zod';
 import { Email } from '../auth/accounts';
@@ -25,6 +27,8 @@ const providerFields = {
   name: line(LIMITS.name),
   email: Email,
   whatsappPhone: phone,
+  /** The language of the Provider's order emails and order page. */
+  language: z.enum(PROVIDER_LANGUAGES),
   taxNumber: optionalLine(OFFER_LIMITS.taxNumber),
   commissionBp: z.number().int().min(0).max(OFFER_LIMITS.commissionBpMax),
   dealNotes: optionalText(OFFER_LIMITS.dealNotes),
@@ -34,6 +38,7 @@ const providerFields = {
 export const ProviderCreate = z.strictObject({
   ...providerFields,
   whatsappPhone: providerFields.whatsappPhone.optional(),
+  language: providerFields.language.default(PROVIDER_DEFAULTS.language),
   taxNumber: providerFields.taxNumber.optional(),
   commissionBp: providerFields.commissionBp.default(0),
   dealNotes: providerFields.dealNotes.optional(),

@@ -26,6 +26,7 @@ export function providerOut(row: ProviderRow, offerCount = 0) {
     name: row.name,
     email: row.email,
     whatsappPhone: row.whatsappPhone,
+    language: row.language,
     taxNumber: row.taxNumber,
     commissionBp: row.commissionBp,
     dealNotes: row.dealNotes,

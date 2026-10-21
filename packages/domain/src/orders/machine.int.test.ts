@@ -152,7 +152,7 @@ describe('allotment Order', () => {
     expect(confirmed.order.paymentStatus).toBe('none');
     expect(confirmed.order.providerExternalRef).toBe('ALLOT-1');
     expect((await holdOf(proposal.id))?.state).toBe('committed');
-    expect(await notifyKinds(order.id)).toEqual(['order_confirmed']);
+    expect((await notifyKinds(order.id)).sort()).toEqual(['order_confirmed', 'provider_confirmed']);
     const completion = await jobsOf(order.id, QUEUES.orderTimer);
     const done = completion.find((j) => j.data.operation === 'completion');
     expect(done?.start_ms).toBe(endOfCheckoutDay(DAY, 'Europe/Zagreb').getTime());
@@ -177,7 +177,12 @@ describe('allotment Order', () => {
     expect(cancelled.order.status).toBe('cancelled');
     expect(await remaining(slotId)).toBe(4);
     expect((await holdOf(proposal.id))?.state).toBe('released');
-    expect(await notifyKinds(order.id)).toEqual(['order_confirmed', 'order_cancelled']);
+    expect((await notifyKinds(order.id)).sort()).toEqual([
+      'admin_provider_cancelled',
+      'order_cancelled',
+      'order_confirmed',
+      'provider_confirmed',
+    ]);
 
     // The completion timer after cancellation no longer applies: stale.
     const afterCancel = await runOrderTimer(deps(), { ...ref, operation: 'completion' });
