@@ -466,6 +466,7 @@ export const de = {
     place: 'Als Block hinzufügen',
     placeIn: 'Bereich',
     scrubbed: 'Ein Code oder Passwort wurde aus diesem Text entfernt.',
+    checkWarnings: 'Prüfen Sie das vor dem Bestätigen.',
     bedsHint: 'Die Betten ändern Sie nach dem Bestätigen im Schritt.',
     amenitiesLabel: 'Ausstattung',
     nothingFound: 'In diesem Hausbuch wurde nichts Neues gefunden.',

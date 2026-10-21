@@ -470,6 +470,7 @@ export const it = {
     place: 'Aggiungi come blocco',
     placeIn: 'Sezione',
     scrubbed: 'Un codice o una password sono stati tolti da questo testo.',
+    checkWarnings: 'Controlli questo prima di confermare.',
     bedsHint: 'Modifichi i letti nel passaggio dopo la conferma.',
     amenitiesLabel: 'Servizi',
     nothingFound: 'In questo manuale non è stato trovato nulla di nuovo.',

@@ -35,6 +35,8 @@ describe.skipIf(!live)('Anthropic manual import model (live)', () => {
       expect(`${block.title}\n${block.body}`).not.toContain('4821');
     }
     expect(blocks.some((b) => b.category === 'how_tos')).toBe(true);
+    // Public emergency numbers are not secrets and stay in the blocks.
+    expect(blocks.map((b) => b.body).join('\n')).toContain('112');
     const everything = [...unmapped, ...blocks.map((b) => b.body)].join('\n');
     expect(everything).toContain('Mici');
   }, 180_000);

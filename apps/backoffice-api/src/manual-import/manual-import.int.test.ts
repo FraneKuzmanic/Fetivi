@@ -1,16 +1,19 @@
 import {
   accounts,
   actAsAudit,
-  emptyExtraction,
   infoBlocks,
   loadEffectiveUnit,
   type ManualDraftItem,
   type ManualExtractionData,
   QUEUES,
+} from '@fetivi/domain';
+import {
+  emptyExtraction,
+  minimalDocx,
+  minimalPdf,
   SAMPLE_MANUAL,
   sampleExtraction,
-} from '@fetivi/domain';
-import { minimalDocx, minimalPdf } from '@fetivi/domain/testing';
+} from '@fetivi/domain/testing';
 import { eq, or } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAdmin } from '../cli/create-admin';

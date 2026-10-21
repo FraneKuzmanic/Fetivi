@@ -1,4 +1,5 @@
 import { CHECK_IN_METHODS, LIMITS, PARKING_TYPES } from '@fetivi/domain/vocabulary';
+import { wizardField } from '@fetivi/domain/wizard';
 import { Check, PencilSimple, X } from '@phosphor-icons/react';
 import { type ReactNode, useState } from 'react';
 import type {
@@ -198,7 +199,8 @@ function FieldDraftRow({
   const [values, setValues] = useState<ManualDraftValues>(item.values);
   const columns = draftColumns(item);
   const now = item.status === 'pending' ? savedSummary(item, loaded, copy) : null;
-  const multi = columns.length > 1;
+  // A draft may hold only some of a field's columns: the field decides whether they need labels.
+  const multi = wizardField(item.fieldId).columns.length > 1;
 
   return (
     <DraftRow
@@ -472,7 +474,7 @@ function BlockDraftRow({
       )}
       {item.scrubbed ? <p className="muted">{copy.manualImport.scrubbed}</p> : null}
       {item.status === 'pending' && item.warnings.length > 0 ? (
-        <SecretWarnings warnings={item.warnings} lead="Check this before you confirm." />
+        <SecretWarnings warnings={item.warnings} lead={copy.manualImport.checkWarnings} />
       ) : null}
     </DraftRow>
   );

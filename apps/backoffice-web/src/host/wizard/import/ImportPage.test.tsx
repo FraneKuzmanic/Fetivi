@@ -216,6 +216,20 @@ describe('ImportPage', () => {
     expect(rowOf('Checkout by').textContent).toContain('Now: 11:00');
   });
 
+  it('labels a value that is one part of a multi-part field', async () => {
+    stubApi([
+      {
+        id: 'd1',
+        status: 'pending',
+        kind: 'field',
+        fieldId: 'quiet_hours',
+        values: { quietHoursTo: '07:00' },
+      },
+    ]);
+    await mount();
+    expect(rowOf('Quiet hours').querySelector('dt')?.textContent).toBe('Until');
+  });
+
   it('confirms a draft as it is', async () => {
     stubApi(ITEMS);
     await mount();

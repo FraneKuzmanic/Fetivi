@@ -467,6 +467,7 @@ export const fr = {
     place: 'Ajouter comme bloc',
     placeIn: 'Section',
     scrubbed: 'Un code ou un mot de passe a été retiré de ce texte.',
+    checkWarnings: 'Vérifiez ceci avant de confirmer.',
     bedsHint: 'Modifiez les lits dans l’étape après confirmation.',
     amenitiesLabel: 'Équipements',
     nothingFound: 'Rien de nouveau n’a été trouvé dans ce livret.',

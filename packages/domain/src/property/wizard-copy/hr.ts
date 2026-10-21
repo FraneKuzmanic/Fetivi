@@ -459,6 +459,7 @@ export const hr = {
     place: 'Dodaj kao blok',
     placeIn: 'Odjeljak',
     scrubbed: 'Kod ili lozinka uklonjeni su iz ovog teksta.',
+    checkWarnings: 'Provjerite ovo prije potvrde.',
     bedsHint: 'Krevete promijenite u koraku nakon potvrde.',
     amenitiesLabel: 'Sadržaji',
     nothingFound: 'U ovim uputama nije pronađeno ništa novo.',

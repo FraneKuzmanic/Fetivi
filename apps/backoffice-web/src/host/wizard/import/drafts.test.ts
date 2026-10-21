@@ -113,4 +113,11 @@ describe('import review helpers', () => {
     if (unset.kind !== 'field') throw new Error('field');
     expect(savedSummary(unset, loaded, en)).toBeNull();
   });
+
+  it('labels the saved value of a draft that holds one column of a multi-column field', () => {
+    const loaded = { quietHoursFrom: '22:00:00', quietHoursTo: '07:30:00' } as DraftValues;
+    const draft = field('d1', 'quiet_hours', { quietHoursTo: '07:00' });
+    if (draft.kind !== 'field') throw new Error('field');
+    expect(savedSummary(draft, loaded, en)).toBe('Until 07:30');
+  });
 });

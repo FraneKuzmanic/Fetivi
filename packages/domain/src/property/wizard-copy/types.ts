@@ -74,6 +74,7 @@ export interface WizardCopy {
     place: string;
     placeIn: string;
     scrubbed: string;
+    checkWarnings: string;
     bedsHint: string;
     amenitiesLabel: string;
     nothingFound: string;

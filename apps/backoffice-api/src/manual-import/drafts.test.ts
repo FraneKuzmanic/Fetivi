@@ -1,10 +1,10 @@
 import {
-  emptyExtraction,
+  LIMITS,
   type ManualDraftItem,
   type ManualExtractionData,
-  sampleExtraction,
   type WizardValues,
 } from '@fetivi/domain';
+import { emptyExtraction, sampleExtraction } from '@fetivi/domain/testing';
 import { describe, expect, it } from 'vitest';
 import { buildDrafts } from './drafts';
 
@@ -201,5 +201,36 @@ describe('buildDrafts', () => {
       empty,
     );
     expect(ofKind(items, 'unmapped').map((u) => u.text)).toEqual(['Cat visits']);
+  });
+
+  it('scrubs extracted secrets from unmapped text, a rejected secret value included', () => {
+    const tooLong = 'p'.repeat(LIMITS.wifiPassword + 1);
+    const extraction = {
+      ...withFields({ doorCode: '4821', wifiPassword: tooLong }),
+      unmapped: ['Type 4821# and push the door.'],
+    };
+    const unmapped = ofKind(buildDrafts(extraction, empty), 'unmapped');
+    expect(unmapped.map((u) => [u.text, u.fieldId])).toEqual([
+      ['***', 'wifi'],
+      ['Type ***# and push the door.', null],
+    ]);
+  });
+
+  it('keeps an over-long title in the unmapped text', () => {
+    const title = 't'.repeat(LIMITS.title + 1);
+    const [item] = buildDrafts({ ...emptyExtraction(), blocks: [block({ title })] }, empty);
+    expect(item).toMatchObject({ kind: 'unmapped', text: `${title}\n\nPress ON/OFF.` });
+  });
+
+  it('moves a rejected amenity note to unmapped and still proposes the amenity', () => {
+    const note = 'n'.repeat(LIMITS.amenityNote + 1);
+    const items = buildDrafts(
+      { ...emptyExtraction(), amenities: [{ amenity: 'ac', note }] },
+      empty,
+    );
+    expect(items).toMatchObject([
+      { kind: 'amenities', amenities: [{ amenity: 'ac', note: null }] },
+      { kind: 'unmapped', text: note, fieldId: null },
+    ]);
   });
 });

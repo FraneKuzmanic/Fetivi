@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { scrubSecrets } from './scrub';
+import { scrubSecrets, scrubTexts } from './scrub';
 
 describe('scrubSecrets', () => {
   it('replaces a password in the title and the body', () => {
@@ -41,5 +41,14 @@ describe('scrubSecrets', () => {
   it('treats a keypad code with # as a literal', () => {
     const [block] = scrubSecrets([{ title: 't', body: 'Type 4821# and push.' }], ['4821#']);
     expect(block?.body).toBe('Type *** and push.');
+  });
+});
+
+describe('scrubTexts', () => {
+  it('replaces secrets in plain texts', () => {
+    expect(scrubTexts(['Type 4821# and push the door.', 'No secret here.'], ['4821'])).toEqual([
+      'Type ***# and push the door.',
+      'No secret here.',
+    ]);
   });
 });

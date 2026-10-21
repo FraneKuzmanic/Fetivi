@@ -12,7 +12,7 @@ fields:
 - Set noWifi to true only if the manual says there is no Wi-Fi.
 - beds lists the beds the manual mentions, by type and count; leave it empty if it mentions none.
 
-Secrets: the Wi-Fi password, the door, keypad or smart-lock code, the lockbox code, the building entrance code and every phone number go only in their fields. Never write one of these values into a block title or body. Where a block needs one, write instead that the guest finds it in their arrival details or Wi-Fi details, in the manual's language.
+Secrets: the Wi-Fi password, the door, keypad or smart-lock code, the lockbox code, the building entrance code, the host's phone number and the emergency contact's phone number go only in their fields. Never write one of these values into a block title or body. Public numbers such as 112, the ambulance, a pharmacy or a taxi are not secrets: keep them in the blocks. Where a block needs one, write instead that the guest finds it in their arrival details or Wi-Fi details, in the manual's language.
 
 amenities: only items from the list that the manual says the place has. Add a short note only when the manual gives a useful detail about the item; otherwise null.
 

@@ -185,5 +185,4 @@ export const MANUAL_SOURCES = ['paste', 'pdf', 'docx', 'txt'] as const;
 export type ManualSource = (typeof MANUAL_SOURCES)[number];
 
 /** A house manual draft: pending until the host confirms or dismisses it. */
-export const DRAFT_STATUSES = ['pending', 'confirmed', 'dismissed'] as const;
-export type DraftStatus = (typeof DRAFT_STATUSES)[number];
+export type DraftStatus = 'pending' | 'confirmed' | 'dismissed';

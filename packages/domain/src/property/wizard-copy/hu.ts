@@ -464,6 +464,7 @@ export const hu = {
     place: 'Hozzáadás blokként',
     placeIn: 'Szakasz',
     scrubbed: 'Egy kódot vagy jelszót eltávolítottunk ebből a szövegből.',
+    checkWarnings: 'Ellenőrizze ezt a megerősítés előtt.',
     bedsHint: 'Az ágyakat a megerősítés után a lépésben módosíthatja.',
     amenitiesLabel: 'Felszereltség',
     nothingFound: 'Ebben a tájékoztatóban nem találtunk újat.',

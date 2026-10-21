@@ -14,9 +14,7 @@ import {
   WIZARD_PROMPT_KEYS,
   type WizardFieldId,
   type WizardPromptKey,
-  type WizardStepId,
   type WizardValues,
-  wizardField,
 } from '../wizard-config';
 
 /**
@@ -45,10 +43,6 @@ export const IMPORTABLE_FIELD_IDS = [
   'emergency_contact',
 ] as const satisfies readonly WizardFieldId[];
 export type ImportableFieldId = (typeof IMPORTABLE_FIELD_IDS)[number];
-
-export function isImportableFieldId(id: string): id is ImportableFieldId {
-  return (IMPORTABLE_FIELD_IDS as readonly string[]).includes(id);
-}
 
 /** The columns that hold secrets; their values must never appear in block text. */
 export const SECRET_COLUMNS = [
@@ -111,7 +105,6 @@ export const ManualExtraction = z.strictObject({
   unmapped: z.array(z.string()),
 });
 export type ManualExtractionData = z.infer<typeof ManualExtraction>;
-export type ExtractedBlock = ManualExtractionData['blocks'][number];
 
 export type WizardColumn = keyof WizardValues;
 
@@ -137,17 +130,3 @@ export type ManualDraftItem = DraftBase &
       }
     | { kind: 'unmapped'; text: string; fieldId: ImportableFieldId | null }
   );
-
-/** The wizard step a draft belongs to; unmapped drafts belong to none. */
-export function draftStep(item: ManualDraftItem): WizardStepId | null {
-  switch (item.kind) {
-    case 'field':
-      return wizardField(item.fieldId).step;
-    case 'amenities':
-      return 'wifi_essentials';
-    case 'block':
-      return item.category;
-    case 'unmapped':
-      return null;
-  }
-}

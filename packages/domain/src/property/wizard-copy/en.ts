@@ -458,6 +458,7 @@ export const en = {
     place: 'Add as block',
     placeIn: 'Section',
     scrubbed: 'A code or password was moved out of this text.',
+    checkWarnings: 'Check this before you confirm.',
     bedsHint: 'Change beds in the step after confirming.',
     amenitiesLabel: 'Amenities',
     nothingFound: 'Nothing new was found in this manual.',

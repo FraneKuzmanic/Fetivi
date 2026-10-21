@@ -8,6 +8,7 @@ import {
   type ManualExtractionData,
   SECRET_COLUMNS,
   scrubSecrets,
+  scrubTexts,
   stripMarkdownHtml,
   stripMarkup,
   type WizardColumn,
@@ -62,6 +63,9 @@ function sameValue(column: WizardColumn, draft: unknown, current: unknown): bool
   return draft === current;
 }
 
+/** Text the import could not place, before the secrets are scrubbed from it. */
+type Leftover = { text: string; fieldId: ImportableFieldId | null };
+
 const rawText = (raw: unknown) => (typeof raw === 'object' ? JSON.stringify(raw) : String(raw));
 
 /** The extracted columns of a field that the manual states, before validation. */
@@ -90,9 +94,9 @@ function statedColumns(
 function fieldDrafts(
   fields: ManualExtractionData['fields'],
   current: WizardValues,
-): { drafts: DraftInput[]; unmapped: DraftInput[] } {
+): { drafts: DraftInput[]; unmapped: Leftover[] } {
   const drafts: DraftInput[] = [];
-  const unmapped: DraftInput[] = [];
+  const unmapped: Leftover[] = [];
   for (const fieldId of IMPORTABLE_FIELD_IDS) {
     const field = wizardField(fieldId);
     const values: Partial<Record<WizardColumn, unknown>> = {};
@@ -102,7 +106,7 @@ function fieldDrafts(
     ][]) {
       const parsed = columnSchema(field, column).safeParse(raw);
       if (!parsed.success) {
-        unmapped.push({ kind: 'unmapped', text: rawText(raw), fieldId });
+        unmapped.push({ text: rawText(raw), fieldId });
         continue;
       }
       // Empty after markup stripping: nothing stated.
@@ -119,39 +123,41 @@ const AmenityEntry = AmenitiesBody.shape.amenities.element;
 function amenityDraft(
   amenities: ManualExtractionData['amenities'],
   present: readonly Amenity[],
-): DraftInput[] {
+): { drafts: DraftInput[]; unmapped: Leftover[] } {
   const seen = new Set<Amenity>(present);
   const list: { amenity: Amenity; note: string | null }[] = [];
+  const unmapped: Leftover[] = [];
   for (const entry of amenities) {
     if (seen.has(entry.amenity)) continue;
     seen.add(entry.amenity);
     const parsed = AmenityEntry.safeParse(entry);
-    // A note over the limit is dropped; the amenity itself is still worth proposing.
+    // A note the validator rejects becomes unmapped; the amenity itself is still worth proposing.
+    if (!parsed.success && entry.note) unmapped.push({ text: entry.note, fieldId: null });
     list.push({ amenity: entry.amenity, note: parsed.success ? (parsed.data.note ?? null) : null });
   }
-  return list.length > 0 ? [{ kind: 'amenities', amenities: list }] : [];
+  return { drafts: list.length > 0 ? [{ kind: 'amenities', amenities: list }] : [], unmapped };
 }
 
 const Title = line(LIMITS.title);
 
-function blockDrafts(extraction: ManualExtractionData): {
-  drafts: DraftInput[];
-  unmapped: DraftInput[];
-} {
-  const secrets = SECRET_COLUMNS.map((c) => extraction.fields[c]);
+function blockDrafts(
+  extraction: ManualExtractionData,
+  secrets: readonly (string | null)[],
+): { drafts: DraftInput[]; unmapped: Leftover[] } {
   const drafts: DraftInput[] = [];
-  const unmapped: DraftInput[] = [];
+  const unmapped: Leftover[] = [];
   const usedKeys = new Set<WizardPromptKey>();
   for (const block of scrubSecrets(extraction.blocks, secrets)) {
     const title = Title.safeParse(block.title);
     const body = stripMarkdownHtml(block.body);
     if (!title.success || body === '') {
-      const text = body || stripMarkup(block.title);
-      if (text) unmapped.push({ kind: 'unmapped', text, fieldId: null });
+      // The title too: one over the limit is still the host's text.
+      const text = [stripMarkup(block.title), body].filter(Boolean).join('\n\n');
+      if (text) unmapped.push({ text, fieldId: null });
       continue;
     }
     if (drafts.length >= LIMITS.manualBlocks) {
-      unmapped.push({ kind: 'unmapped', text: `${title.data}\n\n${body}`, fieldId: null });
+      unmapped.push({ text: `${title.data}\n\n${body}`, fieldId: null });
       continue;
     }
     let wizardKey = block.wizardKey;
@@ -172,15 +178,28 @@ function blockDrafts(extraction: ManualExtractionData): {
   return { drafts, unmapped };
 }
 
-function unmappedDrafts(texts: readonly string[], taken: Set<string>): DraftInput[] {
-  const out: DraftInput[] = [];
-  for (const raw of texts) {
+/**
+ * The unmapped drafts: the leftovers, then the model's own unmapped paragraphs not already among
+ * them. A host can place any of them as a block, so the secrets are scrubbed from all of them.
+ */
+function unmappedDrafts(
+  leftovers: readonly Leftover[],
+  paragraphs: readonly string[],
+  secrets: readonly (string | null)[],
+): DraftInput[] {
+  const all = [...leftovers];
+  const taken = new Set(leftovers.map((l) => l.text));
+  for (const raw of paragraphs) {
     const text = stripMarkup(raw);
     if (!text || taken.has(text)) continue;
     taken.add(text);
-    out.push({ kind: 'unmapped', text, fieldId: null });
+    all.push({ text, fieldId: null });
   }
-  return out;
+  const texts = scrubTexts(
+    all.map((l) => l.text),
+    secrets,
+  );
+  return all.map((l, i) => ({ kind: 'unmapped', text: texts[i] ?? '', fieldId: l.fieldId }));
 }
 
 /**
@@ -191,16 +210,16 @@ export function buildDrafts(
   extraction: ManualExtractionData,
   current: { values: WizardValues; amenities: readonly Amenity[] },
 ): ManualDraftItem[] {
+  const secrets = SECRET_COLUMNS.map((c) => extraction.fields[c]);
   const fields = fieldDrafts(extraction.fields, current.values);
-  const blocks = blockDrafts(extraction);
-  const leftovers = [...fields.unmapped, ...blocks.unmapped];
-  const taken = new Set(leftovers.map((u) => (u.kind === 'unmapped' ? u.text : '')));
+  const amenities = amenityDraft(extraction.amenities, current.amenities);
+  const blocks = blockDrafts(extraction, secrets);
+  const leftovers = [...fields.unmapped, ...amenities.unmapped, ...blocks.unmapped];
   const items: DraftInput[] = [
     ...fields.drafts,
-    ...amenityDraft(extraction.amenities, current.amenities),
+    ...amenities.drafts,
     ...blocks.drafts,
-    ...leftovers,
-    ...unmappedDrafts(extraction.unmapped, taken),
+    ...unmappedDrafts(leftovers, extraction.unmapped, secrets),
   ];
   return items.map(
     (item, i) => ({ ...item, id: `d${i + 1}`, status: 'pending' }) as ManualDraftItem,

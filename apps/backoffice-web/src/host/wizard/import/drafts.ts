@@ -206,7 +206,7 @@ export function savedSummary(
   if (!differs) return null;
   return saved
     .map((c) =>
-      columns.length > 1
+      wizardField(item.fieldId).columns.length > 1
         ? `${columnLabel(item, c, copy)} ${formatDraftValue(c, loaded[c], copy)}`
         : formatDraftValue(c, loaded[c], copy),
     )

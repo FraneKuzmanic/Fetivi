@@ -461,6 +461,7 @@ export const pl = {
     place: 'Dodaj jako blok',
     placeIn: 'Sekcja',
     scrubbed: 'Kod lub hasło zostały usunięte z tego tekstu.',
+    checkWarnings: 'Sprawdź to przed potwierdzeniem.',
     bedsHint: 'Łóżka zmienisz w kroku po potwierdzeniu.',
     amenitiesLabel: 'Udogodnienia',
     nothingFound: 'W tej instrukcji nie znaleziono nic nowego.',
