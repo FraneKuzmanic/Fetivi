@@ -1,7 +1,7 @@
 import { BED_TYPES, type HostBlockCategory, LIMITS } from '@fetivi/domain/vocabulary';
 import { CaretRight, DownloadSimple, Plus, Trash } from '@phosphor-icons/react';
 import { useCallback, useEffect, useId, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import {
   type Block,
   host,
@@ -22,7 +22,7 @@ import { TranslationChip } from './translations/TranslationChip';
 import { usePendingRefresh } from './translations/usePendingRefresh';
 import { CompletenessBar } from './wizard/CompletenessBar';
 import { useWizardCopy } from './wizard/copy';
-import { GoLivePanel } from './wizard/GoLivePanel';
+import { GoLivePanel, UNIT_BLOCKS_ID } from './wizard/GoLivePanel';
 
 type Draft = Required<UnitPatch>;
 
@@ -55,6 +55,13 @@ export function UnitPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // A link with a section hash (the go-live checklist's translations item) scrolls to it on load.
+  const { hash } = useLocation();
+  const loaded = detail !== null;
+  useEffect(() => {
+    if (loaded && hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
+  }, [loaded, hash]);
 
   usePendingRefresh([...(detail?.blocks ?? []), ...(detail?.propertyBlocks ?? [])], async () =>
     setDetail(await host.unit(id)),
@@ -240,6 +247,7 @@ export function UnitPage() {
         />
 
         <Section
+          id={UNIT_BLOCKS_ID}
           title="Guest information"
           description="Property blocks show on this unit unless you hide or replace them here."
         >

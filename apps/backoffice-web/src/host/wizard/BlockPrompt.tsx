@@ -1,6 +1,6 @@
 import { LIMITS } from '@fetivi/domain/vocabulary';
 import { type WizardLevel, type WizardPromptKey, wizardField } from '@fetivi/domain/wizard';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { host, type SecretWarning, type UnitDetail } from '../../api';
 import { TextField } from '../../forms/fields';
 import { useAction } from '../../useAction';
@@ -33,6 +33,12 @@ export function BlockPrompt({
   const [body, setBody] = useState('');
   const [warnings, setWarnings] = useState<SecretWarning[]>([]);
   const config = wizardField(promptKey).prompt;
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  // Bring the whole editor, Save included, out from under the sticky footer.
+  useEffect(() => {
+    if (open) editorRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [open]);
 
   function start() {
     setTitle(existing?.title ?? copy.prompts[promptKey].defaultTitle);
@@ -63,7 +69,7 @@ export function BlockPrompt({
     <WizardField id={promptKey} level={level} filled={existing !== null}>
       {warnings.length > 0 ? <SecretWarnings warnings={warnings} /> : null}
       {open ? (
-        <div className="prompt-editor">
+        <div className="prompt-editor" ref={editorRef}>
           <TextField
             label={copy.ui.blockTitle}
             value={title}

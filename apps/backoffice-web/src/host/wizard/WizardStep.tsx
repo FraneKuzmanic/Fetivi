@@ -31,20 +31,21 @@ import {
 import { useAction } from '../../useAction';
 import { BlockPrompt } from './BlockPrompt';
 import { format, useWizardCopy } from './copy';
+import { LanguagePicker } from './LanguagePicker';
 import {
   type DraftValues,
   fieldPatches,
   fieldTarget,
   loadedValues,
+  same,
   toggledAmenities,
 } from './targets';
 import { WizardField } from './WizardField';
 import { useStepState } from './WizardOverview';
 
 const RELEASE_DAYS = ['0', '1', '2', '3', '4', '5', '6', '7'] as const;
-const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-/** The desktop stepper: every step, the current one marked. */
+/** The stepper: every step, the current one marked. Phones show the numbers only. */
 function Stepper({ status, current }: { status: WizardStatus; current: WizardStepId }) {
   const { ui, steps } = useWizardCopy();
   const stepState = useStepState();
@@ -65,7 +66,7 @@ function Stepper({ status, current }: { status: WizardStatus; current: WizardSte
                 <span className="stepper-mark" aria-hidden="true">
                   {done ? <CheckCircle weight="fill" /> : i + 1}
                 </span>
-                {steps[stepId].title}
+                <span className="stepper-title">{steps[stepId].title}</span>
               </Link>
             </li>
           );
@@ -454,11 +455,14 @@ export function WizardStep({
     <div className="wizard-layout">
       <Stepper status={status} current={stepId} />
       <div className="wizard-content">
-        <nav className="crumbs" aria-label="Breadcrumb">
-          <Link to={`/units/${detail.id}`}>{detail.name}</Link>
-          <span aria-hidden="true">/</span>
-          <Link to={overviewPath}>{ui.setup}</Link>
-        </nav>
+        <div className="wizard-step-top">
+          <nav className="crumbs" aria-label="Breadcrumb">
+            <Link to={`/units/${detail.id}`}>{detail.name}</Link>
+            <span aria-hidden="true">/</span>
+            <Link to={overviewPath}>{ui.setup}</Link>
+          </nav>
+          <LanguagePicker />
+        </div>
         <header className="wizard-step-head">
           <span className="eyebrow">
             {format(ui.stepOf, { n: index + 1, total: WIZARD_STEP_IDS.length })}

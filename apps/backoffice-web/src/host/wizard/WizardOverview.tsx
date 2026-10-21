@@ -1,5 +1,10 @@
 import { PROPERTY_TYPES, type PropertyType } from '@fetivi/domain/vocabulary';
-import { WIZARD_STEP_IDS, type WizardStepId, wizardStepPath } from '@fetivi/domain/wizard';
+import {
+  fieldsOfStep,
+  WIZARD_STEP_IDS,
+  type WizardStepId,
+  wizardStepPath,
+} from '@fetivi/domain/wizard';
 import { CaretRight, CheckCircle } from '@phosphor-icons/react';
 import { type ReactNode, useId } from 'react';
 import { Link } from 'react-router';
@@ -11,6 +16,8 @@ import { format, useWizardCopy } from './copy';
 export function useStepState() {
   const { ui } = useWizardCopy();
   return (status: WizardStatus, stepId: WizardStepId) => {
+    // A step with no questions (Saved places) is not "Done": the host filled nothing in.
+    if (fieldsOfStep(stepId).length === 0) return { tone: 'neutral', text: ui.noFields };
     const step = status.progress.steps[stepId];
     if (step.missingRequired.length > 0) {
       return { tone: 'wait', text: format(ui.requiredLeft, { n: step.missingRequired.length }) };

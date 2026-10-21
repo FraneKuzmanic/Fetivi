@@ -1554,9 +1554,68 @@ button svg,
   color: var(--gray-500);
 }
 
-/* Steps: the stepper shows on wide screens only; phones read "Step n of 7". */
+/* Steps: phones show the step numbers in a row; wide screens list the titles in a side column. */
 .wizard-stepper {
+  margin-bottom: 12px;
+}
+
+.wizard-stepper ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.wizard-stepper a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  border-radius: 999px;
+  color: var(--gray-500);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.wizard-stepper a[aria-current="step"] {
+  color: var(--blue-600);
+  background: var(--sky-100);
+}
+
+.wizard-stepper .stepper-mark svg {
+  font-size: 18px;
+  color: var(--success);
+}
+
+/* Phones reach the overview from the breadcrumb; the titles stay readable to screen readers. */
+.wizard-stepper .stepper-overview {
   display: none;
+}
+
+.stepper-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.wizard-step-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+/* Keeps a focused field or an opened editor clear of the sticky footer and the bottom nav. */
+html:has(.wizard-footer) {
+  scroll-padding-bottom: 200px;
 }
 
 .wizard-step-head {
@@ -1719,6 +1778,10 @@ button svg,
 }
 
 @media (min-width: 900px) {
+  html:has(.wizard-footer) {
+    scroll-padding-bottom: 96px;
+  }
+
   .wizard-footer {
     bottom: 0;
     margin: 0;
@@ -1744,37 +1807,43 @@ button svg,
   .wizard-stepper {
     position: sticky;
     top: 32px;
+    margin-bottom: 0;
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .stepper-overview {
+  .wizard-stepper .stepper-overview {
+    display: flex;
     font-size: 14px;
     color: var(--gray-500);
   }
 
+  .stepper-title {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+
   .wizard-stepper ol {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
     flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0;
     border-left: 2px solid var(--gray-200);
   }
 
   .wizard-stepper a {
     display: flex;
-    align-items: center;
+    justify-content: flex-start;
     gap: 10px;
-    min-height: var(--tap);
     margin-left: -2px;
     padding: 6px 12px;
     border-left: 2px solid transparent;
-    color: var(--gray-500);
-    font-size: 14px;
+    border-radius: 0;
     font-weight: 500;
-    text-decoration: none;
   }
 
   .wizard-stepper a:hover {
@@ -1792,10 +1861,5 @@ button svg,
     justify-content: center;
     width: 20px;
     flex: none;
-  }
-
-  .stepper-mark svg {
-    font-size: 18px;
-    color: var(--success);
   }
 }

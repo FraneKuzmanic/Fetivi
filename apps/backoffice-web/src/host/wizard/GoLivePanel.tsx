@@ -2,10 +2,13 @@ import { GO_LIVE_ITEMS, GO_LIVE_TARGETS, wizardStepPath } from '@fetivi/domain/w
 import { CheckCircle, Circle } from '@phosphor-icons/react';
 import { useEffect, useId, useRef } from 'react';
 import { Link } from 'react-router';
-import type { WizardStatus } from '../../api';
+import { host, type WizardStatus } from '../../api';
 import { useWizardCopy } from './copy';
 
 const POLL_MS = 5000;
+
+/** The id of the unit page's Guest information section. */
+export const UNIT_BLOCKS_ID = 'guest-information';
 
 /**
  * The go-live minimum as a checklist, and the Go live button. While translations are the only
@@ -45,6 +48,11 @@ export function GoLivePanel({
     <section className="panel go-live" aria-labelledby={headingId}>
       <h2 id={headingId}>{goLive.title}</h2>
       <p className={status.live ? 'go-live-state live' : 'muted'}>{summary}</p>
+      {status.live ? (
+        <a href={host.qrUrl(status.unitId, 'svg')} target="_blank" rel="noreferrer">
+          {goLive.openQr}
+        </a>
+      ) : null}
       {status.live && fieldsMissing ? (
         <p className="warning" role="status">
           {goLive.noLongerMet}
@@ -54,6 +62,12 @@ export function GoLivePanel({
         {GO_LIVE_ITEMS.map((item) => {
           const done = !missing.has(item);
           const target = GO_LIVE_TARGETS[item];
+          // Translations have no wizard field: the link goes to the unit's blocks.
+          const to = target
+            ? wizardStepPath(status.unitId, target.stepId, target.fieldId)
+            : item === 'translations'
+              ? `/units/${status.unitId}#${UNIT_BLOCKS_ID}`
+              : null;
           return (
             <li key={item} className={done ? 'checklist-item done' : 'checklist-item'}>
               {done ? (
@@ -62,13 +76,7 @@ export function GoLivePanel({
                 <Circle aria-hidden="true" />
               )}
               <span className="checklist-text">
-                {done || !target ? (
-                  goLive[item]
-                ) : (
-                  <Link to={wizardStepPath(status.unitId, target.stepId, target.fieldId)}>
-                    {goLive[item]}
-                  </Link>
-                )}
+                {done || !to ? goLive[item] : <Link to={to}>{goLive[item]}</Link>}
                 {!done && item === 'approval' ? <small>{goLive.waitingApproval}</small> : null}
                 {!done && item === 'translations' ? (
                   <small>{goLive.translationsPending}</small>

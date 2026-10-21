@@ -63,7 +63,7 @@ export function loadedValues(detail: UnitDetail, property: PropertyDetail): Draf
   };
 }
 
-const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+export const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 /**
  * The minimal PATCH bodies for one step: only the changed columns of the step's visible fields,

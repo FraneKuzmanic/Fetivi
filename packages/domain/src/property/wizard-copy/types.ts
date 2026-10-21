@@ -45,11 +45,10 @@ export interface WizardCopy {
     stepOf: string;
     steps: string;
     overview: string;
-    backToUnit: string;
     back: string;
     saveContinue: string;
     saveExit: string;
-    saved: string;
+    noFields: string;
     continueSetup: string;
     review: string;
     openWizard: string;

@@ -72,7 +72,9 @@ export function ApprovalsPage() {
                     disabled={busy}
                     onClick={() => {
                       if (
-                        window.confirm(`Approve ${p.name}? Its units get their permanent QR links.`)
+                        window.confirm(
+                          `Approve ${p.name}? Units that meet the go-live minimum get their QR links now; the others when they go live.`,
+                        )
                       ) {
                         void run(async () => {
                           await admin.approve(p.id);

@@ -275,12 +275,14 @@ export function CheckboxField({
  * is looking at, so an untouched section is never cleared by accident.
  */
 export function Section({
+  id,
   title,
   description,
   onSave,
   saveLabel = 'Save',
   children,
 }: {
+  id?: string;
   title: string;
   description?: ReactNode;
   onSave?: () => Promise<void>;
@@ -321,7 +323,7 @@ export function Section({
   );
 
   return (
-    <section className="panel" aria-labelledby={headingId}>
+    <section id={id} className="panel" aria-labelledby={headingId}>
       <h2 id={headingId}>{title}</h2>
       {description ? <p className="muted">{description}</p> : null}
       {onSave ? <form onSubmit={submit}>{body}</form> : body}
