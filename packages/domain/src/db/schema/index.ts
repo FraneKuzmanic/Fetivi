@@ -8,6 +8,7 @@ export * from './info-blocks';
 export * from './metrics';
 export * from './offers';
 export * from './properties';
+export * from './saved-places';
 export * from './sessions';
 export * from './spaces';
 export * from './stays';

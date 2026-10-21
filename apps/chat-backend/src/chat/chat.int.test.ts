@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
+  createCatalogRecord,
   destinations,
   findConversation,
   loadMessages,
@@ -453,5 +454,173 @@ describe('About me in the conversation', () => {
     );
     const read = await get(t.app, '/api/about-me', cookie);
     expect(read.json()).toMatchObject({ aboutMe: { needs: [] } });
+  });
+});
+
+const textAndCallStep = (text: string, toolName: string, input: unknown): StreamResult => ({
+  stream: simulateReadableStream({
+    chunks: [
+      { type: 'stream-start', warnings: [] },
+      { type: 'text-start', id: 't1' },
+      { type: 'text-delta', id: 't1', delta: text },
+      { type: 'text-end', id: 't1' },
+      { type: 'tool-call', toolCallId: `call-${toolName}`, toolName, input: JSON.stringify(input) },
+      {
+        type: 'finish',
+        finishReason: { unified: 'tool-calls', raw: 'tool_use' },
+        usage: usage(100, 10),
+      },
+    ],
+  }),
+});
+
+describe('Recommendation components', () => {
+  async function seedRestaurants(t: ChatTestApp) {
+    const { destinationId } = await seedTrogir(t.db, noopQueue, t.clock.now());
+    for (const [title, x] of [
+      ['Konoba Mala', 16.2513],
+      ['Konoba Velika', 16.2531],
+    ] as const) {
+      await createCatalogRecord(
+        t.db,
+        noopQueue,
+        {
+          destinationId,
+          kind: 'place',
+          placeCategory: 'restaurant',
+          title,
+          description: `${title} serves grilled fish.`,
+          location: { x, y: 43.5169 },
+        },
+        t.clock.now(),
+      );
+    }
+    await publishCatalog(t.db, destinationId);
+  }
+
+  const components = (parts: { type: string }[]) =>
+    parts.filter((p) => p.type === 'data-component') as unknown as {
+      type: string;
+      id: string;
+      data: { name: string; payload: Record<string, unknown> };
+    }[];
+
+  it('"where should we eat tonight" streams and stores a carousel and follow-up chips', async () => {
+    const model = mockModel([
+      callStep('search_places', { category: 'restaurant', date: '2027-07-12' }),
+      textAndCallStep('Try Konoba Mala tonight.', 'suggest_replies', {
+        replies: ['Show me on a map', 'Something cheaper'],
+      }),
+      textStep('never reached'),
+    ]);
+    const { t, cookie, space } = await setup(model);
+    await seedRestaurants(t);
+
+    const response = await send(t, cookie, 'Where should we eat tonight?');
+    expect(response.statusCode).toBe(200);
+    // The loop stopped after the step that only showed chips.
+    expect(model.doStreamCalls).toHaveLength(2);
+
+    const chunks = readStream(response);
+    expect(chunks.filter((c) => c.type === 'start')).toHaveLength(1);
+    const searched = chunks.findIndex(
+      (c) => c.type === 'tool-output-available' && c.toolCallId === 'call-search_places',
+    );
+    const carousel = chunks[searched + 1] as unknown as {
+      type: string;
+      data: { name: string; payload: { places: { title: string }[] } };
+    };
+    expect(carousel).toMatchObject({ type: 'data-component', data: { name: 'place-carousel' } });
+    expect(carousel.data.payload.places.map((p) => p.title)).toEqual([
+      '[en] Konoba Mala',
+      '[en] Konoba Velika',
+    ]);
+    expect(chunks).toContainEqual({
+      type: 'data-component',
+      id: 'call-suggest_replies',
+      data: {
+        name: 'follow-up-chips',
+        payload: { replies: ['Show me on a map', 'Something cheaper'] },
+      },
+    });
+
+    const history = (await get(t.app, '/api/chat', cookie)).json() as {
+      messages: { role: string; parts: { type: string }[] }[];
+    };
+    const answer = history.messages.at(-1);
+    expect(answer?.role).toBe('assistant');
+    const types = answer?.parts.map((p) => p.type) ?? [];
+    expect(types.indexOf('text')).toBeLessThan(types.lastIndexOf('data-component'));
+    expect(components(answer?.parts ?? []).map((p) => p.data.name)).toEqual([
+      'place-carousel',
+      'follow-up-chips',
+    ]);
+
+    const { rows } = await stored(t, space.space.id);
+    expect(components(rows.at(-1)?.parts ?? []).map((p) => p.data.name)).toEqual([
+      'place-carousel',
+      'follow-up-chips',
+    ]);
+    // Presentation calls are not MCP calls.
+    const [metrics] = await t.db.select().from(turnMetrics);
+    expect(metrics?.toolNames).toEqual(['search_places']);
+  });
+
+  it('shows no component for an empty search or invalid chips, and the text still streams', async () => {
+    const model = mockModel([
+      callStep('search_places', { category: 'nightlife', date: '2027-07-12' }),
+      textAndCallStep('Nothing checked for that.', 'suggest_replies', {
+        replies: ['a', 'b', 'c', 'd', 'e', 'f'],
+      }),
+      textStep('Anything else?'),
+    ]);
+    const { t, cookie } = await setup(model);
+
+    const chunks = readStream(await send(t, cookie, 'Any nightlife?'));
+    expect(chunks.some((c) => c.type === 'data-component')).toBe(false);
+    expect(
+      chunks.some(
+        (c) =>
+          (c.type === 'tool-input-error' || c.type === 'tool-output-error') &&
+          c.toolCallId === 'call-suggest_replies',
+      ),
+    ).toBe(true);
+    // The invalid call went back to the model, which answered in text.
+    expect(model.doStreamCalls).toHaveLength(3);
+    expect(chunks).toContainEqual(expect.objectContaining({ delta: 'Anything else?' }));
+    expect(chunks.at(-1)?.type).toBe('finish');
+  });
+
+  it('lets the model answer in text when it showed chips without any', async () => {
+    const model = mockModel([
+      callStep('suggest_replies', { replies: ['Thanks'] }),
+      textStep('Here is what I would do.'),
+    ]);
+    const { t, cookie } = await setup(model);
+
+    const chunks = readStream(await send(t, cookie, 'Any tips?'));
+    expect(model.doStreamCalls).toHaveLength(2);
+    expect(chunks).toContainEqual(
+      expect.objectContaining({ data: expect.objectContaining({ name: 'follow-up-chips' }) }),
+    );
+    expect(chunks).toContainEqual(expect.objectContaining({ delta: 'Here is what I would do.' }));
+  });
+
+  it('does not resend component parts to the model', async () => {
+    const model = mockModel([
+      callStep('search_places', { category: 'restaurant', date: '2027-07-12' }),
+      textAndCallStep('Try Konoba Mala.', 'suggest_replies', { replies: ['Thanks'] }),
+      textStep('You are welcome.'),
+    ]);
+    const { t, cookie } = await setup(model);
+    await seedRestaurants(t);
+
+    await send(t, cookie, 'Where should we eat tonight?');
+    await send(t, cookie, 'Thanks');
+    const prompt = JSON.stringify(model.doStreamCalls[2]?.prompt);
+    expect(prompt).toContain('Konoba Mala');
+    expect(prompt).not.toContain('place-carousel');
+    expect(prompt).not.toContain('data-component');
+    expect(prompt).not.toContain('follow-up-chips');
   });
 });

@@ -8,6 +8,7 @@ import {
   PARTY_SHAPES,
 } from '@fetivi/domain/about-me-vocabulary';
 import { GUEST_LANGUAGES } from '@fetivi/domain/vocabulary';
+import { radioMove } from '@fetivi/ui';
 import type { ReactNode } from 'react';
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
@@ -16,7 +17,7 @@ import type { Space } from '../api';
 import { locales, setLanguage } from '../i18n';
 import { SpaceProvider } from '../space';
 import { AboutMePage, saveQueue } from './AboutMePage';
-import { ChoiceGroup, radioMove } from './ChoiceGroup';
+import { ChoiceGroup } from './ChoiceGroup';
 import { STEPS, TripFlow } from './TripFlow';
 
 afterEach(() => setLanguage('en'));

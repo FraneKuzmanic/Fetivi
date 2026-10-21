@@ -8,6 +8,7 @@ import { useSpace } from '../space';
 import { Composer } from './Composer';
 import { chatErrorKey, chatTransport, getChatHistory } from './chat-api';
 import { MessageList } from './MessageList';
+import { SavedPlacesProvider } from './render/SavedPlaces';
 import { StarterCards } from './StarterCards';
 import { TripCard } from './TripCard';
 import { skipTripCard, tripCardKey } from './trip-card';
@@ -97,6 +98,9 @@ export function ChatView({ initial }: { initial: UIMessage[] }) {
     setDraft((d) => d || pending.current);
   }, [error, setMessages]);
 
+  // "Something else" on a choice card: the guest types their own answer.
+  const focusComposer = useCallback(() => document.getElementById('chat-input')?.focus(), []);
+
   const errorKey = error ? chatErrorKey(error) : null;
   return (
     <div className="chat-view">
@@ -117,7 +121,15 @@ export function ChatView({ initial }: { initial: UIMessage[] }) {
         </>
       )}
       {flow !== 'closed' && !closed && <TripFlow onFinish={() => setFlow('done')} />}
-      <MessageList messages={messages} status={status} />
+      <SavedPlacesProvider closed={closed}>
+        <MessageList
+          messages={messages}
+          status={status}
+          interactive={!busy && !closed}
+          onSend={send}
+          onSomethingElse={focusComposer}
+        />
+      </SavedPlacesProvider>
       {errorKey && (
         <div className="chat-error" role="alert">
           <p>{t(errorKey)}</p>

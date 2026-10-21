@@ -1,0 +1,487 @@
+/*
+ * Styles of the shared components. They use the importing app's tokens (--blue-600, --tap, the
+ * radii...), which that app defines on :root. Borders over shadows, no gradients, no nested panels;
+ * every target is at least var(--tap) high.
+ */
+
+/* Follow-up chips */
+
+.fv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fv-chip {
+  min-height: var(--tap);
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--blue-600);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--blue-700);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+}
+
+.fv-chip:hover {
+  background: var(--sky-100);
+}
+
+/* Choice question card */
+
+.fv-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+}
+
+.fv-choice-question {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.fv-choice-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fv-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--tap);
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  color: var(--navy-900);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+}
+
+.fv-option:hover {
+  border-color: var(--blue-600);
+}
+
+.fv-option[aria-pressed="true"] {
+  border-color: var(--blue-600);
+  background: var(--sky-100);
+  color: var(--blue-600);
+}
+
+.fv-option svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.fv-choice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.fv-choice-send {
+  min-height: var(--tap);
+  padding: 0.5rem 1.5rem;
+  border: 2px solid var(--blue-600);
+  border-radius: 999px;
+  background: var(--blue-600);
+  color: var(--white);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fv-choice-send:disabled {
+  border-color: var(--gray-300);
+  background: var(--gray-300);
+  color: var(--navy-900);
+  cursor: not-allowed;
+}
+
+.fv-choice-else {
+  min-height: var(--tap);
+  padding: 0.5rem 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--blue-600);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.fv-choice-past {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--gray-500);
+  font-size: 0.9375rem;
+}
+
+/* Places: view switch and carousel */
+
+.fv-places {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.fv-view-switch {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.1875rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 999px;
+  background: var(--white);
+}
+
+.fv-view-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--tap);
+  padding: 0.375rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--gray-500);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.fv-view-switch button[aria-pressed="true"] {
+  background: var(--sky-100);
+  color: var(--blue-700);
+}
+
+.fv-view-switch svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.fv-carousel {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.125rem 0.125rem 0.5rem;
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  border-radius: var(--radius-lg);
+}
+
+.fv-card {
+  flex: none;
+  width: min(16rem, 80vw);
+  scroll-snap-align: start;
+}
+
+.fv-card article {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+}
+
+.fv-card-media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--sky-100);
+}
+
+.fv-card-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fv-illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--blue-600);
+}
+
+.fv-illustration svg {
+  width: 3rem;
+  height: 3rem;
+}
+
+.fv-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--sun-500);
+  border-radius: 999px;
+  background: var(--sun-100);
+  color: var(--navy-900);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.fv-badge svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--sun-500);
+}
+
+.fv-credit {
+  margin: 0;
+  padding: 0.25rem 0.875rem 0;
+  color: var(--gray-500);
+  font-size: 0.75rem;
+}
+
+.fv-credit a {
+  color: inherit;
+}
+
+.fv-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.625rem 0.875rem 0.875rem;
+}
+
+.fv-card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.fv-card-summary {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--navy-900);
+  font-size: 0.875rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.fv-card-meta,
+.fv-card-note {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 0.8125rem;
+}
+
+.fv-save {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.375rem;
+  min-height: var(--tap);
+  margin-top: auto;
+  padding: 0.375rem 0.875rem 0.375rem 0.625rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--navy-900);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.fv-save:hover {
+  border-color: var(--blue-600);
+}
+
+.fv-save[aria-pressed="true"] {
+  border-color: var(--blue-600);
+  background: var(--sky-100);
+  color: var(--blue-700);
+}
+
+.fv-save svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Map with list */
+
+.fv-maplist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* The list comes first in the DOM; the map shows above it. */
+.fv-maplist-map {
+  order: -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.fv-map {
+  height: 12rem;
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  background: var(--sky-100);
+}
+
+.fv-map-expand,
+.fv-map-close {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.375rem;
+  min-height: var(--tap);
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--navy-900);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.fv-map-expand:hover,
+.fv-map-close:hover {
+  border-color: var(--blue-600);
+}
+
+.fv-map-expand svg,
+.fv-map-close svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.fv-maplist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fv-maplist-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+
+.fv-maplist-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fv-maplist-title {
+  font-weight: 500;
+}
+
+.fv-maplist-meta {
+  color: var(--gray-500);
+  font-size: 0.8125rem;
+}
+
+.fv-marker {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid var(--white);
+  border-radius: 999px;
+  background: var(--blue-600);
+  color: var(--white);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.fv-map-note {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 0.875rem;
+}
+
+.fv-map-dialog {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--white);
+  color: var(--navy-900);
+}
+
+.fv-map-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.fv-map-dialog-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.fv-map-dialog-bar h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.fv-map-full {
+  flex: 1;
+  min-height: 50vh;
+  border: 0;
+  border-radius: 0;
+}
+
+.fv-map-dialog .fv-maplist-list {
+  max-height: 35vh;
+  padding: 0.75rem 1rem 1rem;
+  overflow-y: auto;
+}

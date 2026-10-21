@@ -120,7 +120,7 @@ export function get(app: FastifyInstance, url: string, cookie?: string) {
 }
 
 export function write(
-  method: 'POST' | 'PATCH' | 'PUT',
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   app: FastifyInstance,
   url: string,
   body: unknown,

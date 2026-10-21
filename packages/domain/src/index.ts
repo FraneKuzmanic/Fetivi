@@ -10,6 +10,7 @@ export * from './metrics';
 export * from './offers';
 export * from './projection';
 export * from './property';
+export * from './saved-places';
 export * from './situation';
 export * from './spaces';
 export * from './stays';

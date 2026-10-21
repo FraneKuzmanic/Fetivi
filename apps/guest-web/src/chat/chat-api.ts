@@ -1,3 +1,4 @@
+import { COMPONENT_PART_TYPE } from '@fetivi/ui/payloads';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import { api } from '../api';
 
@@ -11,6 +12,12 @@ export function messageText(message: UIMessage): string {
     .filter(Boolean)
     .join('\n');
 }
+
+/** A Fetivi component part (validated again before it renders). */
+export const isComponentPart = (
+  part: UIMessage['parts'][number],
+): part is { type: typeof COMPONENT_PART_TYPE; id?: string; data: unknown } =>
+  part.type === COMPONENT_PART_TYPE;
 
 /** The text of the newest guest message: the only thing the server is sent. */
 export function lastUserText(messages: UIMessage[]): string {

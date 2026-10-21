@@ -1,13 +1,6 @@
+import { radioMove } from '@fetivi/ui';
 import { Check } from '@phosphor-icons/react';
 import { useRef } from 'react';
-
-const ARROWS: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
-
-/** Where an arrow key moves within a radio group of `count` options (wrapping), or null for other keys. */
-export function radioMove(key: string, index: number, count: number): number | null {
-  const by = ARROWS[key];
-  return by === undefined ? null : (index + by + count) % count;
-}
 
 /** Tappable options for one About me field. Single: a radio group; multi: toggle buttons in a fieldset. */
 export function ChoiceGroup<C extends string>({

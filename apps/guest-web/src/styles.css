@@ -747,6 +747,26 @@ input {
   gap: 0.5rem;
 }
 
+.fetivi-turn {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* Cards and maps use the column's full width; bubbles keep their own. */
+.fetivi-turn > .fv-places,
+.fetivi-turn > .fv-choice {
+  align-self: stretch;
+}
+
+.save-error-note {
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
 .avatar {
   flex: none;
   width: 2.25rem;

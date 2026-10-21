@@ -132,6 +132,28 @@ export const en = {
   error: {
     network: 'No connection. Check your internet and try again.',
   },
+  components: {
+    followUps: 'Suggested replies',
+    somethingElse: 'Something else',
+    send: 'Send',
+    places: 'Places',
+    placesShown: 'Place cards shown: {{count}}',
+    viewCards: 'Cards',
+    viewMap: 'Map',
+    expandMap: 'Expand map',
+    closeMap: 'Close map',
+    photoOf: 'Photo of {{title}}',
+    photoCredit: 'Photo: {{credit}}',
+    km: '{{distance}} km away',
+    minutes: '{{minutes}} min away',
+    lastChecked: 'Last checked {{month}} · call ahead',
+    unverified: 'Call ahead to check',
+    hostPick: "Your host's pick",
+    save: 'Save',
+    saved: 'Saved',
+    saveError: "That didn't save. Try again.",
+    mapUnavailable: "The map couldn't load. The list has every place.",
+  },
 } as const;
 
 /** The shape every locale fills, with plain strings. */

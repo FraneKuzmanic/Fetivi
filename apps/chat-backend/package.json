@@ -12,6 +12,7 @@
     "@fastify/cookie": "11.1.3",
     "@fetivi/domain": "workspace:*",
     "@fetivi/egress": "workspace:*",
+    "@fetivi/ui": "workspace:*",
     "@modelcontextprotocol/client": "2.3.1",
     "ai": "7.0.142",
     "drizzle-orm": "0.45.4",

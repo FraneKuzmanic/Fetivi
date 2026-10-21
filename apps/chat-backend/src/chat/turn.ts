@@ -19,6 +19,7 @@ import {
 import type { Egress } from '@fetivi/egress';
 import {
   convertToModelMessages,
+  createUIMessageStream,
   createUIMessageStreamResponse,
   isStepCount,
   type LanguageModel,
@@ -37,6 +38,8 @@ import {
   situationNote,
   systemInstructions,
 } from '../prompt/prompt';
+import { withComponentParts } from '../stream/parts';
+import { endsWithPresentation, presentationTools } from '../stream/presentation';
 import { mintServerTokens, type TokenConfig } from '../tokens/mint';
 import { CHAT_MODEL_ID, CHAT_PROVIDER_OPTIONS, MAX_OUTPUT_TOKENS, MAX_STEPS } from './model';
 
@@ -145,7 +148,12 @@ export async function runTurn(
     ) as Record<McpServerName, string>;
     const listed = await listTurnTools(deps.catalog, turnClients, scopes);
     const calls: string[] = [];
-    const tools = toAiTools(listed, { clients: turnClients, onCall: (n) => calls.push(n) });
+    const mcpTools = toAiTools(listed, { clients: turnClients, onCall: (n) => calls.push(n) });
+    const shownTools = presentationTools();
+    for (const name of Object.keys(shownTools)) {
+      if (name in mcpTools) throw new Error(`A server exposes the presentation tool ${name}`);
+    }
+    const tools = { ...mcpTools, ...shownTools };
 
     const originalMessages = [...history.map(rowToUiMessage), ...newMessages];
     const messages = await convertToModelMessages(originalMessages, { tools });
@@ -156,7 +164,7 @@ export async function runTurn(
       // Only the server makes system messages: the request body carries nothing but text.
       allowSystemInMessages: true,
       tools,
-      stopWhen: isStepCount(MAX_STEPS),
+      stopWhen: [isStepCount(MAX_STEPS), endsWithPresentation],
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       providerOptions: CHAT_PROVIDER_OPTIONS,
       onError: ({ error }) => log.error({ err: error }, 'chat turn failed'),
@@ -189,27 +197,37 @@ export async function runTurn(
       });
     };
 
-    const response = createUIMessageStreamResponse({
-      stream: toUIMessageStream({
-        stream: result.stream,
-        tools,
-        originalMessages,
-        // Thinking is neither shown nor stored; earlier turns are resent without it.
-        sendReasoning: false,
-        generateMessageId: randomUUID,
-        onEnd: async ({ responseMessage, outcome }) => {
-          try {
-            if (outcome.status === 'completed') await persist(responseMessage);
-          } catch (error) {
-            log.error({ err: error }, 'chat turn not stored');
-          } finally {
-            await turnClients.close();
-            running.delete(spaceId);
-          }
-        },
-        onError: () => 'turn-failed',
-      }),
+    // The outer stream owns the message id and persistence, so the stored answer holds the same
+    // component parts, in the same order, as the browser saw.
+    const stream = createUIMessageStream({
+      originalMessages,
+      generateId: randomUUID,
+      execute: ({ writer }) => {
+        writer.merge(
+          toUIMessageStream({
+            stream: result.stream,
+            tools,
+            // Thinking is neither shown nor stored; earlier turns are resent without it.
+            sendReasoning: false,
+            // The model run decides whether the turn completed; the outer stream only adds parts.
+            onEnd: ({ outcome }) => writer.setOutcome(outcome),
+            onError: () => 'turn-failed',
+          }).pipeThrough(withComponentParts()),
+        );
+      },
+      onEnd: async ({ responseMessage, outcome }) => {
+        try {
+          if (outcome.status === 'completed') await persist(responseMessage);
+        } catch (error) {
+          log.error({ err: error }, 'chat turn not stored');
+        } finally {
+          await turnClients.close();
+          running.delete(spaceId);
+        }
+      },
+      onError: () => 'turn-failed',
     });
+    const response = createUIMessageStreamResponse({ stream });
     // Runs the model to the end even if the browser goes away.
     void Promise.resolve(result.consumeStream()).catch(() => {});
     return response;
