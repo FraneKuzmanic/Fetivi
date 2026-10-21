@@ -61,6 +61,12 @@ export interface PausedCall {
   input: unknown;
 }
 
+/** A paused call with the guest's answer and the stored `requestState`. */
+export type AnsweredCall = PausedCall & {
+  requestState: string;
+  answer: Omit<GuestAnswer, 'toolCallId'>;
+};
+
 /** A paused call with this turn's MCP clients. */
 export type McpPausedCall = PausedCall & { clients: TurnClients };
 
@@ -127,9 +133,7 @@ export function firstHalf(call: McpPausedCall): Promise<Outcome> {
 }
 
 /** The second half: the guest's answer with the stored `requestState`, untouched. */
-export function answer(
-  call: McpPausedCall & { requestState: string; answer: Omit<GuestAnswer, 'toolCallId'> },
-): Promise<Outcome> {
+export function answer(call: AnsweredCall & { clients: TurnClients }): Promise<Outcome> {
   const response = {
     action: call.answer.action,
     ...(call.answer.action === 'accept' ? { content: call.answer.content ?? {} } : {}),

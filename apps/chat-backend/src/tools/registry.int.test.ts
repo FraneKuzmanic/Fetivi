@@ -374,3 +374,27 @@ describe('the pending record', () => {
     },
   );
 });
+
+describe('a paused tool the caller no longer has', () => {
+  it.each(['mcp', 'inprocess'] as const)(
+    'expires both halves and books nothing (%s)',
+    async (transport) => {
+      const s = await seeded();
+      const live = await open(transport, s.ctx);
+      const call = await pausedCall(live, s.args);
+      const first = card(await live.firstHalf(call));
+      // After checkout create_order is not listed: no orders:create in the token or identity.
+      const ended = await open(transport, { ...s.ctx, phase: 'ended' });
+      const expired = { kind: 'error', errorText: EXPIRED };
+      expect(await ended.firstHalf(call)).toEqual(expired);
+      expect(
+        await ended.answer({
+          ...call,
+          requestState: first.requestState,
+          answer: { action: 'accept', content: CONTACT },
+        }),
+      ).toEqual(expired);
+      expect((await pendingRow(first.draft?.pendingId ?? ''))?.state).toBe('pending');
+    },
+  );
+});

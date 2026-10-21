@@ -10,17 +10,15 @@ import {
 import type { Egress } from '@fetivi/egress';
 import type { CallToolResult } from '@modelcontextprotocol/client';
 import {
+  type AnsweredCall,
   answer,
   firstHalf,
-  type GuestAnswer,
   type Outcome,
   type PausedCall,
 } from '../loop/elicitation';
 import { openTurnClients, type TurnClients } from '../mcp/clients';
-import { type ListedTool, listTurnTools, type ToolCatalog, textOf } from '../mcp/tools';
+import { type ListedTool, listTurnTools, outputOf, type ToolCatalog } from '../mcp/tools';
 import { mintServerTokens, type TokenConfig } from '../tokens/mint';
-
-export type { ToolTransport };
 
 /** One turn's (or one request's) guest tools, whichever transport runs them. */
 export interface TurnTools {
@@ -32,9 +30,7 @@ export interface TurnTools {
   /** A paused tool's first half. */
   firstHalf(call: PausedCall): Promise<Outcome>;
   /** A paused tool's second half, with the stored requestState. */
-  answer(
-    call: PausedCall & { requestState: string; answer: Omit<GuestAnswer, 'toolCallId'> },
-  ): Promise<Outcome>;
+  answer(call: AnsweredCall): Promise<Outcome>;
   /** The unit record as the stay server shows it now. Never cached: it is how changes are seen. */
   readProjection(): Promise<GuestProjection>;
   /** Ms during which at least one tool-transport call was in flight. */
@@ -88,8 +84,7 @@ export function mcpTurnTools(
           arguments: input as Record<string, unknown>,
         }),
       )) as CallToolResult;
-      if (result.isError) throw new Error(textOf(result.content) || 'tool error');
-      return result.structuredContent ?? textOf(result.content);
+      return outputOf(result);
     },
     firstHalf: (call) => firstHalf({ ...call, clients }),
     answer: (call) => answer({ ...call, clients }),

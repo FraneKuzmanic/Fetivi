@@ -17,7 +17,7 @@ import {
 } from '@fetivi/mcp-servers/tools';
 import type { CallToolResult, Tool } from '@modelcontextprotocol/client';
 import { EXPIRED, NOT_SHOWN, type Outcome, toOutcome } from '../loop/elicitation';
-import { type ListedTool, textOf } from '../mcp/tools';
+import { type ListedTool, outputOf } from '../mcp/tools';
 import { answerPending } from '../pending/answer';
 import type { ToolBinding, TurnTools } from './registry';
 
@@ -67,6 +67,17 @@ export function inProcessBinding(deps: ToolDeps): ToolBinding {
           (s) => s.name === listed.tool.name,
         );
 
+      /**
+       * Why a paused call cannot run here, if it cannot. A tool this caller's server does not list
+       * is the SDK's "not found" (-32602), which the MCP halves map to EXPIRED.
+       */
+      function notConfirmable(listed: ListedTool): Outcome | undefined {
+        const name = specOf(listed)?.name;
+        if (!name) return { kind: 'error', errorText: EXPIRED };
+        if (name !== createOrderSpec.name) return { kind: 'error', errorText: NOT_SHOWN };
+        return undefined;
+      }
+
       /** One tool call as the MCP server would answer it: input checked, errors as tool errors. */
       function invoke(
         spec: GuestToolSpec,
@@ -102,13 +113,11 @@ export function inProcessBinding(deps: ToolDeps): ToolBinding {
           const result = (await invoke(spec, input, (args) =>
             runGuestTool(identity, spec.config, () => handler(args, identity, deps)),
           )) as CallToolResult;
-          if (result.isError) throw new Error(textOf(result.content) || 'tool error');
-          return result.structuredContent ?? textOf(result.content);
+          return outputOf(result);
         },
         async firstHalf(call): Promise<Outcome> {
-          if (call.listed.tool.name !== createOrderSpec.name) {
-            return { kind: 'error', errorText: NOT_SHOWN };
-          }
+          const refused = notConfirmable(call.listed);
+          if (refused) return refused;
           const identity = identities[call.listed.server];
           const codec = orderCodec(deps.requestStateSecret, identity.spaceId);
           // No check that the client can show the card: the app always shows it.
@@ -125,9 +134,8 @@ export function inProcessBinding(deps: ToolDeps): ToolBinding {
           return toOutcome(call, result);
         },
         async answer(call): Promise<Outcome> {
-          if (call.listed.tool.name !== createOrderSpec.name) {
-            return { kind: 'error', errorText: NOT_SHOWN };
-          }
+          const refused = notConfirmable(call.listed);
+          if (refused) return refused;
           const identity = identities[call.listed.server];
           const { action, content } = call.answer;
           const result = await timed(async () => {

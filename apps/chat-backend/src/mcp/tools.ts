@@ -58,6 +58,12 @@ export const textOf = (content: CallToolResult['content']) =>
     .filter(Boolean)
     .join('\n');
 
+/** A plain tool's answer: its output, or its tool error thrown as an Error with the text. */
+export function outputOf(result: CallToolResult): unknown {
+  if (result.isError) throw new Error(textOf(result.content) || 'tool error');
+  return result.structuredContent ?? textOf(result.content);
+}
+
 /**
  * Hand conversion into AI SDK tools (not @ai-sdk/mcp). A tool the server marks as guest-confirmed
  * gets no `execute`, so the step stops on it and the turn loop runs its halves (src/loop). A tool
