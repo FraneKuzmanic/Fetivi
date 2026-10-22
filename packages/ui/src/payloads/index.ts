@@ -7,6 +7,7 @@ import {
   HANDOFF_URGENCIES,
   INBOX_PART_TYPE,
 } from '@fetivi/domain/handoff-vocabulary';
+import { GUEST_NOTIFICATION_KINDS } from '@fetivi/domain/notification-vocabulary';
 import {
   AVAILABILITY_MODES,
   CONTACT_FIELDS,
@@ -198,7 +199,10 @@ export const elicitationPayload = z
 
 export { INBOX_PART_TYPE };
 
-/** An inbox message in the Chat: for now only the host's reply. */
+/**
+ * An inbox message in the Chat: the host's reply, or a notice (an Order or Stay notification)
+ * that the guest app words in the current language. Notices never reach the model.
+ */
 export const inboxItem = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('host-reply'),
@@ -208,6 +212,22 @@ export const inboxItem = z.discriminatedUnion('kind', [
     /** The host's own words, only when a translation is shown. */
     original: z.string().nullable(),
     repliedAt: z.string(),
+  }),
+  z.object({
+    kind: z.literal('notice'),
+    notification: z.enum(GUEST_NOTIFICATION_KINDS),
+    orderId: z.string().nullable().default(null),
+    /** In the space language at send time. */
+    offerTitle: z.string().nullable().default(null),
+    /** Civil date 'YYYY-MM-DD'. */
+    date: z.string().nullable().default(null),
+    /** 'HH:mm'. */
+    startTime: z.string().nullable().default(null),
+    /** 'HH:mm'. */
+    checkoutTime: z.string().nullable().default(null),
+    reviewPlatform: z.enum(['airbnb', 'booking']).nullable().default(null),
+    reviewUrl: z.string().url().nullable().default(null),
+    at: z.string(),
   }),
 ]);
 

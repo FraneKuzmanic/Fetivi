@@ -12,6 +12,7 @@ import { inboxRoutes } from './inbox/routes';
 import { createToolCatalog } from './mcp/tools';
 import { mediaRoutes } from './media/routes';
 import { orderRoutes } from './orders/routes';
+import { pushRoutes } from './push/routes';
 import { savedPlaceRoutes } from './saved-places/routes';
 import type { TokenConfig } from './tokens/mint';
 import { tokenRoutes } from './tokens/routes';
@@ -29,6 +30,8 @@ export interface AppDeps {
   tokens: TokenConfig;
   /** Block media files, served to guests through /api/media. */
   media: MediaStore;
+  /** Web push: the VAPID public key, or null (unset) when push is not configured. */
+  push?: { publicKey: string | null };
   chat: {
     /** Null without an API key: the chat then answers 503. */
     model: LanguageModel | null;
@@ -58,6 +61,7 @@ export function buildApp(deps: AppDeps) {
     mcpBinding({ tokens: deps.tokens, mcpFetch: deps.chat.mcpFetch, catalog: createToolCatalog() });
   app.register(orderRoutes, { db, now, tools });
   app.register(inboxRoutes, { db, now });
+  app.register(pushRoutes, { db, now, publicKey: deps.push?.publicKey ?? null });
   app.register(guideRoutes, { db, now, tools });
   app.register(mediaRoutes, { db, now, media: deps.media });
   app.register(chatRoutes, { db, now, model: deps.chat.model, tools, log: app.log });

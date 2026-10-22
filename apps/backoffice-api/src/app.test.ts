@@ -49,11 +49,23 @@ describe('backoffice-api', () => {
       WEB_ORIGIN: 'http://localhost:5174',
       GUEST_ORIGIN: 'http://localhost:5173',
       MAIL_TRANSPORT: 'console',
+      MAIL_FROM: 'Fetivi <notifications@localhost>',
       MEDIA_DIR: '../../.data/media',
     });
   });
 
   it('rejects an invalid port', () => {
     expect(() => loadConfig({ PORT: 'abc' })).toThrow();
+  });
+
+  it('needs a Resend key for resend, and resend in production', () => {
+    expect(() => loadConfig({ MAIL_TRANSPORT: 'resend' })).toThrow(/RESEND_API_KEY/);
+    expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/MAIL_TRANSPORT/);
+    const config = loadConfig({
+      NODE_ENV: 'production',
+      MAIL_TRANSPORT: 'resend',
+      RESEND_API_KEY: 're_x',
+    });
+    expect(config.MAIL_TRANSPORT).toBe('resend');
   });
 });

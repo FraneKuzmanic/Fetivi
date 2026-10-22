@@ -13,6 +13,8 @@ export const QUEUES = {
   pollCalendar: 'poll-calendar',
   stayNotify: 'stay-notify',
   translateHandoff: 'translate-handoff',
+  guestNotify: 'guest-notify',
+  guestReminders: 'guest-reminders',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -38,6 +40,10 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   stayNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
   // One short message; a model failure ends as a visible 'failed' state, so retries cover crashes.
   translateHandoff: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 120 },
+  // Each channel's ledger row makes a retried or duplicate run send nothing twice.
+  guestNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
+  // The cron fan-out; the next slot runs again anyway.
+  guestReminders: { retryLimit: 1, expireInSeconds: 120 },
 };
 
 /**

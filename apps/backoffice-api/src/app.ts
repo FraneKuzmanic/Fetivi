@@ -14,6 +14,7 @@ import { propertyRoutes } from './properties/routes';
 import { providerLinkRoutes } from './provider-link/routes';
 import { providerRoutes } from './providers/routes';
 import { stayRoutes } from './stays/routes';
+import { resendWebhookRoutes } from './webhooks/resend';
 
 export interface AppDeps {
   db: Db;
@@ -31,6 +32,8 @@ export interface AppDeps {
   media: MediaStore;
   /** Reads house manuals for the import; tests pass a scripted stub. */
   manualImportModel: ManualImportModel;
+  /** Resend's webhook signing secret; without it `/webhooks/resend` is not registered. */
+  resendWebhookSecret?: string | undefined;
 }
 
 export function buildApp(deps: AppDeps) {
@@ -54,5 +57,8 @@ export function buildApp(deps: AppDeps) {
   app.register(stayRoutes, { db, now, guestOrigin });
   app.register(calendarRoutes, { db, queue, now, guestOrigin });
   app.register(inboxRoutes, { db, queue, now });
+  if (deps.resendWebhookSecret) {
+    app.register(resendWebhookRoutes, { db, now, secret: deps.resendWebhookSecret });
+  }
   return app;
 }

@@ -2,6 +2,7 @@ import {
   type Db,
   type HandoffPart,
   type HandoffTranslator,
+  type JobQueue,
   QUEUE_OPTIONS,
   QUEUES,
   runHandoffTranslation,
@@ -10,6 +11,7 @@ import type { JobDefinition } from '../runner';
 
 export interface HandoffJobDeps {
   db: Db;
+  queue: JobQueue;
   now: () => Date;
   handoffTranslator: HandoffTranslator;
 }

@@ -62,6 +62,7 @@ export async function createTestApp(
     extraRoutes?: FastifyPluginAsync;
     trustProxy?: string;
     manualImportModel?: ManualImportModel;
+    resendWebhookSecret?: string;
   } = {},
 ) {
   const testDb = await createTestDatabase();
@@ -89,6 +90,7 @@ export async function createTestApp(
     trustProxy: options.trustProxy,
     media: createLocalMediaStore(mediaDir),
     manualImportModel: options.manualImportModel ?? NOT_CONFIGURED_MODEL,
+    resendWebhookSecret: options.resendWebhookSecret,
   });
   if (options.extraRoutes) app.register(options.extraRoutes);
   await app.ready();

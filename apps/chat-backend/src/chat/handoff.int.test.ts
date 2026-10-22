@@ -1,7 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import {
   accounts,
+  appendInboxMessage,
   findConversation,
   handoffMessages,
+  INBOX_PART_TYPE,
   loadMessages,
   pendingActions,
   QUEUES,
@@ -296,7 +299,7 @@ describe.each(['mcp', 'inprocess'] as const)('handoff to the host (%s)', (transp
     const translator = scriptedHandoffTranslator(['Nema tople vode.', 'A plumber comes at 4 pm.']);
     const translate = (part: 'message' | 'reply') =>
       runHandoffTranslation(
-        { db: s.t.db, now: s.t.clock.now, handoffTranslator: translator },
+        { db: s.t.db, queue: s.queue, now: s.t.clock.now, handoffTranslator: translator },
         { handoffId: id, part },
       );
     expect(await translate('message')).toBe('done');
@@ -345,6 +348,40 @@ describe.each(['mcp', 'inprocess'] as const)('handoff to the host (%s)', (transp
     const conversation = await findConversation(s.t.db, s.space.space.id);
     const rows = await loadMessages(s.t.db, conversation?.id as string);
     expect(rows.filter((r) => r.kind === 'inbox')).toHaveLength(1);
+  });
+
+  it('a notice in the inbox is never noted to the model', async () => {
+    const s = await setup(transport);
+    s.steps.push(textStep('Hello!'), textStep('Enjoy!'));
+    readStream(await sendText(s, 'Hi'));
+    const conversation = await findConversation(s.t.db, s.space.space.id);
+    await appendInboxMessage(s.t.db, {
+      conversationId: conversation?.id as string,
+      id: randomUUID(),
+      parts: [
+        {
+          type: INBOX_PART_TYPE,
+          id: randomUUID(),
+          data: {
+            kind: 'notice',
+            notification: 'order_confirmed',
+            orderId: randomUUID(),
+            offerTitle: 'Sunset kayak tour',
+            date: '2027-05-04',
+            startTime: null,
+            checkoutTime: null,
+            reviewPlatform: null,
+            reviewUrl: null,
+            at: s.t.clock.now().toISOString(),
+          },
+        },
+      ],
+      now: s.t.clock.now(),
+    });
+    readStream(await sendText(s, 'Anything new?'));
+    const prompt = JSON.stringify(s.model.doStreamCalls.at(-1)?.prompt);
+    expect(prompt).not.toContain('The host replied');
+    expect(prompt).not.toContain('Sunset kayak tour');
   });
 
   it('a host reply stored while a turn runs reaches the model on the next turn', async () => {

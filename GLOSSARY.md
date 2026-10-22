@@ -175,3 +175,7 @@ _Avoid_: priority
 **Inbox**:
 On the Host side, the back-office list of Host messages. On the guest side, inbox messages in the Chat, such as the Host's reply, which the Chat badge counts.
 _Avoid_: notifications tab, mailbox
+
+**Notice**:
+An inbox message from Fetivi about the guest's Orders or Stay: a booking confirmed, changed or cancelled, the reminder the evening before, arrival details ready, the checkout reminder. Also sent by email, and by push on Android when the guest asked for alerts. Never shown to the model.
+_Avoid_: alert, system message

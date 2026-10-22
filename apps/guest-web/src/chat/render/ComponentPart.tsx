@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { mediaUrl } from '../../guide/guide-api';
 import { propertyInfoLabels } from '../../guide/labels';
 import { useInbox } from '../../inbox/InboxProvider';
+import { AlertOffer } from '../../push/AlertOffer';
 import {
   choiceLabels,
   hostSentLabels,
@@ -93,12 +94,16 @@ export function ComponentPart({
       return <ReceiptCard order={part.payload.order} labels={receiptLabels(t, i18n.language)} />;
     case 'host-message-sent': {
       const { message } = part.payload;
+      const status = inbox.status(message.id) ?? 'sent';
       return (
-        <HostMessageSent
-          message={message}
-          status={inbox.status(message.id) ?? 'sent'}
-          labels={hostSentLabels(t, i18n.language)}
-        />
+        <>
+          <HostMessageSent
+            message={message}
+            status={status}
+            labels={hostSentLabels(t, i18n.language)}
+          />
+          {status === 'sent' && <AlertOffer />}
+        </>
       );
     }
     case 'property-info':

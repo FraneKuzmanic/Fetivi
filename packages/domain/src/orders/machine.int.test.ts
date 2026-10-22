@@ -156,6 +156,10 @@ describe('allotment Order', () => {
     const completion = await jobsOf(order.id, QUEUES.orderTimer);
     const done = completion.find((j) => j.data.operation === 'completion');
     expect(done?.start_ms).toBe(endOfCheckoutDay(DAY, 'Europe/Zagreb').getTime());
+    // The guest's reminder: 18:00 Zagreb (CEST) the evening before, on guest-notify.
+    const reminders = await jobsOf(order.id, QUEUES.guestNotify);
+    expect(reminders.map((j) => j.data.kind)).toEqual(['order_reminder']);
+    expect(reminders[0]?.start_ms).toBe(Date.parse('2027-05-03T16:00:00Z'));
 
     // A duplicate delivery changes nothing.
     const eventsBefore = (await events(order.id)).length;
@@ -188,6 +192,23 @@ describe('allotment Order', () => {
     const afterCancel = await runOrderTimer(deps(), { ...ref, operation: 'completion' });
     expect(afterCancel.outcome).toBe('stale');
     expect(afterCancel.order.status).toBe('cancelled');
+  });
+
+  it('schedules no reminder when the evening before has passed', async () => {
+    clock = new Date('2027-05-03T17:00:00Z'); // 19:00 in Zagreb, the evening before DAY
+    const { offerId, slotId } = await allotment();
+    const { order } = await createOrder(
+      deps(),
+      input({ offerId, slotId, hold: { expiresAt: new Date(clock.getTime() + 30 * 60_000) } }),
+    );
+    const { proposal } = await current(order.id);
+    const confirmed = await confirm(deps(), {
+      orderId: order.id,
+      proposalId: proposal.id,
+      trigger: 'adapter',
+    });
+    expect(confirmed.outcome).toBe('applied');
+    expect(await jobsOf(order.id, QUEUES.guestNotify)).toEqual([]);
   });
 
   it('rejects illegal transitions without writing', async () => {

@@ -1,9 +1,9 @@
 import {
   createAnthropicManualImportModel,
-  createConsoleMailer,
   createDb,
   createJobQueue,
   createLocalMediaStore,
+  createMailer,
   ensureQueues,
 } from '@fetivi/domain';
 import { PgBoss } from 'pg-boss';
@@ -27,7 +27,12 @@ await boss.start();
 await ensureQueues(boss);
 const app = buildApp({
   db,
-  mailer: createConsoleMailer(),
+  mailer: createMailer({
+    transport: config.MAIL_TRANSPORT,
+    resendApiKey: config.RESEND_API_KEY,
+    from: config.MAIL_FROM,
+    fetch: egress.fetch,
+  }),
   queue: createJobQueue(boss),
   webOrigin: config.WEB_ORIGIN,
   guestOrigin: config.GUEST_ORIGIN,
@@ -37,6 +42,7 @@ const app = buildApp({
     apiKey: config.ANTHROPIC_API_KEY,
     fetch: egress.fetch,
   }),
+  resendWebhookSecret: config.RESEND_WEBHOOK_SECRET,
 });
 
 await app.listen({ host: config.HOST, port: config.PORT });

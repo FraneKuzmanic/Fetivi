@@ -78,7 +78,8 @@ function newHostReplies(rows: MessageRow[], notedSeq: number) {
     .filter((p) => p.type === INBOX_PART_TYPE)
     .flatMap((p) => {
       const item = inboxItem.safeParse(p.data);
-      return item.success ? [item.data.text] : [];
+      // Only host replies are noted; notices (Order and Stay notifications) never reach the model.
+      return item.success && item.data.kind === 'host-reply' ? [item.data.text] : [];
     });
   return { texts, notedSeq: Math.max(notedSeq, ...fresh.map((r) => r.seq)) };
 }

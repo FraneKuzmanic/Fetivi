@@ -174,6 +174,31 @@ export const hu: Messages = {
     translated: 'A Fetivi fordította',
     showOriginal: 'Eredeti megjelenítése',
   },
+  notice: {
+    order_confirmed: 'Jó hír: {{offer}} ({{date}}) visszaigazolva.',
+    order_new_proposal:
+      '{{offer}} szolgáltatója más időpontot vagy árat javasolt. Nyisd meg az Utazásom oldalt, és fogadd el vagy utasítsd el.',
+    order_cancelled: '{{offer}} ({{date}}) lemondva.',
+    order_declined:
+      'Sajnos a szolgáltató nem tudja elfogadni a foglalásodat: {{offer}} ({{date}}). Kérdezz bátran valami mást.',
+    order_expired:
+      'A szolgáltató nem válaszolt időben, ezért a kérésed lezárult: {{offer}} ({{date}}).',
+    order_failed: 'Valami hiba történt, és nem sikerült lefoglalni: {{offer}} ({{date}}).',
+    order_reminder: 'Emlékeztető: {{offer}} holnap lesz, {{date}}.',
+    arrival_details:
+      'Az érkezési információk az Útmutatóban várnak: hogyan jutsz be, a Wi-Fi és a többi.',
+    checkout_reminder:
+      'Emlékeztető: holnap van a kijelentkezés. A lépéseket az Útmutatóban találod.',
+    checkoutBy: 'Kérjük, {{checkoutTime}}-ig hagyd el a szállást.',
+    review:
+      'Ha szeretnéd elmondani, milyen volt a tartózkodásod, írhatsz értékelést itt: {{platform}}.',
+    seeTrip: 'Megnézem az Utazásomban',
+    openGuide: 'Útmutató megnyitása',
+  },
+  push: {
+    offer: 'Értesíts ezen a telefonon',
+    offerHint: 'Küldök értesítést, ha van újdonság.',
+  },
   order: {
     heading: 'Erősítsd meg a foglalást',
     offer: 'Mit',

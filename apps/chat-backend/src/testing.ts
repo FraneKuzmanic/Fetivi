@@ -189,6 +189,8 @@ export async function createChatTestApp(options: {
   probe?: boolean;
   queue?: JobQueue;
   transport?: ToolTransport;
+  /** The VAPID public key the push routes serve. */
+  pushPublicKey?: string;
 }): Promise<ChatTestApp> {
   if (options.transport === 'inprocess') return createInProcessChatTestApp(options);
   const testDb = await createTestDatabase();
@@ -225,6 +227,7 @@ export async function createChatTestApp(options: {
     media: createLocalMediaStore(mediaDir),
     tokens: { key, issuer: TEST_ISSUER, mcpBaseUrl: TEST_MCP_BASE },
     chat: { model: options.model, mcpFetch },
+    push: { publicKey: options.pushPublicKey ?? null },
   });
   await app.ready();
   return {

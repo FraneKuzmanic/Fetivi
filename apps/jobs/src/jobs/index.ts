@@ -1,5 +1,6 @@
-import type { NotifyDeps, TranslationJobDeps } from '@fetivi/domain';
+import type { GuestNotifyDeps, NotifyDeps, TranslationJobDeps } from '@fetivi/domain';
 import type { JobDefinition } from '../runner';
+import { guestNotifyJob, guestRemindersJob } from './guest-notify';
 import { orderNotifyJob } from './orders/notify';
 import { orderTimerJob } from './orders/timer';
 import {
@@ -15,7 +16,7 @@ import { translateOfferJob } from './translate-offer';
 
 // Later tickets add digests and retention.
 export function createJobs(
-  deps: TranslationJobDeps & NotifyDeps & CalendarJobDeps & HandoffJobDeps,
+  deps: TranslationJobDeps & NotifyDeps & GuestNotifyDeps & CalendarJobDeps & HandoffJobDeps,
 ): JobDefinition[] {
   // The runner hands each handler the data its own queue was sent.
   return [
@@ -28,5 +29,7 @@ export function createJobs(
     pollCalendarJob(deps) as JobDefinition,
     stayNotifyJob(deps) as JobDefinition,
     translateHandoffJob(deps) as JobDefinition,
+    guestNotifyJob(deps) as JobDefinition,
+    guestRemindersJob(deps),
   ];
 }

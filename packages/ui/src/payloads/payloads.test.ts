@@ -1,3 +1,4 @@
+import { GUEST_NOTIFICATION_KINDS, noticeInboxData } from '@fetivi/domain';
 import { describe, expect, it } from 'vitest';
 import {
   availabilityPicker,
@@ -262,5 +263,58 @@ describe('inbox item', () => {
     expect(inboxItem.safeParse(reply).success).toBe(true);
     expect(inboxItem.safeParse({ ...reply, original: null }).success).toBe(true);
     expect(inboxItem.safeParse({ ...reply, kind: 'promo' }).success).toBe(false);
+  });
+
+  it('takes a notice and fills the missing facts with null', () => {
+    const parsed = inboxItem.parse({
+      kind: 'notice',
+      notification: 'order_confirmed',
+      orderId: 'o-1',
+      offerTitle: 'Kayak tour',
+      date: '2026-07-14',
+      at: '2026-07-10T08:00:00Z',
+    });
+    expect(parsed).toMatchObject({ startTime: null, reviewPlatform: null, reviewUrl: null });
+    expect(
+      inboxItem.safeParse({
+        kind: 'notice',
+        notification: 'checkout_reminder',
+        reviewPlatform: 'airbnb',
+        reviewUrl: 'https://www.airbnb.com/trips',
+        at: '2026-07-10T08:00:00Z',
+      }).success,
+    ).toBe(true);
+    expect(
+      inboxItem.safeParse({ kind: 'notice', notification: 'promo', at: '2026-07-10T08:00:00Z' })
+        .success,
+    ).toBe(false);
+  });
+
+  it('parses every notice the domain writes', () => {
+    const now = new Date('2026-07-10T08:00:00Z');
+    for (const kind of GUEST_NOTIFICATION_KINDS) {
+      const data = noticeInboxData(
+        {
+          key: 'k',
+          kind,
+          spaceId: 's',
+          language: 'en',
+          conversationId: 'c',
+          spaceOpen: true,
+          email: 'guest@example.test',
+          orderId: 'o-1',
+          facts: {
+            offerTitle: 'Kayak tour',
+            date: '2026-07-14',
+            startTime: '09:30',
+            checkoutTime: '10:00',
+            reviewPlatform: 'airbnb',
+          },
+        },
+        now,
+      );
+      expect(inboxItem.parse(data)).toEqual(data);
+      expect(JSON.stringify(data)).not.toContain('guest@example.test');
+    }
   });
 });

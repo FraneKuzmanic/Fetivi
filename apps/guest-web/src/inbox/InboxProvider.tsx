@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { getInbox, type HandoffStatus, type InboxState, markInboxSeen } from './inbox-api';
 
-/** How often the inbox is checked while the app is visible; push arrives with ticket 25. */
+/** How often the inbox is checked while the app is visible; a push also triggers a check. */
 const POLL_MS = 60_000;
 
 export interface Inbox {
@@ -35,8 +35,9 @@ const InboxContext = createContext<Inbox>({
 export const useInbox = () => useContext(InboxContext);
 
 /**
- * Polls the guest's inbox: on mount, every minute while the app is visible, and when it comes
- * back into view. Errors are silent: the badge stays as it was.
+ * Polls the guest's inbox: on mount, every minute while the app is visible, when it comes back
+ * into view, and when the service worker receives a push. Errors are silent: the badge stays as
+ * it was.
  */
 export function InboxProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<InboxState | null>(null);
@@ -75,12 +76,17 @@ export function InboxProvider({ children }: { children: ReactNode }) {
     const onShow = () => {
       if (visible()) void refresh();
     };
+    const onPush = (event: MessageEvent) => {
+      if ((event.data as { type?: unknown } | null)?.type === 'fetivi-inbox') void refresh();
+    };
     document.addEventListener('visibilitychange', onShow);
     window.addEventListener('focus', onShow);
+    navigator.serviceWorker?.addEventListener('message', onPush);
     return () => {
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', onShow);
       window.removeEventListener('focus', onShow);
+      navigator.serviceWorker?.removeEventListener('message', onPush);
     };
   }, [refresh]);
 

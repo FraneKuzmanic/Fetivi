@@ -9,6 +9,7 @@ import type {
   PlaceLabels,
   ReceiptLabels,
 } from '@fetivi/ui';
+import type { InboxItem } from '@fetivi/ui/payloads';
 import type { TFunction } from 'i18next';
 
 /** The place components' strings in the interface language (numbers and months formatted for it). */
@@ -173,5 +174,43 @@ export function hostSentLabels(t: TFunction, language: string): HostSentLabels {
     sentAt: (sentAt) => t('hostMessage.sentAt', { time: time.format(new Date(sentAt)) }),
     read: t('hostMessage.read'),
     urgent: t('hostMessage.urgent'),
+  };
+}
+
+type Notice = Extract<InboxItem, { kind: 'notice' }>;
+
+/** The notice kinds the Chat shows; a host reply shows as the reply itself. */
+const NOTICE_KEYS = {
+  order_confirmed: 'notice.order_confirmed',
+  order_new_proposal: 'notice.order_new_proposal',
+  order_cancelled: 'notice.order_cancelled',
+  order_declined: 'notice.order_declined',
+  order_expired: 'notice.order_expired',
+  order_failed: 'notice.order_failed',
+  order_reminder: 'notice.order_reminder',
+  arrival_details: 'notice.arrival_details',
+  checkout_reminder: 'notice.checkout_reminder',
+} as const satisfies Partial<Record<Notice['notification'], string>>;
+
+const isShownNotice = (kind: Notice['notification']): kind is keyof typeof NOTICE_KEYS =>
+  kind in NOTICE_KEYS;
+
+/** A notice's sentences in the interface language, dates as the receipts show them; null if never shown. */
+export function noticeText(
+  t: TFunction,
+  language: string,
+  notice: Notice,
+): { text: string; checkoutBy: string | null } | null {
+  if (!isShownNotice(notice.notification)) return null;
+  const f = orderFormat(t, language);
+  const { date, startTime, checkoutTime } = notice;
+  return {
+    text: t(NOTICE_KEYS[notice.notification], {
+      offer: notice.offerTitle ?? '',
+      date: date ? f.dateTime(date, startTime ? `${date}T${startTime}` : null) : '',
+    }),
+    checkoutBy: checkoutTime
+      ? t('notice.checkoutBy', { checkoutTime: f.time(`2000-01-01T${checkoutTime}`) })
+      : null,
   };
 }

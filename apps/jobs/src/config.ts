@@ -2,6 +2,11 @@ import { z } from 'zod';
 
 const DEV_PROVIDER_LINK_SECRET = 'dev-only-provider-link-secret-change-me-in-production';
 
+const optionalString = z
+  .string()
+  .optional()
+  .transform((s) => s || undefined);
+
 const schema = z
   .object({
     DATABASE_URL: z.string().default('postgres://fetivi:fetivi@127.0.0.1:5433/fetivi'),
@@ -17,6 +22,16 @@ const schema = z
     PROVIDER_LINK_BASE_URL: z.url().default('http://localhost:5174'),
     /** The back-office origin, for links in host emails (production https://host.<domain>). */
     WEB_ORIGIN: z.url().default('http://localhost:5174'),
+    /** console logs mail (development); resend sends it (required in production). */
+    MAIL_TRANSPORT: z.enum(['console', 'resend']).default('console'),
+    RESEND_API_KEY: optionalString,
+    MAIL_FROM: z.string().default('Fetivi <notifications@localhost>'),
+    /** The guest-app origin, for links in guest emails (production https://<domain>). */
+    GUEST_ORIGIN: z.url().default('http://localhost:5173'),
+    /** Web push (VAPID). Without the keys the push channel is skipped. */
+    VAPID_PUBLIC_KEY: optionalString,
+    VAPID_PRIVATE_KEY: optionalString,
+    VAPID_SUBJECT: z.string().default('mailto:admin@localhost'),
   })
   .refine(
     (c) => c.NODE_ENV !== 'production' || c.PROVIDER_LINK_SECRET !== DEV_PROVIDER_LINK_SECRET,
@@ -24,7 +39,19 @@ const schema = z
       message: 'PROVIDER_LINK_SECRET is required in production',
       path: ['PROVIDER_LINK_SECRET'],
     },
-  );
+  )
+  .refine((c) => c.MAIL_TRANSPORT !== 'resend' || c.RESEND_API_KEY, {
+    message: 'MAIL_TRANSPORT=resend needs RESEND_API_KEY',
+    path: ['RESEND_API_KEY'],
+  })
+  .refine((c) => c.NODE_ENV !== 'production' || c.MAIL_TRANSPORT === 'resend', {
+    message: 'MAIL_TRANSPORT=resend is required in production',
+    path: ['MAIL_TRANSPORT'],
+  })
+  .refine((c) => !c.VAPID_PUBLIC_KEY === !c.VAPID_PRIVATE_KEY, {
+    message: 'VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY go together',
+    path: ['VAPID_PRIVATE_KEY'],
+  });
 
 export type Config = z.infer<typeof schema>;
 

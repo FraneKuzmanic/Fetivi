@@ -174,6 +174,29 @@ export const pl: Messages = {
     translated: 'Przetłumaczone przez Fetivi',
     showOriginal: 'Pokaż oryginał',
   },
+  notice: {
+    order_confirmed: 'Dobra wiadomość: {{offer}} ({{date}}) jest potwierdzone.',
+    order_new_proposal:
+      'Usługodawca {{offer}} zaproponował inną godzinę lub cenę. Otwórz Moją podróż, aby przyjąć lub odrzucić.',
+    order_cancelled: '{{offer}} ({{date}}) zostało anulowane.',
+    order_declined:
+      'Niestety usługodawca nie może przyjąć Twojej rezerwacji {{offer}} ({{date}}). Zapytaj mnie o coś innego, kiedy chcesz.',
+    order_expired:
+      'Usługodawca nie odpowiedział na czas, więc Twoja prośba o {{offer}} ({{date}}) została zamknięta.',
+    order_failed: 'Coś poszło nie tak i nie udało się zarezerwować {{offer}} ({{date}}).',
+    order_reminder: 'Przypomnienie: {{offer}} jest jutro, {{date}}.',
+    arrival_details: 'Informacje o przyjeździe czekają w Przewodniku: jak wejść, Wi-Fi i reszta.',
+    checkout_reminder: 'Przypominamy, że wymeldowanie jest jutro. Kroki znajdziesz w Przewodniku.',
+    checkoutBy: 'Prosimy o opuszczenie apartamentu do {{checkoutTime}}.',
+    review:
+      'Jeśli chcesz podzielić się wrażeniami z pobytu, możesz zostawić opinię na {{platform}}.',
+    seeTrip: 'Zobacz w Mojej podróży',
+    openGuide: 'Otwórz Przewodnik',
+  },
+  push: {
+    offer: 'Powiadamiaj mnie na tym telefonie',
+    offerHint: 'Wyślę powiadomienie, gdy będą nowości.',
+  },
   order: {
     heading: 'Potwierdź rezerwację',
     offer: 'Co',

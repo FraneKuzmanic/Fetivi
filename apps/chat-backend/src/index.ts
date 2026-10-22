@@ -26,6 +26,7 @@ const app = buildApp({
   appOrigin: config.APP_ORIGIN,
   trustProxy: config.TRUST_PROXY,
   media: createLocalMediaStore(config.MEDIA_DIR),
+  push: { publicKey: config.VAPID_PUBLIC_KEY ?? null },
   tokens: { key, issuer: config.GUEST_TOKEN_ISSUER, mcpBaseUrl: config.MCP_PUBLIC_URL },
   chat: {
     model: createChatModel({ apiKey: config.ANTHROPIC_API_KEY, fetch: egress.fetch }),

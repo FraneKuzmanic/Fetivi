@@ -173,6 +173,28 @@ export const hr: Messages = {
     translated: 'Preveo Fetivi',
     showOriginal: 'Prikaži izvornik',
   },
+  notice: {
+    order_confirmed: 'Dobre vijesti: {{offer}} ({{date}}) je potvrđeno.',
+    order_new_proposal:
+      'Pružatelj usluge {{offer}} predložio je drugo vrijeme ili cijenu. Otvorite Moje putovanje da prihvatite ili odbijete.',
+    order_cancelled: '{{offer}} ({{date}}) je otkazano.',
+    order_declined:
+      'Nažalost, pružatelj ne može prihvatiti vašu rezervaciju za {{offer}} ({{date}}). Pitajte me za nešto drugo kad god želite.',
+    order_expired:
+      'Pružatelj nije odgovorio na vrijeme pa je vaš zahtjev za {{offer}} ({{date}}) zatvoren.',
+    order_failed: 'Nešto je pošlo po zlu i {{offer}} ({{date}}) nije rezervirano.',
+    order_reminder: 'Podsjetnik: {{offer}} je sutra, {{date}}.',
+    arrival_details: 'Podaci za dolazak spremni su u Vodiču: kako ući, Wi-Fi i ostalo.',
+    checkout_reminder: 'Podsjetnik: odjava je sutra. Koraci za odjavu su u Vodiču.',
+    checkoutBy: 'Molimo napustite smještaj do {{checkoutTime}}.',
+    review: 'Ako želite podijeliti kako vam je bilo, recenziju možete ostaviti na {{platform}}.',
+    seeTrip: 'Pogledajte u Mojem putovanju',
+    openGuide: 'Otvorite Vodič',
+  },
+  push: {
+    offer: 'Obavijesti me na ovom mobitelu',
+    offerHint: 'Poslat ću vam obavijest kad bude novosti.',
+  },
   order: {
     heading: 'Potvrdite rezervaciju',
     offer: 'Što',

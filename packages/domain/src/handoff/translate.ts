@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../db/client';
 import { handoffMessages } from '../db/schema/handoff';
+import type { JobQueue } from '../jobs/queue';
 import type { GuestLanguage } from '../property/vocabulary';
 import { TRANSLATION_MODEL_ID } from '../translation/prompt';
 import { deliverReply } from './inbox';
@@ -101,7 +102,7 @@ export type HandoffPart = 'message' | 'reply';
  * A failed message shows the host the original; a failed reply still reaches the guest.
  */
 export async function runHandoffTranslation(
-  deps: { db: Db; now: () => Date; handoffTranslator: HandoffTranslator },
+  deps: { db: Db; queue: JobQueue; now: () => Date; handoffTranslator: HandoffTranslator },
   input: { handoffId: string; part: HandoffPart },
 ): Promise<'done' | 'failed' | 'discarded'> {
   const [row] = await deps.db
@@ -154,6 +155,7 @@ export async function runHandoffTranslation(
       .where(eq(handoffMessages.id, row.id));
     await deliverReply(
       tx,
+      deps.queue,
       row.id,
       result.ok ? { text: result.text, original: replyText } : { text: replyText, original: null },
       deps.now(),

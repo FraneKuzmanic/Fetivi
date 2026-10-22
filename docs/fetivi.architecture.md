@@ -244,7 +244,7 @@ Architecture-level items deferred on purpose, with what settles each.
 
 - **Integration-effort metric (PRD section 7).** The shared architecture makes some tasks equal in V0 and V1; re-frame the metric to measure what MCP adds (Ferryhopper with no client code, protocol confirmation, token scoping) and report equal-effort tasks as a finding. Settled with the evaluation design.
 - **Hosting target.** VPS with Compose is recommended; Fly.io or Railway are equivalent. Settled when the first deployment is needed.
-- **Email provider and WhatsApp.** Resend or Postmark; WhatsApp depends on Meta verification and cost (PRD section 9). Settled by the Provider-link ticket.
+- **Email provider and WhatsApp.** Resend chosen in ticket 25 (idempotency keys; Svix-signed bounce webhooks). WhatsApp depends on Meta verification and cost (PRD section 9).
 - **Live adapter access.** Bókun marketplace contract or another engine. Settled by Frane's outreach; the architecture does not depend on the answer.
 - **Rich text format.** Markdown, confirmed by S6; the wizard ticket picks an editor that stores it.
 - **Web fallback search provider.** Brave is proposed; settled when the `local` server is built.

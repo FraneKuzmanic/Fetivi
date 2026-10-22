@@ -171,6 +171,29 @@ export const en = {
     translated: 'Translated by Fetivi',
     showOriginal: 'Show original',
   },
+  notice: {
+    order_confirmed: 'Good news: {{offer}} on {{date}} is confirmed.',
+    order_new_proposal:
+      'The provider of {{offer}} suggested a different time or price. Open My trip to accept it or say no.',
+    order_cancelled: '{{offer}} on {{date}} has been cancelled.',
+    order_declined:
+      "Sorry, the provider can't take your booking for {{offer}} on {{date}}. Ask me for something else whenever you like.",
+    order_expired:
+      "The provider didn't answer in time, so your request for {{offer}} on {{date}} has closed.",
+    order_failed: "Something went wrong and {{offer}} on {{date}} couldn't be booked.",
+    order_reminder: 'A reminder: {{offer}} is tomorrow, {{date}}.',
+    arrival_details:
+      'Your arrival details are ready in the Guide: how to get in, Wi-Fi and the rest.',
+    checkout_reminder: 'A reminder that checkout is tomorrow. The checkout steps are in the Guide.',
+    checkoutBy: 'Please leave by {{checkoutTime}}.',
+    review: "If you'd like to share how your stay went, you can leave a review on {{platform}}.",
+    seeTrip: 'See it in My trip',
+    openGuide: 'Open the Guide',
+  },
+  push: {
+    offer: 'Alert me on this phone',
+    offerHint: "I'll send a notification when there's news.",
+  },
   order: {
     heading: 'Confirm your booking',
     offer: 'What',

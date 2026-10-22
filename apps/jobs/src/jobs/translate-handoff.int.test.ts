@@ -10,6 +10,7 @@ import {
 import {
   createTestDatabase,
   noopQueue,
+  recordingQueue,
   scriptedHandoffTranslator,
   seedGuestUnit,
   type TestDatabase,
@@ -66,7 +67,12 @@ describe('translate-handoff job', () => {
   it('translates a pending message for the host', async () => {
     const { seed, id } = await sent();
     const translator = scriptedHandoffTranslator(['Nema tople vode.']);
-    await translateHandoffJob({ db: testDb.db, now, handoffTranslator: translator }).handler({
+    await translateHandoffJob({
+      db: testDb.db,
+      queue: noopQueue,
+      now,
+      handoffTranslator: translator,
+    }).handler({
       handoffId: id,
       part: 'message',
     });
@@ -87,8 +93,10 @@ describe('translate-handoff job', () => {
         markRead: true,
       },
     );
+    const queue = recordingQueue();
     const job = translateHandoffJob({
       db: testDb.db,
+      queue,
       now,
       handoffTranslator: scriptedHandoffTranslator(['Der Installateur kommt um 16 Uhr.']),
     });
@@ -100,5 +108,9 @@ describe('translate-handoff job', () => {
       type: 'data-inbox',
       data: { text: 'Der Installateur kommt um 16 Uhr.', original: 'Majstor stiže u 16h.' },
     });
+    // Its email and push are enqueued once, with the delivery.
+    expect(queue.jobs.map((j) => [j.name, j.data])).toEqual([
+      ['guest-notify', { kind: 'host_reply', spaceId: seed.spaceId, handoffId: id }],
+    ]);
   });
 });

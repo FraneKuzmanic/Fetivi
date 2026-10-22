@@ -6,6 +6,7 @@ import { ChatTab } from '../chat/ChatTab';
 import { GuideTab } from '../guide/GuideTab';
 import { InboxProvider, useInbox } from '../inbox/InboxProvider';
 import { TripTab } from '../my-trip/TripTab';
+import { PushProvider } from '../push/AlertOffer';
 import { EmptyTab, type Tab } from './EmptyTab';
 import { LanguageMenu } from './LanguageMenu';
 import { TabBar } from './TabBar';
@@ -14,7 +15,9 @@ import { TabBar } from './TabBar';
 export function Shell(props: { tab?: Tab; unread?: number; children?: ReactNode }) {
   return (
     <InboxProvider>
-      <ShellLayout {...props} />
+      <PushProvider>
+        <ShellLayout {...props} />
+      </PushProvider>
     </InboxProvider>
   );
 }

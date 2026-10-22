@@ -8,6 +8,7 @@ import { properties, units } from '../db/schema/properties';
 import { spaces } from '../db/schema/spaces';
 import { stays } from '../db/schema/stays';
 import { type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
+import { enqueueGuestNotification } from '../notifications/guest/enqueue';
 import type { GuestLanguage } from '../property/vocabulary';
 import { cleanText, HandoffRuleError } from './send';
 import {
@@ -203,7 +204,7 @@ export async function replyToHandoff(
         id: uuidFrom(`handoff:${row.id}:reply`),
       });
     } else {
-      await deliverReply(tx, row.id, { text, original: null }, now);
+      await deliverReply(tx, deps.queue, row.id, { text, original: null }, now);
     }
   });
   const message = await getHostInboxMessage(deps.db, input.hostId, input.id);
@@ -212,11 +213,13 @@ export async function replyToHandoff(
 }
 
 /**
- * Puts the host's reply into the guest's Conversation as one inbox message. A second call (a
- * retried job) is a no-op. Without a Conversation there is no one to show it to.
+ * Puts the host's reply into the guest's Conversation as one inbox message and enqueues its email
+ * and push in the same transaction. A second call (a retried job) is a no-op. Without a
+ * Conversation there is no one to show it to.
  */
 export async function deliverReply(
   tx: Executor,
+  queue: JobQueue,
   handoffId: string,
   content: { text: string; original: string | null },
   now: Date,
@@ -251,6 +254,11 @@ export async function deliverReply(
     .update(handoffMessages)
     .set({ replyDeliveredAt: now })
     .where(eq(handoffMessages.id, row.id));
+  await enqueueGuestNotification(tx, queue, {
+    kind: 'host_reply',
+    spaceId: row.spaceId,
+    handoffId: row.id,
+  });
   return 'delivered';
 }
 

@@ -173,6 +173,31 @@ export const it: Messages = {
     translated: 'Tradotto da Fetivi',
     showOriginal: 'Mostra originale',
   },
+  notice: {
+    order_confirmed: 'Buone notizie: {{offer}} del {{date}} è confermato.',
+    order_new_proposal:
+      'Il fornitore di {{offer}} ha proposto un orario o un prezzo diverso. Apri Il mio viaggio per accettare o rifiutare.',
+    order_cancelled: '{{offer}} del {{date}} è stato annullato.',
+    order_declined:
+      'Purtroppo il fornitore non può accettare la tua prenotazione per {{offer}} del {{date}}. Chiedimi pure qualcos’altro.',
+    order_expired:
+      'Il fornitore non ha risposto in tempo, quindi la tua richiesta per {{offer}} del {{date}} è chiusa.',
+    order_failed:
+      'Qualcosa è andato storto e non è stato possibile prenotare {{offer}} del {{date}}.',
+    order_reminder: 'Promemoria: {{offer}} è domani, {{date}}.',
+    arrival_details:
+      'Le informazioni per l’arrivo sono pronte nella Guida: come entrare, il Wi-Fi e il resto.',
+    checkout_reminder: 'Ti ricordiamo che il check-out è domani. I passaggi sono nella Guida.',
+    checkoutBy: 'Ti chiediamo di lasciare l’alloggio entro le {{checkoutTime}}.',
+    review:
+      'Se vuoi raccontare com’è andato il soggiorno, puoi lasciare una recensione su {{platform}}.',
+    seeTrip: 'Vedi in Il mio viaggio',
+    openGuide: 'Apri la Guida',
+  },
+  push: {
+    offer: 'Avvisami su questo telefono',
+    offerHint: 'Ti mando una notifica quando ci sono novità.',
+  },
   order: {
     heading: 'Conferma la prenotazione',
     offer: 'Cosa',

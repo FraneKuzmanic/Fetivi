@@ -18,6 +18,7 @@ import {
   type TestDatabase,
 } from '../testing';
 import {
+  deliverReply,
   guestInboxState,
   listHostInbox,
   markHandoffRead,
@@ -93,6 +94,7 @@ const rowsOf = (spaceId: string) =>
   testDb.db.select().from(handoffMessages).where(eq(handoffMessages.spaceId, spaceId));
 
 const handoffJobs = (): RecordedJob[] => queue.jobs.filter((j) => j.name === 'translate-handoff');
+const guestNotifyJobs = (): RecordedJob[] => queue.jobs.filter((j) => j.name === 'guest-notify');
 
 async function sent(options: { spaceLanguage?: GuestLanguage; hostLanguage?: GuestLanguage } = {}) {
   const g = await guest(options);
@@ -303,6 +305,20 @@ describe('host inbox', () => {
       ),
     ).toBe('already-replied');
     expect(handoffJobs()).toEqual([]);
+    // The guest's email and push go out through one guest-notify job from the same transaction.
+    expect(guestNotifyJobs()).toEqual([
+      {
+        name: 'guest-notify',
+        data: { kind: 'host_reply', spaceId: g.spaceId, handoffId: message.id },
+        id: expect.any(String),
+      },
+    ]);
+    // A retried delivery writes and enqueues nothing new.
+    const again = await testDb.db.transaction((tx) =>
+      deliverReply(tx, queue, message.id, { text: 'x', original: null }, NOW),
+    );
+    expect(again).toBe('already-delivered');
+    expect(guestNotifyJobs()).toHaveLength(1);
   });
 
   it('an acting admin’s reply does not mark the message Read', async () => {
@@ -344,7 +360,7 @@ describe('runHandoffTranslation', () => {
     const translator = scriptedHandoffTranslator(['Nema tople vode']);
     const run = () =>
       runHandoffTranslation(
-        { db: testDb.db, now: () => clock, handoffTranslator: translator },
+        { db: testDb.db, queue, now: () => clock, handoffTranslator: translator },
         { handoffId: message.id, part: 'message' },
       );
     expect(await run()).toBe('done');
@@ -361,7 +377,12 @@ describe('runHandoffTranslation', () => {
   it('a failed message translation shows the host the original', async () => {
     const { message } = await sent({ spaceLanguage: 'de', hostLanguage: 'hr' });
     const result = await runHandoffTranslation(
-      { db: testDb.db, now: () => clock, handoffTranslator: scriptedHandoffTranslator([null]) },
+      {
+        db: testDb.db,
+        queue,
+        now: () => clock,
+        handoffTranslator: scriptedHandoffTranslator([null]),
+      },
       { handoffId: message.id, part: 'message' },
     );
     expect(result).toBe('failed');
@@ -385,7 +406,7 @@ describe('runHandoffTranslation', () => {
       const translator = scriptedHandoffTranslator([output]);
       const run = () =>
         runHandoffTranslation(
-          { db: testDb.db, now: () => clock, handoffTranslator: translator },
+          { db: testDb.db, queue, now: () => clock, handoffTranslator: translator },
           { handoffId: message.id, part: 'reply' },
         );
       expect(await run()).toBe(output ? 'done' : 'failed');

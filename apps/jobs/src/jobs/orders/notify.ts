@@ -1,4 +1,8 @@
 import {
+  deliverGuestNotification,
+  type GuestDeliveryResult,
+  type GuestNotifyDeps,
+  isOrderGuestKind,
   type NotifyDeps,
   type OrderNotifyJobData,
   QUEUE_OPTIONS,
@@ -11,15 +15,17 @@ import type { JobDefinition } from '../../runner';
 
 /**
  * Sends an Order notification. The job is enqueued once per Order, proposal and kind, and the
- * send records its delivery, so a retry never sends twice. Guest channels arrive with 25 and the
- * on-request Provider email with 36; until then those kinds are only logged.
+ * send records its delivery, so a retry never sends twice. The guest kinds go to the guest's
+ * inbox, email and push; the on-request Provider email arrives with 36 and is only logged.
  */
-export function orderNotifyJob(deps: NotifyDeps): JobDefinition<OrderNotifyJobData> {
+export function orderNotifyJob(
+  deps: NotifyDeps & GuestNotifyDeps,
+): JobDefinition<OrderNotifyJobData> {
   return {
     name: QUEUES.orderNotify,
     queue: QUEUE_OPTIONS.orderNotify,
     async handler({ orderId, proposalId, kind }) {
-      let outcome: SendOutcome | 'logged';
+      let outcome: SendOutcome | GuestDeliveryResult | 'logged';
       switch (kind) {
         case 'provider_confirmed':
           outcome = await sendProviderNotification(deps, { orderId, proposalId, kind });
@@ -28,7 +34,9 @@ export function orderNotifyJob(deps: NotifyDeps): JobDefinition<OrderNotifyJobDa
           outcome = await sendAdminAlert(deps, { orderId, proposalId, kind });
           break;
         default:
-          outcome = 'logged';
+          outcome = isOrderGuestKind(kind)
+            ? await deliverGuestNotification(deps, { kind, orderId, proposalId })
+            : 'logged';
       }
       // Ids and outcome only, never contact fields.
       console.log(JSON.stringify({ job: QUEUES.orderNotify, orderId, proposalId, kind, outcome }));

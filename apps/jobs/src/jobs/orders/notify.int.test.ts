@@ -2,10 +2,15 @@ import {
   confirmHeldOrder,
   createJobQueue,
   createMemoryMailer,
+  createMemoryPushSender,
   createOrder,
   ensureQueues,
+  getOrCreateConversation,
   type JobQueue,
+  loadGuestProjection,
+  loadMessages,
   type OrderDeps,
+  savePushSubscription,
 } from '@fetivi/domain';
 import {
   createTestDatabase,
@@ -45,13 +50,31 @@ afterAll(async () => {
 });
 
 describe('order-notify job', () => {
-  it('emails the Provider once and only logs the guest kinds', async () => {
+  it('emails the Provider once and delivers the guest kinds once per channel', async () => {
     const provider = await seedProvider(testDb.db);
     const { offerId, slotId } = await seedOrderableOffer(testDb.db, {
       providerId: provider.id,
       availabilityMode: 'allotment',
       startsAt: SLOT_AT,
     });
+    const projection = await loadGuestProjection(testDb.db, {
+      unitId: unit.unitId,
+      stayId: unit.stayId,
+      language: 'en',
+      now: NOW,
+    });
+    const conversation = await getOrCreateConversation(
+      testDb.db,
+      unit.spaceId,
+      { systemPrompt: 's', projection },
+      NOW,
+    );
+    await savePushSubscription(
+      testDb.db,
+      unit.spaceId,
+      { endpoint: 'https://fcm.googleapis.com/fcm/send/jobs-test', p256dh: 'p', auth: 'a' },
+      NOW,
+    );
     const { order } = await createOrder(orderDeps(), {
       spaceId: unit.spaceId,
       offerId,
@@ -65,9 +88,12 @@ describe('order-notify job', () => {
     await confirmHeldOrder(orderDeps(), { orderId: order.id, proposalId });
 
     const mailer = createMemoryMailer();
+    const push = createMemoryPushSender();
     const job = orderNotifyJob({
       db: testDb.db,
       mailer,
+      push,
+      guestOrigin: 'http://guest.test',
       now: () => NOW,
       providerLink: { secret: 'jobs-test-secret-that-is-long-enough-00', baseUrl: 'http://x.test' },
     });
@@ -76,7 +102,22 @@ describe('order-notify job', () => {
     await job.handler({ ...ref, kind: 'provider_confirmed' });
     expect(mailer.sent).toHaveLength(1);
     expect(mailer.sent[0]?.to).toBe(provider.email);
+
+    // The guest's confirmation: twice in sequence, then three times at once.
     await job.handler({ ...ref, kind: 'order_confirmed' });
-    expect(mailer.sent).toHaveLength(1);
+    await job.handler({ ...ref, kind: 'order_confirmed' });
+    await Promise.all([1, 2, 3].map(() => job.handler({ ...ref, kind: 'order_confirmed' })));
+    const guestMail = mailer.sent.filter((m) => m.to === 'guest@example.test');
+    expect(guestMail).toHaveLength(1);
+    expect(guestMail[0]?.idempotencyKey).toBe(
+      `order:${order.id}:proposal:${proposalId}:notify:order_confirmed:email`,
+    );
+    expect(push.sent).toHaveLength(1);
+    const rows = await loadMessages(testDb.db, conversation.id);
+    expect(rows.filter((r) => r.kind === 'inbox')).toHaveLength(1);
+    expect(rows[0]?.parts[0]).toMatchObject({
+      type: 'data-inbox',
+      data: { kind: 'notice', notification: 'order_confirmed', orderId: order.id },
+    });
   });
 });

@@ -1,9 +1,10 @@
 import {
   createAnthropicHandoffTranslator,
   createAnthropicTranslationModel,
-  createConsoleMailer,
   createDb,
   createJobQueue,
+  createMailer,
+  createWebPushSender,
 } from '@fetivi/domain';
 import { loadConfig } from './config';
 import { egress } from './egress';
@@ -23,6 +24,16 @@ const handoffTranslator = createAnthropicHandoffTranslator({
 if (!config.ANTHROPIC_API_KEY) {
   console.warn('ANTHROPIC_API_KEY is not set: translations will fail as not-configured');
 }
+const push =
+  config.VAPID_PUBLIC_KEY && config.VAPID_PRIVATE_KEY
+    ? createWebPushSender({
+        publicKey: config.VAPID_PUBLIC_KEY,
+        privateKey: config.VAPID_PRIVATE_KEY,
+        subject: config.VAPID_SUBJECT,
+        fetch: egress.fetch,
+      })
+    : null;
+if (!push) console.warn('VAPID keys are not set: guest push notifications are skipped');
 const boss = await startJobRunner({
   connectionString: config.DATABASE_URL,
   jobs: (boss) =>
@@ -32,7 +43,14 @@ const boss = await startJobRunner({
       model,
       handoffTranslator,
       now: () => new Date(),
-      mailer: createConsoleMailer(),
+      mailer: createMailer({
+        transport: config.MAIL_TRANSPORT,
+        resendApiKey: config.RESEND_API_KEY,
+        from: config.MAIL_FROM,
+        fetch: egress.fetch,
+      }),
+      push,
+      guestOrigin: config.GUEST_ORIGIN,
       providerLink: {
         secret: config.PROVIDER_LINK_SECRET,
         baseUrl: config.PROVIDER_LINK_BASE_URL,

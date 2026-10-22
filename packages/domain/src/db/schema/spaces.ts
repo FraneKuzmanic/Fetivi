@@ -20,6 +20,8 @@ export const spaces = pgTable(
     email: text('email'),
     /** The one opt-in covering confirmations, recovery and alerts (PRD §6.1); the first time is kept. */
     emailOptInAt: timestamp('email_opt_in_at', { withTimezone: true }),
+    /** Set the first time the push offer was answered; never offered again. */
+    pushOfferedAt: timestamp('push_offered_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
   },

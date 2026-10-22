@@ -1,0 +1,90 @@
+import type { GuestCopy } from './types';
+
+export const en: GuestCopy = {
+  dateFormat: 'EEE d MMM',
+  dateAtTime: '{{date}} at {{time}}',
+  kinds: {
+    order_confirmed: {
+      subject: 'Confirmed: {{offer}}, {{date}}',
+      lines: [
+        'Good news: {{offer}} on {{date}} is confirmed.',
+        'You can see the details in My trip.',
+      ],
+      pushTitle: 'Confirmed',
+      pushBody: '{{offer}}, {{date}}',
+    },
+    order_new_proposal: {
+      subject: 'A new time or price for {{offer}}',
+      lines: [
+        'The provider of {{offer}} suggested a different time or price.',
+        'Open My trip to accept it or say no.',
+      ],
+      pushTitle: 'New suggestion',
+      pushBody: '{{offer}}: please take a look',
+    },
+    order_cancelled: {
+      subject: 'Cancelled: {{offer}}, {{date}}',
+      lines: ['{{offer}} on {{date}} has been cancelled.', 'You can see the details in My trip.'],
+      pushTitle: 'Cancelled',
+      pushBody: '{{offer}}, {{date}}',
+    },
+    order_declined: {
+      subject: 'Not available: {{offer}}, {{date}}',
+      lines: [
+        "Sorry, the provider can't take your booking for {{offer}} on {{date}}.",
+        'You can ask me for something else in the chat.',
+      ],
+      pushTitle: 'Not available',
+      pushBody: '{{offer}}, {{date}}',
+    },
+    order_expired: {
+      subject: 'No answer in time: {{offer}}, {{date}}',
+      lines: [
+        "The provider didn't answer in time, so your request for {{offer}} on {{date}} has closed.",
+        'You can ask me for something else in the chat.',
+      ],
+      pushTitle: 'Request closed',
+      pushBody: '{{offer}}, {{date}}',
+    },
+    order_failed: {
+      subject: "Couldn't book: {{offer}}, {{date}}",
+      lines: [
+        "Something went wrong and {{offer}} on {{date}} couldn't be booked.",
+        'You can try again or ask me in the chat.',
+      ],
+      pushTitle: "Couldn't book",
+      pushBody: '{{offer}}, {{date}}',
+    },
+    order_reminder: {
+      subject: 'Tomorrow: {{offer}}',
+      lines: ['A reminder: {{offer}} is tomorrow, {{date}}.', 'The details are in My trip.'],
+      pushTitle: 'Tomorrow',
+      pushBody: '{{offer}}, {{date}}',
+    },
+    host_reply: {
+      subject: 'Your host replied',
+      lines: ['Your host replied to your message.', 'Open the chat to read it.'],
+      pushTitle: 'Your host replied',
+      pushBody: 'Open the chat to read it.',
+    },
+    arrival_details: {
+      subject: 'Your arrival details are ready',
+      lines: [
+        'Your arrival details are ready in the Guide: how to get in, Wi-Fi and the rest.',
+        'Have a good trip.',
+      ],
+      pushTitle: 'Arrival details are ready',
+      pushBody: 'Open the Guide to see how to get in.',
+    },
+    checkout_reminder: {
+      subject: 'Checkout is tomorrow',
+      lines: ['A reminder that checkout is tomorrow.'],
+      pushTitle: 'Checkout is tomorrow',
+      pushBody: 'The checkout steps are in the Guide.',
+    },
+  },
+  checkoutTimeLine: 'Please leave by {{checkoutTime}}.',
+  reviewLine: "If you'd like to share how your stay went, you can leave a review on {{platform}}.",
+  openApp: 'Open Fetivi',
+  signature: 'Fetivi',
+};

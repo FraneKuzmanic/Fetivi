@@ -13,6 +13,8 @@ import { properties, units } from '../db/schema/properties';
 import { spaces } from '../db/schema/spaces';
 import { stays } from '../db/schema/stays';
 import type { JobQueue } from '../jobs/queue';
+import { enqueueGuestNotification } from '../notifications/guest/enqueue';
+import { orderReminderAt } from '../notifications/guest/reminders';
 import { lockOfferRow } from '../offers/translation';
 import { allotmentAdapter, restoreSeats } from '../services/adapters/allotment';
 import { AdapterError } from '../services/adapters/interface';
@@ -24,7 +26,8 @@ import type { OrderStatus, OrderTrigger, Proposer } from './vocabulary';
 // The Order state machine: the only writer of `orders.status` and `orders.payment_status`.
 // Every transition runs in one transaction that locks the Order row, writes the status and its
 // OrderEvent, applies the hold and seat effects, and inserts the next jobs through the same
-// transaction. Passing a transaction as `db` makes this a savepoint inside the caller's.
+// transaction (confirmation also schedules the guest's reminder on guest-notify). Passing a
+// transaction as `db` makes this a savepoint inside the caller's.
 // Allotment seats are taken and returned through the allotment adapter, inside the machine's
 // transaction. Lock order everywhere: Order row, then slot row (createOrder: Offer, then slot).
 // Pay-direct only: Payment status stays `none` (ticket 33 adds payments here).
@@ -437,7 +440,10 @@ export async function guestConfirm(
   });
 }
 
-/** The Order is confirmed: the hold is committed and the completion timer scheduled. */
+/**
+ * The Order is confirmed: the hold is committed, the completion timer scheduled, and the guest's
+ * evening-before reminder enqueued on guest-notify (unless that evening has passed).
+ */
 export async function confirm(
   deps: OrderDeps,
   input: ActionInput & { providerExternalRef?: string },
@@ -465,6 +471,20 @@ export async function confirm(
       { orderId: order.id, proposalId: proposal.id, operation: 'completion' },
       endOfCivilDay(proposal.date, zone),
     );
+    const remindAt = orderReminderAt(proposal.date, zone);
+    if (remindAt > deps.now()) {
+      await enqueueGuestNotification(
+        tx,
+        deps.queue,
+        {
+          kind: 'order_reminder',
+          spaceId: order.spaceId,
+          orderId: order.id,
+          proposalId: proposal.id,
+        },
+        remindAt,
+      );
+    }
     return { outcome: 'applied', order: confirmed };
   });
 }

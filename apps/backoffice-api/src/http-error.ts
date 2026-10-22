@@ -12,6 +12,7 @@ export type ErrorCode =
   | 'forbidden'
   | 'stop-acting-first'
   | 'bad-origin'
+  | 'bad-signature'
   | 'not-found'
   | 'email-taken'
   | 'not-approved'
