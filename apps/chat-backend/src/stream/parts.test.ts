@@ -187,3 +187,54 @@ describe('booking components', () => {
     expect(componentFor('create_order', { outcome: 'not_ordered', order: null })).toBeNull();
   });
 });
+
+describe('host message components', () => {
+  const message = {
+    id: 'm-1',
+    text: 'No hot water',
+    urgency: 'urgent',
+    sentAt: '2027-05-01T10:00:00.000Z',
+  };
+
+  it('shows the sent card only for a sent message', () => {
+    expect(componentFor('send_host_message', { outcome: 'sent', message })).toEqual({
+      name: 'host-message-sent',
+      payload: { message },
+    });
+    expect(componentFor('send_host_message', { outcome: 'not_sent', message: null })).toBeNull();
+  });
+
+  it('shows 112 first, then the host phone, for an emergency; nothing for a draft', () => {
+    const emergency = {
+      emergencyNumber: '112',
+      hostPhone: '+385 91 111',
+      emergencyContactName: 'Ana',
+      emergencyContactPhone: null,
+      releaseAt: null,
+      timezone: 'Europe/Zagreb',
+    };
+    expect(
+      componentFor('draft_host_message', { outcome: 'emergency', draft: null, emergency }),
+    ).toEqual({
+      name: 'property-info',
+      payload: {
+        topic: 'contacts',
+        releaseAt: null,
+        timezone: 'Europe/Zagreb',
+        fields: [
+          { key: 'emergencyNumber', value: '112', action: 'tel' },
+          { key: 'hostPhone', value: '+385 91 111', action: 'tel' },
+          { key: 'emergencyContactName', value: 'Ana', action: 'text' },
+        ],
+        media: [],
+      },
+    });
+    expect(
+      componentFor('draft_host_message', {
+        outcome: 'draft',
+        draft: { message: 'x', reason: 'problem', urgency: 'normal' },
+        emergency: null,
+      }),
+    ).toBeNull();
+  });
+});

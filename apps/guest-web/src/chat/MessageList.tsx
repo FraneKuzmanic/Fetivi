@@ -1,11 +1,19 @@
 import { componentPart } from '@fetivi/ui/payloads';
 import { type ChatStatus, isToolUIPart, type UIMessage } from 'ai';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mascot } from '../shell/Mascot';
-import { isComponentPart, isElicitationPart, isGuestAnswer, messageText } from './chat-api';
+import {
+  type InboxEntry,
+  isComponentPart,
+  isElicitationPart,
+  isGuestAnswer,
+  messageText,
+} from './chat-api';
 import { ComponentPart } from './render/ComponentPart';
 import { type CardAnswer, ConfirmationPart } from './render/ConfirmationPart';
+import { HostMessagePart, isHostMessageCard } from './render/HostMessagePart';
+import { InboxPart } from './render/InboxPart';
 
 const NEAR_BOTTOM_PX = 120;
 
@@ -45,6 +53,13 @@ function cardsOf(message: UIMessage, busy: boolean): Card[] {
 export const asksToConfirm = (message: UIMessage | undefined) =>
   message !== undefined && cardsOf(message, false).length > 0;
 
+/** The announcement of an answer's open card: a host message or a booking. */
+function cardShownKey(message: UIMessage): 'hostMessage.cardShown' | 'order.cardShown' | null {
+  const [card] = cardsOf(message, false);
+  if (!card) return null;
+  return isHostMessageCard(card.card) ? 'hostMessage.cardShown' : 'order.cardShown';
+}
+
 /**
  * An answer reads as its words first, in one bubble, then any confirmation card, then its
  * components in part order, with follow-up chips last: the model often searches before it
@@ -80,6 +95,7 @@ const placesShown = (message: UIMessage) =>
  */
 export function MessageList({
   messages,
+  inbox = [],
   status,
   interactive,
   onSend,
@@ -87,6 +103,8 @@ export function MessageList({
   onAnswer,
 }: {
   messages: UIMessage[];
+  /** Inbox messages (host replies), each shown after the chat message it followed. */
+  inbox?: InboxEntry[];
   status: ChatStatus;
   /** False while a turn runs or after the Stay: the newest answer's chips and choices then hide. */
   interactive: boolean;
@@ -126,11 +144,12 @@ export function MessageList({
     const last = messages.at(-1);
     if (last?.role !== 'assistant') return;
     const count = placesShown(last);
+    const cardKey = cardShownKey(last);
     setAnnouncement(
       [
         messageText(last),
         count > 0 ? t('components.placesShown', { count }) : '',
-        asksToConfirm(last) ? t('order.cardShown') : '',
+        cardKey ? t(cardKey) : '',
       ]
         .filter(Boolean)
         .join(' '),
@@ -138,72 +157,22 @@ export function MessageList({
   }, [status, messages, t]);
 
   const last = messages.at(-1);
+  const inboxAfter = (id: string | null) => inbox.filter((e) => e.afterId === id);
+  const inboxRows = (id: string | null) =>
+    inboxAfter(id).map((e) => <InboxPart key={`inbox-${e.id}`} item={e.item} />);
   const typing =
     isBusy(status) && !(last?.role === 'assistant' && messageText(last).trim().length > 0);
 
   return (
     <>
       <div className="messages" role="log" aria-live="off" aria-busy={isBusy(status)}>
-        {messages.map((m, i) => {
-          if (m.role === 'user') {
-            const text = messageText(m);
-            if (!text) return null;
-            return (
-              <p key={m.id} className="bubble guest">
-                <span className="visually-hidden">{`${t('chat.you')}: `}</span>
-                {text}
-              </p>
-            );
-          }
-          const segments = segmentsOf(m, isBusy(status));
-          if (segments.length === 0) return null;
-          const firstOfRun = messages[i - 1]?.role !== 'assistant';
-          const latest = interactive && i === messages.length - 1;
-          // Once an answer holds a confirmation card, its starts are history: a pick there would
-          // cancel the card, and after the tap its places left are out of date.
-          const pickerLive = latest && !m.parts.some(isElicitationPart);
-          let named = false;
-          return (
-            <div key={m.id} className="fetivi-row">
-              <span className="avatar">{firstOfRun && <Mascot className="avatar-mascot" />}</span>
-              <div className="fetivi-turn">
-                {segments.map((segment) => {
-                  if ('card' in segment) {
-                    // An open card acts only on the newest answer while the guest can reply.
-                    if (segment.state === 'open' && !latest) return null;
-                    return (
-                      <ConfirmationPart
-                        key={segment.key}
-                        data={segment.card}
-                        state={segment.state}
-                        onAnswer={onAnswer}
-                      />
-                    );
-                  }
-                  if (!('text' in segment)) {
-                    return (
-                      <ComponentPart
-                        key={segment.key}
-                        data={segment.data}
-                        latest={isPicker(segment) ? pickerLive : latest}
-                        onSend={onSend}
-                        onSomethingElse={onSomethingElse}
-                      />
-                    );
-                  }
-                  const name = !named;
-                  named = true;
-                  return (
-                    <p key={segment.key} className="bubble fetivi">
-                      {name && <span className="visually-hidden">{`${t('chat.fetivi')}: `}</span>}
-                      {segment.text}
-                    </p>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+        {inboxRows(null)}
+        {messages.map((m, i) => (
+          <Fragment key={m.id}>
+            {renderMessage(m, i)}
+            {inboxRows(m.id)}
+          </Fragment>
+        ))}
         {typing && <p className="typing">{t('chat.typing')}</p>}
       </div>
       <div className="visually-hidden" role="status" aria-live="polite">
@@ -211,4 +180,77 @@ export function MessageList({
       </div>
     </>
   );
+
+  function renderMessage(m: UIMessage, i: number) {
+    if (m.role === 'user') {
+      const text = messageText(m);
+      if (!text) return null;
+      return (
+        <p className="bubble guest">
+          <span className="visually-hidden">{`${t('chat.you')}: `}</span>
+          {text}
+        </p>
+      );
+    }
+    const segments = segmentsOf(m, isBusy(status));
+    if (segments.length === 0) return null;
+    const previous = messages[i - 1];
+    // A host reply in between starts a new run, so Fetivi's mascot shows again.
+    const firstOfRun = previous?.role !== 'assistant' || inboxAfter(previous.id).length > 0;
+    const latest = interactive && i === messages.length - 1;
+    // Once an answer holds a confirmation card, its starts are history: a pick there would
+    // cancel the card, and after the tap its places left are out of date.
+    const pickerLive = latest && !m.parts.some(isElicitationPart);
+    let named = false;
+    return (
+      <div className="fetivi-row">
+        <span className="avatar">{firstOfRun && <Mascot className="avatar-mascot" />}</span>
+        <div className="fetivi-turn">
+          {segments.map((segment) => {
+            if ('card' in segment) {
+              // An open card acts only on the newest answer while the guest can reply.
+              if (segment.state === 'open' && !latest) return null;
+              if (isHostMessageCard(segment.card)) {
+                return (
+                  <HostMessagePart
+                    key={segment.key}
+                    data={segment.card}
+                    state={segment.state}
+                    onAnswer={onAnswer}
+                  />
+                );
+              }
+              return (
+                <ConfirmationPart
+                  key={segment.key}
+                  data={segment.card}
+                  state={segment.state}
+                  onAnswer={onAnswer}
+                />
+              );
+            }
+            if (!('text' in segment)) {
+              return (
+                <ComponentPart
+                  key={segment.key}
+                  data={segment.data}
+                  latest={isPicker(segment) ? pickerLive : latest}
+                  onSend={onSend}
+                  onSomethingElse={onSomethingElse}
+                />
+              );
+            }
+            const name = !named;
+            named = true;
+            return (
+              <p key={segment.key} className="bubble fetivi">
+                {name && <span className="visually-hidden">{`${t('chat.fetivi')}: `}</span>}
+                {segment.text}
+              </p>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 }

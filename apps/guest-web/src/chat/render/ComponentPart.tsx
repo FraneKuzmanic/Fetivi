@@ -2,6 +2,7 @@ import {
   AvailabilityPicker,
   ChoiceCard,
   FollowUpChips,
+  HostMessageSent,
   PlaceCarousel,
   PropertyInfoCard,
   ReceiptCard,
@@ -11,7 +12,15 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mediaUrl } from '../../guide/guide-api';
 import { propertyInfoLabels } from '../../guide/labels';
-import { choiceLabels, pickedText, pickerLabels, placeLabels, receiptLabels } from './labels';
+import { useInbox } from '../../inbox/InboxProvider';
+import {
+  choiceLabels,
+  hostSentLabels,
+  pickedText,
+  pickerLabels,
+  placeLabels,
+  receiptLabels,
+} from './labels';
 import { useSavedPlaces } from './SavedPlaces';
 
 /**
@@ -32,6 +41,7 @@ export function ComponentPart({
 }) {
   const { t, i18n } = useTranslation();
   const savedPlaces = useSavedPlaces();
+  const inbox = useInbox();
   const parsed = useMemo(() => componentPart.safeParse(data), [data]);
   if (!parsed.success) return null;
   const part = parsed.data;
@@ -81,6 +91,16 @@ export function ComponentPart({
     }
     case 'receipt-card':
       return <ReceiptCard order={part.payload.order} labels={receiptLabels(t, i18n.language)} />;
+    case 'host-message-sent': {
+      const { message } = part.payload;
+      return (
+        <HostMessageSent
+          message={message}
+          status={inbox.status(message.id) ?? 'sent'}
+          labels={hostSentLabels(t, i18n.language)}
+        />
+      );
+    }
     case 'property-info':
       return (
         <PropertyInfoCard

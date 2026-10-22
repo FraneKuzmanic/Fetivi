@@ -8,6 +8,11 @@ import type {
   TransportMode,
 } from '@fetivi/domain/catalog-vocabulary';
 import type {
+  HandoffReason,
+  HandoffTranslationState,
+  HandoffUrgency,
+} from '@fetivi/domain/handoff-vocabulary';
+import type {
   AdapterKind,
   AvailabilityMode,
   ContactFields,
@@ -457,6 +462,33 @@ export interface AdminPropertyRow {
   approvedAt: string | null;
 }
 
+/** A Host message in the host's inbox: only what a guest chose to send. */
+export interface HostMessage {
+  id: string;
+  unitName: string;
+  propertyName: string;
+  checkIn: string;
+  checkout: string;
+  bookerName: string | null;
+  guestLanguage: GuestLanguage;
+  hostLanguage: GuestLanguage;
+  reason: HandoffReason;
+  urgency: HandoffUrgency;
+  /** What the guest wrote, in their language. */
+  text: string;
+  /** In the host's language; null until done, or when not needed. */
+  translation: string | null;
+  translationState: HandoffTranslationState;
+  sentAt: string;
+  readAt: string | null;
+  reply: {
+    text: string;
+    repliedAt: string;
+    translationState: HandoffTranslationState | null;
+    deliveredAt: string | null;
+  } | null;
+}
+
 const post = <T = void>(path: string, body?: unknown) => api<T>(path, { method: 'POST', body });
 const patch = <T>(path: string, body: unknown) => api<T>(path, { method: 'PATCH', body });
 const put = <T>(path: string, body: unknown) => api<T>(path, { method: 'PUT', body });
@@ -582,6 +614,10 @@ export const host = {
   dismissProposal: (id: string) => post(`/api/host/stay-proposals/${id}/dismiss`),
   approveBookingLinks: (propertyId: string) =>
     post(`/api/host/properties/${propertyId}/booking-links-approved`),
+  inbox: () => api<{ messages: HostMessage[]; unread: number }>('/api/host/inbox'),
+  readMessage: (id: string) => post(`/api/host/inbox/${id}/read`),
+  replyMessage: (id: string, text: string) =>
+    post<{ message: HostMessage }>(`/api/host/inbox/${id}/reply`, { text }),
 };
 
 // --- Catalog (admin) -----------------------------------------------------------------------------

@@ -105,6 +105,8 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
     'inside a destination, before arrival',
     context({}),
     [
+      'draft_host_message',
+      'send_host_message',
       'search_places',
       'get_place',
       'search_events',
@@ -121,6 +123,8 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
     'in stay, in German',
     context({ phase: 'in_stay', language: 'de' }),
     [
+      'draft_host_message',
+      'send_host_message',
       'search_places',
       'get_place',
       'search_events',
@@ -136,12 +140,20 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
   [
     'outside a destination without own Offers',
     context({ insideDestination: false, destinationId: null }),
-    ['list_my_orders', 'get_about_me', 'update_about_me'],
+    [
+      'draft_host_message',
+      'send_host_message',
+      'list_my_orders',
+      'get_about_me',
+      'update_about_me',
+    ],
   ],
   [
     'outside a destination with own Offers',
     context({ insideDestination: false, destinationId: null, hostHasOwnOffers: true }),
     [
+      'draft_host_message',
+      'send_host_message',
       'list_offers',
       'check_availability',
       'list_my_orders',

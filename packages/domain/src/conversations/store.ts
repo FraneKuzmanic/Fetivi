@@ -68,18 +68,32 @@ export interface AppendTurnInput {
   now: Date;
 }
 
+/** Locks the conversation row; seq allocation and turn writes serialise here. */
+async function lockConversation(tx: Executor, conversationId: string): Promise<void> {
+  const [locked] = await tx
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .for('update');
+  if (!locked) throw new ConversationRuleError('not-found');
+}
+
+/** The next free seq; call under the conversation row lock. */
+async function nextSeq(tx: Executor, conversationId: string): Promise<number> {
+  const [last] = await tx
+    .select({ seq: max(messages.seq) })
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId));
+  return (last?.seq ?? 0) + 1;
+}
+
 /**
  * Stores one completed turn's messages after the existing ones, replaces the parts of the
  * `updated` ones, and records what the model now knows.
  */
 export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> {
   await db.transaction(async (tx) => {
-    const [locked] = await tx
-      .select({ id: conversations.id })
-      .from(conversations)
-      .where(eq(conversations.id, input.conversationId))
-      .for('update');
-    if (!locked) throw new ConversationRuleError('not-found');
+    await lockConversation(tx, input.conversationId);
     for (const m of input.updated ?? []) {
       const [row] = await tx
         .update(messages)
@@ -89,11 +103,7 @@ export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> 
       // Thrown inside the transaction, so nothing of the turn is written.
       if (!row) throw new ConversationRuleError('not-found');
     }
-    const [last] = await tx
-      .select({ seq: max(messages.seq) })
-      .from(messages)
-      .where(eq(messages.conversationId, input.conversationId));
-    const start = (last?.seq ?? 0) + 1;
+    const start = await nextSeq(tx, input.conversationId);
     if (input.messages.length) {
       await tx.insert(messages).values(
         input.messages.map((m, i) => ({
@@ -115,5 +125,25 @@ export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> 
         updatedAt: input.now,
       })
       .where(eq(conversations.id, input.conversationId));
+  });
+}
+
+/**
+ * Appends one inbox message (a host reply) after the existing messages. It is shown to the guest
+ * and counted by the Chat badge; the model never sees it as a conversation message (ADR 0006).
+ */
+export async function appendInboxMessage(
+  tx: Executor,
+  input: { conversationId: string; id: string; parts: MessagePart[]; now: Date },
+): Promise<void> {
+  await lockConversation(tx, input.conversationId);
+  await tx.insert(messages).values({
+    id: input.id,
+    conversationId: input.conversationId,
+    seq: await nextSeq(tx, input.conversationId),
+    role: 'assistant',
+    kind: 'inbox',
+    parts: input.parts,
+    createdAt: input.now,
   });
 }

@@ -14,6 +14,7 @@ import {
   recordTurnMetrics,
   type SpaceContext,
 } from '@fetivi/domain';
+import { INBOX_PART_TYPE, inboxItem } from '@fetivi/ui/payloads';
 import {
   createUIMessageStream,
   createUIMessageStreamResponse,
@@ -30,6 +31,7 @@ import { type ListedTool, pausedTools, toAiTools } from '../mcp/tools';
 import {
   aboutMeNote,
   buildSystemText,
+  hostReplyNote,
   projectionChangeNote,
   situationNote,
   systemInstructions,
@@ -59,6 +61,23 @@ const toRow = (m: UIMessage) => ({
   role: m.role,
   parts: m.parts as unknown as MessagePart[],
 });
+
+/** The model's history: chat rows only. Inbox rows are the guest's, never the model's (ADR 0006). */
+const chatHistory = (rows: MessageRow[]) =>
+  rows.filter((r) => r.kind === 'chat').map(rowToUiMessage);
+
+/** The texts of host replies that arrived since the guest's last stored message. */
+function newHostReplies(rows: MessageRow[]): string[] {
+  const lastUser = rows.reduce((seq, r) => (r.role === 'user' ? Math.max(seq, r.seq) : seq), 0);
+  return rows
+    .filter((r) => r.kind === 'inbox' && r.seq > lastUser)
+    .flatMap((r) => r.parts)
+    .filter((p) => p.type === INBOX_PART_TYPE)
+    .flatMap((p) => {
+      const item = inboxItem.safeParse(p.data);
+      return item.success ? [item.data.text] : [];
+    });
+}
 
 const textMessage = (role: 'system' | 'user', text: string): UIMessage => ({
   id: randomUUID(),
@@ -219,7 +238,8 @@ export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Pro
       { systemPrompt: buildSystemText(projection), projection },
       turn.startedAt,
     );
-    const history = (await loadMessages(db, conversation.id)).map(rowToUiMessage);
+    const rows = await loadMessages(db, conversation.id);
+    const history = chatHistory(rows);
     // A card still open when the guest types: the guest moved on, so it is cancelled first.
     const cancelled = await cancelOpenCalls(
       { turnTools: turn.turnTools, paused: turn.paused, onCall: (n) => turn.calls.push(n) },
@@ -239,6 +259,7 @@ export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Pro
       projectionChangeNote(conversation.projection, projection),
       note === conversation.situationNote ? null : note,
       aboutMeText === conversation.aboutMeNote ? null : aboutMeText,
+      hostReplyNote(newHostReplies(rows)),
     ].filter((n) => n !== null);
     // Anthropic takes a mid-conversation system message only right after a user message, and not
     // two in a row: so the notes go after the guest's text, joined into one message.
@@ -283,7 +304,7 @@ export function resumeTurn(
     const { db } = deps;
     const conversation = await findConversation(db, turn.spaceId);
     if (!conversation) throw new HttpError(409, 'nothing-to-answer');
-    const history = (await loadMessages(db, conversation.id)).map(rowToUiMessage);
+    const history = chatHistory(await loadMessages(db, conversation.id));
     const assistant = history.at(-1);
     const open =
       assistant?.role === 'assistant'

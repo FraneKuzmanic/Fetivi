@@ -173,3 +173,17 @@ export function aboutMeNote(aboutMe: AboutMe, previous: string | null): string |
     : '';
   return `${head}${body}${needs}`;
 }
+
+/**
+ * The host's reply as the model learns it (ADR 0006): a system note after the guest's next
+ * message, since inbox rows never enter model history.
+ */
+export function hostReplyNote(replies: string[]): string | null {
+  if (replies.length === 0) return null;
+  return replies
+    .map(
+      (text) =>
+        `The host replied to the guest's message (the guest sees it in the chat): "${text}". Use it if relevant; don't repeat it word for word.`,
+    )
+    .join('\n\n');
+}

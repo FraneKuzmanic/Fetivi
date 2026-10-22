@@ -4,6 +4,8 @@ import type {
   AvailabilityPickerLabels,
   ChoiceCardLabels,
   ConfirmationCardLabels,
+  HostDraftLabels,
+  HostSentLabels,
   PlaceLabels,
   ReceiptLabels,
 } from '@fetivi/ui';
@@ -147,5 +149,29 @@ export function receiptLabels(t: TFunction, language: string): ReceiptLabels {
       status === 'none' && mode === 'direct'
         ? t('order.payDirect')
         : t(PAYMENT_STATUS_KEYS[status]),
+  };
+}
+
+/** The host message card's strings. */
+export const hostDraftLabels = (t: TFunction): HostDraftLabels => ({
+  heading: t('hostMessage.heading'),
+  explain: t('hostMessage.explain'),
+  label: t('hostMessage.label'),
+  counter: (count, max) => t('hostMessage.counter', { count, max }),
+  empty: t('hostMessage.empty'),
+  urgent: t('hostMessage.urgent'),
+  send: t('hostMessage.send'),
+  cancel: t('hostMessage.cancel'),
+  sending: t('hostMessage.sending'),
+});
+
+/** A sent Host message's strings; the time in the interface language. */
+export function hostSentLabels(t: TFunction, language: string): HostSentLabels {
+  const time = new Intl.DateTimeFormat(language, { timeStyle: 'short' });
+  return {
+    heading: t('hostMessage.heading'),
+    sentAt: (sentAt) => t('hostMessage.sentAt', { time: time.format(new Date(sentAt)) }),
+    read: t('hostMessage.read'),
+    urgent: t('hostMessage.urgent'),
   };
 }

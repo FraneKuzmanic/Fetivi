@@ -2,6 +2,12 @@
 // these through `@fetivi/ui/payloads`, and the guest app re-checks stored parts before rendering.
 import { PLACE_CATEGORIES, STALENESS_STATUSES } from '@fetivi/domain/catalog-vocabulary';
 import {
+  HANDOFF_LIMITS,
+  HANDOFF_REASONS,
+  HANDOFF_URGENCIES,
+  INBOX_PART_TYPE,
+} from '@fetivi/domain/handoff-vocabulary';
+import {
   AVAILABILITY_MODES,
   CONTACT_FIELDS,
   PAYMENT_MODES,
@@ -102,6 +108,16 @@ export const orderSummary = z.object({
 
 export const receiptCard = z.object({ order: orderSummary });
 
+/** A Host message as the guest's card shows it once sent. */
+export const hostMessageSent = z.object({
+  message: z.object({
+    id: z.string().min(1),
+    text: z.string(),
+    urgency: z.enum(HANDOFF_URGENCIES),
+    sentAt: z.string(),
+  }),
+});
+
 /** A streamed component: its name and a payload valid for that name. */
 export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('follow-up-chips'), payload: followUpChips }),
@@ -110,6 +126,7 @@ export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('availability-picker'), payload: availabilityPicker }),
   z.object({ name: z.literal('receipt-card'), payload: receiptCard }),
   z.object({ name: z.literal('property-info'), payload: propertyInfoCard }),
+  z.object({ name: z.literal('host-message-sent'), payload: hostMessageSent }),
 ]);
 
 /** The UI message part type of a confirmation card; its id is the paused tool call's id. */
@@ -135,35 +152,64 @@ export const orderDraft = z.object({
   contactFields: z.enum(CONTACT_FIELDS),
 });
 
+/** The stored send_host_message draft the host message card shows; the guest may edit the text. */
+export const hostMessageDraft = z.object({
+  pendingId: z.string().min(1),
+  messageId: z.string().min(1),
+  text: z.string().min(1).max(HANDOFF_LIMITS.messageChars),
+  reason: z.enum(HANDOFF_REASONS),
+  urgency: z.enum(HANDOFF_URGENCIES),
+  language: z.enum(GUEST_LANGUAGES),
+});
+
 /**
  * A paused write tool's confirmation: the server's form (message and schema), the stored draft
  * and the opaque `requestState`, which the backend sends back byte for byte.
  */
-export const elicitationPayload = z.object({
-  toolCallId: z.string().min(1),
-  toolName: z.string().min(1),
-  key: z.string().min(1),
-  message: z.string(),
-  requestedSchema: z
-    .object({
-      type: z.literal('object'),
-      properties: z.record(
-        z.string(),
-        z
-          .object({
-            type: z.string(),
-            format: z.string().optional(),
-            title: z.string().optional(),
-            description: z.string().optional(),
-          })
-          .passthrough(),
-      ),
-      required: z.array(z.string()).optional(),
-    })
-    .passthrough(),
-  requestState: z.string().min(1),
-  draft: orderDraft.nullable(),
-});
+export const elicitationPayload = z
+  .object({
+    toolCallId: z.string().min(1),
+    toolName: z.string().min(1),
+    key: z.string().min(1),
+    message: z.string(),
+    requestedSchema: z
+      .object({
+        type: z.literal('object'),
+        properties: z.record(
+          z.string(),
+          z
+            .object({
+              type: z.string(),
+              format: z.string().optional(),
+              title: z.string().optional(),
+              description: z.string().optional(),
+            })
+            .passthrough(),
+        ),
+        required: z.array(z.string()).optional(),
+      })
+      .passthrough(),
+    requestState: z.string().min(1),
+    /** create_order's draft. Exactly one of `draft` and `hostMessage` is set. */
+    draft: orderDraft.nullable().default(null),
+    hostMessage: hostMessageDraft.nullable().default(null),
+  })
+  .refine((p) => (p.draft === null) !== (p.hostMessage === null), 'Exactly one draft');
+
+export { INBOX_PART_TYPE };
+
+/** An inbox message in the Chat: for now only the host's reply. */
+export const inboxItem = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('host-reply'),
+    handoffId: z.string().min(1),
+    /** The translation, or the reply itself when none is shown. */
+    text: z.string(),
+    /** The host's own words, only when a translation is shown. */
+    original: z.string().nullable(),
+    repliedAt: z.string(),
+  }),
+]);
 
 export type PlaceCardPayload = z.infer<typeof placeCard>;
 export type ComponentPart = z.infer<typeof componentPart>;
@@ -171,3 +217,6 @@ export type AvailabilityPickerPayload = z.infer<typeof availabilityPicker>;
 export type OrderSummaryPayload = z.infer<typeof orderSummary>;
 export type OrderDraft = z.infer<typeof orderDraft>;
 export type ElicitationPayload = z.infer<typeof elicitationPayload>;
+export type HostMessageDraftPayload = z.infer<typeof hostMessageDraft>;
+export type HostMessageSentPayload = z.infer<typeof hostMessageSent>;
+export type InboxItem = z.infer<typeof inboxItem>;

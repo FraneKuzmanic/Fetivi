@@ -1,4 +1,4 @@
-import { ORDER_DRAFT_META_KEY } from '@fetivi/domain';
+import { HOST_MESSAGE_DRAFT_META_KEY, ORDER_DRAFT_META_KEY } from '@fetivi/domain';
 import type { Client } from '@modelcontextprotocol/client';
 import { describe, expect, it, vi } from 'vitest';
 import type { TurnClients } from '../mcp/clients';
@@ -84,9 +84,32 @@ describe('firstHalf', () => {
         requestedSchema: SCHEMA,
         requestState: 'sealed.state',
         draft: DRAFT,
+        hostMessage: null,
       },
     });
     expect(callTool).toHaveBeenCalledWith({ name: 'create_order', arguments: call.input }, OPTIONS);
+  });
+
+  it('carries a host message draft instead of an order draft', async () => {
+    const hostMessage = {
+      pendingId: 'p-2',
+      messageId: '6f1c1d0e-8a0b-4c2e-9f5d-1a2b3c4d5e6f',
+      text: 'The shower has no hot water.',
+      reason: 'problem',
+      urgency: 'urgent',
+      language: 'en',
+    };
+    const { call } = fake(() => inputRequired({ [HOST_MESSAGE_DRAFT_META_KEY]: hostMessage }));
+    const outcome = await firstHalf(call);
+    expect(outcome).toMatchObject({ kind: 'ask', payload: { draft: null, hostMessage } });
+  });
+
+  it('refuses a card with no draft at all', async () => {
+    const { call } = fake(() => inputRequired({}));
+    expect(await firstHalf(call)).toEqual({
+      kind: 'error',
+      errorText: 'The confirmation could not be shown; nothing was booked.',
+    });
   });
 
   it('refuses a card whose draft cannot be shown', async () => {
@@ -165,6 +188,13 @@ describe('answer', () => {
 });
 
 describe('guestAnswer', () => {
+  it('takes a host message up to its own limit', () => {
+    const message = 'x'.repeat(1000);
+    expect(
+      guestAnswer.safeParse({ toolCallId: 'c', action: 'accept', content: { message } }).success,
+    ).toBe(true);
+  });
+
   it('takes an action and short string fields only', () => {
     expect(
       guestAnswer.safeParse({ toolCallId: 'c', action: 'accept', content: { email: 'a@b.test' } })
@@ -180,6 +210,7 @@ describe('guestAnswer', () => {
         content: { a: '1', b: '2', c: '3', d: '4', e: '5', f: '6' },
       },
       { toolCallId: 'c', action: 'accept', requestState: 'forged' },
+      { toolCallId: 'c', action: 'accept', content: { message: 'x'.repeat(1001) } },
     ]) {
       expect(guestAnswer.safeParse(bad).success).toBe(false);
     }

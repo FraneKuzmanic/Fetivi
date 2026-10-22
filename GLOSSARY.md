@@ -161,3 +161,17 @@ _Avoid_: restriction, requirement
 **Saved place**:
 A Catalog record (a place or a day trip) a Space's guests saved from a place card, kept per Space for the Guide and My trip. It is stored by the record's id, so the API's `placeId` and the table's `record_id` name the same thing.
 _Avoid_: favourite, bookmark
+
+## Host communication
+
+**Host message**:
+What a guest sends their Host through Fetivi after checking, editing and tapping Send on a draft Fetivi wrote, translated into the Host's back-office language. At most one per Conversation; the Host may answer it with one reply.
+_Avoid_: handoff ticket, support request
+
+**Urgency**:
+How soon a Host message needs the Host: normal or urgent, set by Fetivi, never by the guest. Urgent ones bypass the Host's digest (ticket 24).
+_Avoid_: priority
+
+**Inbox**:
+On the Host side, the back-office list of Host messages. On the guest side, inbox messages in the Chat, such as the Host's reply, which the Chat badge counts.
+_Avoid_: notifications tab, mailbox

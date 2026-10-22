@@ -14,6 +14,7 @@ import {
   ABOUT_ME_EN,
   aboutMeNote,
   buildSystemText,
+  hostReplyNote,
   projectionChangeNote,
   situationNote,
   systemInstructions,
@@ -218,5 +219,24 @@ describe('aboutMeNote', () => {
       const phrases = ABOUT_ME_EN[field as keyof typeof ABOUT_ME_EN] as Record<string, string>;
       for (const code of codes) expect(phrases[code], `${field}.${code}`).toBeTruthy();
     }
+  });
+});
+
+describe('hostReplyNote', () => {
+  it('quotes the reply and tells the model the guest already sees it', () => {
+    expect(hostReplyNote([])).toBeNull();
+    expect(hostReplyNote(['A plumber comes at 16:00.'])).toBe(
+      `The host replied to the guest's message (the guest sees it in the chat): "A plumber comes at 16:00.". Use it if relevant; don't repeat it word for word.`,
+    );
+  });
+});
+
+describe('host instructions', () => {
+  it('sends emergencies to 112 and the host path, and never claims the host read a message', () => {
+    expect(INSTRUCTIONS).toContain(
+      'call 112 first, then call draft_host_message with reason emergency',
+    );
+    expect(INSTRUCTIONS).toContain('Never say the host has seen or read a message.');
+    expect(INSTRUCTIONS).toContain('Never for local questions.');
   });
 });

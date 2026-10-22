@@ -1299,6 +1299,162 @@ button svg,
   gap: 6px;
 }
 
+/* --- Inbox (23) ------------------------------------------------------------------------------ */
+
+.nav-badge {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+}
+
+.side-link .nav-badge {
+  margin-left: auto;
+}
+
+.bottom-link {
+  position: relative;
+}
+
+.bottom-link .nav-badge {
+  position: absolute;
+  top: 6px;
+  left: calc(50% + 6px);
+}
+
+.inbox-layout {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.inbox-row {
+  display: grid;
+  justify-content: stretch;
+  width: 100%;
+  min-height: 0;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.inbox-row:hover {
+  color: inherit;
+}
+
+.inbox-row[aria-current="true"] {
+  background: var(--sky-100);
+}
+
+.inbox-row-top,
+.inbox-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.inbox-row-unit {
+  font-weight: 500;
+}
+
+.inbox-row-preview {
+  color: var(--navy-900);
+}
+
+.inbox-row[data-unread] .inbox-row-unit,
+.inbox-row[data-unread] .inbox-row-preview {
+  font-weight: 600;
+}
+
+.inbox-row-time {
+  font-size: 13px;
+}
+
+.inbox-back {
+  align-self: flex-start;
+  padding: 0 8px 0 0;
+}
+
+.inbox-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inbox-detail-head h2,
+.inbox-reply h3 {
+  margin: 0;
+}
+
+.inbox-detail-head p {
+  margin: 0;
+}
+
+.inbox-body {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.inbox-note {
+  margin: 0;
+  font-size: 13px;
+}
+
+.inbox-text,
+.inbox-reply {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inbox-reply {
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-200);
+}
+
+.inbox-reply textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+/* Phone: the list, or one message with a way back. */
+.inbox-layout[data-open] .inbox-list,
+.inbox-empty-detail {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .inbox-layout {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+
+  .inbox-layout[data-open] .inbox-list {
+    display: block;
+  }
+
+  .inbox-empty-detail {
+    display: block;
+    padding: 20px;
+  }
+
+  .inbox-back {
+    display: none;
+  }
+}
+
 .handover textarea {
   min-height: 10rem;
   resize: vertical;

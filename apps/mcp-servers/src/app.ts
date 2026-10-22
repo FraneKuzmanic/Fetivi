@@ -76,7 +76,7 @@ export function mountServers(
   > = {
     stay: {
       requiredScopes: ['unit:read'],
-      factory: (identity) => buildStayServer(identity, { db, now }),
+      factory: (identity) => buildStayServer(identity, deps),
     },
     local: { requiredScopes: [], factory: (identity) => buildLocalServer(identity, deps) },
     services: {

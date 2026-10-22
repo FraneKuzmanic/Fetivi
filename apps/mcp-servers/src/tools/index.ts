@@ -2,23 +2,27 @@
 // definitions and checks the MCP servers use. Imports no server boot or HTTP code.
 import type { GuestIdentity, McpServerName } from '@fetivi/domain';
 import { localTools } from '../servers/local/tools';
-import { createOrderSpec, servicesTools } from '../servers/services/tools';
+import { servicesTools } from '../servers/services/tools';
+import { stayTools } from '../servers/stay/tools';
 import type { GuestToolSpec } from '../servers/tool';
 import { tripTools } from '../servers/trip/tools';
 
 export {
-  answerCreateOrder,
-  type OrderAnswer,
-  orderCodec,
-  prepareCreateOrder,
-} from '../servers/services/create-order';
+  CONFIRM_TOOLS,
+  type ConfirmAnswer,
+  type ConfirmTool,
+  confirmTool,
+} from '../servers/confirm';
+export type { StateCodec } from '../servers/request-state';
+export { orderCodec } from '../servers/services/create-order';
+export { createOrderSpec } from '../servers/services/tools';
 export { type GuestToolSpec, runGuestTool, type ToolDeps } from '../servers/tool';
 export { toolDefinition } from './definition';
-export { createOrderSpec };
+export { stayTools };
 
-/** Every server's specs in `tools/list` order; `stay` has a resource and no tools. */
+/** Every server's specs in `tools/list` order; `stay` also has the unit record resource. */
 export const GUEST_TOOLS: Record<McpServerName, readonly GuestToolSpec[]> = {
-  stay: [],
+  stay: stayTools,
   local: localTools,
   services: servicesTools,
   trip: tripTools,

@@ -1,4 +1,9 @@
-import { COMPONENT_PART_TYPE, type ComponentPart, componentPart } from '@fetivi/ui/payloads';
+import {
+  COMPONENT_PART_TYPE,
+  type ComponentPart,
+  componentPart,
+  contactsCard,
+} from '@fetivi/ui/payloads';
 import type { UIMessageChunk } from 'ai';
 import { isPresentationTool } from './presentation';
 
@@ -45,6 +50,27 @@ const candidate = (toolName: string, value: unknown): unknown => {
       // Only a real Order gets a receipt; "not ordered" is told by the model's words.
       if (!isRecord(value) || value.outcome !== 'ordered') return null;
       return { name: 'receipt-card', payload: { order: value.order } };
+    case 'send_host_message':
+      // Only a sent message gets its card; "not sent" is told by the model's words.
+      if (!isRecord(value) || value.outcome !== 'sent') return null;
+      return { name: 'host-message-sent', payload: { message: value.message } };
+    case 'draft_host_message': {
+      // The emergency path: 112 first, then the host's phone, as the Guide's contacts card.
+      if (!isRecord(value) || value.outcome !== 'emergency' || !isRecord(value.emergency)) {
+        return null;
+      }
+      const e = value.emergency;
+      return {
+        name: 'property-info',
+        payload: contactsCard({
+          releaseAt: (e.releaseAt as string | null) ?? null,
+          timezone: String(e.timezone),
+          hostPhone: (e.hostPhone as string | null) ?? null,
+          emergencyContactName: (e.emergencyContactName as string | null) ?? null,
+          emergencyContactPhone: (e.emergencyContactPhone as string | null) ?? null,
+        }),
+      };
+    }
     default:
       return null;
   }

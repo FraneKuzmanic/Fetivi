@@ -7,6 +7,7 @@ import { calendarRoutes } from './calendars/routes';
 import { catalogRoutes } from './catalog/routes';
 import { hostRoutes } from './host/routes';
 import { registerErrorHandler } from './http-error';
+import { inboxRoutes } from './inbox/routes';
 import { manualImportRoutes } from './manual-import/routes';
 import { mediaRoutes } from './media/routes';
 import { propertyRoutes } from './properties/routes';
@@ -52,5 +53,6 @@ export function buildApp(deps: AppDeps) {
   app.register(providerLinkRoutes, { db, queue, now });
   app.register(stayRoutes, { db, now, guestOrigin });
   app.register(calendarRoutes, { db, queue, now, guestOrigin });
+  app.register(inboxRoutes, { db, queue, now });
   return app;
 }

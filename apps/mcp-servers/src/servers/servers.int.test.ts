@@ -158,7 +158,10 @@ describe('servers over HTTP', () => {
     const a = await seed();
     const b = await seed();
     const client = await connect('stay', await signToken(t.keys, { server: 'stay', ctx: a.ctx }));
-    expect((await client.listTools()).tools).toEqual([]);
+    expect((await client.listTools()).tools.map((tool) => tool.name)).toEqual([
+      'draft_host_message',
+      'send_host_message',
+    ]);
     const { resources } = await client.listResources();
     expect(resources.map((r) => r.uri)).toEqual([UNIT_RESOURCE_URI]);
 

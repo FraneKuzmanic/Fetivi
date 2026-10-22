@@ -1,25 +1,35 @@
 import {
-  type Db,
   type GuestIdentity,
   loadGuestProjection,
   ProjectionRuleError,
   UNIT_RESOURCE_URI,
 } from '@fetivi/domain';
 import { McpServer, ResourceNotFoundError } from '@modelcontextprotocol/server';
+import { CONFIRM_TOOLS, registerConfirmTool } from '../confirm';
+import { registerGuestTools, type ToolDeps } from '../tool';
 import { SERVER_VERSION } from '../version';
+import { stayTools } from './tools';
 
 /**
- * The `stay` server for one guest. The resource URI carries no ids: the unit and Stay come only
- * from the token. Message tools arrive with ticket 23.
+ * The `stay` server for one guest: the unit record and the Host message tools. The resource URI
+ * carries no ids: the unit and Stay come only from the token. The message tools are listed while
+ * the token carries host_message:send, so not after checkout.
  */
-export function buildStayServer(
-  identity: GuestIdentity,
-  deps: { db: Db; now: () => Date },
-): McpServer {
+export function buildStayServer(identity: GuestIdentity, deps: ToolDeps): McpServer {
+  const sendHostMessage = CONFIRM_TOOLS.send_host_message;
+  const codec = sendHostMessage.codec(deps.requestStateSecret, identity.spaceId);
   const server = new McpServer(
     { name: 'fetivi-stay', version: SERVER_VERSION },
-    { capabilities: { tools: {}, resources: {} } },
+    // A tampered, expired or other tool's requestState dies here with -32602.
+    {
+      capabilities: { tools: {}, resources: {} },
+      requestState: { verify: (state) => codec.verify(state) },
+    },
   );
+  registerGuestTools(server, identity, deps, stayTools);
+  if (sendHostMessage.spec.listed(identity)) {
+    registerConfirmTool(server, identity, deps, sendHostMessage, codec);
+  }
   server.registerResource(
     'unit',
     UNIT_RESOURCE_URI,

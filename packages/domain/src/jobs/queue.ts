@@ -12,6 +12,7 @@ export const QUEUES = {
   pollCalendars: 'poll-calendars',
   pollCalendar: 'poll-calendar',
   stayNotify: 'stay-notify',
+  translateHandoff: 'translate-handoff',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -35,6 +36,8 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   // One feed; a failed fetch is recorded on the feed, so retries cover crashes only.
   pollCalendar: { retryLimit: 2, retryDelay: 60, retryBackoff: true, expireInSeconds: 120 },
   stayNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
+  // One short message; a model failure ends as a visible 'failed' state, so retries cover crashes.
+  translateHandoff: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 120 },
 };
 
 /**

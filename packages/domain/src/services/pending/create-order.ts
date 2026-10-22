@@ -252,7 +252,7 @@ export async function getPendingDraft(
     .select()
     .from(pendingActions)
     .where(and(eq(pendingActions.id, pendingId), eq(pendingActions.spaceId, spaceId)));
-  if (row?.kind !== 'create_order') return null;
+  if (row?.kind !== 'create_order' || !row.orderId) return null;
   return {
     state: row.state,
     expiresAt: row.expiresAt,
@@ -305,7 +305,7 @@ export async function completeOrder(
   // Failures are returned from the transaction, not thrown, so a release is not rolled back.
   const result = await deps.db.transaction(async (tx): Promise<Completion> => {
     const row = await lockPending(tx, input.pendingId);
-    if (!row || row.spaceId !== input.spaceId || row.kind !== 'create_order') {
+    if (!row || row.spaceId !== input.spaceId || row.kind !== 'create_order' || !row.orderId) {
       return { ok: false, code: 'not-found' };
     }
     if (row.state === 'consumed') return { ok: true, orderId: row.orderId, replay: true };
@@ -479,3 +479,6 @@ export function listSpaceOrders(
 ): Promise<OrderSummary[]> {
   return summaries(db, spaceId, language);
 }
+
+/** The kind-neutral name for a decline or cancel (the host message card uses it too). */
+export const releasePending = releasePendingOrder;

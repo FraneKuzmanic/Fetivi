@@ -176,6 +176,13 @@
       "when": 1792667457450,
       "tag": "0024_calendar_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792675450431,
+      "tag": "0025_handoff",
+      "breakpoints": true
     }
   ]
 }

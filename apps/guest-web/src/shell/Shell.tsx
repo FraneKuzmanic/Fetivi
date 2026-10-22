@@ -4,15 +4,25 @@ import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 import { ChatTab } from '../chat/ChatTab';
 import { GuideTab } from '../guide/GuideTab';
+import { InboxProvider, useInbox } from '../inbox/InboxProvider';
 import { TripTab } from '../my-trip/TripTab';
 import { EmptyTab, type Tab } from './EmptyTab';
 import { LanguageMenu } from './LanguageMenu';
 import { TabBar } from './TabBar';
 
 /** Header, the tab's content (or a page such as About me), then the tab bar: DOM order matches top-to-bottom. */
-export function Shell({
+export function Shell(props: { tab?: Tab; unread?: number; children?: ReactNode }) {
+  return (
+    <InboxProvider>
+      <ShellLayout {...props} />
+    </InboxProvider>
+  );
+}
+
+/** `unread` overrides the inbox's count (tests). */
+function ShellLayout({
   tab,
-  unread = 0,
+  unread,
   children,
 }: {
   tab?: Tab;
@@ -20,6 +30,7 @@ export function Shell({
   children?: ReactNode;
 }) {
   const { t } = useTranslation();
+  const inbox = useInbox();
   return (
     <div className="shell">
       <header className="shell-header">
@@ -46,7 +57,7 @@ export function Shell({
             <EmptyTab tab={tab ?? 'chat'} />
           ))}
       </main>
-      <TabBar unread={unread} />
+      <TabBar unread={unread ?? inbox.unread} />
     </div>
   );
 }

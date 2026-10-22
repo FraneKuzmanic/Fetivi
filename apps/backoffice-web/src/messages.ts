@@ -12,6 +12,7 @@ const MESSAGES: Record<string, string> = {
   'stop-acting-first': 'Stop acting as a host first.',
   'bad-origin': 'This request was blocked. Please reload the page.',
   'not-found': 'Not found.',
+  'already-replied': 'You already replied to this message.',
   'not-approved': 'Fetivi must approve the property before the unit can go live.',
   'not-ready':
     'This unit does not meet the go-live minimum yet. Open the setup wizard to see what is missing.',

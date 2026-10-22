@@ -38,7 +38,8 @@ export type ErrorCode =
   | 'calendar-exists'
   | 'too-many-calendars'
   | 'proposal-gone'
-  | 'not-possibly-cancelled';
+  | 'not-possibly-cancelled'
+  | 'already-replied';
 
 export class HttpError extends Error {
   override name = 'HttpError';

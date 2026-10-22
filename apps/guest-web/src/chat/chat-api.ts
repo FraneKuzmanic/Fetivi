@@ -1,9 +1,48 @@
-import { COMPONENT_PART_TYPE, ELICITATION_PART_TYPE } from '@fetivi/ui/payloads';
+import {
+  COMPONENT_PART_TYPE,
+  ELICITATION_PART_TYPE,
+  INBOX_PART_TYPE,
+  type InboxItem,
+  inboxItem,
+} from '@fetivi/ui/payloads';
 import { DefaultChatTransport, isToolUIPart, type UIMessage } from 'ai';
 import { api } from '../api';
 
-/** The guest's conversation so far: their messages and Fetivi's, oldest first. */
+/** The guest's conversation so far: their messages, Fetivi's and inbox messages, oldest first. */
 export const getChatHistory = () => api<{ messages: UIMessage[] }>('/api/chat');
+
+/** An inbox message (the host's reply) and the chat message it follows; null: before them all. */
+export interface InboxEntry {
+  id: string;
+  afterId: string | null;
+  item: InboxItem;
+}
+
+const isInbox = (m: UIMessage) => m.parts.some((p) => p.type === INBOX_PART_TYPE);
+
+/**
+ * Splits inbox messages off the history. The conversation (useChat) holds chat messages only, so
+ * "the newest answer" and a card's tap never land on an inbox message; inbox messages are shown
+ * where they arrived.
+ */
+export function splitInbox(messages: UIMessage[]): { chat: UIMessage[]; inbox: InboxEntry[] } {
+  const chat: UIMessage[] = [];
+  const inbox: InboxEntry[] = [];
+  for (const m of messages) {
+    if (!isInbox(m)) {
+      chat.push(m);
+      continue;
+    }
+    for (const part of m.parts) {
+      if (part.type !== INBOX_PART_TYPE) continue;
+      const parsed = inboxItem.safeParse((part as { data?: unknown }).data);
+      if (parsed.success) {
+        inbox.push({ id: m.id, afterId: chat.at(-1)?.id ?? null, item: parsed.data });
+      }
+    }
+  }
+  return { chat, inbox };
+}
 
 /** A message's text parts joined; tool parts are not shown. */
 export function messageText(message: UIMessage): string {

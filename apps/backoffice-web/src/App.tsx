@@ -12,6 +12,7 @@ import { LoginPage } from './auth/LoginPage';
 import { ResetPasswordPage } from './auth/ResetPasswordPage';
 import { SignUpPage } from './auth/SignUpPage';
 import { VerifyEmailPage } from './auth/VerifyEmailPage';
+import { InboxPage } from './host/inbox/InboxPage';
 import { PropertiesPage } from './host/PropertiesPage';
 import { NewPropertyPage, PropertyPage } from './host/PropertyPage';
 import { NewStayPage } from './host/stays/NewStayPage';
@@ -118,6 +119,14 @@ export function App() {
           element={
             <Page area="host">
               <StaysPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/inbox"
+          element={
+            <Page area="host">
+              <InboxPage />
             </Page>
           }
         />

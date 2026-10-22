@@ -1,17 +1,12 @@
-import {
-  type ContactFields,
-  type CreateOrderDraft,
-  ORDER_DRAFT_META_KEY,
-  PENDING_TTL_SECONDS,
-} from '@fetivi/domain';
+import { type ContactFields, type CreateOrderDraft, ORDER_DRAFT_META_KEY } from '@fetivi/domain';
 import {
   CLIENT_CAPABILITIES_META_KEY,
-  createRequestStateCodec,
   type McpServer,
   type RequestStateCodec,
   type ServerContext,
 } from '@modelcontextprotocol/server';
 import { z } from 'zod';
+import { confirmStateCodec } from '../request-state';
 
 // The confirmation card of create_order (architecture §4.3). Everything shown comes from the
 // stored draft, never from model text. Form mode never asks for secrets: email, name and phone only.
@@ -72,18 +67,10 @@ export function clientCanElicitForm(ctx: ServerContext, server: McpServer): bool
   return Object.keys(elicitation).length === 0 || 'form' in elicitation;
 }
 
-/**
- * Seals `{ pendingId }` (signed, not encrypted: nothing else goes in) for one space's
- * create_order. A value minted for another space or tool fails `verify` at the SDK seam.
- */
+/** The `requestState` codec of create_order in one space. */
 export function createOrderStateCodec(
   secret: string,
   spaceId: string,
 ): RequestStateCodec<{ pendingId: string }> {
-  return createRequestStateCodec<{ pendingId: string }>({
-    key: secret,
-    ttlSeconds: PENDING_TTL_SECONDS,
-    // The server is built per request for one identity, so closing over it is safe.
-    bind: () => `create_order\0${spaceId}`,
-  });
+  return confirmStateCodec('create_order', secret, spaceId);
 }

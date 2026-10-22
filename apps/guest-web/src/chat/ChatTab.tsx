@@ -3,6 +3,7 @@ import type { UIMessage } from 'ai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TripFlow } from '../about-me/TripFlow';
+import { useInbox } from '../inbox/InboxProvider';
 import { MascotSays } from '../shell/Mascot';
 import { useSpace } from '../space';
 import { Composer } from './Composer';
@@ -13,6 +14,8 @@ import {
   type GuestAnswerOutput,
   getChatHistory,
   hasGuestAnswer,
+  type InboxEntry,
+  splitInbox,
 } from './chat-api';
 import { asksToConfirm, MessageList } from './MessageList';
 import type { CardAnswer } from './render/ConfirmationPart';
@@ -25,7 +28,7 @@ import { Welcome } from './Welcome';
 type History =
   | { status: 'loading' }
   | { status: 'offline' }
-  | { status: 'ready'; messages: UIMessage[] };
+  | { status: 'ready'; messages: UIMessage[]; inbox: InboxEntry[] };
 
 /** The Chat tab: loads the history once, then hands it to the conversation. */
 export function ChatTab() {
@@ -34,14 +37,20 @@ export function ChatTab() {
   const [history, setHistory] = useState<History>({ status: 'loading' });
   // The error of an answer that failed, told again once the chat has reloaded.
   const [failedAnswer, setFailedAnswer] = useState<Error | null>(null);
+  const { markSeen } = useInbox();
 
   const load = useCallback(() => {
     setHistory({ status: 'loading' });
     getChatHistory().then(
-      ({ messages }) => setHistory({ status: 'ready', messages }),
+      ({ messages }) => {
+        const { chat, inbox } = splitInbox(messages);
+        setHistory({ status: 'ready', messages: chat, inbox });
+        // The guest now sees every inbox message: the badge counts from here.
+        void markSeen();
+      },
       () => setHistory({ status: 'offline' }),
     );
-  }, []);
+  }, [markSeen]);
 
   const reloadAfterAnswer = useCallback(
     (error: Error) => {
@@ -65,8 +74,10 @@ export function ChatTab() {
       {history.status === 'ready' ? (
         <ChatView
           initial={history.messages}
+          inbox={history.inbox}
           failedAnswer={failedAnswer}
           onAnswerFailed={reloadAfterAnswer}
+          onInboxGrew={load}
         />
       ) : history.status === 'offline' ? (
         <div className="chat-offline">
@@ -94,14 +105,20 @@ const ignore = () => {};
 /** The conversation itself; `initial` must be the loaded history (useChat reads it once). */
 export function ChatView({
   initial,
+  inbox = [],
   failedAnswer = null,
   onAnswerFailed = ignore,
+  onInboxGrew = ignore,
 }: {
   initial: UIMessage[];
+  /** Inbox messages from the loaded history; new ones arrive with a reload. */
+  inbox?: InboxEntry[];
   /** An answer that failed before this history was loaded. */
   failedAnswer?: Error | null;
   /** A failed answer: the server may have stored it, so the history is loaded again. */
   onAnswerFailed?: (error: Error) => void;
+  /** A new inbox message waits: the history is loaded again once the chat is idle. */
+  onInboxGrew?: () => void;
 }) {
   const { t } = useTranslation();
   const { state } = useSpace();
@@ -128,6 +145,15 @@ export function ChatView({
   );
   const busy = status === 'submitted' || status === 'streaming';
   const closed = space?.closed ?? true;
+  const { version } = useInbox();
+  const seenVersion = useRef(version);
+
+  // A host reply arrived: show it once nothing is on its way.
+  useEffect(() => {
+    if (version === seenVersion.current || busy) return;
+    seenVersion.current = version;
+    onInboxGrew();
+  }, [version, busy, onInboxGrew]);
 
   const send = useCallback(
     (text: string) => {
@@ -211,6 +237,7 @@ export function ChatView({
       <SavedPlacesProvider closed={closed}>
         <MessageList
           messages={messages}
+          inbox={inbox}
           status={status}
           interactive={!busy && !closed}
           onSend={send}

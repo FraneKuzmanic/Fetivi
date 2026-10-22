@@ -6,11 +6,10 @@ import {
   type McpServerName,
 } from '@fetivi/domain';
 import {
-  createOrderSpec,
+  type ConfirmTool,
+  confirmTool,
   type GuestToolSpec,
   listedTools,
-  orderCodec,
-  prepareCreateOrder,
   runGuestTool,
   type ToolDeps,
   toolDefinition,
@@ -68,14 +67,13 @@ export function inProcessBinding(deps: ToolDeps): ToolBinding {
         );
 
       /**
-       * Why a paused call cannot run here, if it cannot. A tool this caller's server does not list
-       * is the SDK's "not found" (-32602), which the MCP halves map to EXPIRED.
+       * The confirm tool a paused call runs, or why it cannot run here. A tool this caller's
+       * server does not list is the SDK's "not found" (-32602), which the MCP halves map to EXPIRED.
        */
-      function notConfirmable(listed: ListedTool): Outcome | undefined {
+      function confirmable(listed: ListedTool): ConfirmTool | Outcome {
         const name = specOf(listed)?.name;
         if (!name) return { kind: 'error', errorText: EXPIRED };
-        if (name !== createOrderSpec.name) return { kind: 'error', errorText: NOT_SHOWN };
-        return undefined;
+        return confirmTool(name) ?? { kind: 'error', errorText: NOT_SHOWN };
       }
 
       /** One tool call as the MCP server would answer it: input checked, errors as tool errors. */
@@ -116,31 +114,26 @@ export function inProcessBinding(deps: ToolDeps): ToolBinding {
           return outputOf(result);
         },
         async firstHalf(call): Promise<Outcome> {
-          const refused = notConfirmable(call.listed);
-          if (refused) return refused;
+          const tool = confirmable(call.listed);
+          if ('kind' in tool) return tool;
           const identity = identities[call.listed.server];
-          const codec = orderCodec(deps.requestStateSecret, identity.spaceId);
+          const codec = tool.codec(deps.requestStateSecret, identity.spaceId);
           // No check that the client can show the card: the app always shows it.
-          const result = await invoke(createOrderSpec, call.input, (args) =>
-            runGuestTool(identity, createOrderSpec.config, () =>
-              prepareCreateOrder(
-                deps,
-                identity,
-                codec,
-                args as Parameters<typeof prepareCreateOrder>[3],
-              ),
+          const result = await invoke(tool.spec, call.input, (args) =>
+            runGuestTool(identity, tool.spec.config, () =>
+              tool.prepare(deps, identity, codec, args),
             ),
           );
           return toOutcome(call, result);
         },
         async answer(call): Promise<Outcome> {
-          const refused = notConfirmable(call.listed);
-          if (refused) return refused;
+          const tool = confirmable(call.listed);
+          if ('kind' in tool) return tool;
           const identity = identities[call.listed.server];
           const { action, content } = call.answer;
           const result = await timed(async () => {
             try {
-              return await answerPending(deps, identity, {
+              return await answerPending(deps, identity, tool, {
                 requestState: call.requestState,
                 // As the MCP halves send it: content only with an accept.
                 answer: action === 'accept' ? { action, content: content ?? {} } : { action },

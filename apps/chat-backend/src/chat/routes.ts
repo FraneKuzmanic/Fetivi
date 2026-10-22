@@ -1,5 +1,5 @@
 import { findConversation, loadMessages, type MessagePart } from '@fetivi/domain';
-import { COMPONENT_PART_TYPE, ELICITATION_PART_TYPE } from '@fetivi/ui/payloads';
+import { COMPONENT_PART_TYPE, ELICITATION_PART_TYPE, INBOX_PART_TYPE } from '@fetivi/ui/payloads';
 import type { FastifyPluginAsync } from 'fastify';
 import { spaceOf } from '../access/plugin';
 import { chatBody } from './schemas';
@@ -9,17 +9,18 @@ const shown = (part: MessagePart) =>
   part.type === 'text' ||
   part.type.startsWith('tool-') ||
   part.type === COMPONENT_PART_TYPE ||
-  part.type === ELICITATION_PART_TYPE;
+  part.type === ELICITATION_PART_TYPE ||
+  part.type === INBOX_PART_TYPE;
 
 export const chatRoutes: FastifyPluginAsync<ChatDeps> = async (app, deps) => {
-  /** The guest's chat history: their messages and Fetivi's, without system notes. */
+  /** The guest's chat history: their messages, Fetivi's and inbox messages, without system notes. */
   app.get('/api/chat', { config: { access: 'space' } }, async (request) => {
     const conversation = await findConversation(deps.db, spaceOf(request).space.id);
     if (!conversation) return { messages: [] };
     const rows = await loadMessages(deps.db, conversation.id);
     return {
       messages: rows
-        .filter((r) => r.role !== 'system' && r.kind === 'chat')
+        .filter((r) => r.role !== 'system')
         .map((r) => rowToUiMessage({ ...r, parts: r.parts.filter(shown) })),
     };
   });

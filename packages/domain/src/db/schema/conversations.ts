@@ -12,7 +12,10 @@ import type { GuestProjection } from '../../projection/projection';
 import { spaces } from './spaces';
 
 export const messageRole = pgEnum('message_role', ['system', 'user', 'assistant']);
-/** 'inbox' is reserved for notifications in the Conversation (one table for chat and badge). */
+/**
+ * 'inbox' holds what reaches the guest outside the chat turns: host replies (ticket 23), later
+ * notifications. One table for chat and badge.
+ */
 export const messageKind = pgEnum('message_kind', ['chat', 'inbox']);
 
 /**
@@ -36,6 +39,8 @@ export const conversations = pgTable('conversations', {
   situationNote: text('situation_note'),
   /** The text of the last About me note appended, or null if none was ever needed. */
   aboutMeNote: text('about_me_note'),
+  /** When the guest last saw the Chat with its inbox messages; the badge counts inbox messages after it. */
+  inboxSeenAt: timestamp('inbox_seen_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
 });

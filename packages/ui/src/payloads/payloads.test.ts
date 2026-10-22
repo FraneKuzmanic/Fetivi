@@ -6,6 +6,8 @@ import {
   type ElicitationPayload,
   elicitationPayload,
   followUpChips,
+  hostMessageSent,
+  inboxItem,
   type OrderSummaryPayload,
   type PlaceCardPayload,
   placeCarousel,
@@ -126,6 +128,7 @@ const ELICITATION: ElicitationPayload = {
     required: ['email', 'name'],
   },
   requestState: 'opaque.state',
+  hostMessage: null,
   draft: {
     pendingId: 'p-1',
     offerId: 'o-1',
@@ -188,7 +191,31 @@ describe('receipt-card', () => {
 describe('elicitation', () => {
   it('takes the server form, the draft and the state', () => {
     expect(elicitationPayload.safeParse(ELICITATION).success).toBe(true);
-    expect(elicitationPayload.safeParse({ ...ELICITATION, draft: null }).success).toBe(true);
+    const { hostMessage: _, ...withoutHost } = ELICITATION;
+    expect(elicitationPayload.parse(withoutHost).hostMessage).toBeNull();
+  });
+
+  it('takes a host message draft instead of an order draft, never both or neither', () => {
+    const hostMessage = {
+      pendingId: 'p-2',
+      messageId: 'm-1',
+      text: 'The shower has no hot water.',
+      reason: 'problem',
+      urgency: 'urgent',
+      language: 'de',
+    };
+    const card = { ...ELICITATION, toolName: 'send_host_message', draft: null, hostMessage };
+    expect(elicitationPayload.safeParse(card).success).toBe(true);
+    expect(elicitationPayload.safeParse({ ...ELICITATION, draft: null }).success).toBe(false);
+    expect(elicitationPayload.safeParse({ ...ELICITATION, hostMessage }).success).toBe(false);
+    for (const bad of [
+      { ...hostMessage, text: '' },
+      { ...hostMessage, text: 'x'.repeat(1001) },
+      { ...hostMessage, reason: 'local_question' },
+      { ...hostMessage, urgency: 'asap' },
+    ]) {
+      expect(elicitationPayload.safeParse({ ...card, hostMessage: bad }).success).toBe(false);
+    }
   });
 
   it('refuses a missing state, a non-object schema or a broken draft', () => {
@@ -199,5 +226,41 @@ describe('elicitation', () => {
     ]) {
       expect(elicitationPayload.safeParse(bad).success).toBe(false);
     }
+  });
+});
+
+describe('host-message-sent', () => {
+  const message = {
+    id: 'm-1',
+    text: 'No hot water',
+    urgency: 'normal',
+    sentAt: '2026-10-22T10:00:00Z',
+  };
+  it('takes the sent message', () => {
+    expect(hostMessageSent.safeParse({ message }).success).toBe(true);
+    expect(
+      componentPart.safeParse({ name: 'host-message-sent', payload: { message } }).success,
+    ).toBe(true);
+  });
+
+  it('refuses an unknown urgency', () => {
+    expect(hostMessageSent.safeParse({ message: { ...message, urgency: 'asap' } }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('inbox item', () => {
+  it('takes a host reply with or without its original', () => {
+    const reply = {
+      kind: 'host-reply',
+      handoffId: 'm-1',
+      text: 'A plumber comes at 16:00.',
+      original: 'Vodoinstalater dolazi u 16:00.',
+      repliedAt: '2026-10-22T11:00:00Z',
+    };
+    expect(inboxItem.safeParse(reply).success).toBe(true);
+    expect(inboxItem.safeParse({ ...reply, original: null }).success).toBe(true);
+    expect(inboxItem.safeParse({ ...reply, kind: 'promo' }).success).toBe(false);
   });
 });

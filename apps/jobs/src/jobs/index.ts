@@ -10,11 +10,12 @@ import {
 } from './poll-calendars';
 import { translateBlockJob } from './translate-block';
 import { translateCatalogRecordJob } from './translate-catalog-record';
+import { type HandoffJobDeps, translateHandoffJob } from './translate-handoff';
 import { translateOfferJob } from './translate-offer';
 
 // Later tickets add digests and retention.
 export function createJobs(
-  deps: TranslationJobDeps & NotifyDeps & CalendarJobDeps,
+  deps: TranslationJobDeps & NotifyDeps & CalendarJobDeps & HandoffJobDeps,
 ): JobDefinition[] {
   // The runner hands each handler the data its own queue was sent.
   return [
@@ -26,5 +27,6 @@ export function createJobs(
     pollCalendarsJob(deps),
     pollCalendarJob(deps) as JobDefinition,
     stayNotifyJob(deps) as JobDefinition,
+    translateHandoffJob(deps) as JobDefinition,
   ];
 }

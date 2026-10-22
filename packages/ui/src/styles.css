@@ -555,7 +555,8 @@
   font-weight: 500;
 }
 
-.fv-field input {
+.fv-field input,
+.fv-field textarea {
   min-height: var(--tap);
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--gray-300);
@@ -565,12 +566,26 @@
   color: var(--navy-900);
 }
 
-.fv-field input[aria-invalid="true"] {
+.fv-field textarea {
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.fv-field input[aria-invalid="true"],
+.fv-field textarea[aria-invalid="true"] {
   border-color: var(--danger);
 }
 
-.fv-field input:disabled {
+.fv-field input:disabled,
+.fv-field textarea:disabled {
   background: var(--gray-50);
+}
+
+.fv-field-hint {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 0.8125rem;
+  text-align: end;
 }
 
 .fv-field-error {
@@ -663,6 +678,47 @@
 
 .fv-status-dot[data-tone="wait"] {
   background: var(--sun-500);
+}
+
+.fv-status-dot[data-tone="urgent"] {
+  background: var(--danger);
+}
+
+/* Host message: the draft card and the sent message */
+
+.fv-host-urgent {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.fv-host-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fv-host-sent-text {
+  margin: 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--sky-100);
+  color: var(--gray-500);
+  font-size: 0.9375rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.fv-host-sent-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.fv-host-sent-urgent {
+  color: var(--gray-500);
+  font-size: 0.875rem;
 }
 
 /* Property info card */

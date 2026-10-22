@@ -1,8 +1,8 @@
 // The approved-action binding's controlled lists (architecture §4.3). Imports nothing, so the
 // pgEnums are built from it.
 
-/** What a pending record will do once the guest confirms. Tickets 23, 35 and 36 add kinds. */
-export const PENDING_ACTION_KINDS = ['create_order'] as const;
+/** What a pending record will do once the guest confirms. Tickets 35 and 36 add kinds. */
+export const PENDING_ACTION_KINDS = ['create_order', 'send_host_message'] as const;
 export type PendingActionKind = (typeof PENDING_ACTION_KINDS)[number];
 
 export const PENDING_STATES = ['pending', 'consumed', 'released'] as const;
@@ -20,5 +20,5 @@ export const GUEST_CONFIRMS_META_KEY = 'app.fetivi/guest-confirms';
 /** Where the confirmation card reads the structured draft: the elicitation request's `_meta`. */
 export const ORDER_DRAFT_META_KEY = 'app.fetivi/order-draft';
 
-/** The key of the one input request create_order sends. */
+/** The key of the one input request a confirm tool sends. */
 export const CONFIRM_KEY = 'confirm';

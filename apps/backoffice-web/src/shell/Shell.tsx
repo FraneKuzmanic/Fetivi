@@ -7,11 +7,13 @@ import {
   MapTrifold,
   SealCheck,
   SignOut,
+  Tray,
   UsersThree,
 } from '@phosphor-icons/react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
-import { admin, type Me } from '../api';
+import { admin, host, type Me } from '../api';
+import { onInboxChanged } from '../host/inbox/inbox-events';
 import { useSession } from '../session';
 import { useAction } from '../useAction';
 
@@ -21,10 +23,14 @@ interface NavItem {
   icon: Icon;
   /** Paths, besides `to` itself, under which the item is the current one. */
   prefixes: string[];
+  /** A count shown on the item, such as unread messages. */
+  badge?: number;
 }
 
-function navItems(me: Me): NavItem[] {
-  if (me.account.role === 'admin' && !me.actingAs) {
+const isHostView = (me: Me) => me.account.role !== 'admin' || me.actingAs !== null;
+
+function navItems(me: Me, unread: number): NavItem[] {
+  if (!isHostView(me)) {
     return [
       { to: '/', label: 'Hosts', icon: UsersThree, prefixes: [] },
       { to: '/admin/approvals', label: 'Approvals', icon: SealCheck, prefixes: [] },
@@ -41,6 +47,7 @@ function navItems(me: Me): NavItem[] {
   return [
     { to: '/', label: 'Properties', icon: Buildings, prefixes: ['/properties', '/units'] },
     { to: '/stays', label: 'Stays', icon: CalendarCheck, prefixes: ['/stays'] },
+    { to: '/inbox', label: 'Inbox', icon: Tray, prefixes: ['/inbox'], badge: unread },
   ];
 }
 
@@ -57,7 +64,27 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const { setMe, logout } = useSession();
   const { busy, error, run } = useAction();
   const { pathname } = useLocation();
-  const items = navItems(me);
+  const [unread, setUnread] = useState(0);
+  const hostView = isHostView(me);
+  const items = navItems(me, unread);
+
+  // The unread count, checked again on every page change (host email and push are ticket 24).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a page change is the trigger.
+  useEffect(() => {
+    if (!hostView) return;
+    let live = true;
+    const check = () =>
+      host.inbox().then(
+        ({ unread: n }) => live && setUnread(n),
+        () => {},
+      );
+    void check();
+    const stop = onInboxChanged(() => void check());
+    return () => {
+      live = false;
+      stop();
+    };
+  }, [hostView, pathname]);
 
   const isCurrent = (item: NavItem) =>
     pathname === item.to || item.prefixes.some((p) => pathname.startsWith(p));
@@ -72,6 +99,11 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
       >
         <item.icon aria-hidden="true" weight={isCurrent(item) ? 'fill' : 'regular'} />
         <span>{item.label}</span>
+        {item.badge ? (
+          <span className="nav-badge" role="img" aria-label={`${item.badge} unread`}>
+            {item.badge > 99 ? '99+' : item.badge}
+          </span>
+        ) : null}
       </Link>
     ));
 

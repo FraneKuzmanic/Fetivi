@@ -17,6 +17,7 @@ import { properties, units } from '../db/schema/properties';
 import { spaces } from '../db/schema/spaces';
 import type { StayRow } from '../db/schema/stays';
 import { blockTranslations } from '../db/schema/translations';
+import type { HandoffTranslation, HandoffTranslator } from '../handoff/translate';
 import type { JobQueue } from '../jobs/queue';
 import type {
   AvailabilityMode,
@@ -63,6 +64,26 @@ export function recordingQueue(): JobQueue & { readonly jobs: RecordedJob[] } {
       jobs.push({ name, data, id: options.id });
     },
     async publish() {},
+  };
+}
+
+/**
+ * A handoff translator that answers from `outputs` in order (the last one repeats) and records
+ * each call. A string is a successful translation; `null` is a model error.
+ */
+export function scriptedHandoffTranslator(
+  outputs: (string | null)[],
+): HandoffTranslator & { readonly calls: { text: string; to: GuestLanguage }[] } {
+  const calls: { text: string; to: GuestLanguage }[] = [];
+  return {
+    calls,
+    async translate(input): Promise<HandoffTranslation> {
+      const out = outputs[Math.min(calls.length, outputs.length - 1)] ?? null;
+      calls.push(input);
+      return out === null
+        ? { ok: false, error: 'model-error', detail: 'scripted failure' }
+        : { ok: true, text: out };
+    },
   };
 }
 

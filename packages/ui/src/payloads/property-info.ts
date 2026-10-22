@@ -111,10 +111,7 @@ export function propertyInfo(p: GuestProjection, topic: PropertyInfoTopic): Prop
     }
     case 'contacts':
       releaseAt = gated;
-      add('emergencyNumber', EMERGENCY_NUMBER, 'tel');
-      add('hostPhone', p.contacts.hostPhone, 'tel');
-      add('emergencyContactName', p.contacts.emergencyContactName, 'text');
-      add('emergencyContact', p.contacts.emergencyContactPhone, 'tel');
+      fields.push(...contactFields(p.contacts));
       break;
   }
 
@@ -124,4 +121,37 @@ export function propertyInfo(p: GuestProjection, topic: PropertyInfoTopic): Prop
     .slice(0, LIMITS.mediaPerBlock);
 
   return { topic, releaseAt, timezone: p.property.timezone, fields, media };
+}
+
+export interface EmergencyContacts {
+  hostPhone: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+}
+
+/** 112 first, then the host's phone and the emergency contact; empty values are left out. */
+function contactFields(c: EmergencyContacts): PropertyInfoFieldEntry[] {
+  const fields: PropertyInfoFieldEntry[] = [
+    { key: 'emergencyNumber', value: EMERGENCY_NUMBER, action: 'tel' },
+  ];
+  const add = (key: PropertyInfoField, value: string | null, action: 'text' | 'tel') => {
+    if (value !== null && value.trim() !== '') fields.push({ key, value, action });
+  };
+  add('hostPhone', c.hostPhone, 'tel');
+  add('emergencyContactName', c.emergencyContactName, 'text');
+  add('emergencyContact', c.emergencyContactPhone, 'tel');
+  return fields;
+}
+
+/** The contacts card the emergency path shows in chat: the Guide's contacts, without media. */
+export function contactsCard(
+  c: EmergencyContacts & { releaseAt: string | null; timezone: string },
+): PropertyInfoPayload {
+  return {
+    topic: 'contacts',
+    releaseAt: c.releaseAt,
+    timezone: c.timezone,
+    fields: contactFields(c),
+    media: [],
+  };
 }

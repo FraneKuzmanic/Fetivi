@@ -1,4 +1,5 @@
 import {
+  createAnthropicHandoffTranslator,
   createAnthropicTranslationModel,
   createConsoleMailer,
   createDb,
@@ -15,6 +16,10 @@ const model = createAnthropicTranslationModel({
   apiKey: config.ANTHROPIC_API_KEY,
   fetch: egress.fetch,
 });
+const handoffTranslator = createAnthropicHandoffTranslator({
+  apiKey: config.ANTHROPIC_API_KEY,
+  fetch: egress.fetch,
+});
 if (!config.ANTHROPIC_API_KEY) {
   console.warn('ANTHROPIC_API_KEY is not set: translations will fail as not-configured');
 }
@@ -25,6 +30,7 @@ const boss = await startJobRunner({
       db,
       queue: createJobQueue(boss),
       model,
+      handoffTranslator,
       now: () => new Date(),
       mailer: createConsoleMailer(),
       providerLink: {

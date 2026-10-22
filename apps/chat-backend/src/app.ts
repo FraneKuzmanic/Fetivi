@@ -8,6 +8,7 @@ import { accessRoutes } from './access/routes';
 import { chatRoutes } from './chat/routes';
 import { guideRoutes } from './guide/routes';
 import { registerErrorHandler } from './http-error';
+import { inboxRoutes } from './inbox/routes';
 import { createToolCatalog } from './mcp/tools';
 import { mediaRoutes } from './media/routes';
 import { orderRoutes } from './orders/routes';
@@ -56,6 +57,7 @@ export function buildApp(deps: AppDeps) {
     deps.chat.tools ??
     mcpBinding({ tokens: deps.tokens, mcpFetch: deps.chat.mcpFetch, catalog: createToolCatalog() });
   app.register(orderRoutes, { db, now, tools });
+  app.register(inboxRoutes, { db, now });
   app.register(guideRoutes, { db, now, tools });
   app.register(mediaRoutes, { db, now, media: deps.media });
   app.register(chatRoutes, { db, now, model: deps.chat.model, tools, log: app.log });

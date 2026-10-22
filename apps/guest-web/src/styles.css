@@ -786,6 +786,48 @@ input {
   color: var(--navy-900);
 }
 
+/* The host's reply: their own bubble in the mascot's warm tone, without Fetivi's avatar. */
+.host-row {
+  display: flex;
+  padding-left: 2.75rem;
+}
+
+.bubble.host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 0.25rem;
+  background: var(--sun-100);
+  color: var(--navy-900);
+}
+
+.bubble.host p {
+  margin: 0;
+}
+
+.host-from {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.host-original {
+  color: var(--gray-500);
+  font-size: 0.875rem;
+  white-space: normal;
+}
+
+.host-original summary {
+  /* Keeps the disclosure marker (a flex summary drops it); the padding makes a 44 px target. */
+  padding: 0.75rem 0;
+  cursor: pointer;
+}
+
+.bubble.host .host-original p {
+  color: var(--navy-900);
+  white-space: pre-wrap;
+}
+
 .typing {
   padding-left: 2.75rem;
   color: var(--gray-500);

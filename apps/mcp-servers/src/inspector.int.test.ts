@@ -104,8 +104,11 @@ async function inspector(
 }
 
 describe('MCP Inspector CLI against /stay', () => {
-  it('lists no tools', async () => {
-    expect(await inspector('stay', token, '--method', 'tools/list')).toMatchObject({ tools: [] });
+  it('lists the Host message tools', async () => {
+    const out = (await inspector('stay', token, '--method', 'tools/list')) as {
+      tools: { name: string }[];
+    };
+    expect(out.tools.map((t) => t.name)).toEqual(['draft_host_message', 'send_host_message']);
   }, 60_000);
 
   it('lists the unit resource', async () => {

@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Executor } from '../../db/client';
 import { type PendingActionRow, pendingActions } from '../../db/schema/pending-actions';
+import type { HostMessageDraft } from '../../handoff/send';
 import {
   AVAILABILITY_MODES,
   CONTACT_FIELDS,
@@ -41,8 +42,9 @@ export async function insertPending(
     kind: PendingActionKind;
     spaceId: string;
     stayId: string;
-    orderId: string;
-    payload: CreateOrderDraft;
+    /** create_order only. */
+    orderId?: string;
+    payload: CreateOrderDraft | HostMessageDraft;
     expiresAt: Date;
     now: Date;
   },

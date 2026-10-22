@@ -11,19 +11,11 @@ import {
   type ServiceRuleCode,
   ServiceRuleError,
 } from '@fetivi/domain';
-import {
-  type InputRequiredResult,
-  inputRequired,
-  type ServerContext,
-} from '@modelcontextprotocol/server';
+import { type InputRequiredResult, inputRequired } from '@modelcontextprotocol/server';
 import type { z } from 'zod';
+import { type StateCodec, stateCodec } from '../request-state';
 import { ClaimMismatchError, GuestToolError, type ToolDeps } from '../tool';
-import {
-  confirmationMessage,
-  contactSchemaFor,
-  createOrderStateCodec,
-  orderDraftMeta,
-} from './elicitation';
+import { confirmationMessage, contactSchemaFor, orderDraftMeta } from './elicitation';
 import type { createOrderInput, createOrderOutput } from './schemas';
 
 export type CreateOrderOutput = z.infer<typeof createOrderOutput>;
@@ -72,19 +64,11 @@ export function offerScope(identity: GuestIdentity): GuestOfferScope {
 }
 
 /** The sealed `{ pendingId }`, bound to create_order and the space. */
-export interface OrderCodec {
-  mint(payload: { pendingId: string }): Promise<string>;
-  verify(state: string): Promise<{ pendingId: string }>;
-}
+export type OrderCodec = StateCodec;
 
-/** The same codec as the MCP seam's, without a request context: its binding ignores it. */
+/** The create_order codec without a request context. */
 export function orderCodec(secret: string, spaceId: string): OrderCodec {
-  const codec = createOrderStateCodec(secret, spaceId);
-  const unused = {} as ServerContext;
-  return {
-    mint: (payload) => codec.mint(payload, unused),
-    verify: (state) => codec.verify(state, unused),
-  };
+  return stateCodec('create_order', secret, spaceId);
 }
 
 /** The guest's answer to the card; `action` is absent when the answer was missing. */

@@ -2,6 +2,8 @@ name: fetivi
 services:
   postgres:
     image: postgis/postgis:16-3.6
+    # The test suite runs every file on its own database in parallel (pools, pg-boss, servers).
+    command: postgres -c max_connections=200
     environment:
       POSTGRES_USER: fetivi
       POSTGRES_PASSWORD: fetivi

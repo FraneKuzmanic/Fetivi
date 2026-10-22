@@ -1,12 +1,17 @@
 import {
   CONFIRM_KEY,
   type CreateOrderDraft,
+  HANDOFF_LIMITS,
+  HOST_MESSAGE_DRAFT_META_KEY,
+  HOST_MESSAGE_KEY,
+  type HostMessageDraft,
   ORDER_DRAFT_META_KEY,
   type OrderSummary,
 } from '@fetivi/domain';
 import {
   type ElicitationPayload,
   elicitationPayload,
+  type HostMessageDraftPayload,
   type OrderDraft,
   type OrderSummaryPayload,
 } from '@fetivi/ui/payloads';
@@ -29,11 +34,13 @@ type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
 const _cardsMatch: [
   Same<OrderDraft, CreateOrderDraft & { pendingId: string }>,
   Same<OrderSummaryPayload, OrderSummary>,
-] = [true, true];
+  Same<HostMessageDraftPayload, HostMessageDraft & { pendingId: string }>,
+] = [true, true, true];
 void _cardsMatch;
 
 /**
- * The guest's answer to a card, as the browser sends it. Form mode: email, name and phone only.
+ * The guest's answer to a card, as the browser sends it. Form mode: email, name and phone, or the
+ * host message's text (up to its own limit).
  * `decline` is MCP's explicit "no"; the card's Not now sends `cancel`, which the server treats
  * the same way.
  */
@@ -41,8 +48,12 @@ export const guestAnswer = z.strictObject({
   toolCallId: z.string().min(1).max(100),
   action: z.enum(['accept', 'decline', 'cancel']),
   content: z
-    .record(z.string().max(20), z.string().max(254))
+    .record(z.string().max(20), z.string().max(HANDOFF_LIMITS.messageChars))
     .refine((c) => Object.keys(c).length <= 5, 'Too many fields')
+    .refine(
+      (c) => Object.entries(c).every(([k, v]) => k === HOST_MESSAGE_KEY || v.length <= 254),
+      'Too long',
+    )
     .optional(),
 });
 export type GuestAnswer = z.infer<typeof guestAnswer>;
@@ -94,6 +105,7 @@ export function toOutcome(
       requestedSchema: params.requestedSchema,
       requestState: result.requestState,
       draft: meta[ORDER_DRAFT_META_KEY] ?? null,
+      hostMessage: meta[HOST_MESSAGE_DRAFT_META_KEY] ?? null,
     });
     return parsed.success
       ? { kind: 'ask', payload: parsed.data }

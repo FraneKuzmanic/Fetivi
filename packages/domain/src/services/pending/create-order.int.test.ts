@@ -385,7 +385,7 @@ describe('completeOrder', () => {
   it('a replay finishes a commit an earlier call lost', async () => {
     const { offerId, pendingId } = await prepared();
     const row = await pendingRow(pendingId);
-    if (!row) throw new Error('no row');
+    if (!row?.orderId) throw new Error('no row');
     // The first call created the Order and consumed the record, then lost the adapter commit.
     await createOrder(deps(), {
       id: row.orderId,
