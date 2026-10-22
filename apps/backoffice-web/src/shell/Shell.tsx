@@ -2,6 +2,7 @@ import {
   Buildings,
   CalendarCheck,
   ClipboardText,
+  GearSix,
   Handshake,
   type Icon,
   MapTrifold,
@@ -13,7 +14,7 @@ import {
 import { type ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { admin, host, type Me } from '../api';
-import { onInboxChanged } from '../host/inbox/inbox-events';
+import { onInboxChanged, onPushMessage } from '../host/inbox/inbox-events';
 import { useSession } from '../session';
 import { useAction } from '../useAction';
 
@@ -48,6 +49,7 @@ function navItems(me: Me, unread: number): NavItem[] {
     { to: '/', label: 'Properties', icon: Buildings, prefixes: ['/properties', '/units'] },
     { to: '/stays', label: 'Stays', icon: CalendarCheck, prefixes: ['/stays'] },
     { to: '/inbox', label: 'Inbox', icon: Tray, prefixes: ['/inbox'], badge: unread },
+    { to: '/settings/notifications', label: 'Settings', icon: GearSix, prefixes: ['/settings'] },
   ];
 }
 
@@ -70,8 +72,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const hostView = isHostView(me);
   const items = navItems(me, unread);
 
-  // The unread count, checked on every page change and every minute (host email and push are
-  // ticket 24).
+  // The unread count, checked on every page change, every minute and on a push to this phone.
   // biome-ignore lint/correctness/useExhaustiveDependencies: a page change is the trigger.
   useEffect(() => {
     if (!hostView) return;
@@ -83,10 +84,12 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
       );
     void check();
     const stop = onInboxChanged(() => void check());
+    const stopPush = onPushMessage(() => void check());
     const timer = setInterval(() => void check(), UNREAD_POLL_MS);
     return () => {
       live = false;
       stop();
+      stopPush();
       clearInterval(timer);
     };
   }, [hostView, pathname]);

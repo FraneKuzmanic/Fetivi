@@ -15,6 +15,7 @@ import { VerifyEmailPage } from './auth/VerifyEmailPage';
 import { InboxPage } from './host/inbox/InboxPage';
 import { PropertiesPage } from './host/PropertiesPage';
 import { NewPropertyPage, PropertyPage } from './host/PropertyPage';
+import { NotificationsPage } from './host/settings/notifications/NotificationsPage';
 import { NewStayPage } from './host/stays/NewStayPage';
 import { ConfirmProposalPage } from './host/stays/proposed/ConfirmProposalPage';
 import { StayPage } from './host/stays/StayPage';
@@ -127,6 +128,14 @@ export function App() {
           element={
             <Page area="host">
               <InboxPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/settings/notifications"
+          element={
+            <Page area="host">
+              <NotificationsPage />
             </Page>
           }
         />

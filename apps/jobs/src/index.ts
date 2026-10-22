@@ -33,7 +33,7 @@ const push =
         fetch: egress.fetch,
       })
     : null;
-if (!push) console.warn('VAPID keys are not set: guest push notifications are skipped');
+if (!push) console.warn('VAPID keys are not set: push notifications are skipped');
 const boss = await startJobRunner({
   connectionString: config.DATABASE_URL,
   jobs: (boss) =>

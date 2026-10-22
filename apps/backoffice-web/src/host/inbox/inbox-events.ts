@@ -8,3 +8,14 @@ export function onInboxChanged(listener: () => void): () => void {
   window.addEventListener(EVENT, listener);
   return () => window.removeEventListener(EVENT, listener);
 }
+
+/** A push reached this phone: the service worker asks open windows to check the inbox. */
+export function onPushMessage(listener: () => void): () => void {
+  const container = typeof navigator === 'undefined' ? undefined : navigator.serviceWorker;
+  if (!container) return () => {};
+  const handle = (event: MessageEvent) => {
+    if ((event.data as { type?: string } | null)?.type === 'fetivi-host-inbox') listener();
+  };
+  container.addEventListener('message', handle);
+  return () => container.removeEventListener('message', handle);
+}

@@ -1,11 +1,15 @@
 import type { ReactNode } from 'react';
-import { Navigate } from 'react-router';
+import { Navigate, useLocation } from 'react-router';
 import type { Me } from '../api';
 import { useSession } from '../session';
 
 export function RequireSession({ children }: { children: (me: Me) => ReactNode }) {
   const { me } = useSession();
+  const location = useLocation();
   if (me === 'loading') return <p>Loading…</p>;
-  if (!me) return <Navigate to="/login" replace />;
+  // The login returns here, so an email link still opens its page after signing in.
+  if (!me) {
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  }
   return <>{children(me)}</>;
 }

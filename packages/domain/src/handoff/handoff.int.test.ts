@@ -97,6 +97,7 @@ const rowsOf = (spaceId: string) =>
 
 const handoffJobs = (): RecordedJob[] => queue.jobs.filter((j) => j.name === 'translate-handoff');
 const guestNotifyJobs = (): RecordedJob[] => queue.jobs.filter((j) => j.name === 'guest-notify');
+const hostNotifyJobs = (): RecordedJob[] => queue.jobs.filter((j) => j.name === 'host-notify');
 
 async function sent(options: { spaceLanguage?: GuestLanguage; hostLanguage?: GuestLanguage } = {}) {
   const g = await guest(options);
@@ -217,6 +218,29 @@ describe('send_host_message halves', () => {
       .where(eq(pendingActions.id, b.pendingId));
     expect(pendingB?.state).toBe('released');
     expect((await rowsOf(g.spaceId)).map((r) => r.text)).toEqual(['a']);
+  });
+
+  it('the tap enqueues one host notification; a replay or a lost race adds none', async () => {
+    const g = await guest();
+    const a = await prepare(g);
+    const b = await prepare(g);
+    const input = { pendingId: a.pendingId, spaceId: g.spaceId, text: 'a' };
+    const { message } = await completeHostMessage(deps(), input);
+    expect(hostNotifyJobs()).toEqual([
+      {
+        name: 'host-notify',
+        data: { kind: 'message', handoffId: message.id },
+        id: uuidFrom(`handoff:${message.id}:host`),
+      },
+    ]);
+    const before = queue.jobs.length;
+    await completeHostMessage(deps(), input);
+    expect(
+      await codeOf(
+        completeHostMessage(deps(), { pendingId: b.pendingId, spaceId: g.spaceId, text: 'b' }),
+      ),
+    ).toBe('already-sent');
+    expect(queue.jobs).toHaveLength(before);
   });
 
   it('create_order records still need an order id', async () => {

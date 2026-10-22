@@ -7,6 +7,9 @@ import { BrowserRouter } from 'react-router';
 import { App } from './App';
 import './styles.css';
 
+// Push only (phone alerts); registering never prompts.
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root element');
 

@@ -197,6 +197,13 @@
       "when": 1792685084304,
       "tag": "0027_guest_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792690122996,
+      "tag": "0028_host_notifications",
+      "breakpoints": true
     }
   ]
 }

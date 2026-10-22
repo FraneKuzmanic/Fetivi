@@ -169,8 +169,12 @@ What a guest sends their Host through Fetivi after checking, editing and tapping
 _Avoid_: handoff ticket, support request
 
 **Urgency**:
-How soon a Host message needs the Host: normal or urgent, set by Fetivi, never by the guest. Urgent ones bypass the Host's digest (ticket 24).
+How soon a Host message needs the Host: normal or urgent, set by Fetivi, never by the guest. Urgent ones bypass the Host's Digest.
 _Avoid_: priority
+
+**Digest**:
+The host's bundled email and push at the times they chose, listing Host messages still waiting; urgent ones bypass it.
+_Avoid_: summary, batch
 
 **Inbox**:
 On the Host side, the back-office list of Host messages. On the guest side, inbox messages in the Chat, such as the Host's reply, which the Chat badge counts.

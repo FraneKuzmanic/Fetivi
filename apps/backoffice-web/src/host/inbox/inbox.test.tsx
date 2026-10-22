@@ -74,13 +74,13 @@ function stubApi(messages: HostMessage[], reply?: () => Response) {
   });
 }
 
-async function mount() {
+async function mount(path = '/inbox') {
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
   await act(async () =>
     root?.render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[path]}>
         <InboxPage />
       </MemoryRouter>,
     ),
@@ -100,6 +100,21 @@ const type = (el: HTMLTextAreaElement, value: string) =>
   });
 
 describe('host inbox', () => {
+  it('opens the message an email link names, and ignores an unknown one', async () => {
+    stubApi([URGENT, { ...READ, readAt: null }]);
+    await mount('/inbox?message=h2');
+    await vi.waitFor(() => expect(host.querySelector('.inbox-detail')).not.toBeNull());
+    expect(rows()[1]?.getAttribute('aria-current')).toBe('true');
+    expect(calls.filter((c) => c.url === '/api/host/inbox/h2/read')).toHaveLength(1);
+    act(() => root?.unmount());
+
+    stubApi([URGENT]);
+    await mount('/inbox?message=nope');
+    await vi.waitFor(() => expect(rows()).toHaveLength(1));
+    expect(host.querySelector('.inbox-detail')).toBeNull();
+    expect(calls.some((c) => c.url.endsWith('/read'))).toBe(false);
+  });
+
   it('lists messages with urgency and state, the translation first', async () => {
     stubApi([URGENT, READ]);
     await mount();

@@ -28,6 +28,8 @@ const schema = z
     /** Block media files. Both processes must point at the same directory (a shared volume in production). */
     MEDIA_DIR: z.string().default('../../.data/media'),
     /** For the house manual import; without it, imports fail as not configured. */
+    /** The VAPID public key (same pair as jobs); without it the host's phone alerts are off. */
+    VAPID_PUBLIC_KEY: optionalString,
     ANTHROPIC_API_KEY: z
       .string()
       .optional()

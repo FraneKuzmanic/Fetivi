@@ -5,7 +5,7 @@
 export const HANDOFF_REASONS = ['property_question', 'problem', 'request', 'guest_asked'] as const;
 export type HandoffReason = (typeof HANDOFF_REASONS)[number];
 
-/** Set by Fetivi, never by the guest. Ticket 24's digest is bypassed by `urgent`. */
+/** Set by Fetivi, never by the guest. `urgent` bypasses the host's digest. */
 export const HANDOFF_URGENCIES = ['normal', 'urgent'] as const;
 export type HandoffUrgency = (typeof HANDOFF_URGENCIES)[number];
 

@@ -9,6 +9,7 @@ import { properties, units } from '../db/schema/properties';
 import { spaces } from '../db/schema/spaces';
 import { stays } from '../db/schema/stays';
 import { type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
+import { enqueueHostNotification } from '../notifications/host/enqueue';
 import { GUEST_LANGUAGES, type GuestLanguage } from '../property/vocabulary';
 import { insertPending, lockPending, markPending } from '../services/pending/store';
 import { PENDING_TTL_SECONDS, type PendingState } from '../services/pending/vocabulary';
@@ -142,8 +143,8 @@ type Completion =
 
 /**
  * The second half, on the guest's tap: stores the Host message with the guest's (possibly edited)
- * text and consumes the pending record in one transaction, with the translation job. A repeat
- * finds the record consumed and returns the same message.
+ * text and consumes the pending record in one transaction, with the translation job and the host
+ * notification. A repeat finds the record consumed and returns the same message.
  */
 export async function completeHostMessage(
   deps: { db: Executor; queue: JobQueue; now: () => Date },
@@ -225,6 +226,8 @@ export async function completeHostMessage(
         id: uuidFrom(`handoff:${sent.id}:message`),
       });
     }
+    // Always enqueued: the job decides at run time between now and the host's digest.
+    await enqueueHostNotification(tx, deps.queue, { kind: 'message', handoffId: sent.id });
     await markPending(tx, row.id, 'consumed', now);
     return { ok: true, message: sentMessage(sent), replay: false };
   });

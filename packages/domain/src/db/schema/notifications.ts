@@ -10,7 +10,9 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { GUEST_CHANNELS, GUEST_NOTIFICATION_KINDS } from '../../notifications/guest/vocabulary';
+import { HOST_CHANNELS, HOST_DELIVERY_MODES } from '../../notifications/host/vocabulary';
 import { ORDER_NOTIFICATIONS } from '../../orders/vocabulary';
+import { accounts } from './accounts';
 import { orderProposals, orders } from './orders';
 import { spaces } from './spaces';
 
@@ -89,4 +91,54 @@ export const emailSuppressions = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
   },
   (t) => [check('email_suppressions_reason_check', sql`${t.reason} in ('bounced', 'complained')`)],
+);
+
+export const hostDeliveryMode = pgEnum('host_delivery_mode', HOST_DELIVERY_MODES);
+export const hostChannel = pgEnum('host_channel', HOST_CHANNELS);
+
+/** A host's notification settings. No row means the defaults (Immediate, 09:00, 14:00, 19:00). */
+export const hostNotificationSettings = pgTable('host_notification_settings', {
+  hostId: uuid('host_id')
+    .primaryKey()
+    .references(() => accounts.id, { onDelete: 'cascade' }),
+  mode: hostDeliveryMode('mode').notNull(),
+  /** 'HH:MM' in the host's property timezone, sorted and distinct; kept in Immediate mode too. */
+  digestTimes: text('digest_times').array().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+});
+
+export type HostNotificationSettingsRow = typeof hostNotificationSettings.$inferSelect;
+
+/** One sent host notification per key and channel (mirrors `guest_notification_deliveries`). */
+export const hostNotificationDeliveries = pgTable(
+  'host_notification_deliveries',
+  {
+    /** `handoff:<id>:host` or `host:<hostId>:digest:<slot>` (`hostNotificationKey`). */
+    key: text('key').notNull(),
+    channel: hostChannel('channel').notNull(),
+    hostId: uuid('host_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    sentAt: timestamp('sent_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.key, t.channel] }),
+    index('host_notification_deliveries_host_idx').on(t.hostId),
+  ],
+);
+
+/** A host's browser push subscription (Home Screen app); an endpoint belongs to one account. */
+export const hostPushSubscriptions = pgTable(
+  'host_push_subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull().unique(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [index('host_push_subscriptions_account_idx').on(t.accountId)],
 );

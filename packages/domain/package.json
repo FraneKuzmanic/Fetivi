@@ -16,7 +16,8 @@
     "./about-me-vocabulary": "./src/about-me/vocabulary.ts",
     "./calendar-vocabulary": "./src/calendar/vocabulary.ts",
     "./handoff-vocabulary": "./src/handoff/vocabulary.ts",
-    "./notification-vocabulary": "./src/notifications/guest/vocabulary.ts"
+    "./notification-vocabulary": "./src/notifications/guest/vocabulary.ts",
+    "./host-notification-vocabulary": "./src/notifications/host/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

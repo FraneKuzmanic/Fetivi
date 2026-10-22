@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { type HostMessage, host } from '../../api';
 import { useAction } from '../../useAction';
 import { dateRange } from '../stays/format';
 import { messageState, preview, receivedAt, STATE_CHIPS } from './format';
 import { InboxMessage } from './InboxMessage';
-import { inboxChanged } from './inbox-events';
+import { inboxChanged, onPushMessage } from './inbox-events';
 
-/** New messages and reply deliveries show up without a reload (host email and push are ticket 24). */
+/** New messages and reply deliveries show up without a reload; a push on this phone also reloads. */
 const POLL_MS = 15_000;
 
 /**
@@ -18,6 +19,8 @@ export function InboxPage() {
   const [messages, setMessages] = useState<HostMessage[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const opened = useRef(new Set<string>());
+  const [params, setParams] = useSearchParams();
+  const linked = params.get('message');
 
   const load = useCallback(async () => {
     const { messages: list } = await host.inbox();
@@ -37,7 +40,13 @@ export function InboxPage() {
       // A failed background refresh is ignored; the next tick tries again.
       load().then(inboxChanged, () => {});
     }, POLL_MS);
-    return () => clearInterval(timer);
+    const stop = onPushMessage(() => {
+      load().then(inboxChanged, () => {});
+    });
+    return () => {
+      clearInterval(timer);
+      stop();
+    };
   }, [load]);
 
   const open = useCallback((m: HostMessage) => {
@@ -49,6 +58,14 @@ export function InboxPage() {
     const now = new Date().toISOString();
     setMessages((list) => list?.map((x) => (x.id === m.id ? { ...x, readAt: now } : x)) ?? list);
   }, []);
+
+  // An email or push link (`/inbox?message=<id>`) opens that message once; an unknown id is ignored.
+  useEffect(() => {
+    if (!linked || messages === null) return;
+    const m = messages.find((x) => x.id === linked);
+    if (m) open(m);
+    setParams({}, { replace: true });
+  }, [linked, messages, open, setParams]);
 
   const replace = (updated: HostMessage) => {
     setMessages((list) => list?.map((x) => (x.id === updated.id ? updated : x)) ?? list);

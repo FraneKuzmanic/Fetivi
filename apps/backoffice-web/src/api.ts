@@ -12,6 +12,7 @@ import type {
   HandoffTranslationState,
   HandoffUrgency,
 } from '@fetivi/domain/handoff-vocabulary';
+import type { HostDeliveryMode } from '@fetivi/domain/host-notification-vocabulary';
 import type {
   AdapterKind,
   AvailabilityMode,
@@ -489,6 +490,21 @@ export interface HostMessage {
   } | null;
 }
 
+/** The host's notification settings and the phone alerts state of the signed-in account. */
+export interface HostNotificationSettings {
+  mode: HostDeliveryMode;
+  digestTimes: string[];
+  /** The clock the digest times are read in: the host's oldest property's time zone. */
+  timezone: string;
+  push: { publicKey: string | null; devices: number };
+}
+
+/** `PushSubscription.toJSON()`. */
+export interface HostPushSubscription {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
 const post = <T = void>(path: string, body?: unknown) => api<T>(path, { method: 'POST', body });
 const patch = <T>(path: string, body: unknown) => api<T>(path, { method: 'PATCH', body });
 const put = <T>(path: string, body: unknown) => api<T>(path, { method: 'PUT', body });
@@ -618,6 +634,13 @@ export const host = {
   readMessage: (id: string) => post(`/api/host/inbox/${id}/read`),
   replyMessage: (id: string, text: string) =>
     post<{ message: HostMessage }>(`/api/host/inbox/${id}/reply`, { text }),
+  notificationSettings: () => api<HostNotificationSettings>('/api/host/notification-settings'),
+  saveNotificationSettings: (body: { mode: HostDeliveryMode; digestTimes: string[] }) =>
+    put<HostNotificationSettings>('/api/host/notification-settings', body),
+  subscribePush: (subscription: HostPushSubscription) =>
+    post('/api/host/push/subscription', subscription),
+  unsubscribePush: (endpoint: string) =>
+    api<void>('/api/host/push/subscription', { method: 'DELETE', body: { endpoint } }),
 };
 
 // --- Catalog (admin) -----------------------------------------------------------------------------

@@ -43,6 +43,7 @@ const app = buildApp({
     fetch: egress.fetch,
   }),
   resendWebhookSecret: config.RESEND_WEBHOOK_SECRET,
+  vapidPublicKey: config.VAPID_PUBLIC_KEY,
 });
 
 await app.listen({ host: config.HOST, port: config.PORT });

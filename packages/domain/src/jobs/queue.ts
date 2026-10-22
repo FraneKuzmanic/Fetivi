@@ -15,6 +15,8 @@ export const QUEUES = {
   translateHandoff: 'translate-handoff',
   guestNotify: 'guest-notify',
   guestReminders: 'guest-reminders',
+  hostNotify: 'host-notify',
+  hostDigests: 'host-digests',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -44,6 +46,10 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   guestNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
   // The cron fan-out; the next slot runs again anyway.
   guestReminders: { retryLimit: 1, expireInSeconds: 120 },
+  // The claim and the ledger make a retry send nothing twice.
+  hostNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
+  // The cron fan-out; the next slot runs again anyway.
+  hostDigests: { retryLimit: 1, expireInSeconds: 120 },
 };
 
 /**

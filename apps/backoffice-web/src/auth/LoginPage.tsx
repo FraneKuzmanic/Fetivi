@@ -1,24 +1,31 @@
 import { Wordmark } from '@fetivi/ui';
 import { type FormEvent, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { auth } from '../api';
 import { useSession } from '../session';
 import { useAction } from '../useAction';
 
+/** Where to go after login: a same-origin path only (no `//host` or `/\host`), else home. */
+function returnPath(state: unknown): string {
+  const from = (state as { from?: unknown } | null)?.from;
+  return typeof from === 'string' && /^\/(?![/\\])/.test(from) ? from : '/';
+}
+
 export function LoginPage() {
   const { me, setMe } = useSession();
   const navigate = useNavigate();
+  const from = returnPath(useLocation().state);
   const { busy, error, run } = useAction();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  if (me && me !== 'loading') return <Navigate to="/" replace />;
+  if (me && me !== 'loading') return <Navigate to={from} replace />;
 
   function submit(event: FormEvent) {
     event.preventDefault();
     void run(async () => {
       setMe(await auth.login(email, password));
-      navigate('/', { replace: true });
+      navigate(from, { replace: true });
     });
   }
 

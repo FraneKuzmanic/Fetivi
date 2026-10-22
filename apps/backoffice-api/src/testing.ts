@@ -63,6 +63,7 @@ export async function createTestApp(
     trustProxy?: string;
     manualImportModel?: ManualImportModel;
     resendWebhookSecret?: string;
+    vapidPublicKey?: string;
   } = {},
 ) {
   const testDb = await createTestDatabase();
@@ -91,6 +92,7 @@ export async function createTestApp(
     media: createLocalMediaStore(mediaDir),
     manualImportModel: options.manualImportModel ?? NOT_CONFIGURED_MODEL,
     resendWebhookSecret: options.resendWebhookSecret,
+    vapidPublicKey: options.vapidPublicKey,
   });
   if (options.extraRoutes) app.register(options.extraRoutes);
   await app.ready();

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import {
   HANDOFF_REASONS,
@@ -60,8 +61,19 @@ export const handoffMessages = pgTable(
     replyTranslationState: handoffTranslationState('reply_translation_state'),
     /** When the reply reached the Conversation as an inbox message. */
     replyDeliveredAt: timestamp('reply_delivered_at', { withTimezone: true }),
+    /**
+     * Which notification told the host: `handoff:<id>:host` (immediate) or
+     * `host:<hostId>:digest:<slot>`. Set once; a message is notified by one path only.
+     */
+    hostNotificationKey: text('host_notification_key'),
+    hostNotifiedAt: timestamp('host_notified_at', { withTimezone: true }),
   },
-  (t) => [index('handoff_messages_unit_sent_idx').on(t.unitId, t.sentAt)],
+  (t) => [
+    index('handoff_messages_unit_sent_idx').on(t.unitId, t.sentAt),
+    index('handoff_messages_pending_host_idx')
+      .on(t.unitId, t.sentAt)
+      .where(sql`host_notification_key is null and read_at is null`),
+  ],
 );
 
 export type HandoffMessageRow = typeof handoffMessages.$inferSelect;

@@ -21,17 +21,23 @@ export interface PushKeys {
 export interface PushMessage {
   title: string;
   body: string;
-  /** A same-origin path in the guest app. */
+  /** A same-origin path in the app that receives it. */
   url: string;
+}
+
+export interface PushSendOptions {
+  topic: string;
+  /** RFC 8030 Urgency; 'normal' when left out. */
+  urgency?: 'normal' | 'high';
 }
 
 export interface PushSender {
   /** 'gone' when the push service no longer knows the subscription (404/410); other failures throw. */
-  send(sub: PushKeys, message: PushMessage, options: { topic: string }): Promise<'sent' | 'gone'>;
+  send(sub: PushKeys, message: PushMessage, options: PushSendOptions): Promise<'sent' | 'gone'>;
 }
 
-/** An https endpoint on one of the allowed push services. */
-export function isAllowedPushEndpoint(url: string): boolean {
+/** An https endpoint on one of the allowed push services (the guest list unless `hosts` is given). */
+export function isAllowedPushEndpoint(url: string, hosts: readonly string[] = PUSH_HOSTS): boolean {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -40,7 +46,7 @@ export function isAllowedPushEndpoint(url: string): boolean {
   }
   if (parsed.protocol !== 'https:') return false;
   const host = parsed.hostname.toLowerCase();
-  return PUSH_HOSTS.some((allowed) =>
+  return hosts.some((allowed) =>
     allowed.startsWith('*.') ? host.endsWith(allowed.slice(1)) : host === allowed,
   );
 }
@@ -70,7 +76,7 @@ export interface WebPushConfig {
 
 export function createWebPushSender(config: WebPushConfig): PushSender {
   return {
-    async send(sub, message, { topic }) {
+    async send(sub, message, { topic, urgency }) {
       const details = webpush.generateRequestDetails(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify(message),
@@ -82,7 +88,7 @@ export function createWebPushSender(config: WebPushConfig): PushSender {
           },
           TTL: PUSH_TTL_SECONDS,
           topic,
-          urgency: 'normal',
+          urgency: urgency ?? 'normal',
         },
       );
       const response = await config.fetch(details.endpoint, {
@@ -97,19 +103,26 @@ export function createWebPushSender(config: WebPushConfig): PushSender {
   };
 }
 
+interface MemoryPush {
+  sub: PushKeys;
+  message: PushMessage;
+  topic: string;
+  urgency: 'normal' | 'high';
+}
+
 /** Test sender: keeps sent pushes; endpoints in `gone` answer 'gone'. */
 export function createMemoryPushSender(): PushSender & {
-  readonly sent: { sub: PushKeys; message: PushMessage; topic: string }[];
+  readonly sent: MemoryPush[];
   readonly gone: Set<string>;
 } {
-  const sent: { sub: PushKeys; message: PushMessage; topic: string }[] = [];
+  const sent: MemoryPush[] = [];
   const gone = new Set<string>();
   return {
     sent,
     gone,
-    async send(sub, message, { topic }) {
+    async send(sub, message, { topic, urgency }) {
       if (gone.has(sub.endpoint)) return 'gone';
-      sent.push({ sub, message, topic });
+      sent.push({ sub, message, topic, urgency: urgency ?? 'normal' });
       return 'sent';
     },
   };
