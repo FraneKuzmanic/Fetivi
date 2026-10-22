@@ -188,7 +188,12 @@ describe('My trip offer', () => {
   }
 
   const EMPTY_PLAN = {
-    plan: { checkIn: '2026-10-22', checkout: '2026-10-23', today: '2026-10-22', days: [] },
+    plan: {
+      checkIn: '2026-10-22',
+      checkout: '2026-10-23',
+      today: '2026-10-22',
+      days: [{ date: '2026-10-22', items: [] }],
+    },
   };
 
   /** My trip needs a router and a space since the plan section (Ask Fetivi) came. */

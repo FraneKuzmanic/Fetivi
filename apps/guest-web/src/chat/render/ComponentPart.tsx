@@ -115,13 +115,16 @@ export function ComponentPart({
       );
     }
     case 'day-plan':
-      // No Ask button: the guest is already in the chat. Empty days show only for a one-day read.
+      // No Ask button: the guest is already in the chat. Empty days show for a one-day read, or
+      // when nothing is planned at all, so the timeline is never blank.
       return (
         <DayPlan
           days={part.payload.days}
           today={part.payload.today}
           labels={planLabels(t, i18n.language)}
-          showEmptyDays={part.payload.days.length === 1}
+          showEmptyDays={
+            part.payload.days.length === 1 || part.payload.days.every((d) => d.items.length === 0)
+          }
         />
       );
     case 'property-info':

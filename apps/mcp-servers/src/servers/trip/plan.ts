@@ -1,4 +1,4 @@
-import { getPlan, type PlanRuleCode, PlanRuleError, updatePlan } from '@fetivi/domain';
+import { getPlan, PLAN_LIMITS, type PlanRuleCode, PlanRuleError, updatePlan } from '@fetivi/domain';
 import { offerScope } from '../services/create-order';
 import { ClaimMismatchError, GuestToolError, type GuestToolSpec, guestTool } from '../tool';
 import { getPlanInput, planResult, updatePlanInput } from './schemas';
@@ -8,7 +8,7 @@ export const PLAN_REFUSALS: Record<
   string
 > = {
   'date-outside-stay': "That date is outside the guest's stay.",
-  'day-full': 'That day already has 12 plan items; remove one first.',
+  'day-full': `That day already has ${PLAN_LIMITS.suggestionsPerDay} plan items; remove one first.`,
   'booked-item': 'Booked items follow their order and cannot be changed in the plan.',
   'invalid-input': 'The plan change was incomplete or invalid.',
 };

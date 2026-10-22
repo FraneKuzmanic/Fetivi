@@ -210,4 +210,19 @@ describe('day plan in the chat', () => {
     expect(html).toContain('Thursday, July 15');
     expect(html).toContain('Nothing planned yet');
   });
+
+  it('shows every empty day when nothing is planned in the whole stay', () => {
+    const html = render([
+      question,
+      answer([
+        plan('p1', [
+          { date: '2027-07-14', items: [] },
+          { date: '2027-07-15', items: [] },
+        ]),
+      ]),
+    ]);
+    expect(html).toContain('Wednesday, July 14');
+    expect(html).toContain('Thursday, July 15');
+    expect(html.match(/Nothing planned yet/g)).toHaveLength(2);
+  });
 });

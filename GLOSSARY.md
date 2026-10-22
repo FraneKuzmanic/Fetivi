@@ -170,6 +170,14 @@ _Avoid_: restriction, requirement
 A Catalog record (a place or a day trip) a Space's guests saved from a place card, kept per Space for the Guide and My trip. It is stored by the record's id, so the API's `placeId` and the table's `record_id` name the same thing.
 _Avoid_: favourite, bookmark
 
+**Day plan**:
+A Space's timeline for its Stay: one day per Stay day, each with its Plan items in time order, then the "any time" ones. The guest sees it in My trip → Plan and as a timeline in chat; it stays readable after checkout but can no longer be changed.
+_Avoid_: itinerary, schedule, agenda
+
+**Plan item**:
+One entry on a Day plan: something agreed in chat (stored, optionally linked to a Catalog record or an Offer) or a confirmed or completed Order shown on its day (built at read time, never stored, changed only through the Order). A Plan item is not a booking. The code names the agreed kind `suggestion`; that word collides with Draft's _Avoid_ and is a candidate for renaming.
+_Avoid_: activity, event
+
 ## Host communication
 
 **Host message**:

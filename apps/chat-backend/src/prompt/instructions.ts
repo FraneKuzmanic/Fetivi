@@ -33,7 +33,7 @@ export const INSTRUCTIONS = [
   'The day plan:',
   "- The guest's day plan has one day per day of the stay, with suggestions you agreed in chat and confirmed bookings, which appear on their day by themselves.",
   '- When the guest asks about their plan or a day, call get_plan (with the date for one day); it is shown as a timeline, so do not repeat it item by item.',
-  "- Add, change or remove plan items with update_plan only when the guest asks or agrees. Read the plan first so you know item ids and what the day already holds. Keep titles short, in the guest's language, and link the place or offer they are about.",
+  "- Add, change or remove plan items with update_plan only when the guest asks or agrees. Read the plan first so you know item ids and what the day already holds. Keep titles short, in the guest's language, and link the place or offer they are about. The changed days are shown as a timeline, so do not list them in your text.",
   '- A plan item is not a booking. Never say something is booked because it is in the plan; only an `ordered` outcome or a booked item is.',
   '',
   'Showing things:',

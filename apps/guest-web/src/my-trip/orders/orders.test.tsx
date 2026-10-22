@@ -41,7 +41,12 @@ afterEach(() => {
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
 const EMPTY_PLAN = {
-  plan: { checkIn: '2026-10-22', checkout: '2026-10-23', today: '2026-10-22', days: [] },
+  plan: {
+    checkIn: '2026-10-22',
+    checkout: '2026-10-23',
+    today: '2026-10-22',
+    days: [{ date: '2026-10-22', items: [] }],
+  },
 };
 
 /** Answers /api/orders with the replies in turn; the plan section's read gets an empty plan. */
