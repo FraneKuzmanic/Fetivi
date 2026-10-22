@@ -129,6 +129,40 @@ describe('host inbox', () => {
     );
     await act(async () => toggle?.click());
     expect(detail?.textContent).toContain('Kein warmes Wasser in der Dusche.');
+    expect(detail?.textContent).toContain('Original in German. Show translation');
+    expect(detail?.textContent).not.toContain('Translated from');
+  });
+
+  it('refreshes on its own: new messages and a delivered reply appear without a reload', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const pending: HostMessage = {
+        ...READ,
+        reply: {
+          text: 'Yes, in the bathroom drawer.',
+          repliedAt: '2026-10-24T10:05:00.000Z',
+          translationState: 'pending',
+          deliveredAt: null,
+        },
+      };
+      const served = [pending];
+      stubApi(served);
+      await mount();
+      await vi.waitFor(() => expect(rows()).toHaveLength(1));
+      await act(async () => rows()[0]?.click());
+      expect(host.querySelector('.inbox-detail')?.textContent).toContain(
+        'Translating for the guest…',
+      );
+
+      served.splice(0, 1, URGENT, READ);
+      await act(async () => {
+        vi.advanceTimersByTime(15_000);
+      });
+      await vi.waitFor(() => expect(rows()).toHaveLength(2));
+      expect(host.querySelector('.inbox-detail')?.textContent).toContain('Delivered to the guest');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('sends a reply and shows it with its delivery', async () => {

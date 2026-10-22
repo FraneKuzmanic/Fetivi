@@ -1,0 +1,1 @@
+ALTER TABLE "conversations" ADD COLUMN "host_reply_noted_seq" integer DEFAULT 0 NOT NULL;

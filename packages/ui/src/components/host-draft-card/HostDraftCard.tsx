@@ -83,7 +83,11 @@ export function HostDraftCard({
             value={text}
             aria-invalid={empty || undefined}
             aria-describedby={empty ? `${errorId} ${counterId}` : counterId}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              // The error goes once there is text again, not only on the next Send.
+              if (e.target.value.trim()) setEmpty(false);
+            }}
           />
           <p id={counterId} className="fv-field-hint">
             {labels.counter(text.length, max)}

@@ -13,8 +13,7 @@ export {
   type ConfirmTool,
   confirmTool,
 } from '../servers/confirm';
-export type { StateCodec } from '../servers/request-state';
-export { orderCodec } from '../servers/services/create-order';
+export { type StateCodec, stateCodec } from '../servers/request-state';
 export { createOrderSpec } from '../servers/services/tools';
 export { type GuestToolSpec, runGuestTool, type ToolDeps } from '../servers/tool';
 export { toolDefinition } from './definition';

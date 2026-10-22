@@ -41,6 +41,11 @@ export const conversations = pgTable('conversations', {
   aboutMeNote: text('about_me_note'),
   /** When the guest last saw the Chat with its inbox messages; the badge counts inbox messages after it. */
   inboxSeenAt: timestamp('inbox_seen_at', { withTimezone: true }),
+  /**
+   * The seq up to which host replies (inbox rows) are covered by the model's notes. A reply stored
+   * while a turn runs is above it, so the next turn still notes it (ADR 0006).
+   */
+  hostReplyNotedSeq: integer('host_reply_noted_seq').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
 });

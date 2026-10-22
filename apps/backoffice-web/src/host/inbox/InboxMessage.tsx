@@ -63,7 +63,9 @@ export function InboxMessage({
         </p>
         {translated ? (
           <p className="muted inbox-note">
-            Translated from {LANGUAGE_LABELS[message.guestLanguage]}.{' '}
+            {showOriginal
+              ? `Original in ${LANGUAGE_LABELS[message.guestLanguage]}.`
+              : `Translated from ${LANGUAGE_LABELS[message.guestLanguage]}.`}{' '}
             <button
               type="button"
               className="link"

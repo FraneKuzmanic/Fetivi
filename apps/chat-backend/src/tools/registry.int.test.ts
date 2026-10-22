@@ -4,6 +4,7 @@ import {
   fromLocalDateTime,
   guestIdentityFor,
   guestTokenClaims,
+  handoffMessages,
   identityOf,
   loadSituation,
   MCP_SERVERS,
@@ -22,7 +23,7 @@ import {
 } from '@fetivi/domain/testing';
 import { createEgress, type Egress } from '@fetivi/egress';
 import { buildMcpTestApp, TEST_REQUEST_STATE_SECRET } from '@fetivi/mcp-servers/testing';
-import { orderCodec } from '@fetivi/mcp-servers/tools';
+import { stateCodec } from '@fetivi/mcp-servers/tools';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { createLocalJWKSet, decodeJwt } from 'jose';
@@ -290,10 +291,15 @@ describe('ownership and scope checks', () => {
   });
 });
 
-const pausedCall = async (tools: TurnTools, input: unknown, id = 'call-1'): Promise<PausedCall> => {
-  const listed = (await tools.list()).find((l) => l.tool.name === 'create_order');
-  if (!listed) throw new Error('create_order not listed');
-  return { listed, toolCallId: id, toolName: 'create_order', input };
+const pausedCall = async (
+  tools: TurnTools,
+  input: unknown,
+  id = 'call-1',
+  toolName = 'create_order',
+): Promise<PausedCall> => {
+  const listed = (await tools.list()).find((l) => l.tool.name === toolName);
+  if (!listed) throw new Error(`${toolName} not listed`);
+  return { listed, toolCallId: id, toolName, input };
 };
 
 function card(outcome: Outcome) {
@@ -346,7 +352,11 @@ describe('the pending record', () => {
       const at = Math.floor(first.requestState.length / 2);
       const flipped = first.requestState[at] === 'A' ? 'B' : 'A';
       const tampered = `${first.requestState.slice(0, at)}${flipped}${first.requestState.slice(at + 1)}`;
-      const foreign = await orderCodec(TEST_REQUEST_STATE_SECRET, s.neighbour.spaceId).mint({
+      const foreign = await stateCodec(
+        'create_order',
+        TEST_REQUEST_STATE_SECRET,
+        s.neighbour.spaceId,
+      ).mint({
         pendingId,
       });
       for (const requestState of [tampered, foreign]) {
@@ -407,6 +417,38 @@ describe('a paused tool the caller no longer has', () => {
         }),
       ).toEqual(expired);
       expect((await pendingRow(first.draft?.pendingId ?? ''))?.state).toBe('pending');
+    },
+  );
+
+  it.each(['mcp', 'inprocess'] as const)(
+    'refuses a host message card left open past checkout (%s)',
+    async (transport) => {
+      const s = await seeded();
+      const live = await open(transport, s.ctx);
+      const draft = { message: 'No hot water.', reason: 'problem', urgency: 'urgent' };
+      const call = await pausedCall(live, draft, 'call-host', 'send_host_message');
+      const first = card(await live.firstHalf(call));
+      const [row] = await testDb.db
+        .select()
+        .from(pendingActions)
+        .where(eq(pendingActions.spaceId, s.ctx.spaceId));
+      expect(row).toMatchObject({ kind: 'send_host_message', state: 'pending' });
+      // After checkout the stay tools are gone, so the tap reaches no tool half.
+      const ended = await open(transport, { ...s.ctx, phase: 'ended' });
+      expect(
+        await ended.answer({
+          ...call,
+          requestState: first.requestState,
+          answer: { action: 'accept', content: { message: 'Late text' } },
+        }),
+      ).toEqual({ kind: 'error', errorText: EXPIRED });
+      expect((await pendingRow(row?.id ?? ''))?.state).toBe('pending');
+      expect(
+        await testDb.db
+          .select()
+          .from(handoffMessages)
+          .where(eq(handoffMessages.spaceId, s.ctx.spaceId)),
+      ).toEqual([]);
     },
   );
 });

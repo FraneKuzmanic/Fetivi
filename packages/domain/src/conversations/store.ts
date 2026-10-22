@@ -65,6 +65,8 @@ export interface AppendTurnInput {
   projection: GuestProjection;
   situationNote: string | null;
   aboutMeNote: string | null;
+  /** The seq up to which host replies are now noted; left as it is when omitted. */
+  hostReplyNotedSeq?: number;
   now: Date;
 }
 
@@ -122,6 +124,9 @@ export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> 
         projection: input.projection,
         situationNote: input.situationNote,
         aboutMeNote: input.aboutMeNote,
+        ...(input.hostReplyNotedSeq === undefined
+          ? {}
+          : { hostReplyNotedSeq: input.hostReplyNotedSeq }),
         updatedAt: input.now,
       })
       .where(eq(conversations.id, input.conversationId));

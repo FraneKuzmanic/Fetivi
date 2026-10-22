@@ -6,6 +6,9 @@ import { messageState, preview, receivedAt, STATE_CHIPS } from './format';
 import { InboxMessage } from './InboxMessage';
 import { inboxChanged } from './inbox-events';
 
+/** New messages and reply deliveries show up without a reload (host email and push are ticket 24). */
+const POLL_MS = 15_000;
+
 /**
  * The Handoff inbox (PRD §6.6): the messages guests chose to send, translated into the host's
  * language, unread urgent ones first. Opening one marks it Read for the guest.
@@ -16,9 +19,26 @@ export function InboxPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const opened = useRef(new Set<string>());
 
+  const load = useCallback(async () => {
+    const { messages: list } = await host.inbox();
+    const now = new Date().toISOString();
+    // An admin acting as the host does not set Read on the server: what this page opened stays read.
+    setMessages(
+      list.map((m) => (m.readAt || !opened.current.has(m.id) ? m : { ...m, readAt: now })),
+    );
+  }, []);
+
   useEffect(() => {
-    void run(async () => setMessages((await host.inbox()).messages));
-  }, [run]);
+    void run(load);
+  }, [run, load]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // A failed background refresh is ignored; the next tick tries again.
+      load().then(inboxChanged, () => {});
+    }, POLL_MS);
+    return () => clearInterval(timer);
+  }, [load]);
 
   const open = useCallback((m: HostMessage) => {
     setSelected(m.id);

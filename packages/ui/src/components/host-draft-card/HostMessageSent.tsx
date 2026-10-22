@@ -10,8 +10,8 @@ export interface HostSentLabels {
 }
 
 /**
- * A sent Host message: the guest's words and whether the host has opened it. The status line is
- * plain text; the parent announces a change once, so it is not re-read on every render.
+ * A sent Host message: the guest's words and whether the host has opened it. The status line is a
+ * polite live region, so the change from Sent to Read is announced once when it happens.
  */
 export function HostMessageSent({
   message,
@@ -27,7 +27,7 @@ export function HostMessageSent({
       <h3 className="fv-receipt-title">{labels.heading}</h3>
       <blockquote className="fv-host-sent-text">{message.text}</blockquote>
       <p className="fv-host-sent-status">
-        <span className="fv-status">
+        <span className="fv-status" role="status">
           <span
             className="fv-status-dot"
             data-tone={status === 'read' ? 'good' : 'wait'}

@@ -16,7 +16,7 @@ The obvious shape is to store the reply as an assistant message in the Conversat
 
 - A Host reply is stored as one `messages` row with `kind = 'inbox'` and a `data-inbox` part. The guest's chat history shows it; the Chat badge counts inbox rows after `conversations.inbox_seen_at`.
 - Inbox rows never enter model history. The turn loop builds the model's messages from `kind = 'chat'` rows only, so a paused call still resumes on its own message.
-- On the guest's next message, the turn adds a system note right after it with the text of every inbox row since the guest's previous message ("The host replied to the guest's message …"). The next turn after that does not repeat it.
+- On the guest's next message, the turn adds a system note right after it with the text of every inbox row not yet noted ("The host replied to the guest's message …"). `conversations.host_reply_noted_seq` marks the last inbox row a stored turn has noted, so the next turn does not repeat it. The mark is not "the guest's previous message": a reply stored while a turn runs gets a lower seq than that turn's guest message, and must still reach the next turn.
 - The guest app keeps inbox rows out of the chat state too and shows them after the chat message they followed.
 
 Ticket 23 also reads PRD §6.5 "never twice in one conversation" as at most one sent Host message per Conversation, enforced by a unique `handoff_messages.space_id` (one Conversation per Space). A declined draft does not count; the server can only verify what was sent.

@@ -346,4 +346,43 @@ describe.each(['mcp', 'inprocess'] as const)('handoff to the host (%s)', (transp
     const rows = await loadMessages(s.t.db, conversation?.id as string);
     expect(rows.filter((r) => r.kind === 'inbox')).toHaveLength(1);
   });
+
+  it('a host reply stored while a turn runs reaches the model on the next turn', async () => {
+    const s = await setup(transport);
+    await sendMessage(s);
+    const [row] = await handoffsOf(s);
+    // The model's step stores the reply mid-turn, after the history was read.
+    const reply = () =>
+      replyToHandoff(
+        { db: s.t.db, queue: s.queue, now: s.t.clock.now },
+        {
+          hostId: s.seed.hostId,
+          accountId: s.seed.hostId,
+          id: row?.id as string,
+          text: 'A plumber comes at 4 pm.',
+          markRead: true,
+        },
+      );
+    // highWaterMark 0: nothing runs until the loop reads the step.
+    const replyingStep: StreamResult = {
+      stream: new ReadableStream(
+        {
+          async pull(controller) {
+            await reply();
+            for await (const chunk of textStep('Let me check.').stream) controller.enqueue(chunk);
+            controller.close();
+          },
+        },
+        { highWaterMark: 0 },
+      ),
+    };
+    s.steps.push(replyingStep, textStep('Your host says a plumber comes at 4 pm.'));
+    readStream(await sendText(s, 'Is the host around?'));
+    expect(JSON.stringify(s.model.doStreamCalls.at(-1)?.prompt)).not.toContain('The host replied');
+
+    readStream(await sendText(s, 'Did the host answer?'));
+    const next = JSON.stringify(s.model.doStreamCalls.at(-1)?.prompt);
+    expect(next.split('The host replied').length - 1).toBe(1);
+    expect(next).toContain('A plumber comes at 4 pm.');
+  });
 });

@@ -1,15 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { type CreateOrderDraft, ORDER_DRAFT_META_KEY } from '@fetivi/domain';
-import { inputRequired, type ServerContext } from '@modelcontextprotocol/server';
+import { inputRequired } from '@modelcontextprotocol/server';
 import { describe, expect, it } from 'vitest';
-import {
-  confirmationMessage,
-  contactSchemaFor,
-  createOrderStateCodec,
-  orderDraftMeta,
-} from './elicitation';
-
-const SECRET = 'unit-test-request-state-secret-0123456789';
+import { confirmationMessage, contactSchemaFor, orderDraftMeta } from './elicitation';
 
 const draft: CreateOrderDraft = {
   offerId: randomUUID(),
@@ -78,22 +71,5 @@ describe('confirmationMessage', () => {
     expect(confirmationMessage(draft)).toBe(
       'Book Blue Lagoon boat trip on 2027-05-04 at 09:00 for 2, 90.00 EUR total, paid directly to the provider? Cancellation policy: Free until 24 hours before.',
     );
-  });
-});
-
-describe('createOrderStateCodec', () => {
-  const ctx = {} as ServerContext;
-
-  it('round-trips the pending id', async () => {
-    const codec = createOrderStateCodec(SECRET, 'space-a');
-    const state = await codec.mint({ pendingId: 'p-1' }, ctx);
-    expect(await codec.verify(state, ctx)).toEqual({ pendingId: 'p-1' });
-  });
-
-  it('rejects a value minted for another space, or tampered with', async () => {
-    const state = await createOrderStateCodec(SECRET, 'space-a').mint({ pendingId: 'p-1' }, ctx);
-    await expect(createOrderStateCodec(SECRET, 'space-b').verify(state, ctx)).rejects.toThrow();
-    const flipped = `${state.slice(0, -2)}${state.at(-2) === 'A' ? 'B' : 'A'}${state.at(-1)}`;
-    await expect(createOrderStateCodec(SECRET, 'space-a').verify(flipped, ctx)).rejects.toThrow();
   });
 });

@@ -126,6 +126,10 @@ describe('HostDraftCard', () => {
     expect(field.getAttribute('aria-invalid')).toBe('true');
     const [errorId] = (field.getAttribute('aria-describedby') ?? '').split(' ');
     expect(document.getElementById(errorId ?? '')?.textContent).toBe(LABELS.empty);
+    // Typing again clears the error before the next Send.
+    type(field, 'No hot water');
+    expect(field.getAttribute('aria-invalid')).toBeNull();
+    expect(host.textContent).not.toContain(LABELS.empty);
   });
 
   it('Not now cancels; sending disables everything and says so', () => {
@@ -156,7 +160,7 @@ describe('HostMessageSent', () => {
     act(() =>
       root?.render(<HostMessageSent message={message} status="read" labels={SENT_LABELS} />),
     );
-    expect(host.textContent).toContain('Read');
+    expect(host.querySelector('[role="status"]')?.textContent).toBe('Read');
     expect(host.textContent?.toLowerCase()).not.toContain('seen');
   });
 });

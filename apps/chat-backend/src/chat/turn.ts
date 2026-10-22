@@ -66,17 +66,21 @@ const toRow = (m: UIMessage) => ({
 const chatHistory = (rows: MessageRow[]) =>
   rows.filter((r) => r.kind === 'chat').map(rowToUiMessage);
 
-/** The texts of host replies that arrived since the guest's last stored message. */
-function newHostReplies(rows: MessageRow[]): string[] {
-  const lastUser = rows.reduce((seq, r) => (r.role === 'user' ? Math.max(seq, r.seq) : seq), 0);
-  return rows
-    .filter((r) => r.kind === 'inbox' && r.seq > lastUser)
+/**
+ * The texts of host replies not yet noted for the model, and the seq they are noted up to. Rows
+ * are compared with the conversation's mark, not with the last guest message: a reply stored while
+ * a turn runs gets a lower seq than that turn's guest message, and must still reach the next turn.
+ */
+function newHostReplies(rows: MessageRow[], notedSeq: number) {
+  const fresh = rows.filter((r) => r.kind === 'inbox' && r.seq > notedSeq);
+  const texts = fresh
     .flatMap((r) => r.parts)
     .filter((p) => p.type === INBOX_PART_TYPE)
     .flatMap((p) => {
       const item = inboxItem.safeParse(p.data);
       return item.success ? [item.data.text] : [];
     });
+  return { texts, notedSeq: Math.max(notedSeq, ...fresh.map((r) => r.seq)) };
 }
 
 const textMessage = (role: 'system' | 'user', text: string): UIMessage => ({
@@ -247,6 +251,7 @@ export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Pro
     );
     if (cancelled) history[history.length - 1] = cancelled;
     const aboutMeText = aboutMeNote(await getAboutMe(db, turn.spaceId), conversation.aboutMeNote);
+    const replies = newHostReplies(rows, conversation.hostReplyNotedSeq);
 
     const note = situationNote({
       now: turn.startedAt,
@@ -259,7 +264,7 @@ export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Pro
       projectionChangeNote(conversation.projection, projection),
       note === conversation.situationNote ? null : note,
       aboutMeText === conversation.aboutMeNote ? null : aboutMeText,
-      hostReplyNote(newHostReplies(rows)),
+      hostReplyNote(replies.texts),
     ].filter((n) => n !== null);
     // Anthropic takes a mid-conversation system message only right after a user message, and not
     // two in a row: so the notes go after the guest's text, joined into one message.
@@ -281,6 +286,7 @@ export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Pro
           projection,
           situationNote: note,
           aboutMeNote: aboutMeText ?? conversation.aboutMeNote,
+          hostReplyNotedSeq: replies.notedSeq,
           now: deps.now(),
         });
         await recordMetrics(deps, turn, conversation.id, result);

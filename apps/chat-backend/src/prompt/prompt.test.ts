@@ -239,4 +239,10 @@ describe('host instructions', () => {
     expect(INSTRUCTIONS).toContain('Never say the host has seen or read a message.');
     expect(INSTRUCTIONS).toContain('Never for local questions.');
   });
+
+  it('offers the message in words before the card and confirms it after', () => {
+    expect(INSTRUCTIONS).toContain('first write one short sentence offering it');
+    expect(INSTRUCTIONS).toContain('Once it is sent, confirm it in one short sentence.');
+    expect(INSTRUCTIONS).toContain('Do not also call show_property_info for it.');
+  });
 });

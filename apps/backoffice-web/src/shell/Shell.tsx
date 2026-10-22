@@ -60,6 +60,8 @@ function Brand() {
   );
 }
 
+const UNREAD_POLL_MS = 60_000;
+
 export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const { setMe, logout } = useSession();
   const { busy, error, run } = useAction();
@@ -68,7 +70,8 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const hostView = isHostView(me);
   const items = navItems(me, unread);
 
-  // The unread count, checked again on every page change (host email and push are ticket 24).
+  // The unread count, checked on every page change and every minute (host email and push are
+  // ticket 24).
   // biome-ignore lint/correctness/useExhaustiveDependencies: a page change is the trigger.
   useEffect(() => {
     if (!hostView) return;
@@ -80,9 +83,11 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
       );
     void check();
     const stop = onInboxChanged(() => void check());
+    const timer = setInterval(() => void check(), UNREAD_POLL_MS);
     return () => {
       live = false;
       stop();
+      clearInterval(timer);
     };
   }, [hostView, pathname]);
 

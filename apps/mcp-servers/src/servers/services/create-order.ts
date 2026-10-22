@@ -13,7 +13,7 @@ import {
 } from '@fetivi/domain';
 import { type InputRequiredResult, inputRequired } from '@modelcontextprotocol/server';
 import type { z } from 'zod';
-import { type StateCodec, stateCodec } from '../request-state';
+import type { StateCodec } from '../request-state';
 import { ClaimMismatchError, GuestToolError, type ToolDeps } from '../tool';
 import { confirmationMessage, contactSchemaFor, orderDraftMeta } from './elicitation';
 import type { createOrderInput, createOrderOutput } from './schemas';
@@ -63,14 +63,6 @@ export function offerScope(identity: GuestIdentity): GuestOfferScope {
   };
 }
 
-/** The sealed `{ pendingId }`, bound to create_order and the space. */
-export type OrderCodec = StateCodec;
-
-/** The create_order codec without a request context. */
-export function orderCodec(secret: string, spaceId: string): OrderCodec {
-  return stateCodec('create_order', secret, spaceId);
-}
-
 /** The guest's answer to the card; `action` is absent when the answer was missing. */
 export interface OrderAnswer {
   action?: 'accept' | 'decline' | 'cancel';
@@ -79,7 +71,7 @@ export interface OrderAnswer {
 
 /** The confirmation card for a stored draft, with a freshly sealed state. */
 async function ask(
-  codec: OrderCodec,
+  codec: StateCodec,
   pendingId: string,
   draft: CreateOrderDraft,
 ): Promise<InputRequiredResult> {
@@ -99,7 +91,7 @@ async function ask(
 export async function prepareCreateOrder(
   deps: ToolDeps,
   identity: GuestIdentity,
-  codec: OrderCodec,
+  codec: StateCodec,
   args: z.infer<typeof createOrderInput>,
 ): Promise<InputRequiredResult> {
   const ctx = { spaceId: identity.spaceId, offerScope: offerScope(identity) };
@@ -120,7 +112,7 @@ async function alreadyOrdered(deps: ToolDeps, identity: GuestIdentity, orderId: 
 export async function answerCreateOrder(
   deps: ToolDeps,
   identity: GuestIdentity,
-  codec: OrderCodec,
+  codec: StateCodec,
   pendingId: string,
   answer: OrderAnswer,
 ): Promise<CreateOrderOutput | InputRequiredResult> {
