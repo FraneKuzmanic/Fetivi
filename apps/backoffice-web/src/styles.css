@@ -1026,11 +1026,11 @@ button svg,
 }
 
 /* Each checkbox row is already a full tap height. */
-.ferry-lines {
+.check-group {
   gap: 4px;
 }
 
-.ferry-lines > small {
+.check-group > small {
   margin-bottom: 4px;
 }
 

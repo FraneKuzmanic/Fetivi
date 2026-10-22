@@ -3,6 +3,7 @@ import { ferryLineLabel, lineOperator, type SafetyAlertFacts } from '../../alert
 import { CALENDAR_SOURCE_LABELS, type CalendarSource } from '../../calendar/vocabulary';
 import type { GuestLanguage } from '../../property/vocabulary';
 import type { CivilDate } from '../../time';
+import type { TipsUnsubscribeLinks } from '../../tips/unsubscribe';
 import type { DailyTipFacts } from '../../tips/vocabulary';
 import { DHMZ_URL } from '../../weather/vocabulary';
 import { GUEST_COPY } from './copy';
@@ -27,12 +28,6 @@ export interface GuestNoticeFacts {
   safety: SafetyAlertFacts | null;
   /** Daily tips: the picked catalog record, as it was at pick time. */
   tip: DailyTipFacts | null;
-}
-
-/** The two links of a daily-tip email: the guest page and the RFC 8058 one-click POST target. */
-export interface TipsUnsubscribeLinks {
-  page: string;
-  oneClick: string;
 }
 
 function fill(template: string, values: Record<string, string>): string {

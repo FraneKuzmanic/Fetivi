@@ -97,7 +97,7 @@ function FerryLinesField({
   const toggle = (id: string, on: boolean) =>
     onChange(FERRY_LINES.map((l) => l.id).filter((l) => (l === id ? on : value.includes(l))));
   return (
-    <fieldset className="row-editor ferry-lines">
+    <fieldset className="row-editor check-group">
       <legend>Ferry and catamaran lines</legend>
       <small className="muted">
         Guests get Jadrolinija notices and wind advisories for these lines.
@@ -129,7 +129,7 @@ const INTEREST_LABELS: Record<Interest, string> = {
 /** Places and day trips: one box, for the daily tips' rain rule. */
 function RainyDayField({ value, onChange }: { value: boolean; onChange: (on: boolean) => void }) {
   return (
-    <fieldset className="row-editor ferry-lines">
+    <fieldset className="row-editor check-group">
       <legend>Daily tips</legend>
       <small className="muted">Daily tips suggest it when rain is forecast.</small>
       <CheckboxField label="Good on a rainy day" checked={value} onChange={onChange} />
@@ -148,7 +148,7 @@ function InterestsField({
   const toggle = (code: string, on: boolean) =>
     onChange(INTERESTS.filter((c) => (c === code ? on : value.includes(c))));
   return (
-    <fieldset className="row-editor ferry-lines">
+    <fieldset className="row-editor check-group">
       <legend>Suits guests who like</legend>
       <small className="muted">Daily tips suggest the event to guests with these interests.</small>
       {INTERESTS.map((code) => (

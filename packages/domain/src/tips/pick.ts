@@ -44,6 +44,10 @@ export interface TipInput {
 const isRainy = (sky: SkyCode | null) =>
   sky !== null && (RAINY_SKIES as readonly SkyCode[]).includes(sky);
 
+/** The gap rule applies only to a full Stay day with nothing planned yet. */
+const gapPossible = (input: Pick<TipInput, 'fullDay' | 'planned'>) =>
+  input.fullDay && input.planned.length === 0;
+
 function placeTip(rule: TipRule, date: CivilDate, p: PlaceSummary): DailyTipFacts {
   return {
     rule,
@@ -85,7 +89,7 @@ export function pickDailyTip(input: TipInput): DailyTipFacts | null {
     };
   }
 
-  if (input.fullDay && input.planned.length === 0) {
+  if (gapPossible(input)) {
     const place = free(input.places);
     if (place) return placeTip('gap', input.tomorrow, place);
   }
@@ -138,7 +142,7 @@ export async function gatherTipInput(
     searchPlaces(
       db,
       scope,
-      { date: space.tomorrow, rainyDay, record: false, limit: CANDIDATES },
+      { date: space.tomorrow, rainyDay, countRecommendation: false, limit: CANDIDATES },
       now,
     ).then((r) => r?.results ?? []);
 
@@ -155,7 +159,6 @@ export async function gatherTipInput(
           )
         )?.results ?? [])
       : [];
-  const gapPossible = space.fullDay && planned.length === 0;
   return {
     tomorrow: space.tomorrow,
     fullDay: space.fullDay,
@@ -163,6 +166,6 @@ export async function gatherTipInput(
     planned,
     rainyPlaces,
     events,
-    places: gapPossible ? await places(false) : [],
+    places: gapPossible({ fullDay: space.fullDay, planned }) ? await places(false) : [],
   };
 }

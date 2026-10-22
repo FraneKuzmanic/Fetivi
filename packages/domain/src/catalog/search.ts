@@ -104,7 +104,7 @@ export interface PlaceQuery {
    * False: do not count a recommendation. Daily tips search this way, since their cron recomputes
    * the same search every 15 minutes. Default true.
    */
-  record?: boolean;
+  countRecommendation?: boolean;
 }
 
 export interface PlaceSearch {
@@ -438,7 +438,7 @@ export async function searchPlaces(
   const results = rankPlaces(candidates, scope.aboutMe)
     .slice(0, q.limit ?? 5)
     .map((c) => c.summary);
-  if (q.record !== false) {
+  if (q.countRecommendation !== false) {
     await recordRecommendations(
       db,
       results.map((r) => r.id),

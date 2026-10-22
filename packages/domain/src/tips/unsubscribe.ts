@@ -19,12 +19,18 @@ export function verifyTipsUnsubscribe(secret: string, spaceId: string, token: st
   return given.length === expected.length && timingSafeEqual(given, expected);
 }
 
+/** The two links of a daily-tip email: the guest page and the RFC 8058 one-click POST target. */
+export interface TipsUnsubscribeLinks {
+  page: string;
+  oneClick: string;
+}
+
 /** The guest page that unsubscribes on open, and the RFC 8058 one-click POST target. */
 export function tipsUnsubscribeUrls(
   guestOrigin: string,
   spaceId: string,
   token: string,
-): { page: string; oneClick: string } {
+): TipsUnsubscribeLinks {
   const origin = guestOrigin.replace(/\/+$/, '');
   const query = `space=${encodeURIComponent(spaceId)}&token=${encodeURIComponent(token)}`;
   return {

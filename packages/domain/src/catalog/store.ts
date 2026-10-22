@@ -77,7 +77,7 @@ async function checked<T>(run: () => Promise<T>): Promise<T> {
  * Ferry line ids and event interests deduplicated, in FERRY_LINES and INTERESTS order; unknown
  * codes are dropped.
  */
-function withLines<T extends { ferryLines?: string[]; interests?: string[] }>(values: T): T {
+function withCodes<T extends { ferryLines?: string[]; interests?: string[] }>(values: T): T {
   const lines = values.ferryLines && new Set(values.ferryLines);
   const interests = values.interests && new Set(values.interests);
   return {
@@ -98,7 +98,7 @@ export async function createCatalogRecord(
     db.transaction(async (tx) => {
       const [record] = await tx
         .insert(catalogRecords)
-        .values({ ...withLines(values), createdAt: now, updatedAt: now })
+        .values({ ...withCodes(values), createdAt: now, updatedAt: now })
         .returning();
       if (!record) throw new Error('catalog record insert returned nothing');
       await enqueueCatalogTranslation(tx, queue, record);
@@ -131,7 +131,7 @@ export async function updateCatalogRecord(
       const [record] = await tx
         .update(catalogRecords)
         .set({
-          ...withLines(changes),
+          ...withCodes(changes),
           updatedAt: now,
           ...(textChanged
             ? {

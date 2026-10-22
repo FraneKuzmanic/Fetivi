@@ -338,9 +338,14 @@ describe('daily-tip seams', () => {
     expect(none?.results).toEqual([]);
   });
 
-  it('counts no recommendation with record: false', async () => {
+  it('counts no recommendation with countRecommendation: false', async () => {
     await testDb.db.delete(catalogRecommendations);
-    const r = await searchPlaces(testDb.db, summer(), { category: 'sight', record: false }, SUMMER);
+    const r = await searchPlaces(
+      testDb.db,
+      summer(),
+      { category: 'sight', countRecommendation: false },
+      SUMMER,
+    );
     expect(r?.results.length).toBeGreaterThan(0);
     expect(await testDb.db.select().from(catalogRecommendations)).toEqual([]);
   });
