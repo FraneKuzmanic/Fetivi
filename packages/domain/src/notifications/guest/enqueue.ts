@@ -2,6 +2,8 @@ import type { SafetyAlertFacts } from '../../alerts/vocabulary';
 import type { Executor } from '../../db/client';
 import { type JobQueue, QUEUES, uuidFrom } from '../../jobs/queue';
 import { orderJobKey } from '../../orders/timers';
+import type { CivilDate } from '../../time';
+import type { DailyTipFacts } from '../../tips/vocabulary';
 import { type GuestNotificationKind, isOrderGuestKind } from './vocabulary';
 
 /**
@@ -16,6 +18,18 @@ export interface GuestNotifyJobData {
   handoffId?: string;
   /** Safety kinds carry their facts: the feed may have changed by send time. No contact fields. */
   safety?: SafetyAlertFacts;
+  /** Daily tips carry their facts: the catalog may change by send time. */
+  tip?: DailyTipFacts;
+  /** Daily tips: the property-local day the tip is sent on (its key). */
+  sendDate?: CivilDate;
+}
+
+/**
+ * One daily tip per space and send day. The rule and record are left out on purpose: a recomputed
+ * tip with other facts collapses to the same job id and ledger rows.
+ */
+export function dailyTipKey(spaceId: string, sendDate: CivilDate): string {
+  return `space:${spaceId}:daily_tip:${sendDate}`;
 }
 
 /**
@@ -43,6 +57,10 @@ export function guestNotificationKey(data: GuestNotifyJobData): string {
       throw new Error(`guest notification ${kind} is missing its facts`);
     }
     return `space:${need(data.spaceId, kind)}:${kind}:jadrolinija:${d.bulletinId}`;
+  }
+  if (kind === 'daily_tip') {
+    if (!data.tip) throw new Error(`guest notification ${kind} is missing its facts`);
+    return dailyTipKey(need(data.spaceId, kind), need(data.sendDate, kind));
   }
   return `space:${need(data.spaceId, kind)}:${kind}`;
 }

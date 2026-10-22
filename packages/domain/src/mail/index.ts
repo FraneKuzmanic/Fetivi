@@ -4,6 +4,8 @@ export interface MailMessage {
   text: string;
   /** Forwarded by transports that support it, such as Resend's Idempotency-Key. */
   idempotencyKey?: string;
+  /** Extra message headers, such as RFC 8058 `List-Unsubscribe`. */
+  headers?: Record<string, string>;
 }
 
 export interface Mailer {
@@ -13,9 +15,14 @@ export interface Mailer {
 /** Dev transport: prints the message, including links, to the log. */
 export function createConsoleMailer(log: (line: string) => void = console.log): Mailer {
   return {
-    async send({ to, subject, text, idempotencyKey }) {
+    async send({ to, subject, text, idempotencyKey, headers }) {
       const key = idempotencyKey ? `\nIdempotency-Key: ${idempotencyKey}` : '';
-      log(`--- mail ---\nTo: ${to}${key}\nSubject: ${subject}\n\n${text}\n--- end mail ---`);
+      const extra = Object.entries(headers ?? {})
+        .map(([name, value]) => `\n${name}: ${value}`)
+        .join('');
+      log(
+        `--- mail ---\nTo: ${to}${key}${extra}\nSubject: ${subject}\n\n${text}\n--- end mail ---`,
+      );
     },
   };
 }

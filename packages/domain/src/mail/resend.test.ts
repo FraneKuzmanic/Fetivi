@@ -31,6 +31,21 @@ describe('createResendMailer', () => {
     });
   });
 
+  it('sends message headers in the body', async () => {
+    const { fn, calls } = fakeFetch();
+    const headers = {
+      'List-Unsubscribe': '<https://x.test/u>',
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    };
+    await createResendMailer({ apiKey: 'k', from: 'f@x.test', fetch: fn }).send({
+      to: 'g@x.test',
+      subject: 'S',
+      text: 'T',
+      headers,
+    });
+    expect(JSON.parse(String(calls[0]?.init.body)).headers).toEqual(headers);
+  });
+
   it('omits the header without a key', async () => {
     const { fn, calls } = fakeFetch();
     await createResendMailer({ apiKey: 'k', from: 'f@x.test', fetch: fn }).send({

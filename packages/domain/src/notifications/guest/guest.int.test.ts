@@ -31,6 +31,8 @@ import {
   seedProvider,
   type TestDatabase,
 } from '../../testing';
+import { tipsUnsubscribeToken } from '../../tips/unsubscribe';
+import type { DailyTipFacts } from '../../tips/vocabulary';
 import { deliverGuestNotification, type GuestNotifyDeps } from './deliver';
 import type { GuestNotifyJobData } from './enqueue';
 import { createMemoryPushSender, pushState, recordPushOffer, savePushSubscription } from './push';
@@ -42,6 +44,7 @@ const NOW = new Date('2027-05-01T10:00:00Z');
 const DAY = '2027-05-02';
 const SLOT_AT = new Date('2027-05-02T07:00:00Z'); // 09:00 in Zagreb
 const ORIGIN = 'https://guest.fetivi.test';
+const LINK_SECRET = 'guest-int-test-link-secret-long-enough';
 
 beforeAll(async () => {
   testDb = await createTestDatabase();
@@ -57,7 +60,15 @@ function deps(over: Partial<GuestNotifyDeps> = {}) {
   return {
     mailer,
     push,
-    deps: { db: testDb.db, mailer, push, guestOrigin: ORIGIN, now: () => NOW, ...over },
+    deps: {
+      db: testDb.db,
+      mailer,
+      push,
+      guestOrigin: ORIGIN,
+      guestLinkSecret: LINK_SECRET,
+      now: () => NOW,
+      ...over,
+    },
   };
 }
 
@@ -660,6 +671,102 @@ describe('deliverGuestNotification: safety alerts', () => {
       date: DAY,
       startTime: '09:00',
     });
+  });
+});
+
+describe('deliverGuestNotification: daily tip', () => {
+  const tip: DailyTipFacts = {
+    rule: 'gap',
+    date: '2027-05-02',
+    recordId: '22222222-2222-4222-8222-222222222222',
+    kind: 'place',
+    title: 'Pantan nature reserve',
+    startsAt: null,
+    venueName: null,
+    distanceKm: 2.5,
+  };
+  const data = (spaceId: string) => ({
+    kind: 'daily_tip' as const,
+    spaceId,
+    sendDate: '2027-05-01',
+    tip,
+  });
+  const tipsOptIn = (spaceId: string) =>
+    testDb.db.update(spaces).set({ tipsEmailOptInAt: NOW }).where(eq(spaces.id, spaceId));
+
+  it('goes to the inbox only without the tip opt-in, even with a verified email', async () => {
+    const g = await guest();
+    await optIn(g.spaceId);
+    const { deps: d, mailer, push } = deps();
+    expect(await deliverGuestNotification(d, data(g.spaceId))).toEqual({
+      inbox: 'sent',
+      email: 'skipped',
+      push: 'skipped',
+    });
+    expect(mailer.sent).toEqual([]);
+    expect(push.sent).toEqual([]);
+    expect((await inboxNotices(g.spaceId))[0]).toMatchObject({
+      notification: 'daily_tip',
+      offerTitle: 'Pantan nature reserve',
+      date: '2027-05-02',
+      tip: { rule: 'gap', recordId: tip.recordId },
+    });
+  });
+
+  it('emails a verified opt-in with the unsubscribe link and headers, never pushes', async () => {
+    const g = await guest();
+    await optIn(g.spaceId);
+    await tipsOptIn(g.spaceId);
+    const { deps: d, mailer, push } = deps();
+    expect(await deliverGuestNotification(d, data(g.spaceId))).toEqual({
+      inbox: 'sent',
+      email: 'sent',
+      push: 'skipped',
+    });
+    expect(push.sent).toEqual([]);
+    const mail = mailer.sent[0];
+    const token = tipsUnsubscribeToken(LINK_SECRET, g.spaceId);
+    expect(mail?.subject).toBe('A tip for tomorrow: Pantan nature reserve');
+    expect(mail?.text).toContain(`${ORIGIN}/unsubscribe-tips?space=${g.spaceId}&token=${token}`);
+    expect(mail?.text).not.toContain('guest@example.test');
+    expect(mail?.headers).toEqual({
+      'List-Unsubscribe': `<${ORIGIN}/api/email/tips/unsubscribe?space=${g.spaceId}&token=${token}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    });
+    expect(mail?.idempotencyKey).toBe(`space:${g.spaceId}:daily_tip:2027-05-01:email`);
+    // One a day: the same key again sends nothing.
+    expect(await deliverGuestNotification(d, data(g.spaceId))).toEqual({
+      inbox: 'already_sent',
+      email: 'already_sent',
+      push: 'skipped',
+    });
+  });
+
+  it('skips the email for an unverified or suppressed address', async () => {
+    const unverified = await guest();
+    await optIn(unverified.spaceId, 'guest@example.test', false);
+    await tipsOptIn(unverified.spaceId);
+    const suppressed = await guest();
+    await optIn(suppressed.spaceId, 'gone-tips@example.test');
+    await tipsOptIn(suppressed.spaceId);
+    await suppressEmail(testDb.db, 'gone-tips@example.test', 'bounced', NOW);
+    for (const g of [unverified, suppressed]) {
+      expect((await deliverGuestNotification(deps().deps, data(g.spaceId))).email).toBe('skipped');
+    }
+  });
+
+  it('is dropped for a possibly cancelled Stay or a closed space', async () => {
+    const skipped = { inbox: 'skipped', email: 'skipped', push: 'skipped' };
+    const cancelled = await guest();
+    await testDb.db
+      .update(stays)
+      .set({ possiblyCancelled: true })
+      .where(eq(stays.id, cancelled.stayId));
+    const closed = await guest();
+    await testDb.db.update(spaces).set({ closedAt: NOW }).where(eq(spaces.id, closed.spaceId));
+    for (const g of [cancelled, closed]) {
+      expect(await deliverGuestNotification(deps().deps, data(g.spaceId))).toEqual(skipped);
+    }
   });
 });
 

@@ -201,6 +201,13 @@ export const en = {
     checkOperator: 'Line status at {{operator}}',
     seeTrip: 'See it in My trip',
     openGuide: 'Open the Guide',
+    tip_rain:
+      'It looks like rain tomorrow, {{date}}. {{offer}} is a good place to spend it{{distance}}.',
+    tip_event: 'Since you like this kind of thing: {{offer}} is on tomorrow, {{date}}{{venue}}.',
+    tip_gap:
+      "Tomorrow, {{date}}, is still free in your plan. How about {{offer}}{{distance}}? Ask me and I'll tell you more.",
+    tipDistance: ' ({{km}} km away)',
+    tipVenue: ', at {{venueName}}',
   },
   push: {
     offer: 'Alert me on this phone',
@@ -216,6 +223,12 @@ export const en = {
     saving: 'Saving…',
     cancel: 'Not now',
     sent: 'Check your inbox: I sent a link to confirm {{email}}.',
+  },
+  unsubscribeTips: {
+    title: 'Daily tips',
+    working: 'Turning off the daily tips…',
+    done: 'Done. No more daily tips by email. Everything else stays as it was.',
+    invalid: "This link doesn't work. You can turn the tips off in Settings.",
   },
   recovery: {
     ask: 'Already used Fetivi on another phone? Get a link by email',

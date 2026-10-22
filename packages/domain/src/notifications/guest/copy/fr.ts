@@ -104,6 +104,13 @@ export const fr: GuestCopy = {
       pushTitle: 'Avis Jadrolinija : ligne {{lines}}',
       pushBody: '{{offer}}, {{date}}',
     },
+    daily_tip: {
+      subject: 'Une idée pour demain : {{offer}}',
+      // The rule's own lines (tipRules) are used instead.
+      lines: [],
+      pushTitle: 'Une idée pour demain',
+      pushBody: '{{offer}}',
+    },
   },
   warningLevels: { yellow: 'jaune', orange: 'orange', red: 'rouge' },
   warningTime: '{{from}} – {{to}}',
@@ -115,6 +122,21 @@ export const fr: GuestCopy = {
   checkoutTimeLine: 'Merci de libérer le logement avant {{checkoutTime}}.',
   reviewLine:
     'Si vous souhaitez partager votre expérience, vous pouvez laisser un avis sur {{platform}}.',
+  tipRules: {
+    rain: [
+      'Il devrait pleuvoir demain, {{date}}.',
+      '{{offer}} est un bon endroit pour passer la journée{{distance}}.',
+    ],
+    event: ['Puisque vous aimez ce genre de choses : {{offer}} a lieu demain, {{date}}{{venue}}.'],
+    gap: [
+      'Demain, {{date}}, votre programme est encore libre.',
+      'Pourquoi pas {{offer}}{{distance}} ? Demandez-moi, je vous en dirai plus.',
+    ],
+  },
+  tipDistance: ' (à {{km}} km)',
+  tipVenue: ', à {{venueName}}',
+  tipUnsubscribe:
+    'Vous recevez une idée par jour parce que vous l’avez demandé. Pour les arrêter en un clic :',
   spaceEmails: {
     verify_email: {
       subject: 'Confirmez votre e-mail pour Fetivi',

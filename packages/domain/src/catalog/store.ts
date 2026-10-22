@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import { INTERESTS } from '../about-me/vocabulary';
 import { FERRY_LINE_IDS } from '../alerts/vocabulary';
 import { type Db, type Executor, pgCode } from '../db/client';
 import {
@@ -72,11 +73,18 @@ async function checked<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
-/** Ferry line ids deduplicated, in FERRY_LINES order; unknown ids are dropped. */
-function withLines<T extends { ferryLines?: string[] }>(values: T): T {
-  if (!values.ferryLines) return values;
-  const given = new Set(values.ferryLines);
-  return { ...values, ferryLines: FERRY_LINE_IDS.filter((id) => given.has(id)) };
+/**
+ * Ferry line ids and event interests deduplicated, in FERRY_LINES and INTERESTS order; unknown
+ * codes are dropped.
+ */
+function withLines<T extends { ferryLines?: string[]; interests?: string[] }>(values: T): T {
+  const lines = values.ferryLines && new Set(values.ferryLines);
+  const interests = values.interests && new Set(values.interests);
+  return {
+    ...values,
+    ...(lines ? { ferryLines: FERRY_LINE_IDS.filter((id) => lines.has(id)) } : {}),
+    ...(interests ? { interests: INTERESTS.filter((code) => interests.has(code)) } : {}),
+  };
 }
 
 /** Inserts a record at revision 1 and enqueues its translation in the same transaction. */

@@ -42,6 +42,7 @@ export const APP_TEST_ORIGIN = 'http://app.test';
 export const START = new Date('2026-10-19T10:00:00Z');
 export const TEST_ISSUER = 'http://chat.test';
 export const TEST_MCP_BASE = 'http://mcp.test';
+export const TEST_GUEST_LINK_SECRET = 'chat-test-guest-link-secret-long-enough';
 
 /** Chat deps for apps whose tests never chat: no model, and no MCP fetch. */
 export const NO_CHAT: AppDeps['chat'] = {
@@ -89,6 +90,7 @@ export async function createTestApp(
   const app = buildApp({
     db: testDb.db,
     appOrigin: APP_TEST_ORIGIN,
+    guestLinkSecret: TEST_GUEST_LINK_SECRET,
     now: clock.now,
     logger: false,
     queue,
@@ -236,6 +238,7 @@ export async function createChatTestApp(options: {
   const app = buildApp({
     db: testDb.db,
     appOrigin: APP_TEST_ORIGIN,
+    guestLinkSecret: TEST_GUEST_LINK_SECRET,
     now: clock.now,
     logger: false,
     queue: options.queue ?? noopQueue,
@@ -281,6 +284,7 @@ async function createInProcessChatTestApp(options: {
   const app = buildApp({
     db: testDb.db,
     appOrigin: APP_TEST_ORIGIN,
+    guestLinkSecret: TEST_GUEST_LINK_SECRET,
     now: clock.now,
     logger: false,
     queue: options.queue ?? noopQueue,

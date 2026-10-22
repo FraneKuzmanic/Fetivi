@@ -13,6 +13,7 @@ const tokens = { key: await loadSigningKey(undefined), issuer: 'http://x', mcpBa
 const deps = {
   db,
   appOrigin: 'http://app.test',
+  guestLinkSecret: 'app-test-guest-link-secret-long-enough',
   logger: false,
   tokens,
   chat: NO_CHAT,
@@ -63,6 +64,7 @@ describe('chat-backend', () => {
       'GET /api/access/:slug',
       'POST /api/access/:slug/pin',
       'POST /api/access/:slug/recovery',
+      'POST /api/email/tips/unsubscribe',
       'POST /api/email/verify',
       'POST /api/recovery/restore',
     ]);
@@ -80,6 +82,7 @@ describe('chat-backend', () => {
       MCP_PUBLIC_URL: 'http://localhost:3002',
       TOOL_TRANSPORT: 'mcp',
       REQUEST_STATE_SECRET: 'dev-only-request-state-secret-change-me-in-production',
+      GUEST_LINK_SECRET: 'dev-only-guest-link-secret-change-me-in-production',
       MEDIA_DIR: '../../.data/media',
       WEATHER_USER_AGENT: 'Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)',
     });

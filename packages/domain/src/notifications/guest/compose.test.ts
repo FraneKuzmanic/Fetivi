@@ -5,6 +5,7 @@ import type {
   WarningAlertFacts,
 } from '../../alerts/vocabulary';
 import { GUEST_LANGUAGES } from '../../property/vocabulary';
+import type { DailyTipFacts } from '../../tips/vocabulary';
 import { composeGuestEmail, composeGuestPush, type GuestNoticeFacts } from './compose';
 import { GUEST_NOTIFICATION_KINDS } from './vocabulary';
 
@@ -16,6 +17,7 @@ const ORDER: GuestNoticeFacts = {
   checkoutTime: null,
   reviewPlatform: null,
   safety: null,
+  tip: null,
 };
 const STAY: GuestNoticeFacts = {
   offerTitle: null,
@@ -24,6 +26,7 @@ const STAY: GuestNoticeFacts = {
   checkoutTime: '10:00',
   reviewPlatform: null,
   safety: null,
+  tip: null,
 };
 
 const ZONE = 'Europe/Zagreb';
@@ -209,6 +212,115 @@ describe('composeGuestEmail', () => {
         expect(text).toContain('9603');
       }
     }
+  });
+});
+
+describe('composeGuestEmail for a daily tip', () => {
+  const LINKS = {
+    page: 'https://guest.fetivi.test/unsubscribe-tips?space=s1&token=t1',
+    oneClick: 'https://guest.fetivi.test/api/email/tips/unsubscribe?space=s1&token=t1',
+  };
+  const tip = (over: Partial<DailyTipFacts> = {}): DailyTipFacts => ({
+    rule: 'rain',
+    date: '2027-07-11',
+    recordId: 'r1',
+    kind: 'place',
+    title: 'Cathedral of St Lawrence',
+    startsAt: null,
+    venueName: null,
+    distanceKm: 1.2,
+    ...over,
+  });
+  /** The facts as the loader builds them. */
+  const tipFacts = (t: DailyTipFacts): GuestNoticeFacts => ({
+    ...STAY,
+    checkoutTime: null,
+    offerTitle: t.title,
+    date: t.date,
+    startTime: t.startsAt?.slice(0, 10) === t.date ? t.startsAt.slice(11) : null,
+    tip: t,
+  });
+  const TIPS = [
+    tip(),
+    tip({
+      rule: 'event',
+      kind: 'event',
+      title: 'Klapa night',
+      startsAt: '2027-07-11T20:00',
+      venueName: 'Kamerlengo Fortress',
+      distanceKm: 0.4,
+    }),
+    tip({ rule: 'gap', title: 'Pantan nature reserve', distanceKm: null }),
+  ];
+
+  it('words each rule with the title, the unsubscribe link and the one-click headers', () => {
+    const rain = composeGuestEmail(
+      'daily_tip',
+      tipFacts(TIPS[0] as DailyTipFacts),
+      'en',
+      ORIGIN,
+      LINKS,
+    );
+    expect(rain.subject).toBe('A tip for tomorrow: Cathedral of St Lawrence');
+    expect(rain.text).toContain('It looks like rain tomorrow, Sun 11 Jul.');
+    expect(rain.text).toContain(
+      'Cathedral of St Lawrence is a good place to spend it (1.2 km away).',
+    );
+    expect(rain.text).toContain(`${ORIGIN}/chat`);
+    expect(rain.text).toContain(`Stop these tips with one click:\n${LINKS.page}`);
+    expect(rain.headers).toEqual({
+      'List-Unsubscribe': `<${LINKS.oneClick}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    });
+
+    const event = composeGuestEmail(
+      'daily_tip',
+      tipFacts(TIPS[1] as DailyTipFacts),
+      'en',
+      ORIGIN,
+      LINKS,
+    );
+    expect(event.text).toContain(
+      'Klapa night is on tomorrow, Sun 11 Jul at 20:00, at Kamerlengo Fortress.',
+    );
+    const gap = composeGuestEmail(
+      'daily_tip',
+      tipFacts(TIPS[2] as DailyTipFacts),
+      'hr',
+      ORIGIN,
+      LINKS,
+    );
+    expect(gap.subject).toBe('Savjet za sutra: Pantan nature reserve');
+    expect(gap.text).toContain(
+      'Što kažete na Pantan nature reserve? Pitajte me i reći ću vam više.',
+    );
+    expect(gap.text).toContain(LINKS.page);
+    expect(gap.headers?.['List-Unsubscribe']).toBe(`<${LINKS.oneClick}>`);
+  });
+
+  it('fills every tip placeholder in every language, with local decimals', () => {
+    for (const lang of GUEST_LANGUAGES) {
+      for (const t of TIPS) {
+        const { subject, text } = composeGuestEmail('daily_tip', tipFacts(t), lang, ORIGIN, LINKS);
+        expect(`${subject}${text}`).not.toContain('{{');
+        expect(text).toContain(t.title);
+        expect(text).toContain(LINKS.page);
+      }
+    }
+    const de = composeGuestEmail(
+      'daily_tip',
+      tipFacts(TIPS[0] as DailyTipFacts),
+      'de',
+      ORIGIN,
+      LINKS,
+    );
+    expect(de.text).toContain('1,2 km');
+  });
+
+  it('adds no headers to other kinds', () => {
+    expect(
+      composeGuestEmail('order_confirmed', ORDER, 'en', ORIGIN, LINKS).headers,
+    ).toBeUndefined();
   });
 });
 

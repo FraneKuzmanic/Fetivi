@@ -205,6 +205,13 @@ export const it: Messages = {
     checkOperator: 'Stato delle linee: {{operator}}',
     seeTrip: 'Vedi in Il mio viaggio',
     openGuide: 'Apri la Guida',
+    tip_rain:
+      'Domani, {{date}}, sembra che pioverà. {{offer}} è un buon posto per passare la giornata{{distance}}.',
+    tip_event: 'Visto che ti piacciono queste cose: domani, {{date}}, c’è {{offer}}{{venue}}.',
+    tip_gap:
+      'Domani, {{date}}, il tuo programma è ancora libero. Che ne dici di {{offer}}{{distance}}? Chiedimi e ti racconto di più.',
+    tipDistance: ' (a {{km}} km)',
+    tipVenue: ', presso {{venueName}}',
   },
   push: {
     offer: 'Avvisami su questo telefono',
@@ -221,6 +228,12 @@ export const it: Messages = {
     saving: 'Salvataggio…',
     cancel: 'Non ora',
     sent: 'Controlla la posta: ho inviato un link per confermare {{email}}.',
+  },
+  unsubscribeTips: {
+    title: 'Consigli del giorno',
+    working: 'Sto disattivando i consigli del giorno…',
+    done: 'Fatto. Niente più consigli del giorno via email. Tutto il resto resta com’era.',
+    invalid: 'Questo link non funziona. Puoi disattivare i consigli nelle Impostazioni.',
   },
   recovery: {
     ask: 'Hai già usato Fetivi su un altro telefono? Ricevi un link via email',

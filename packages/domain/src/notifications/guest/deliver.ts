@@ -4,6 +4,7 @@ import { guestNotificationDeliveries } from '../../db/schema/notifications';
 import { INBOX_PART_TYPE } from '../../handoff/vocabulary';
 import { uuidFrom } from '../../jobs/queue';
 import type { Mailer } from '../../mail';
+import { tipsUnsubscribeToken, tipsUnsubscribeUrls } from '../../tips/unsubscribe';
 import { composeGuestEmail, composeGuestPush } from './compose';
 import type { GuestNotifyJobData } from './enqueue';
 import { type GuestNotice, loadGuestNotice } from './load';
@@ -17,6 +18,8 @@ export interface GuestNotifyDeps {
   push: PushSender | null;
   /** The guest app's origin, for the email links. */
   guestOrigin: string;
+  /** Signs the daily-tip unsubscribe links; the same value as chat-backend's. */
+  guestLinkSecret: string;
   now: () => Date;
 }
 
@@ -62,6 +65,8 @@ export function noticeInboxData(notice: GuestNotice, now: Date) {
     reviewUrl: facts.reviewPlatform ? REVIEW_LINKS[facts.reviewPlatform] : null,
     /** Safety kinds: the source's own words, worded around by the guest app. */
     safety: facts.safety,
+    /** Daily tips: the picked record, worded by the guest app. */
+    tip: facts.tip,
     at: now.toISOString(),
   };
 }
@@ -88,7 +93,22 @@ const SENDERS: Record<GuestChannel, ChannelSender> = {
   async email(deps, notice) {
     const to = notice.email;
     if (!to) return 'skipped';
-    const message = composeGuestEmail(notice.kind, notice.facts, notice.language, deps.guestOrigin);
+    // Derived, so a retried job rebuilds a byte-identical body for the idempotency key.
+    const unsubscribe =
+      notice.kind === 'daily_tip'
+        ? tipsUnsubscribeUrls(
+            deps.guestOrigin,
+            notice.spaceId,
+            tipsUnsubscribeToken(deps.guestLinkSecret, notice.spaceId),
+          )
+        : undefined;
+    const message = composeGuestEmail(
+      notice.kind,
+      notice.facts,
+      notice.language,
+      deps.guestOrigin,
+      unsubscribe,
+    );
     return once(deps.db, notice, 'email', deps.now(), () =>
       deps.mailer.send({ to, ...message, idempotencyKey: `${notice.key}:email` }),
     );

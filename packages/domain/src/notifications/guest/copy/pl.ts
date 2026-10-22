@@ -107,6 +107,13 @@ export const pl: GuestCopy = {
       pushTitle: 'Komunikat Jadrolinii: linia {{lines}}',
       pushBody: '{{offer}}, {{date}}',
     },
+    daily_tip: {
+      subject: 'Pomysł na jutro: {{offer}}',
+      // The rule's own lines (tipRules) are used instead.
+      lines: [],
+      pushTitle: 'Pomysł na jutro',
+      pushBody: '{{offer}}',
+    },
   },
   warningLevels: { yellow: 'żółte', orange: 'pomarańczowe', red: 'czerwone' },
   warningTime: '{{from}} – {{to}}',
@@ -118,6 +125,20 @@ export const pl: GuestCopy = {
   checkoutTimeLine: 'Prosimy o opuszczenie apartamentu do {{checkoutTime}}.',
   reviewLine:
     'Jeśli chcesz podzielić się wrażeniami z pobytu, możesz zostawić opinię na {{platform}}.',
+  tipRules: {
+    rain: [
+      'Jutro, {{date}}, zapowiada się deszcz.',
+      'Dobrym miejscem na taki dzień jest {{offer}}{{distance}}.',
+    ],
+    event: ['Skoro lubisz takie rzeczy: jutro, {{date}}, odbywa się {{offer}}{{venue}}.'],
+    gap: [
+      'Jutro, {{date}}, masz jeszcze wolne w planie.',
+      'Może {{offer}}{{distance}}? Zapytaj mnie, a powiem ci więcej.',
+    ],
+  },
+  tipDistance: ' ({{km}} km stąd)',
+  tipVenue: ', miejsce: {{venueName}}',
+  tipUnsubscribe: 'Dostajesz jeden pomysł dziennie na Twoją prośbę. Wyłącz je jednym kliknięciem:',
   spaceEmails: {
     verify_email: {
       subject: 'Potwierdź swój e-mail w Fetivi',

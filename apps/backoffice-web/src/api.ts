@@ -735,6 +735,10 @@ export interface CatalogRecord extends CatalogRecordSummary {
   travelMinutes: number | null;
   /** FERRY_LINES ids a day trip or transport note depends on (safety alerts). */
   ferryLines: string[];
+  /** Places and day trips: daily tips suggest it when rain is forecast. */
+  rainyDay: boolean;
+  /** Events: About me interest codes the event suits (daily tips). */
+  interests: string[];
   fieldSources: FieldSources;
   /** Null for the seed or a deleted account. */
   verifiedByEmail: string | null;
@@ -759,6 +763,7 @@ export type CatalogRecordInput =
       address?: string | null;
       phone?: string | null;
       websiteUrl?: string | null;
+      rainyDay?: boolean;
     })
   | (RecordText & {
       kind: 'event';
@@ -767,6 +772,7 @@ export type CatalogRecordInput =
       location?: LatLng | null;
       venueName?: string | null;
       websiteUrl?: string | null;
+      interests?: string[];
     })
   | (RecordText & {
       kind: 'transport_note';
@@ -780,6 +786,7 @@ export type CatalogRecordInput =
       ferryLines?: string[];
       location?: LatLng | null;
       websiteUrl?: string | null;
+      rainyDay?: boolean;
     });
 
 /** Any subset of the record's own fields; never its kind. */
@@ -798,6 +805,8 @@ export type CatalogRecordPatch = Partial<{
   links: CatalogLink[];
   travelMinutes: number;
   ferryLines: string[];
+  rainyDay: boolean;
+  interests: string[];
   fieldSources: FieldSources;
 }>;
 

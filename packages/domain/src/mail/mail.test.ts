@@ -36,4 +36,19 @@ describe('mail transports', () => {
     await memory.send({ to: 'a@example.test', subject: 'Hi', text: 'x', idempotencyKey: 'k' });
     expect(memory.sent[0]?.idempotencyKey).toBe('k');
   });
+
+  it('console mailer prints message headers, and the memory mailer keeps them', async () => {
+    const lines: string[] = [];
+    const headers = { 'List-Unsubscribe': '<https://x.test/u>' };
+    await createConsoleMailer((line) => lines.push(line)).send({
+      to: 'a@example.test',
+      subject: 'Hi',
+      text: 'x',
+      headers,
+    });
+    expect(lines[0]).toContain('List-Unsubscribe: <https://x.test/u>');
+    const memory = createMemoryMailer();
+    await memory.send({ to: 'a@example.test', subject: 'Hi', text: 'x', headers });
+    expect(memory.sent[0]?.headers).toEqual(headers);
+  });
 });

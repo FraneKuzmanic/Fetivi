@@ -104,6 +104,13 @@ export const hu: GuestCopy = {
       pushTitle: 'Jadrolinija közlemény: {{lines}} vonal',
       pushBody: '{{offer}}, {{date}}',
     },
+    daily_tip: {
+      subject: 'Tipp holnapra: {{offer}}',
+      // The rule's own lines (tipRules) are used instead.
+      lines: [],
+      pushTitle: 'Tipp holnapra',
+      pushBody: '{{offer}}',
+    },
   },
   warningLevels: { yellow: 'sárga', orange: 'narancs', red: 'piros' },
   warningTime: '{{from}} – {{to}}',
@@ -115,6 +122,17 @@ export const hu: GuestCopy = {
   checkoutTimeLine: 'Kérjük, {{checkoutTime}}-ig hagyd el a szállást.',
   reviewLine:
     'Ha szeretnéd elmondani, milyen volt a tartózkodásod, írhatsz értékelést itt: {{platform}}.',
+  tipRules: {
+    rain: ['Holnap, {{date}}, esőre van kilátás.', 'Ilyenkor jó választás: {{offer}}{{distance}}.'],
+    event: ['Mivel szereted az ilyesmit: {{offer}} holnap, {{date}}{{venue}}.'],
+    gap: [
+      'Holnap, {{date}}, még üres a terved.',
+      'Mit szólnál ehhez: {{offer}}{{distance}}? Kérdezz, és elmondok többet.',
+    ],
+  },
+  tipDistance: ' ({{km}} km-re)',
+  tipVenue: ', helyszín: {{venueName}}',
+  tipUnsubscribe: 'Naponta egy tippet kapsz, mert ezt kérted. Egy kattintással leiratkozhatsz:',
   spaceEmails: {
     verify_email: {
       subject: 'Erősítsd meg az e-mail-címed a Fetivihez',

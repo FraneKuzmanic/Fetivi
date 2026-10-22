@@ -367,8 +367,32 @@ function safetyWords(t: TFunction, language: string, notice: Notice): NoticeWord
   };
 }
 
+/**
+ * A daily tip in the rule's words. An event shows its time only when it starts tomorrow; a
+ * festival already running shows tomorrow's date.
+ */
+function tipWords(t: TFunction, language: string, notice: Notice): NoticeWords | null {
+  const tip = notice.tip;
+  if (!tip) return null;
+  const f = orderFormat(t, language);
+  const startsTomorrow = tip.startsAt?.slice(0, 10) === tip.date ? tip.startsAt : null;
+  const km = new Intl.NumberFormat(language, { maximumFractionDigits: 1 });
+  return {
+    safety: null,
+    checkoutBy: null,
+    text: t(`notice.tip_${tip.rule}`, {
+      offer: tip.title,
+      date: f.dateTime(tip.date, startsTomorrow),
+      distance:
+        tip.distanceKm === null ? '' : t('notice.tipDistance', { km: km.format(tip.distanceKm) }),
+      venue: tip.venueName ? t('notice.tipVenue', { venueName: tip.venueName }) : '',
+    }),
+  };
+}
+
 /** A notice's sentences in the interface language, dates as the receipts show them; null if never shown. */
 export function noticeText(t: TFunction, language: string, notice: Notice): NoticeWords | null {
+  if (notice.notification === 'daily_tip') return tipWords(t, language, notice);
   if (!isShownNotice(notice.notification)) return null;
   if (notice.notification === 'weather_warning' || notice.notification === 'ferry_disruption') {
     return safetyWords(t, language, notice);

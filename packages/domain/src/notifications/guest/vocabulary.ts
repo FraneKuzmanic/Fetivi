@@ -24,6 +24,11 @@ export const GUEST_NOTIFICATION_KINDS = [
   'weather_warning',
   /** Safety, always sent to every open space in the Stay: a ferry notice touching a plan item or Order. */
   'ferry_disruption',
+  /**
+   * At most one a day per Space: a rule-picked catalog tip about tomorrow. Inbox; email only with
+   * the daily-tip opt-in; never push.
+   */
+  'daily_tip',
 ] as const;
 export type GuestNotificationKind = (typeof GUEST_NOTIFICATION_KINDS)[number];
 
@@ -59,6 +64,7 @@ export const CHANNELS_BY_KIND: Record<GuestNotificationKind, readonly GuestChann
   checkout_reminder: GUEST_CHANNELS,
   weather_warning: GUEST_CHANNELS,
   ferry_disruption: GUEST_CHANNELS,
+  daily_tip: ['inbox', 'email'],
 };
 
 /** Property-local time of the evening-before reminders (Order item, checkout). */
@@ -81,6 +87,7 @@ export const NOTICE_PATHS = {
   checkout_reminder: '/guide',
   weather_warning: '/chat',
   ferry_disruption: '/trip',
+  daily_tip: '/chat',
 } as const satisfies Record<GuestNotificationKind, '/trip' | '/guide' | '/chat'>;
 
 /** Where the checkout review line links, per calendar feed source: the guest's trips page there. */

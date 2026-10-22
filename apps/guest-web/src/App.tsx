@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router';
 import { AboutMePage } from './about-me/AboutMePage';
 import { AccessPage } from './access/AccessPage';
 import { NoLinkPage } from './access/NoLinkPage';
+import { UnsubscribeTipsPage } from './email/UnsubscribeTipsPage';
 import { GuideSection } from './guide/GuideSection';
 import { RecoverPage } from './recovery/RecoverPage';
 import { VerifyEmailPage } from './recovery/VerifyEmailPage';
@@ -20,6 +21,7 @@ export function App({ initial }: { initial?: SpaceState }) {
         {/* Emailed links: they work on any device, with or without a space. */}
         <Route path="/recover" element={<RecoverPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/unsubscribe-tips" element={<UnsubscribeTipsPage />} />
         {TAB_NAMES.map((tab) => (
           <Route
             key={tab}

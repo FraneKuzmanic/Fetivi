@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   date,
   index,
@@ -80,6 +81,10 @@ export const catalogRecords = pgTable(
     travelMinutes: smallint('travel_minutes'),
     /** Ferry and catamaran lines (FERRY_LINES ids) a visit depends on; safety alerts match on them. */
     ferryLines: text('ferry_lines').array().notNull().default(sql`'{}'::text[]`),
+    /** Places and day trips good on a rainy day; daily tips pick from them when rain is forecast. */
+    rainyDay: boolean('rainy_day').notNull().default(false),
+    /** Events: About me interests the event suits (INTERESTS codes); daily tips match them. */
+    interests: text('interests').array().notNull().default(sql`'{}'::text[]`),
     /** A source URL per field, `{ fieldName: httpsUrl }`. */
     fieldSources: jsonb('field_sources')
       .$type<Partial<Record<SourceField, string>>>()

@@ -100,6 +100,13 @@ export const en: GuestCopy = {
       pushTitle: 'Jadrolinija notice: line {{lines}}',
       pushBody: '{{offer}}, {{date}}',
     },
+    daily_tip: {
+      subject: 'A tip for tomorrow: {{offer}}',
+      // The rule's own lines (tipRules) are used instead.
+      lines: [],
+      pushTitle: 'A tip for tomorrow',
+      pushBody: '{{offer}}',
+    },
   },
   warningLevels: { yellow: 'yellow', orange: 'orange', red: 'red' },
   warningTime: '{{from}} – {{to}}',
@@ -110,6 +117,20 @@ export const en: GuestCopy = {
   sourceLine: 'Source: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Please leave by {{checkoutTime}}.',
   reviewLine: "If you'd like to share how your stay went, you can leave a review on {{platform}}.",
+  tipRules: {
+    rain: [
+      'It looks like rain tomorrow, {{date}}.',
+      '{{offer}} is a good place to spend it{{distance}}.',
+    ],
+    event: ['Since you like this kind of thing: {{offer}} is on tomorrow, {{date}}{{venue}}.'],
+    gap: [
+      'Tomorrow, {{date}}, is still free in your plan.',
+      "How about {{offer}}{{distance}}? Ask me and I'll tell you more.",
+    ],
+  },
+  tipDistance: ' ({{km}} km away)',
+  tipVenue: ', at {{venueName}}',
+  tipUnsubscribe: 'You get one tip a day because you asked for it. Stop these tips with one click:',
   spaceEmails: {
     verify_email: {
       subject: 'Confirm your email for Fetivi',

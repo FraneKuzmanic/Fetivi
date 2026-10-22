@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const DEV_PROVIDER_LINK_SECRET = 'dev-only-provider-link-secret-change-me-in-production';
+const DEV_GUEST_LINK_SECRET = 'dev-only-guest-link-secret-change-me-in-production';
 
 const DEV_MAIL_FROM = 'Fetivi <notifications@localhost>';
 const DEV_GUEST_ORIGIN = 'http://localhost:5173';
@@ -21,6 +22,8 @@ const schema = z
     NODE_ENV: z.string().optional(),
     /** Derives the per-order Provider link tokens; required in production. */
     PROVIDER_LINK_SECRET: z.string().min(32).default(DEV_PROVIDER_LINK_SECRET),
+    /** Signs the daily-tip unsubscribe links; chat-backend must have the same value. */
+    GUEST_LINK_SECRET: z.string().min(32).default(DEV_GUEST_LINK_SECRET),
     /** The back-office origin the Provider page is served from (production https://host.<domain>). */
     PROVIDER_LINK_BASE_URL: z.url().default('http://localhost:5174'),
     /** The back-office origin, for links in host emails (production https://host.<domain>). */
@@ -53,6 +56,10 @@ const schema = z
       path: ['PROVIDER_LINK_SECRET'],
     },
   )
+  .refine((c) => c.NODE_ENV !== 'production' || c.GUEST_LINK_SECRET !== DEV_GUEST_LINK_SECRET, {
+    message: 'GUEST_LINK_SECRET is required in production',
+    path: ['GUEST_LINK_SECRET'],
+  })
   .refine((c) => c.MAIL_TRANSPORT !== 'resend' || c.RESEND_API_KEY, {
     message: 'MAIL_TRANSPORT=resend needs RESEND_API_KEY',
     path: ['RESEND_API_KEY'],

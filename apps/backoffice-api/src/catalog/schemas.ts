@@ -9,6 +9,7 @@ import {
   stripMarkdownHtml,
   TRANSPORT_MODES,
 } from '@fetivi/domain';
+import { INTERESTS } from '@fetivi/domain/about-me-vocabulary';
 import { FERRY_LINE_IDS } from '@fetivi/domain/alerts-vocabulary';
 import { z } from 'zod';
 import { HHMM, latLng, line, optionalLine, phone, zone } from '../properties/schemas';
@@ -69,6 +70,12 @@ const link = z.strictObject({ label: line(LIMITS.title), url: httpsUrl });
 /** The ferry and catamaran lines a visit depends on; safety alerts match on them. */
 const ferryLines = z.array(z.enum(FERRY_LINE_IDS)).max(FERRY_LINE_IDS.length);
 
+/** Places and day trips: good on a rainy day; daily tips suggest it when rain is forecast. */
+const rainyDay = z.boolean();
+
+/** Events: the About me interests the event suits; daily tips match them. */
+const interests = z.array(z.enum(INTERESTS)).max(INTERESTS.length);
+
 /** Per kind: the fields of a create, with the optional ones marked. */
 const placeFields = {
   ...common,
@@ -77,6 +84,7 @@ const placeFields = {
   address: optionalLine(LIMITS.shortText).optional(),
   phone: phone.optional(),
   websiteUrl: optionalUrl.optional(),
+  rainyDay: rainyDay.optional(),
 };
 const eventFields = {
   ...common,
@@ -85,6 +93,7 @@ const eventFields = {
   location: latLng.optional(),
   venueName: optionalLine(LIMITS.shortText).optional(),
   websiteUrl: optionalUrl.optional(),
+  interests: interests.optional(),
 };
 const transportFields = {
   ...common,
@@ -98,6 +107,7 @@ const dayTripFields = {
   location: latLng.optional(),
   websiteUrl: optionalUrl.optional(),
   ferryLines: ferryLines.optional(),
+  rainyDay: rainyDay.optional(),
 };
 
 export const RecordCreate = z.discriminatedUnion('kind', [

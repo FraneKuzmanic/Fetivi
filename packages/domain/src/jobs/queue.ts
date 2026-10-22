@@ -19,6 +19,7 @@ export const QUEUES = {
   hostDigests: 'host-digests',
   spaceEmail: 'space-email',
   safetyAlerts: 'safety-alerts',
+  dailyTips: 'daily-tips',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -56,6 +57,9 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   spaceEmail: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
   // The cron fan-out; the next slot runs again anyway.
   safetyAlerts: { retryLimit: 1, expireInSeconds: 120 },
+  // The cron fan-out; the next slot runs again anyway. Up to three searches per due space need
+  // more headroom than 120 s at worst.
+  dailyTips: { retryLimit: 1, expireInSeconds: 300 },
 };
 
 /**

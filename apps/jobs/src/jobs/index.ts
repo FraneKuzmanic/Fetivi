@@ -5,6 +5,7 @@ import type {
   TranslationJobDeps,
 } from '@fetivi/domain';
 import type { JobDefinition } from '../runner';
+import { type DailyTipsDeps, dailyTipsJob } from './daily-tips';
 import { guestNotifyJob, guestRemindersJob } from './guest-notify';
 import { hostDigestsJob, hostNotifyJob } from './host-notify';
 import { orderNotifyJob } from './orders/notify';
@@ -30,7 +31,8 @@ export function createJobs(
     HostNotifyDeps &
     CalendarJobDeps &
     HandoffJobDeps &
-    SafetyAlertsDeps,
+    SafetyAlertsDeps &
+    DailyTipsDeps,
 ): JobDefinition[] {
   // The runner hands each handler the data its own queue was sent.
   return [
@@ -49,5 +51,6 @@ export function createJobs(
     hostDigestsJob(deps),
     spaceEmailJob(deps) as JobDefinition,
     safetyAlertsJob(deps),
+    dailyTipsJob(deps),
   ];
 }

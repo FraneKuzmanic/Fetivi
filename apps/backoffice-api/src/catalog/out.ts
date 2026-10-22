@@ -127,6 +127,8 @@ export async function recordDetail(
     links: row.links,
     travelMinutes: row.travelMinutes,
     ferryLines: row.ferryLines,
+    rainyDay: row.rainyDay,
+    interests: row.interests,
     fieldSources: row.fieldSources,
     /** Null for the seed or a deleted account. */
     verifiedByEmail: verifier[0]?.email ?? null,

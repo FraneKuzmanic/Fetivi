@@ -24,7 +24,7 @@ export interface ResendMailerConfig {
 
 export function createResendMailer(config: ResendMailerConfig): Mailer {
   return {
-    async send({ to, subject, text, idempotencyKey }) {
+    async send({ to, subject, text, idempotencyKey, headers: messageHeaders }) {
       const headers: Record<string, string> = {
         Authorization: `Bearer ${config.apiKey}`,
         'Content-Type': 'application/json',
@@ -38,7 +38,13 @@ export function createResendMailer(config: ResendMailerConfig): Mailer {
       const response = await config.fetch(RESEND_ENDPOINT, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ from: config.from, to: [to], subject, text }),
+        body: JSON.stringify({
+          from: config.from,
+          to: [to],
+          subject,
+          text,
+          ...(messageHeaders ? { headers: messageHeaders } : {}),
+        }),
       });
       if (!response.ok) throw new MailSendError(response.status);
     },

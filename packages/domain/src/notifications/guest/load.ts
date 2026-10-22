@@ -38,6 +38,7 @@ const NO_FACTS: GuestNoticeFacts = {
   checkoutTime: null,
   reviewPlatform: null,
   safety: null,
+  tip: null,
 };
 
 interface Base {
@@ -64,13 +65,21 @@ export async function loadGuestNotice(
       language: spaces.language,
       email: spaces.email,
       emailVerifiedAt: spaces.emailVerifiedAt,
+      tipsEmailOptInAt: spaces.tipsEmailOptInAt,
       closedAt: spaces.closedAt,
     })
     .from(spaces)
     .where(eq(spaces.id, base.spaceId));
   if (!space) return null;
-  // Order kinds email the Order's own address; updates go only to a verified space email.
-  let email = base.email ?? (space.emailVerifiedAt ? space.email : null);
+  // Order kinds email the Order's own address; updates go only to a verified space email, and
+  // daily tips only with their separate opt-in as well.
+  const verified = space.emailVerifiedAt ? space.email : null;
+  let email =
+    data.kind === 'daily_tip'
+      ? space.tipsEmailOptInAt
+        ? verified
+        : null
+      : (base.email ?? verified);
   if (email && (await isEmailSuppressed(db, email))) email = null;
   const conversation = await findConversation(db, base.spaceId);
   return {
@@ -93,6 +102,7 @@ async function loadBase(db: Executor, data: GuestNotifyJobData, now: Date): Prom
   if (data.kind === 'weather_warning' || data.kind === 'ferry_disruption') {
     return loadSafetyBase(db, data, now);
   }
+  if (data.kind === 'daily_tip') return loadTipBase(db, data, now);
   if (data.kind === 'host_reply') {
     if (!data.handoffId) return null;
     const [row] = await db
@@ -198,6 +208,30 @@ async function loadSafetyBase(
       startTime: item?.startTime ?? null,
       safety,
     },
+  };
+}
+
+/** A daily tip goes only to an open space of a Stay not possibly cancelled; its facts travel in the job. */
+async function loadTipBase(
+  db: Executor,
+  data: GuestNotifyJobData,
+  now: Date,
+): Promise<Base | null> {
+  const { spaceId, tip } = data;
+  if (!spaceId || !tip) return null;
+  const [row] = await db
+    .select({ closedAt: spaces.closedAt, possiblyCancelled: stays.possiblyCancelled })
+    .from(spaces)
+    .innerJoin(stays, eq(stays.id, spaces.stayId))
+    .where(eq(spaces.id, spaceId));
+  if (!row || row.closedAt <= now || row.possiblyCancelled) return null;
+  // An event starting tomorrow shows its time; one already running shows the day only.
+  const startTime = tip.startsAt?.slice(0, 10) === tip.date ? tip.startsAt.slice(11) : null;
+  return {
+    spaceId,
+    email: null,
+    orderId: null,
+    facts: { ...NO_FACTS, offerTitle: tip.title, date: tip.date, startTime, tip },
   };
 }
 

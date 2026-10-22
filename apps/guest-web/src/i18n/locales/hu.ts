@@ -206,6 +206,12 @@ export const hu: Messages = {
     checkOperator: 'Járatok állapota: {{operator}}',
     seeTrip: 'Megnézem az Utazásomban',
     openGuide: 'Útmutató megnyitása',
+    tip_rain: 'Holnap, {{date}}, esőre van kilátás. Ilyenkor jó választás: {{offer}}{{distance}}.',
+    tip_event: 'Mivel szereted az ilyesmit: {{offer}} holnap, {{date}}{{venue}}.',
+    tip_gap:
+      'Holnap, {{date}}, még üres a terved. Mit szólnál ehhez: {{offer}}{{distance}}? Kérdezz, és elmondok többet.',
+    tipDistance: ' ({{km}} km-re)',
+    tipVenue: ', helyszín: {{venueName}}',
   },
   push: {
     offer: 'Értesíts ezen a telefonon',
@@ -222,6 +228,12 @@ export const hu: Messages = {
     saving: 'Mentés…',
     cancel: 'Most nem',
     sent: 'Nézd meg a postafiókod: küldtem egy linket a(z) {{email}} cím megerősítéséhez.',
+  },
+  unsubscribeTips: {
+    title: 'Napi tippek',
+    working: 'A napi tippek kikapcsolása…',
+    done: 'Kész. Nem küldök több napi tippet e-mailben. Minden más marad a régiben.',
+    invalid: 'Ez a link nem működik. A tippeket a Beállításokban kapcsolhatod ki.',
   },
   recovery: {
     ask: 'Használtad már a Fetivit egy másik telefonon? Kérj linket e-mailben',

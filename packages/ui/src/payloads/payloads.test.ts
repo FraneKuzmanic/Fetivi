@@ -312,6 +312,7 @@ describe('inbox item', () => {
             checkoutTime: '10:00',
             reviewPlatform: 'airbnb',
             safety: null,
+            tip: null,
           },
         },
         now,
@@ -370,6 +371,30 @@ describe('inbox item', () => {
         safety: { ...notice, affected: { ...affected, lines: ['2026'] } },
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('daily tip notice', () => {
+  const tip = {
+    rule: 'event',
+    date: '2027-07-11',
+    recordId: 'r1',
+    kind: 'event',
+    title: 'Trogir Summer of Culture',
+    startsAt: '2027-07-01T20:00',
+    venueName: 'Kamerlengo Fortress',
+    distanceKm: 0.4,
+  };
+  const base = { kind: 'notice', notification: 'daily_tip', at: '2027-07-10T15:00:00Z' };
+
+  it('takes the tip facts, and defaults them to null', () => {
+    expect(inboxItem.parse({ ...base, tip })).toMatchObject({ tip });
+    expect(inboxItem.parse(base)).toMatchObject({ tip: null });
+  });
+
+  it('refuses an unknown rule or record kind', () => {
+    expect(inboxItem.safeParse({ ...base, tip: { ...tip, rule: 'promo' } }).success).toBe(false);
+    expect(inboxItem.safeParse({ ...base, tip: { ...tip, kind: 'offer' } }).success).toBe(false);
   });
 });
 

@@ -94,6 +94,7 @@ describe('order-notify job', () => {
       mailer,
       push,
       guestOrigin: 'http://guest.test',
+      guestLinkSecret: 'jobs-test-guest-link-secret-long-enough',
       now: () => NOW,
       providerLink: { secret: 'jobs-test-secret-that-is-long-enough-00', baseUrl: 'http://x.test' },
     });

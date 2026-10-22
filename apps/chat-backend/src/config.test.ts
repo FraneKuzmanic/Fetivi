@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from './config';
 
-const PROD = { NODE_ENV: 'production', GUEST_TOKEN_PRIVATE_KEY: 'pem' };
+const PROD = {
+  NODE_ENV: 'production',
+  GUEST_TOKEN_PRIVATE_KEY: 'pem',
+  GUEST_LINK_SECRET: 'prod-guest-link-secret-at-least-32-chars',
+};
 
 describe('chat-backend config: TOOL_TRANSPORT', () => {
   it('defaults to mcp', () => {
@@ -23,5 +27,14 @@ describe('chat-backend config: TOOL_TRANSPORT', () => {
 
   it('refuses an unknown value', () => {
     expect(() => loadConfig({ TOOL_TRANSPORT: 'http' })).toThrow(/TOOL_TRANSPORT/);
+  });
+});
+
+describe('chat-backend config: GUEST_LINK_SECRET', () => {
+  it('has a dev default and refuses it in production', () => {
+    expect(loadConfig({}).GUEST_LINK_SECRET.length).toBeGreaterThanOrEqual(32);
+    const { GUEST_LINK_SECRET: _, ...prodWithout } = PROD;
+    expect(() => loadConfig(prodWithout)).toThrow(/GUEST_LINK_SECRET is required in production/);
+    expect(loadConfig(PROD).GUEST_LINK_SECRET).toBe(PROD.GUEST_LINK_SECRET);
   });
 });

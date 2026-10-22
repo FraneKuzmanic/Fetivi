@@ -256,6 +256,32 @@ describe('records', () => {
     expect(unknown.statusCode).toBe(400);
   });
 
+  it('keeps the rainy-day flag of a place and the interests of an event', async () => {
+    const place = await createPlace({ rainyDay: true });
+    expect(place.rainyDay).toBe(true);
+    const event = await post(
+      t.app,
+      records(),
+      { ...eventBody, interests: ['sights', 'beaches', 'sights'] },
+      adminCookie,
+    );
+    expect(event.statusCode).toBe(201);
+    expect(event.json().interests).toEqual(['beaches', 'sights']);
+    const read = await get(t.app, recordUrl(event.json().id), adminCookie);
+    expect(read.json().interests).toEqual(['beaches', 'sights']);
+    expect(read.json().rainyDay).toBe(false);
+
+    const unknown = await post(
+      t.app,
+      records(),
+      { ...eventBody, interests: ['karaoke'] },
+      adminCookie,
+    );
+    expect(unknown.statusCode).toBe(400);
+    const wrongKind = await post(t.app, records(), { ...eventBody, rainyDay: true }, adminCookie);
+    expect(wrongKind.statusCode).toBe(400);
+  });
+
   it('strips markup from the description', async () => {
     const place = await createPlace({ description: 'Good fish.<script>alert(1)</script>' });
     expect(place.description).not.toContain('<script>');

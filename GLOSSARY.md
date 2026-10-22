@@ -212,9 +212,13 @@ On the Host side, the back-office list of Host messages. On the guest side, inbo
 _Avoid_: notifications tab, mailbox
 
 **Notice**:
-An inbox message from Fetivi about the guest's Orders or Stay: a booking confirmed, changed or cancelled, the reminder the evening before, arrival details ready, the checkout reminder, and Safety alerts. Also sent by email, and by push on Android when the guest asked for alerts. Never shown to the model.
+An inbox message from Fetivi about the guest's Orders or Stay: a booking confirmed, changed or cancelled, the reminder the evening before, arrival details ready, the checkout reminder, Safety alerts and Daily tips. Also sent by email, and by push on Android when the guest asked for alerts. Never shown to the model.
 _Avoid_: alert, system message
 
 **Safety alert**:
 A Notice about an official weather warning, or a Ferry bulletin touching a plan item or Order; sent to every open Space in the Stay; always attributed to its source, in the source's own words.
 _Avoid_: cancellation notice (Fetivi never states a cancellation)
+
+**Daily tip**:
+A Notice with one rule-picked catalog idea for tomorrow (rain plans, an event matching About me, or an empty day), at most one a day per Space; inbox by default, email only with its separate opt-in, never push.
+_Avoid_: suggestion (that is Suggestions' term), push tip

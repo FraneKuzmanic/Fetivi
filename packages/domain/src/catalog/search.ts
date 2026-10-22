@@ -98,6 +98,13 @@ export interface PlaceQuery {
   /** 'HH:MM' local time on `date`. */
   openAt?: string;
   limit?: number;
+  /** True: only records the admin marked good on a rainy day (daily tips). */
+  rainyDay?: boolean;
+  /**
+   * False: do not count a recommendation. Daily tips search this way, since their cron recomputes
+   * the same search every 15 minutes. Default true.
+   */
+  record?: boolean;
 }
 
 export interface PlaceSearch {
@@ -381,6 +388,7 @@ export async function searchPlaces(
         : sql`false`,
     );
   }
+  if (q.rainyDay) conditions.push(eq(catalogRecords.rainyDay, true));
   conditions.push(textMatches(textScore));
 
   const rows = await db
@@ -430,11 +438,13 @@ export async function searchPlaces(
   const results = rankPlaces(candidates, scope.aboutMe)
     .slice(0, q.limit ?? 5)
     .map((c) => c.summary);
-  await recordRecommendations(
-    db,
-    results.map((r) => r.id),
-    todayIn(now, origin.zone),
-  );
+  if (q.record !== false) {
+    await recordRecommendations(
+      db,
+      results.map((r) => r.id),
+      todayIn(now, origin.zone),
+    );
+  }
   return { date, openAt: q.openAt ?? null, results };
 }
 
@@ -486,12 +496,13 @@ export async function getPlace(
 
 /**
  * Events overlapping the Stay ± 3 days that have not ended, soonest first. `from`/`to` narrow
- * that window and never widen it.
+ * that window and never widen it. `interests` keeps events tagged with any of them (daily tips);
+ * an empty list matches no event.
  */
 export async function searchEvents(
   db: Db,
   scope: CatalogScope,
-  q: { query?: string; from?: CivilDate; to?: CivilDate },
+  q: { query?: string; from?: CivilDate; to?: CivilDate; interests?: readonly string[] },
   now: Date,
 ): Promise<EventSearch | null> {
   const origin = await loadOrigin(db, scope);
@@ -507,7 +518,7 @@ export async function searchEvents(
   const start = q.from && day(q.from) > windowStart ? day(q.from) : windowStart;
   const askedEnd = q.to ? day(q.to).plus({ days: 1 }).startOf('day') : windowEnd;
   const end = askedEnd < windowEnd ? askedEnd : windowEnd;
-  if (start >= end) return { window, results: [] };
+  if (start >= end || q.interests?.length === 0) return { window, results: [] };
 
   const textScore = textScoreOf(q.query);
   const rows = await db
@@ -536,6 +547,9 @@ export async function searchEvents(
         gt(catalogRecords.endsAt, start.toJSDate()),
         gt(catalogRecords.endsAt, now),
         textMatches(textScore),
+        q.interests
+          ? sql`${catalogRecords.interests} && ${sql.param([...q.interests])}::text[]`
+          : undefined,
       ),
     )
     .orderBy(asc(catalogRecords.startsAt), asc(catalogRecords.id))

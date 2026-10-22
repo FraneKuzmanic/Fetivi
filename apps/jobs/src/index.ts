@@ -54,6 +54,7 @@ const boss = await startJobRunner({
       }),
       push,
       guestOrigin: config.GUEST_ORIGIN,
+      guestLinkSecret: config.GUEST_LINK_SECRET,
       providerLink: {
         secret: config.PROVIDER_LINK_SECRET,
         baseUrl: config.PROVIDER_LINK_BASE_URL,

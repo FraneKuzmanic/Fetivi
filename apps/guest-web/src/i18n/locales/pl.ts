@@ -204,6 +204,13 @@ export const pl: Messages = {
     checkOperator: 'Stan linii: {{operator}}',
     seeTrip: 'Zobacz w Mojej podróży',
     openGuide: 'Otwórz Przewodnik',
+    tip_rain:
+      'Jutro, {{date}}, zapowiada się deszcz. Dobrym miejscem na taki dzień jest {{offer}}{{distance}}.',
+    tip_event: 'Skoro lubisz takie rzeczy: jutro, {{date}}, odbywa się {{offer}}{{venue}}.',
+    tip_gap:
+      'Jutro, {{date}}, masz jeszcze wolne w planie. Może {{offer}}{{distance}}? Zapytaj mnie, a powiem ci więcej.',
+    tipDistance: ' ({{km}} km stąd)',
+    tipVenue: ', miejsce: {{venueName}}',
   },
   push: {
     offer: 'Powiadamiaj mnie na tym telefonie',
@@ -220,6 +227,12 @@ export const pl: Messages = {
     saving: 'Zapisywanie…',
     cancel: 'Nie teraz',
     sent: 'Sprawdź skrzynkę: wysłałem link do potwierdzenia adresu {{email}}.',
+  },
+  unsubscribeTips: {
+    title: 'Codzienne wskazówki',
+    working: 'Wyłączam codzienne wskazówki…',
+    done: 'Gotowe. Koniec codziennych wskazówek e-mailem. Wszystko inne zostaje bez zmian.',
+    invalid: 'Ten link nie działa. Wskazówki możesz wyłączyć w Ustawieniach.',
   },
   recovery: {
     ask: 'Używałeś już Fetivi na innym telefonie? Otrzymaj link e-mailem',

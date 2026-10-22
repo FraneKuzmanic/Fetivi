@@ -1,3 +1,4 @@
+import { INTERESTS, type Interest } from '@fetivi/domain/about-me-vocabulary';
 import { FERRY_LINES, FERRY_OPERATOR_INFO } from '@fetivi/domain/alerts-vocabulary';
 import {
   CATALOG_KINDS,
@@ -113,6 +114,55 @@ function FerryLinesField({
   );
 }
 
+const INTEREST_LABELS: Record<Interest, string> = {
+  beaches: 'Beaches & swimming',
+  sights: 'History & sights',
+  food: 'Food & wine',
+  nature: 'Nature & walks',
+  day_trips: 'Boat & day trips',
+  active: 'Sport & activities',
+  nightlife: 'Nightlife',
+  shopping: 'Markets & shopping',
+  slow: 'Slow days',
+};
+
+/** Places and day trips: one box, for the daily tips' rain rule. */
+function RainyDayField({ value, onChange }: { value: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <fieldset className="row-editor ferry-lines">
+      <legend>Daily tips</legend>
+      <small className="muted">Daily tips suggest it when rain is forecast.</small>
+      <CheckboxField label="Good on a rainy day" checked={value} onChange={onChange} />
+    </fieldset>
+  );
+}
+
+/** Events: ticked About me interests, kept in their display order. */
+function InterestsField({
+  value,
+  onChange,
+}: {
+  value: readonly string[];
+  onChange: (interests: string[]) => void;
+}) {
+  const toggle = (code: string, on: boolean) =>
+    onChange(INTERESTS.filter((c) => (c === code ? on : value.includes(c))));
+  return (
+    <fieldset className="row-editor ferry-lines">
+      <legend>Suits guests who like</legend>
+      <small className="muted">Daily tips suggest the event to guests with these interests.</small>
+      {INTERESTS.map((code) => (
+        <CheckboxField
+          key={code}
+          label={INTEREST_LABELS[code]}
+          checked={value.includes(code)}
+          onChange={(on) => toggle(code, on)}
+        />
+      ))}
+    </fieldset>
+  );
+}
+
 /** /admin/catalog/destinations/:id/new/:kind: the kind's required fields, then the full editor. */
 export function NewRecordPage() {
   const { id = '', kind: kindParam = '' } = useParams();
@@ -127,6 +177,8 @@ export function NewRecordPage() {
   const [endsAt, setEndsAt] = useState<string | null>(null);
   const [travelMinutes, setTravelMinutes] = useState<number | null>(null);
   const [ferryLines, setFerryLines] = useState<string[]>([]);
+  const [rainyDay, setRainyDay] = useState(false);
+  const [interests, setInterests] = useState<string[]>([]);
   const [destinationName, setDestinationName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -146,13 +198,27 @@ export function NewRecordPage() {
     const location = locationOf(coords);
     switch (kind) {
       case 'place':
-        return { kind, ...text, placeCategory, location: location as LatLng };
+        return { kind, ...text, placeCategory, location: location as LatLng, rainyDay };
       case 'event':
-        return { kind, ...text, startsAt: startsAt ?? '', endsAt: endsAt ?? '', location };
+        return {
+          kind,
+          ...text,
+          startsAt: startsAt ?? '',
+          endsAt: endsAt ?? '',
+          location,
+          interests,
+        };
       case 'transport_note':
         return { kind, ...text, transportMode, ferryLines };
       case 'day_trip':
-        return { kind, ...text, travelMinutes: travelMinutes ?? 0, location, ferryLines };
+        return {
+          kind,
+          ...text,
+          travelMinutes: travelMinutes ?? 0,
+          location,
+          ferryLines,
+          rainyDay,
+        };
     }
   }
 
@@ -250,6 +316,10 @@ export function NewRecordPage() {
             {kind === 'day_trip' || kind === 'transport_note' ? (
               <FerryLinesField value={ferryLines} onChange={setFerryLines} />
             ) : null}
+            {kind === 'place' || kind === 'day_trip' ? (
+              <RainyDayField value={rainyDay} onChange={setRainyDay} />
+            ) : null}
+            {kind === 'event' ? <InterestsField value={interests} onChange={setInterests} /> : null}
           </div>
           {error ? <p role="alert">{error}</p> : null}
           <div className="actions">
@@ -277,6 +347,8 @@ type Draft = Pick<
   | 'transportMode'
   | 'travelMinutes'
   | 'ferryLines'
+  | 'rainyDay'
+  | 'interests'
   | 'links'
   | 'fieldSources'
   | 'seasons'
@@ -297,6 +369,8 @@ const draftOf = (r: CatalogRecord): Draft => ({
   transportMode: r.transportMode,
   travelMinutes: r.travelMinutes,
   ferryLines: r.ferryLines,
+  rainyDay: r.rainyDay,
+  interests: r.interests,
   links: r.links,
   fieldSources: r.fieldSources,
   seasons: r.seasons,
@@ -314,6 +388,7 @@ function detailsBody(kind: CatalogKind, d: Draft, location: LatLng | null): Cata
         address: d.address,
         phone: d.phone,
         websiteUrl: d.websiteUrl,
+        rainyDay: d.rainyDay,
       };
     case 'event':
       return {
@@ -322,6 +397,7 @@ function detailsBody(kind: CatalogKind, d: Draft, location: LatLng | null): Cata
         location,
         venueName: d.venueName,
         websiteUrl: d.websiteUrl,
+        interests: d.interests,
       };
     case 'transport_note':
       return { transportMode: d.transportMode ?? 'other', ferryLines: d.ferryLines };
@@ -331,6 +407,7 @@ function detailsBody(kind: CatalogKind, d: Draft, location: LatLng | null): Cata
         location,
         websiteUrl: d.websiteUrl,
         ferryLines: d.ferryLines,
+        rainyDay: d.rainyDay,
       };
   }
 }
@@ -391,6 +468,8 @@ export function RecordPage() {
       'transportMode',
       'travelMinutes',
       'ferryLines',
+      'rainyDay',
+      'interests',
     ]);
     setCoords(coordsOf(saved.location));
   };
@@ -508,6 +587,12 @@ export function RecordPage() {
                 onChange={set('websiteUrl')}
               />
             </>
+          ) : null}
+          {kind === 'place' || kind === 'day_trip' ? (
+            <RainyDayField value={draft.rainyDay} onChange={set('rainyDay')} />
+          ) : null}
+          {kind === 'event' ? (
+            <InterestsField value={draft.interests} onChange={set('interests')} />
           ) : null}
         </Section>
 

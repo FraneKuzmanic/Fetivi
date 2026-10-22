@@ -23,6 +23,7 @@ export * from './situation';
 export * from './spaces';
 export * from './stays';
 export * from './time';
+export * from './tips';
 export * from './tokens';
 export * from './translation';
 export * from './weather';

@@ -20,6 +20,7 @@ export type ErrorCode =
   | 'turn-failed'
   | 'push-endpoint'
   | 'invalid-token'
+  | 'invalid-link'
   | 'no-email';
 
 export class HttpError extends Error {

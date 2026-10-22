@@ -6,7 +6,13 @@ import { loadSigningKey } from './keys';
 describe('guest token config', () => {
   it('requires a signing key in production', () => {
     expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow('GUEST_TOKEN_PRIVATE_KEY');
-    expect(loadConfig({ NODE_ENV: 'production', GUEST_TOKEN_PRIVATE_KEY: 'pem' })).toMatchObject({
+    expect(
+      loadConfig({
+        NODE_ENV: 'production',
+        GUEST_TOKEN_PRIVATE_KEY: 'pem',
+        GUEST_LINK_SECRET: 'prod-guest-link-secret-at-least-32-chars',
+      }),
+    ).toMatchObject({
       GUEST_TOKEN_PRIVATE_KEY: 'pem',
     });
     expect(loadConfig({}).GUEST_TOKEN_PRIVATE_KEY).toBeUndefined();

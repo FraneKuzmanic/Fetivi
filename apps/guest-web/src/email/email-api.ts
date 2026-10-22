@@ -23,3 +23,7 @@ export const resendVerification = () => api<void>('/api/email/verification', { m
 
 export const verifyEmail = (token: string) =>
   api<void>('/api/email/verify', { method: 'POST', body: { token } });
+
+/** The daily-tip email's unsubscribe link: works without the Space. */
+export const unsubscribeTips = (space: string, token: string) =>
+  api<void>('/api/email/tips/unsubscribe', { method: 'POST', body: { space, token } });

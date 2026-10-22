@@ -55,6 +55,7 @@ function notifyDeps(
     mailer: createMemoryMailer(),
     push: createMemoryPushSender(),
     guestOrigin: 'http://guest.test',
+    guestLinkSecret: 'jobs-test-guest-link-secret-long-enough',
     now: () => now,
   };
 }

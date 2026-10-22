@@ -35,6 +35,7 @@ const weather = createWeatherSource({ fetch: egress.fetch, userAgent: config.WEA
 const app = buildApp({
   db,
   appOrigin: config.APP_ORIGIN,
+  guestLinkSecret: config.GUEST_LINK_SECRET,
   trustProxy: config.TRUST_PROXY,
   queue,
   media: createLocalMediaStore(config.MEDIA_DIR),

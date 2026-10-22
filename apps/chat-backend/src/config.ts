@@ -2,6 +2,7 @@ import { TOOL_TRANSPORTS } from '@fetivi/domain';
 import { z } from 'zod';
 
 const DEV_REQUEST_STATE_SECRET = 'dev-only-request-state-secret-change-me-in-production';
+const DEV_GUEST_LINK_SECRET = 'dev-only-guest-link-secret-change-me-in-production';
 
 const schema = z
   .object({
@@ -28,6 +29,8 @@ const schema = z
      * the MCP servers' REQUEST_STATE_SECRET (the same dev default).
      */
     REQUEST_STATE_SECRET: z.string().min(32).default(DEV_REQUEST_STATE_SECRET),
+    /** Signs the daily-tip unsubscribe links; must equal the jobs process's GUEST_LINK_SECRET. */
+    GUEST_LINK_SECRET: z.string().min(32).default(DEV_GUEST_LINK_SECRET),
     /** Block media files. Both processes must point at the same directory (a shared volume in production). */
     MEDIA_DIR: z.string().default('../../.data/media'),
     /** Web push (VAPID) public key, the jobs process's pair; without it push is never offered. */
@@ -44,6 +47,10 @@ const schema = z
   .refine((c) => c.NODE_ENV !== 'production' || Boolean(c.GUEST_TOKEN_PRIVATE_KEY), {
     message: 'GUEST_TOKEN_PRIVATE_KEY is required in production',
     path: ['GUEST_TOKEN_PRIVATE_KEY'],
+  })
+  .refine((c) => c.NODE_ENV !== 'production' || c.GUEST_LINK_SECRET !== DEV_GUEST_LINK_SECRET, {
+    message: 'GUEST_LINK_SECRET is required in production',
+    path: ['GUEST_LINK_SECRET'],
   })
   // MCP is the production path: the in-process mode skips the token boundary.
   .refine((c) => c.NODE_ENV !== 'production' || c.TOOL_TRANSPORT === 'mcp', {

@@ -1,8 +1,21 @@
-import { createMemoryMailer, QUEUES, sendSpaceEmail, spaces } from '@fetivi/domain';
+import {
+  createMemoryMailer,
+  QUEUES,
+  sendSpaceEmail,
+  spaces,
+  tipsUnsubscribeToken,
+} from '@fetivi/domain';
 import { recordingQueue } from '@fetivi/domain/testing';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { browser, createTestApp, seedLiveUnit, type TestApp } from '../testing';
+import {
+  browser,
+  createTestApp,
+  seedLiveUnit,
+  TEST_GUEST_LINK_SECRET,
+  type TestApp,
+  write,
+} from '../testing';
 
 const queue = recordingQueue();
 let t: TestApp;
@@ -107,6 +120,79 @@ describe('/api/email', () => {
   it('refuses a write without the app Origin', async () => {
     const { device } = await guest();
     const response = await device.write('POST', '/api/email', { email: 'a@example.test' }, null);
+    expect(response.statusCode).toBe(403);
+  });
+});
+
+describe('POST /api/email/tips/unsubscribe', () => {
+  /** A verified address with the tip opt-in. */
+  async function subscribed() {
+    const g = await guest();
+    await g.device.write('POST', '/api/email', { email: 'a@example.test', tips: true });
+    expect((await g.device.get('/api/email')).json()).toMatchObject({ tips: true });
+    const token = tipsUnsubscribeToken(TEST_GUEST_LINK_SECRET, g.spaceId);
+    return { ...g, url: `/api/email/tips/unsubscribe?space=${g.spaceId}&token=${token}`, token };
+  }
+
+  /** The RFC 8058 POST a mail provider sends: form data, no Origin, no cookie. */
+  const oneClick = (url: string) =>
+    t.app.inject({
+      method: 'POST',
+      url,
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: 'List-Unsubscribe=One-Click',
+    });
+
+  it('turns tips off from a one-click POST without an Origin, and again as a no-op', async () => {
+    const { device, url } = await subscribed();
+    expect((await oneClick(url)).statusCode).toBe(204);
+    expect((await device.get('/api/email')).json()).toMatchObject({
+      email: 'a@example.test',
+      tips: false,
+    });
+    expect((await oneClick(url)).statusCode).toBe(204);
+  });
+
+  it('turns tips off from the guest page, on any device', async () => {
+    const { device, spaceId, token } = await subscribed();
+    const response = await write('POST', t.app, '/api/email/tips/unsubscribe', {
+      space: spaceId,
+      token,
+    });
+    expect(response.statusCode).toBe(204);
+    expect((await device.get('/api/email')).json()).toMatchObject({ tips: false });
+  });
+
+  it("refuses a wrong token or another space's token, and changes nothing", async () => {
+    const { device, spaceId } = await subscribed();
+    const other = await subscribed();
+    for (const url of [
+      `/api/email/tips/unsubscribe?space=${spaceId}&token=${'a'.repeat(43)}`,
+      `/api/email/tips/unsubscribe?space=${spaceId}&token=${other.token}`,
+      `/api/email/tips/unsubscribe?space=${spaceId}`,
+      '/api/email/tips/unsubscribe?space=nope&token=x',
+    ]) {
+      const response = await oneClick(url);
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({ error: 'invalid-link' });
+    }
+    expect((await device.get('/api/email')).json()).toMatchObject({ tips: true });
+  });
+
+  it('answers 204 for an unknown space, revealing nothing', async () => {
+    const space = '00000000-0000-4000-8000-000000000000';
+    const token = tipsUnsubscribeToken(TEST_GUEST_LINK_SECRET, space);
+    const response = await oneClick(`/api/email/tips/unsubscribe?space=${space}&token=${token}`);
+    expect(response.statusCode).toBe(204);
+  });
+
+  it('keeps the Origin check on every other API write', async () => {
+    const response = await t.app.inject({
+      method: 'PATCH',
+      url: '/api/email',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: 'tips=false',
+    });
     expect(response.statusCode).toBe(403);
   });
 });

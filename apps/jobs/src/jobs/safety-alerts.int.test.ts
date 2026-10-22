@@ -161,6 +161,7 @@ describe('safety-alerts job', () => {
         mailer,
         push: createMemoryPushSender(),
         guestOrigin: 'http://guest.test',
+        guestLinkSecret: 'jobs-test-guest-link-secret-long-enough',
         now: () => now,
       };
       for (const data of jobs) {

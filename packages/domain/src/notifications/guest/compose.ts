@@ -3,6 +3,7 @@ import { ferryLineLabel, lineOperator, type SafetyAlertFacts } from '../../alert
 import { CALENDAR_SOURCE_LABELS, type CalendarSource } from '../../calendar/vocabulary';
 import type { GuestLanguage } from '../../property/vocabulary';
 import type { CivilDate } from '../../time';
+import type { DailyTipFacts } from '../../tips/vocabulary';
 import { DHMZ_URL } from '../../weather/vocabulary';
 import { GUEST_COPY } from './copy';
 import { type GuestNotificationKind, NOTICE_PATHS, REVIEW_LINKS } from './vocabulary';
@@ -24,6 +25,14 @@ export interface GuestNoticeFacts {
   reviewPlatform: CalendarSource | null;
   /** Safety kinds: the warning or notice, in its source's own words. */
   safety: SafetyAlertFacts | null;
+  /** Daily tips: the picked catalog record, as it was at pick time. */
+  tip: DailyTipFacts | null;
+}
+
+/** The two links of a daily-tip email: the guest page and the RFC 8058 one-click POST target. */
+export interface TipsUnsubscribeLinks {
+  page: string;
+  oneClick: string;
 }
 
 function fill(template: string, values: Record<string, string>): string {
@@ -63,6 +72,17 @@ function safetyValues(
   };
 }
 
+function tipValues(tip: DailyTipFacts | null, language: GuestLanguage): Record<string, string> {
+  if (!tip) return {};
+  const copy = GUEST_COPY[language];
+  const km = new Intl.NumberFormat(language, { maximumFractionDigits: 1 });
+  return {
+    distance:
+      tip.distanceKm === null ? '' : fill(copy.tipDistance, { km: km.format(tip.distanceKm) }),
+    venue: tip.venueName ? fill(copy.tipVenue, { venueName: tip.venueName }) : '',
+  };
+}
+
 function values(facts: GuestNoticeFacts, language: GuestLanguage): Record<string, string> {
   const copy = GUEST_COPY[language];
   const day = facts.date
@@ -74,19 +94,26 @@ function values(facts: GuestNoticeFacts, language: GuestLanguage): Record<string
     checkoutTime: facts.checkoutTime ?? '',
     platform: facts.reviewPlatform ? CALENDAR_SOURCE_LABELS[facts.reviewPlatform] : '',
     ...safetyValues(facts.safety, language),
+    ...tipValues(facts.tip, language),
   };
 }
 
+/**
+ * A daily tip also takes its unsubscribe links: the page link closes the body and the one-click
+ * link goes into the `List-Unsubscribe` headers.
+ */
 export function composeGuestEmail(
   kind: GuestNotificationKind,
   facts: GuestNoticeFacts,
   language: GuestLanguage,
   guestOrigin: string,
-): { subject: string; text: string } {
+  unsubscribe?: TipsUnsubscribeLinks,
+): { subject: string; text: string; headers?: Record<string, string> } {
   const copy = GUEST_COPY[language];
   const v = values(facts, language);
   const text = copy.kinds[kind];
-  const lines = text.lines.map((line) => fill(line, v));
+  const tipLines = kind === 'daily_tip' && facts.tip ? copy.tipRules[facts.tip.rule] : [];
+  const lines = [...text.lines, ...tipLines].map((line) => fill(line, v));
   if (kind === 'checkout_reminder' && facts.checkoutTime) {
     lines.push(fill(copy.checkoutTimeLine, v));
   }
@@ -102,8 +129,19 @@ export function composeGuestEmail(
   if (kind === 'checkout_reminder' && facts.reviewPlatform) {
     lines.push('', fill(copy.reviewLine, v), REVIEW_LINKS[facts.reviewPlatform]);
   }
+  if (kind === 'daily_tip' && unsubscribe) {
+    lines.push('', copy.tipUnsubscribe, unsubscribe.page);
+  }
   lines.push('', copy.signature);
-  return { subject: fill(text.subject, v), text: lines.join('\n') };
+  const message = { subject: fill(text.subject, v), text: lines.join('\n') };
+  if (kind !== 'daily_tip' || !unsubscribe) return message;
+  return {
+    ...message,
+    headers: {
+      'List-Unsubscribe': `<${unsubscribe.oneClick}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+  };
 }
 
 /** A short title and body in the space language, and a same-origin path to open. */

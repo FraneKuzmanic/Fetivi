@@ -318,6 +318,34 @@ describe('searchEvents', () => {
   });
 });
 
+describe('daily-tip seams', () => {
+  it('keeps only rainy-day places when asked', async () => {
+    const r = await searchPlaces(testDb.db, summer(), { rainyDay: true, limit: 10 }, SUMMER);
+    expect(titles(r)).toEqual(['Cathedral of St Lawrence']);
+  });
+
+  it('keeps events tagged with an interest, and none for an empty list', async () => {
+    const sights = await searchEvents(
+      testDb.db,
+      summer(),
+      { interests: ['food', 'sights'] },
+      SUMMER,
+    );
+    expect(sights?.results.map((e) => e.title)).toEqual(['[de] Trogir Summer of Culture']);
+    const beaches = await searchEvents(testDb.db, summer(), { interests: ['beaches'] }, SUMMER);
+    expect(beaches?.results).toEqual([]);
+    const none = await searchEvents(testDb.db, summer(), { interests: [] }, SUMMER);
+    expect(none?.results).toEqual([]);
+  });
+
+  it('counts no recommendation with record: false', async () => {
+    await testDb.db.delete(catalogRecommendations);
+    const r = await searchPlaces(testDb.db, summer(), { category: 'sight', record: false }, SUMMER);
+    expect(r?.results.length).toBeGreaterThan(0);
+    expect(await testDb.db.select().from(catalogRecommendations)).toEqual([]);
+  });
+});
+
 describe('listTransportNotes', () => {
   it('returns notes with their links as stored', async () => {
     const bus = await listTransportNotes(testDb.db, summer(), { mode: 'bus' }, SUMMER);

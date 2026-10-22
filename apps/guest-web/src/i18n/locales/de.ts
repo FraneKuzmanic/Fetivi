@@ -209,6 +209,13 @@ export const de: Messages = {
     checkOperator: 'Linienstatus bei {{operator}}',
     seeTrip: 'In Meine Reise ansehen',
     openGuide: 'Reiseführer öffnen',
+    tip_rain:
+      'Morgen, {{date}}, sieht es nach Regen aus. {{offer}} ist dann ein guter Ort{{distance}}.',
+    tip_event: 'Weil Sie so etwas mögen: {{offer}} findet morgen statt ({{date}}{{venue}}).',
+    tip_gap:
+      'Morgen, {{date}}, ist in Ihrem Plan noch frei. Wie wäre es mit {{offer}}{{distance}}? Fragen Sie mich, dann erzähle ich Ihnen mehr.',
+    tipDistance: ' ({{km}} km entfernt)',
+    tipVenue: ', {{venueName}}',
   },
   push: {
     offer: 'Auf diesem Handy benachrichtigen',
@@ -225,6 +232,13 @@ export const de: Messages = {
     saving: 'Wird gespeichert…',
     cancel: 'Nicht jetzt',
     sent: 'Schauen Sie in Ihr Postfach: Ich habe einen Link zur Bestätigung von {{email}} geschickt.',
+  },
+  unsubscribeTips: {
+    title: 'Tägliche Tipps',
+    working: 'Die täglichen Tipps werden abbestellt…',
+    done: 'Erledigt. Sie bekommen keine täglichen Tipps mehr per E-Mail. Alles andere bleibt, wie es war.',
+    invalid:
+      'Dieser Link funktioniert nicht. Sie können die Tipps in den Einstellungen abschalten.',
   },
   recovery: {
     ask: 'Fetivi schon auf einem anderen Handy genutzt? Link per E-Mail anfordern',

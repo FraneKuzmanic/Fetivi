@@ -101,6 +101,13 @@ export const hr: GuestCopy = {
       pushTitle: 'Obavijest Jadrolinije: linija {{lines}}',
       pushBody: '{{offer}}, {{date}}',
     },
+    daily_tip: {
+      subject: 'Savjet za sutra: {{offer}}',
+      // The rule's own lines (tipRules) are used instead.
+      lines: [],
+      pushTitle: 'Savjet za sutra',
+      pushBody: '{{offer}}',
+    },
   },
   warningLevels: { yellow: 'žuto', orange: 'narančasto', red: 'crveno' },
   warningTime: '{{from}} – {{to}}',
@@ -111,6 +118,20 @@ export const hr: GuestCopy = {
   sourceLine: 'Izvor: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Molimo napustite smještaj do {{checkoutTime}}.',
   reviewLine: 'Ako želite podijeliti kako vam je bilo, recenziju možete ostaviti na {{platform}}.',
+  tipRules: {
+    rain: [
+      'Sutra, {{date}}, izgleda da će padati kiša.',
+      '{{offer}} je dobro mjesto za takav dan{{distance}}.',
+    ],
+    event: ['Budući da volite ovakve stvari: {{offer}} je sutra, {{date}}{{venue}}.'],
+    gap: [
+      'Sutra, {{date}}, u vašem planu još nema ničega.',
+      'Što kažete na {{offer}}{{distance}}? Pitajte me i reći ću vam više.',
+    ],
+  },
+  tipDistance: ' ({{km}} km od vas)',
+  tipVenue: ', mjesto: {{venueName}}',
+  tipUnsubscribe: 'Primate jedan savjet dnevno jer ste to zatražili. Odjavite ih jednim klikom:',
   spaceEmails: {
     verify_email: {
       subject: 'Potvrdite svoju e-adresu za Fetivi',

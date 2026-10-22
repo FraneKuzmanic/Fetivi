@@ -10,6 +10,11 @@ export type Access = 'public' | 'space';
 declare module 'fastify' {
   interface FastifyContextConfig {
     access?: Access;
+    /**
+     * Skips the Origin check. Only for the RFC 8058 one-click unsubscribe POST, which mail
+     * providers send without an Origin; that route only ever turns tips off and needs an HMAC token.
+     */
+    anyOrigin?: boolean;
   }
   interface FastifyRequest {
     space: ResolvedSpace | null;
@@ -47,7 +52,7 @@ export function registerAccess(app: FastifyInstance, deps: AccessDeps): void {
 
   app.addHook('onRequest', async (request) => {
     request.space = null;
-    if (isApi(request.url) && isWrite(request.method)) {
+    if (isApi(request.url) && isWrite(request.method) && !request.routeOptions.config.anyOrigin) {
       if (request.headers.origin !== deps.appOrigin) throw new HttpError(403, 'bad-origin');
     }
   });

@@ -20,6 +20,7 @@ import {
 import { ORDER_STATUSES, PAYMENT_STATUSES } from '@fetivi/domain/order-vocabulary';
 import { PLAN_ITEM_KINDS } from '@fetivi/domain/plan-vocabulary';
 import { STAY_LIMITS } from '@fetivi/domain/stay-vocabulary';
+import { TIP_RECORD_KINDS, TIP_RULES } from '@fetivi/domain/tips-vocabulary';
 import { GUEST_LANGUAGES } from '@fetivi/domain/vocabulary';
 import {
   SKY_CODES,
@@ -322,6 +323,21 @@ const safetyFacts = z.discriminatedUnion('source', [
   }),
 ]);
 
+/** A daily tip's facts (`DailyTipFacts`): the catalog record picked for tomorrow. */
+const tipFacts = z.object({
+  rule: z.enum(TIP_RULES),
+  /** Civil date 'YYYY-MM-DD': tomorrow at send time. */
+  date: z.string(),
+  recordId: z.string(),
+  kind: z.enum(TIP_RECORD_KINDS),
+  /** In the space language at send time. */
+  title: z.string(),
+  /** Events only: 'YYYY-MM-DDTHH:mm' in the destination zone. */
+  startsAt: z.string().nullable(),
+  venueName: z.string().nullable(),
+  distanceKm: z.number().nullable(),
+});
+
 /**
  * An inbox message in the Chat: the host's reply, or a notice (an Order or Stay notification)
  * that the guest app words in the current language. Notices never reach the model.
@@ -351,6 +367,7 @@ export const inboxItem = z.discriminatedUnion('kind', [
     reviewPlatform: z.enum(CALENDAR_SOURCES).nullable().default(null),
     reviewUrl: z.string().url().nullable().default(null),
     safety: safetyFacts.nullable().default(null),
+    tip: tipFacts.nullable().default(null),
     at: z.string(),
   }),
 ]);

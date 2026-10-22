@@ -1,4 +1,5 @@
 import type { SpaceTokenPurpose } from '../../../spaces/vocabulary';
+import type { TipRule } from '../../../tips/vocabulary';
 import type { WarningLevel } from '../../../weather/vocabulary';
 import type { GuestNotificationKind } from '../vocabulary';
 
@@ -35,6 +36,14 @@ export interface GuestCopy {
   checkoutTimeLine: string;
   /** Added to the checkout email when the Stay came from a booking platform; neutral, no rating. */
   reviewLine: string;
+  /** A daily tip's email lines per rule; `{{distance}}` and `{{venue}}` are the fragments below. */
+  tipRules: Record<TipRule, string[]>;
+  /** Filled into `{{distance}}` when the tip has a distance, else left out. Starts with a space. */
+  tipDistance: string;
+  /** Filled into `{{venue}}` when an event tip has a venue, else left out. */
+  tipVenue: string;
+  /** Precedes the one-click unsubscribe link at the end of a daily-tip email. */
+  tipUnsubscribe: string;
   /** The verification and recovery mails: body lines, then the action label before the link. */
   spaceEmails: Record<SpaceTokenPurpose, { subject: string; lines: string[]; action: string }>;
   /** Precedes the app link at the end of every email. */

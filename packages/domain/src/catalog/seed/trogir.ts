@@ -92,6 +92,7 @@ export async function seedTrogir(
     description:
       "Trogir's Romanesque-Gothic cathedral on the main square. Its west portal, carved by Master Radovan in 1240, is one of the finest in Croatia.",
     location: point(43.5172, 16.2512),
+    rainyDay: true,
     fieldSources: textSources(TOURIST_BOARD),
   });
 
@@ -130,6 +131,7 @@ export async function seedTrogir(
     endsAt: fromLocalDateTime('2027-08-31T23:00', ZONE),
     venueName: 'Kamerlengo Fortress',
     location: point(43.5161, 16.2475),
+    interests: ['sights'],
     fieldSources: textSources(TOURIST_BOARD),
   });
 

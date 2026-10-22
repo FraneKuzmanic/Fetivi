@@ -7,6 +7,7 @@ import { registerAccess } from './access/plugin';
 import { accessRoutes } from './access/routes';
 import { chatRoutes } from './chat/routes';
 import { emailRoutes } from './email/routes';
+import { tipsUnsubscribeRoutes } from './email/unsubscribe';
 import { guideRoutes } from './guide/routes';
 import { registerErrorHandler } from './http-error';
 import { inboxRoutes } from './inbox/routes';
@@ -31,6 +32,8 @@ export interface AppDeps {
   trustProxy?: string | undefined;
   /** Guest token signing for the MCP servers; its public key is served as the JWKS. */
   tokens: TokenConfig;
+  /** Verifies the daily-tip unsubscribe links the jobs process mails; the same secret as jobs. */
+  guestLinkSecret: string;
   /** Sends jobs (the email and recovery mails) for the jobs process to work. */
   queue: JobQueue;
   /** Block media files, served to guests through /api/media. */
@@ -70,6 +73,7 @@ export function buildApp(deps: AppDeps) {
   app.register(planRoutes, { db, now, tools });
   app.register(inboxRoutes, { db, now });
   app.register(emailRoutes, { db, now, queue: deps.queue });
+  app.register(tipsUnsubscribeRoutes, { db, now, guestLinkSecret: deps.guestLinkSecret });
   app.register(recoveryRoutes, { db, now, queue: deps.queue });
   app.register(pushRoutes, { db, now, publicKey: deps.push?.publicKey ?? null });
   app.register(guideRoutes, { db, now, tools });

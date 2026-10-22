@@ -202,6 +202,13 @@ export const hr: Messages = {
     checkOperator: 'Stanje linija: {{operator}}',
     seeTrip: 'Pogledajte u Mojem putovanju',
     openGuide: 'Otvorite Vodič',
+    tip_rain:
+      'Sutra, {{date}}, izgleda da će padati kiša. {{offer}} je dobro mjesto za takav dan{{distance}}.',
+    tip_event: 'Budući da volite ovakve stvari: {{offer}} je sutra, {{date}}{{venue}}.',
+    tip_gap:
+      'Sutra, {{date}}, u vašem planu još nema ničega. Što kažete na {{offer}}{{distance}}? Pitajte me i reći ću vam više.',
+    tipDistance: ' ({{km}} km od vas)',
+    tipVenue: ', mjesto: {{venueName}}',
   },
   push: {
     offer: 'Obavijesti me na ovom mobitelu',
@@ -217,6 +224,12 @@ export const hr: Messages = {
     saving: 'Spremam…',
     cancel: 'Ne sada',
     sent: 'Provjerite poštu: poslao sam poveznicu za potvrdu adrese {{email}}.',
+  },
+  unsubscribeTips: {
+    title: 'Dnevni savjeti',
+    working: 'Isključujem dnevne savjete…',
+    done: 'Gotovo. Više vam neću slati dnevne savjete e-poštom. Sve ostalo ostaje kako je bilo.',
+    invalid: 'Ova poveznica ne radi. Savjete možete isključiti u Postavkama.',
   },
   recovery: {
     ask: 'Već ste koristili Fetivi na drugom mobitelu? Zatražite poveznicu e-poštom',

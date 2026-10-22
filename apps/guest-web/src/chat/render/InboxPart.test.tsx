@@ -29,6 +29,7 @@ const notice = (notification: Notice['notification'], safety: Safety): InboxItem
   reviewPlatform: null,
   reviewUrl: null,
   safety,
+  tip: null,
   at: '2026-10-14T10:00:00Z',
 });
 
@@ -101,5 +102,68 @@ describe('InboxPart safety notices', () => {
   it('says a booking stands unless the provider cancels it', () => {
     const out = html(notice('ferry_disruption', ferry('o-1')));
     expect(out).toContain('Your booking stays as it is unless the provider cancels it.');
+  });
+});
+
+type Tip = NonNullable<Notice['tip']>;
+
+const tipNotice = (over: Partial<Tip>): InboxItem => ({
+  ...(notice('daily_tip', null as unknown as Safety) as Notice),
+  safety: null,
+  tip: {
+    rule: 'gap',
+    date: '2026-10-15',
+    recordId: 'r-1',
+    kind: 'place',
+    title: 'Cathedral of St Lawrence',
+    startsAt: null,
+    venueName: null,
+    distanceKm: null,
+    ...over,
+  },
+});
+
+describe('InboxPart daily tips', () => {
+  it('words a rain tip with the place, tomorrow and its distance', () => {
+    const out = html(tipNotice({ rule: 'rain', distanceKm: 1.24 }));
+    expect(out).toContain('It looks like rain tomorrow, Oct 15, 2026.');
+    expect(out).toContain('Cathedral of St Lawrence is a good place to spend it (1.2 km away).');
+    expect(out).toContain('class="bubble fetivi notice"');
+  });
+
+  it('words an event tip with its time when it starts tomorrow, and the venue', () => {
+    const out = html(
+      tipNotice({
+        rule: 'event',
+        kind: 'event',
+        title: 'Trogir Summer of Culture',
+        startsAt: '2026-10-15T20:00',
+        venueName: 'Kamerlengo Fortress',
+      }),
+    );
+    expect(out).toContain('Trogir Summer of Culture is on tomorrow, Oct 15, 2026');
+    expect(out).toContain('8:00');
+    expect(out).toContain(', at Kamerlengo Fortress.');
+  });
+
+  it('shows only the date for an event already running', () => {
+    const out = html(
+      tipNotice({ rule: 'event', kind: 'event', startsAt: '2026-07-01T20:00', venueName: null }),
+    );
+    expect(out).toContain('is on tomorrow, Oct 15, 2026.');
+    expect(out).not.toContain('8:00');
+  });
+
+  it('words a gap tip as an invitation to ask, with no link out of the Chat', () => {
+    const out = html(tipNotice({ rule: 'gap' }));
+    expect(out).toContain('Tomorrow, Oct 15, 2026, is still free in your plan.');
+    expect(out).toContain(
+      'How about Cathedral of St Lawrence? Ask me and I&#x27;ll tell you more.',
+    );
+    expect(out).not.toContain('<a ');
+  });
+
+  it('shows nothing for a tip notice without its facts', () => {
+    expect(html({ ...(tipNotice({}) as Notice), tip: null })).toBe('');
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DisruptionAlertFacts, WarningAlertFacts } from '../../alerts/vocabulary';
+import type { DailyTipFacts } from '../../tips/vocabulary';
 import { guestNotificationKey } from './enqueue';
 
 const SPACE = '00000000-0000-4000-8000-000000000001';
@@ -64,5 +65,47 @@ describe('guestNotificationKey for safety alerts', () => {
       guestNotificationKey({ kind: 'ferry_disruption', spaceId: SPACE, safety: WARNING }),
     ).toThrow();
     expect(() => guestNotificationKey({ kind: 'weather_warning', safety: WARNING })).toThrow();
+  });
+});
+
+describe('guestNotificationKey for daily tips', () => {
+  const TIP: DailyTipFacts = {
+    rule: 'rain',
+    date: '2027-07-11',
+    recordId: 'r1',
+    kind: 'place',
+    title: 'Cathedral',
+    startsAt: null,
+    venueName: null,
+    distanceKm: 1.2,
+  };
+
+  it('keys a tip by space and send day only, whatever rule or record it picked', () => {
+    const key = guestNotificationKey({
+      kind: 'daily_tip',
+      spaceId: SPACE,
+      sendDate: '2027-07-10',
+      tip: TIP,
+    });
+    expect(key).toBe(`space:${SPACE}:daily_tip:2027-07-10`);
+    const other = { ...TIP, rule: 'gap' as const, recordId: 'r2', title: 'Pantan' };
+    expect(
+      guestNotificationKey({
+        kind: 'daily_tip',
+        spaceId: SPACE,
+        sendDate: '2027-07-10',
+        tip: other,
+      }),
+    ).toBe(key);
+  });
+
+  it('throws without the facts, the space or the send day', () => {
+    expect(() =>
+      guestNotificationKey({ kind: 'daily_tip', spaceId: SPACE, sendDate: '2027-07-10' }),
+    ).toThrow();
+    expect(() => guestNotificationKey({ kind: 'daily_tip', spaceId: SPACE, tip: TIP })).toThrow();
+    expect(() =>
+      guestNotificationKey({ kind: 'daily_tip', sendDate: '2027-07-10', tip: TIP }),
+    ).toThrow();
   });
 });
