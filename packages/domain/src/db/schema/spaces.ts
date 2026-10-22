@@ -1,4 +1,5 @@
 import { bigint, index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { SPACE_TOKEN_PURPOSES } from '../../spaces/vocabulary';
 import { properties } from './properties';
 import { stays } from './stays';
 import { guestLanguage } from './translations';
@@ -37,7 +38,7 @@ export const spaces = pgTable(
 
 export type SpaceRow = typeof spaces.$inferSelect;
 
-export const spaceTokenPurpose = pgEnum('space_token_purpose', ['verify_email', 'recover']);
+export const spaceTokenPurpose = pgEnum('space_token_purpose', SPACE_TOKEN_PURPOSES);
 
 /** Single-use emailed links for a Space; they go with the Space. */
 export const spaceTokens = pgTable(

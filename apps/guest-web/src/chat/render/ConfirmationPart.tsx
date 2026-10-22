@@ -33,6 +33,7 @@ export function ConfirmationPart({
   // The email the guest already gave starts the card; it stays required and editable.
   const known = useEmail().state?.email;
   const parsed = useMemo(() => elicitationPayload.safeParse(data), [data]);
+  const initialValues = useMemo(() => (known ? { email: known } : undefined), [known]);
   if (!parsed.success || parsed.data.draft === null) return null;
   const { draft, requestedSchema, toolName, toolCallId } = parsed.data;
   const required = requestedSchema.required ?? [];
@@ -42,15 +43,13 @@ export function ConfirmationPart({
   }));
   return (
     <ConfirmationCard
-      // The form starts from `initialValues` once; an email read after the card showed restarts it.
-      key={known ?? ''}
       draft={draft}
       fields={fields}
       state={state}
       onConfirm={(content) => onAnswer({ toolName, toolCallId, action: 'accept', content })}
       onCancel={() => onAnswer({ toolName, toolCallId, action: 'cancel' })}
       labels={confirmationLabels(t, i18n.language)}
-      initialValues={known ? { email: known } : undefined}
+      initialValues={initialValues}
     />
   );
 }

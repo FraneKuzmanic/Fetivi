@@ -220,9 +220,10 @@ export const fr: Messages = {
     sending: 'Envoi…',
     sent: 'Si cet e-mail est lié à un Fetivi ici, je vous ai envoyé un lien. Il est valable 1 heure.',
     title: 'Bon retour',
-    welcome: 'Bon retour ! Touchez ci-dessous pour ouvrir votre Fetivi sur cet appareil.',
+    welcome: 'Touchez ci-dessous pour ouvrir votre Fetivi sur cet appareil.',
     open: 'Ouvrir mon Fetivi',
     opening: 'Ouverture…',
+    expiredTitle: 'Ce lien ne fonctionne plus',
     expired:
       'Ce lien a expiré ou a déjà été utilisé. Demandez-en un nouveau sur l’écran du code PIN ou dans les Réglages.',
     verifyTitle: 'Votre e-mail',
@@ -244,7 +245,7 @@ export const fr: Messages = {
     tips: 'Un conseil local par jour par e-mail',
     deviceTitle: 'Ouvrir sur un autre appareil',
     deviceIntro:
-      'Je vous enverrai par e-mail un lien qui ouvre votre conversation et vos réservations sur un autre téléphone ou ordinateur. Cet appareil sera alors déconnecté de Fetivi.',
+      'Je vous enverrai par e-mail un lien qui ouvre votre conversation et vos réservations sur un autre téléphone ou ordinateur. Dès que vous l’ouvrez là-bas, cet appareil est déconnecté de Fetivi.',
     sendLink: 'M’envoyer un lien',
     linkSent: 'Envoyé. Regardez votre boîte mail ; le lien est valable 1 heure.',
   },

@@ -213,9 +213,10 @@ export const en = {
     sending: 'Sending…',
     sent: "If this email is linked to a Fetivi here, I've sent a link. It works for 1 hour.",
     title: 'Welcome back',
-    welcome: 'Welcome back! Tap below to open your Fetivi on this device.',
+    welcome: 'Tap below to open your Fetivi on this device.',
     open: 'Open my Fetivi',
     opening: 'Opening…',
+    expiredTitle: 'This link no longer works',
     expired:
       'This link has expired or was already used. Ask for a new one on the PIN screen or in Settings.',
     verifyTitle: 'Your email',
@@ -236,7 +237,7 @@ export const en = {
     tips: 'One local tip a day by email',
     deviceTitle: 'Open on another device',
     deviceIntro:
-      "I'll email you a link that opens your chat and bookings on another phone or computer. This device will then sign out of Fetivi.",
+      "I'll email you a link that opens your chat and bookings on another phone or computer. When you open it there, this device signs out of Fetivi.",
     sendLink: 'Email me a link',
     linkSent: 'Sent. Check your inbox; the link works for 1 hour.',
   },

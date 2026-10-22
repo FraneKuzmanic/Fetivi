@@ -1,4 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { spaces, spaceTokens } from '../db/schema/spaces';
 import { QUEUES } from '../jobs/queue';
@@ -155,5 +157,22 @@ describe('verifySpaceEmail', () => {
     await expect(verifySpaceEmail(testDb.db, token, NOW)).rejects.toMatchObject({
       code: 'invalid-token',
     });
+  });
+});
+
+describe('migration 0030', () => {
+  it('counts an email given before verification existed as verified, and nothing else', async () => {
+    const before = await seedGuestUnit(testDb.db, { now: NOW });
+    const without = await seedGuestUnit(testDb.db, { now: NOW });
+    await testDb.db
+      .update(spaces)
+      .set({ email: 'old@example.test', emailOptInAt: NOW, emailVerifiedAt: null })
+      .where(eq(spaces.id, before.spaceId));
+    const file = fileURLToPath(
+      new URL('../../drizzle/0030_space_email_verified_backfill.sql', import.meta.url),
+    );
+    await testDb.db.execute(sql.raw(await readFile(file, 'utf8')));
+    expect((await spaceRow(before.spaceId)).emailVerifiedAt).toEqual(NOW);
+    expect((await spaceRow(without.spaceId)).emailVerifiedAt).toBeNull();
   });
 });

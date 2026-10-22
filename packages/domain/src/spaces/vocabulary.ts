@@ -12,6 +12,12 @@ export const DEVICE_COOKIE = '__Host-fetivi_device';
 /** The space cookie lives until `closed_at` plus this many days (the read-only period). */
 export const SPACE_READ_ONLY_DAYS = 30;
 
+export const SPACE_READ_ONLY_MS = SPACE_READ_ONLY_DAYS * DAY;
+
+/** The end of the read-only period: the cookie, recovery mails and restores all stop here. */
+export const readOnlyEndsAt = (closedAt: Date): Date =>
+  new Date(closedAt.getTime() + SPACE_READ_ONLY_MS);
+
 /**
  * Failures-only PIN limits. Per key: `free` failures in the window are not delayed; after that
  * each attempt waits `base * 2^(failures - free)` from the latest failure, capped at `cap`.
@@ -28,7 +34,8 @@ export const PIN_LIMITS = {
 } as const;
 
 /** What an emailed Space link does. */
-export type SpaceTokenPurpose = 'verify_email' | 'recover';
+export const SPACE_TOKEN_PURPOSES = ['verify_email', 'recover'] as const;
+export type SpaceTokenPurpose = (typeof SPACE_TOKEN_PURPOSES)[number];
 
 /** A verification link works for a day. */
 export const SPACE_VERIFY_TTL_MS = DAY;

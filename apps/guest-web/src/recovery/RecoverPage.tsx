@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ApiError } from '../api';
 import { MascotSays } from '../shell/Mascot';
 import { useSpace } from '../space';
@@ -13,7 +13,7 @@ import { restore } from './recovery-api';
 export function RecoverPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { setSpace } = useSpace();
+  const { state, setSpace } = useSpace();
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const heading = useRef<HTMLHeadingElement>(null);
@@ -40,19 +40,29 @@ export function RecoverPage() {
     <main className="access">
       <p className="access-brand">Fetivi</p>
       <h1 ref={heading} tabIndex={-1}>
-        {t('recovery.title')}
+        {t(problem === 'expired' ? 'recovery.expiredTitle' : 'recovery.title')}
       </h1>
       {problem === 'expired' ? (
-        <MascotSays>{t('recovery.expired')}</MascotSays>
+        <>
+          <MascotSays>{t('recovery.expired')}</MascotSays>
+          {state.status === 'ready' && (
+            <Link to="/chat" className="button block">
+              {t('recovery.backToChat')}
+            </Link>
+          )}
+        </>
       ) : (
         <>
           <MascotSays>{t('recovery.welcome')}</MascotSays>
-          <p className="message" role="status">
-            {problem === 'network' ? t('error.network') : ''}
-          </p>
-          <button type="button" className="button block" onClick={open} disabled={busy}>
-            {t(busy ? 'recovery.opening' : 'recovery.open')}
-          </button>
+          {/* One block, so the empty status line adds no gap above the button. */}
+          <div className="recover-actions">
+            <p className="message" role="status">
+              {problem === 'network' ? t('error.network') : ''}
+            </p>
+            <button type="button" className="button block" onClick={open} disabled={busy}>
+              {t(busy ? 'recovery.opening' : 'recovery.open')}
+            </button>
+          </div>
         </>
       )}
     </main>

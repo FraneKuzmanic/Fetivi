@@ -1,8 +1,24 @@
 import { EnvelopeSimple } from '@phosphor-icons/react';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ApiError } from '../api';
 import { isEmail } from '../email/email-api';
 import { requestRecoveryAt } from './recovery-api';
+
+type Problem = 'invalid' | 'link' | 'network';
+
+const PROBLEM_KEYS = {
+  invalid: 'order.invalidEmail',
+  link: 'link.notFound',
+  network: 'error.network',
+} as const satisfies Record<Problem, string>;
+
+/** A 400 is an email the server refused; a 404 is a unit link that stopped working. */
+function problemOf(error: unknown): Problem {
+  if (error instanceof ApiError && error.status === 400) return 'invalid';
+  if (error instanceof ApiError && error.status === 404) return 'link';
+  return 'network';
+}
 
 /**
  * Under the PIN: a guest who used Fetivi on another phone asks for a link by email. The answer
@@ -15,7 +31,7 @@ export function RecoveryRequest({ slug }: { slug: string }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<'invalid' | 'network' | null>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
@@ -36,8 +52,8 @@ export function RecoveryRequest({ slug }: { slug: string }) {
     try {
       await requestRecoveryAt(slug, value);
       setSent(true);
-    } catch {
-      setProblem('network');
+    } catch (error) {
+      setProblem(problemOf(error));
     } finally {
       setBusy(false);
     }
@@ -74,7 +90,7 @@ export function RecoveryRequest({ slug }: { slug: string }) {
       />
       {problem && (
         <p id={messageId} className="message">
-          {t(problem === 'invalid' ? 'order.invalidEmail' : 'error.network')}
+          {t(PROBLEM_KEYS[problem])}
         </p>
       )}
       <p className="status" role="status">

@@ -11,8 +11,9 @@ import { spaceCookieOptions } from '../access/cookies';
 import { spaceOf } from '../access/plugin';
 import { spaceView } from '../access/routes';
 import { slugParams } from '../access/schemas';
-import { spaceRule } from '../email/routes';
-import { recoveryRequestBody, restoreBody } from './schemas';
+import { tokenBody } from '../email/schemas';
+import { spaceRule } from '../http-error';
+import { recoveryRequestBody } from './schemas';
 
 export interface RecoveryRouteDeps {
   db: Db;
@@ -48,7 +49,7 @@ export const recoveryRoutes: FastifyPluginAsync<RecoveryRouteDeps> = async (app,
   });
 
   app.post('/api/recovery/restore', { config: { access: 'public' } }, async (request, reply) => {
-    const { token } = restoreBody.parse(request.body);
+    const { token } = tokenBody.parse(request.body);
     const at = now();
     const restored = await spaceRule(() => restoreSpace(db, { token, now: at }));
     reply.setCookie(

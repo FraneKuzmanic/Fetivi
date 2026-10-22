@@ -1202,9 +1202,18 @@ input {
 }
 
 .recovery-ask {
-  align-self: flex-start;
-  justify-content: flex-start;
-  text-align: start;
+  align-self: center;
+  text-align: center;
+}
+
+.recovery-ask svg {
+  flex-shrink: 0;
+}
+
+.recover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .settings {

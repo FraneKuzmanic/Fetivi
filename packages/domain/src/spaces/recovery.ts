@@ -2,16 +2,14 @@ import { and, desc, eq, gt, isNotNull, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { pushSubscriptions } from '../db/schema/notifications';
 import { units } from '../db/schema/properties';
-import { type SpaceRow, spaces, spaceTokens } from '../db/schema/spaces';
+import { type SpaceRow, spaces } from '../db/schema/spaces';
 import { stays } from '../db/schema/stays';
 import type { JobQueue } from '../jobs/queue';
 import { hashToken, newToken } from '../tokens';
-import { normaliseSpaceEmail } from './email';
-import { enqueueSpaceEmail } from './mail';
+import { normaliseSpaceEmail, requireOptIn } from './email';
+import { enqueueSpaceEmail, spendSpaceToken } from './mail';
 import { findUnitBySlug, SpaceRuleError } from './store';
-import { SPACE_READ_ONLY_DAYS } from './vocabulary';
-
-const READ_ONLY_MS = SPACE_READ_ONLY_DAYS * 24 * 60 * 60_000;
+import { readOnlyEndsAt, SPACE_READ_ONLY_MS } from './vocabulary';
 
 /**
  * A recovery request from a unit's PIN screen. Queues a link for the latest-created opted-in
@@ -34,7 +32,7 @@ export async function requestRecoveryBySlug(
         eq(stays.unitId, unit.unitId),
         eq(spaces.email, normaliseSpaceEmail(input.email)),
         isNotNull(spaces.emailOptInAt),
-        gt(spaces.closedAt, new Date(input.now.getTime() - READ_ONLY_MS)),
+        gt(spaces.closedAt, new Date(input.now.getTime() - SPACE_READ_ONLY_MS)),
       ),
     )
     .orderBy(desc(spaces.createdAt))
@@ -52,12 +50,7 @@ export async function requestRecoveryForSpace(
   input: { spaceId: string },
 ): Promise<void> {
   await db.transaction(async (tx) => {
-    const [row] = await tx
-      .select({ email: spaces.email, optedIn: spaces.emailOptInAt })
-      .from(spaces)
-      .where(eq(spaces.id, input.spaceId));
-    if (!row) throw new SpaceRuleError('not-found');
-    if (!row.email || !row.optedIn) throw new SpaceRuleError('no-email');
+    await requireOptIn(tx, input.spaceId);
     await enqueueSpaceEmail(tx, queue, { purpose: 'recover', spaceId: input.spaceId });
   });
 }
@@ -81,17 +74,7 @@ export async function restoreSpace(
 ): Promise<RestoredSpace> {
   const { now } = input;
   return db.transaction(async (tx) => {
-    const [used] = await tx
-      .delete(spaceTokens)
-      .where(
-        and(
-          eq(spaceTokens.tokenHash, hashToken(input.token)),
-          eq(spaceTokens.purpose, 'recover'),
-          gt(spaceTokens.expiresAt, now),
-        ),
-      )
-      .returning({ spaceId: spaceTokens.spaceId, email: spaceTokens.email });
-    if (!used) throw new SpaceRuleError('invalid-token');
+    const used = await spendSpaceToken(tx, { token: input.token, purpose: 'recover', now });
 
     const [found] = await tx
       .select({ closedAt: spaces.closedAt, unitSlug: units.qrSlug })
@@ -100,7 +83,7 @@ export async function restoreSpace(
       .innerJoin(units, eq(units.id, stays.unitId))
       .where(eq(spaces.id, used.spaceId))
       .for('update', { of: spaces });
-    if (!found?.unitSlug || now.getTime() >= found.closedAt.getTime() + READ_ONLY_MS) {
+    if (!found?.unitSlug || now >= readOnlyEndsAt(found.closedAt)) {
       throw new SpaceRuleError('invalid-token');
     }
 
@@ -116,9 +99,6 @@ export async function restoreSpace(
       .where(eq(spaces.id, used.spaceId))
       .returning();
     if (!space) throw new SpaceRuleError('invalid-token');
-    await tx
-      .delete(spaceTokens)
-      .where(and(eq(spaceTokens.spaceId, space.id), eq(spaceTokens.purpose, 'recover')));
     await tx.delete(pushSubscriptions).where(eq(pushSubscriptions.spaceId, space.id));
     return { space, unitSlug: found.unitSlug, closed: now >= space.closedAt, cookieToken };
   });

@@ -212,6 +212,43 @@ describe('ConfirmationCard', () => {
     });
   });
 
+  it('fills a value that arrives late without losing what was typed', () => {
+    const card = (initialValues?: { email: string }) => (
+      <ConfirmationCard
+        draft={DRAFT}
+        fields={FIELDS}
+        state="open"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        labels={CARD}
+        initialValues={initialValues}
+      />
+    );
+    mount(card());
+    type(input('name'), 'Ana');
+    act(() => root?.render(card({ email: 'guest@example.test' })));
+    expect(input('name').value).toBe('Ana');
+    expect(input('email').value).toBe('guest@example.test');
+  });
+
+  it('never overwrites an email the guest typed', () => {
+    const card = (initialValues?: { email: string }) => (
+      <ConfirmationCard
+        draft={DRAFT}
+        fields={FIELDS}
+        state="open"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        labels={CARD}
+        initialValues={initialValues}
+      />
+    );
+    mount(card());
+    type(input('email'), 'mine@example.test');
+    act(() => root?.render(card({ email: 'guest@example.test' })));
+    expect(input('email').value).toBe('mine@example.test');
+  });
+
   it('skips an empty optional field', () => {
     const onConfirm = vi.fn();
     mount(

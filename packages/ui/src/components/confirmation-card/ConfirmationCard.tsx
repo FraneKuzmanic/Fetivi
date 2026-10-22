@@ -1,5 +1,5 @@
 import type { PaymentMode, PriceUnit } from '@fetivi/domain/offer-vocabulary';
-import { type FormEvent, useId, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import type { OrderDraft } from '../../payloads';
 
 export type ContactField = 'email' | 'name' | 'phone';
@@ -60,13 +60,27 @@ export function ConfirmationCard({
   onConfirm: (content: Record<string, string>) => void;
   onCancel: () => void;
   labels: ConfirmationCardLabels;
-  /** Values the form starts with, such as the email the guest already gave; still editable. */
+  /**
+   * Values the form starts with, such as the email the guest already gave; still editable. One
+   * that arrives later fills its field only while the field is empty, so typing is never lost.
+   */
   initialValues?: Partial<Record<ContactField, string>>;
 }) {
   const id = useId();
   const form = useRef<HTMLFormElement>(null);
   const [values, setValues] = useState<Record<string, string>>(() => ({ ...initialValues }));
   const [errors, setErrors] = useState<readonly ContactField[]>([]);
+
+  useEffect(() => {
+    if (!initialValues) return;
+    setValues((current) => {
+      const filled = { ...current };
+      for (const [name, value] of Object.entries(initialValues)) {
+        if (value && !current[name]) filled[name] = value;
+      }
+      return filled;
+    });
+  }, [initialValues]);
   const sending = state === 'sending';
   const headingId = `${id}-heading`;
 

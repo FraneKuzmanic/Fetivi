@@ -22,6 +22,7 @@ The cookie holds a random token whose hash is `spaces.token_hash`; `resolveSpace
 
 ## Consequences
 
-- A guest can only be on one device at a time; Settings says that sending a link signs this device out.
+- A guest can only be on one device at a time; Settings says that opening the link on the other device signs this one out.
+- Updates other than Order mails go only to a verified email. Emails given on an Order card before this ticket never got a confirmation link, so migration 0030 counts them as verified from their opt-in time rather than silently stopping their updates.
 - The lookup by cookie hash stays as it is.
 - Ticket 45's retention deletes `space_tokens` with the Space.

@@ -97,6 +97,19 @@ describe('RecoveryRequest', () => {
       "If this email is linked to a Fetivi here, I've sent a link. It works for 1 hour.",
     );
   });
+
+  it.each([
+    [400, 'Enter an email address, like name@example.com.'],
+    [404, "This link doesn't work. Scan the QR code in the apartment again."],
+    [500, 'No connection. Check your internet and try again.'],
+  ])('says what went wrong on a %i', async (status, message) => {
+    server({ '/api/access/abc/recovery': () => json({ error: 'x' }, status) });
+    await mount(<RecoveryRequest slug="abc" />, '/u/abc');
+    await act(async () => button('Get a link by email')?.click());
+    type(host.querySelector('input[name="email"]') as HTMLInputElement, 'ana@example.test');
+    await act(async () => button('Send link')?.click());
+    expect(host.querySelector('.message')?.textContent).toBe(message);
+  });
 });
 
 describe('RecoverPage', () => {
@@ -115,8 +128,16 @@ describe('RecoverPage', () => {
     server({ '/api/recovery/restore': () => json({ error: 'invalid-token' }, 400) });
     await mount(<RecoverPage />, `/recover?token=${TOKEN}`);
     await act(async () => button('Open my Fetivi')?.click());
+    expect(host.querySelector('h1')?.textContent).toBe('This link no longer works');
     expect(host.textContent).toContain('This link has expired or was already used.');
     expect(button('Open my Fetivi')).toBeUndefined();
+    expect(host.querySelector('a[href="/chat"]')).toBeNull();
+  });
+
+  it('offers the way back to a Space this device still has', async () => {
+    server({});
+    await mount(<RecoverPage />, '/recover', { status: 'ready', space: SPACE });
+    expect(host.querySelector('a[href="/chat"]')).not.toBeNull();
   });
 
   it('says the same without a token', async () => {

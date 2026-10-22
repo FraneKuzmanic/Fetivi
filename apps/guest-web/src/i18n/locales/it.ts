@@ -218,9 +218,10 @@ export const it: Messages = {
     sending: 'Invio…',
     sent: 'Se questa email è collegata a un Fetivi qui, ti ho inviato un link. Vale 1 ora.',
     title: 'Bentornato',
-    welcome: 'Bentornato! Tocca qui sotto per aprire il tuo Fetivi su questo dispositivo.',
+    welcome: 'Tocca qui sotto per aprire il tuo Fetivi su questo dispositivo.',
     open: 'Apri il mio Fetivi',
     opening: 'Apertura…',
+    expiredTitle: 'Questo link non funziona più',
     expired:
       'Questo link è scaduto o è già stato usato. Chiedine uno nuovo dalla schermata del PIN o nelle Impostazioni.',
     verifyTitle: 'La tua email',
@@ -241,7 +242,7 @@ export const it: Messages = {
     tips: 'Un consiglio locale al giorno via email',
     deviceTitle: 'Apri su un altro dispositivo',
     deviceIntro:
-      'Ti manderò via email un link che apre la chat e le prenotazioni su un altro telefono o computer. Questo dispositivo uscirà poi da Fetivi.',
+      'Ti manderò via email un link che apre la chat e le prenotazioni su un altro telefono o computer. Quando lo apri lì, questo dispositivo esce da Fetivi.',
     sendLink: 'Mandami un link',
     linkSent: 'Inviato. Controlla la posta; il link vale 1 ora.',
   },

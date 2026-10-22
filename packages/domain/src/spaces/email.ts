@@ -1,9 +1,8 @@
-import { and, eq, gt, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { Db, Executor } from '../db/client';
 import { spaces, spaceTokens } from '../db/schema/spaces';
 import type { JobQueue } from '../jobs/queue';
-import { hashToken } from '../tokens';
-import { enqueueSpaceEmail } from './mail';
+import { enqueueSpaceEmail, spendSpaceToken } from './mail';
 import { SpaceRuleError } from './store';
 
 /** Stored trimmed and lower-case, so the same address typed twice is one address. */
@@ -71,7 +70,8 @@ export async function spaceEmailState(db: Executor, spaceId: string): Promise<Sp
   return { email, verified: email !== null && row.verified !== null, tips: row.tips !== null };
 }
 
-async function requireOptIn(tx: Executor, spaceId: string) {
+/** Locks the Space's row; `no-email` unless it has an opted-in email. */
+export async function requireOptIn(tx: Executor, spaceId: string) {
   const [row] = await tx
     .select({ email: spaces.email, optedIn: spaces.emailOptInAt, verified: spaces.emailVerifiedAt })
     .from(spaces)
@@ -116,23 +116,10 @@ export async function resendVerification(db: Db, queue: JobQueue, spaceId: strin
  */
 export async function verifySpaceEmail(db: Db, token: string, now: Date): Promise<void> {
   await db.transaction(async (tx) => {
-    const [row] = await tx
-      .delete(spaceTokens)
-      .where(
-        and(
-          eq(spaceTokens.tokenHash, hashToken(token)),
-          eq(spaceTokens.purpose, 'verify_email'),
-          gt(spaceTokens.expiresAt, now),
-        ),
-      )
-      .returning({ spaceId: spaceTokens.spaceId, email: spaceTokens.email });
-    if (!row) throw new SpaceRuleError('invalid-token');
+    const used = await spendSpaceToken(tx, { token, purpose: 'verify_email', now });
     await tx
       .update(spaces)
       .set({ emailVerifiedAt: sql`coalesce(${spaces.emailVerifiedAt}, ${now})`, updatedAt: now })
-      .where(and(eq(spaces.id, row.spaceId), eq(spaces.email, row.email)));
-    await tx
-      .delete(spaceTokens)
-      .where(and(eq(spaceTokens.spaceId, row.spaceId), eq(spaceTokens.purpose, 'verify_email')));
+      .where(and(eq(spaces.id, used.spaceId), eq(spaces.email, used.email)));
   });
 }

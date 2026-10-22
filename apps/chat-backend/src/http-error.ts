@@ -1,3 +1,4 @@
+import { SpaceRuleError } from '@fetivi/domain';
 import type { FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
 
@@ -29,6 +30,18 @@ export class HttpError extends Error {
     readonly extra: Record<string, unknown> = {},
   ) {
     super(code);
+  }
+}
+
+/** Maps the Space rules the email and recovery routes share to HTTP answers. */
+export async function spaceRule<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (!(error instanceof SpaceRuleError)) throw error;
+    if (error.code === 'invalid-token') throw new HttpError(400, 'invalid-token');
+    if (error.code === 'no-email') throw new HttpError(409, 'no-email');
+    throw new HttpError(404, 'not-found');
   }
 }
 

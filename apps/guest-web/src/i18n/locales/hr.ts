@@ -214,9 +214,10 @@ export const hr: Messages = {
     sending: 'Šaljem…',
     sent: 'Ako je ova e-pošta povezana s Fetivijem ovdje, poslao sam poveznicu. Vrijedi 1 sat.',
     title: 'Dobro došli natrag',
-    welcome: 'Dobro došli natrag! Dodirnite ispod da otvorite svoj Fetivi na ovom uređaju.',
+    welcome: 'Dodirnite ispod da otvorite svoj Fetivi na ovom uređaju.',
     open: 'Otvori moj Fetivi',
     opening: 'Otvaram…',
+    expiredTitle: 'Ova poveznica više ne radi',
     expired:
       'Ova je poveznica istekla ili je već iskorištena. Zatražite novu na zaslonu za PIN ili u Postavkama.',
     verifyTitle: 'Vaša e-pošta',
@@ -237,7 +238,7 @@ export const hr: Messages = {
     tips: 'Jedan lokalni savjet dnevno e-poštom',
     deviceTitle: 'Otvori na drugom uređaju',
     deviceIntro:
-      'Poslat ću vam e-poštom poveznicu koja otvara vaš razgovor i rezervacije na drugom mobitelu ili računalu. Ovaj će se uređaj tada odjaviti iz Fetivija.',
+      'Poslat ću vam e-poštom poveznicu koja otvara vaš razgovor i rezervacije na drugom mobitelu ili računalu. Kad je tamo otvorite, ovaj će se uređaj odjaviti iz Fetivija.',
     sendLink: 'Pošalji mi poveznicu',
     linkSent: 'Poslano. Provjerite poštu; poveznica vrijedi 1 sat.',
   },

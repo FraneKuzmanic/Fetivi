@@ -139,6 +139,8 @@ export function ChatView({
   const lastRequest = useRef<'text' | 'answer'>('text');
   // A tap on its way: once it is answered the card is gone, and focus must not fall to the page.
   const answering = useRef(false);
+  // The answer gave an email: once it is through, the Space may have its email.
+  const gaveEmail = useRef(false);
   const wasBusy = useRef(false);
   // What a failed answer left, read from the reloaded history; gone once the guest acts again.
   const [notice, setNotice] = useState(() =>
@@ -177,6 +179,7 @@ export function ChatView({
       setNotice(null);
       lastRequest.current = 'answer';
       answering.current = true;
+      gaveEmail.current = action === 'accept' && Boolean(content?.email);
       const output: GuestAnswerOutput = {
         kind: 'guest-answer',
         nonce: crypto.randomUUID(),
@@ -212,8 +215,7 @@ export function ChatView({
     wasBusy.current = busy;
     if (!was || busy || !answering.current) return;
     answering.current = false;
-    // A confirmed card may have given the Space its email.
-    if (status === 'ready') refreshEmail();
+    if (status === 'ready' && gaveEmail.current) refreshEmail();
     if (status === 'ready' && !asksToConfirm(messages.at(-1))) focusComposer();
   }, [busy, status, messages, focusComposer, refreshEmail]);
 

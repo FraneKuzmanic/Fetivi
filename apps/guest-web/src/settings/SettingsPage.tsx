@@ -5,7 +5,7 @@ import { resendVerification, setTips } from '../email/email-api';
 import { requestRecovery } from '../recovery/recovery-api';
 import { useSpace } from '../space';
 
-type Sent = 'idle' | 'busy' | 'sent' | 'failed';
+type RequestStatus = 'idle' | 'busy' | 'sent' | 'failed';
 
 /**
  * The Space's email and how to open it on another device. The email is shown, never asked for
@@ -17,15 +17,15 @@ export function SettingsPage() {
   const closed = space.status === 'ready' ? space.space.closed : true;
   const { state, set } = useEmail();
   const heading = useRef<HTMLHeadingElement>(null);
-  const [resend, setResend] = useState<Sent>('idle');
-  const [link, setLink] = useState<Sent>('idle');
+  const [resend, setResend] = useState<RequestStatus>('idle');
+  const [linkRequest, setLinkRequest] = useState<RequestStatus>('idle');
   const [tipsFailed, setTipsFailed] = useState(false);
 
   useEffect(() => {
     heading.current?.focus();
   }, []);
 
-  const send = async (run: () => Promise<void>, update: (s: Sent) => void) => {
+  const send = async (run: () => Promise<void>, update: (s: RequestStatus) => void) => {
     update('busy');
     try {
       await run();
@@ -103,13 +103,17 @@ export function SettingsPage() {
         <button
           type="button"
           className="button settings-action"
-          disabled={!email || link === 'busy'}
-          onClick={() => send(requestRecovery, setLink)}
+          disabled={!email || linkRequest === 'busy'}
+          onClick={() => send(requestRecovery, setLinkRequest)}
         >
           {t('settings.sendLink')}
         </button>
         <p className="status" role="status">
-          {link === 'sent' ? t('settings.linkSent') : link === 'failed' ? t('error.network') : ''}
+          {linkRequest === 'sent'
+            ? t('settings.linkSent')
+            : linkRequest === 'failed'
+              ? t('error.network')
+              : ''}
         </p>
       </section>
     </section>

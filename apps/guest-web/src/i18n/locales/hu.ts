@@ -219,9 +219,10 @@ export const hu: Messages = {
     sending: 'Küldés…',
     sent: 'Ha ez az e-mail-cím itt egy Fetivihez tartozik, küldtem egy linket. 1 óráig érvényes.',
     title: 'Üdv újra',
-    welcome: 'Üdv újra! Koppints lent, és megnyílik a Fetivid ezen az eszközön.',
+    welcome: 'Koppints lent, és megnyílik a Fetivid ezen az eszközön.',
     open: 'Fetivim megnyitása',
     opening: 'Megnyitás…',
+    expiredTitle: 'Ez a link már nem működik',
     expired:
       'Ez a link lejárt, vagy már felhasználták. Kérj újat a PIN-képernyőn vagy a Beállításokban.',
     verifyTitle: 'Az e-mail-címed',
@@ -241,7 +242,7 @@ export const hu: Messages = {
     tips: 'Napi egy helyi tipp e-mailben',
     deviceTitle: 'Megnyitás másik eszközön',
     deviceIntro:
-      'E-mailben küldök egy linket, amely egy másik telefonon vagy számítógépen megnyitja a csevegésed és a foglalásaid. Ez az eszköz ezután kijelentkezik a Fetiviből.',
+      'E-mailben küldök egy linket, amely egy másik telefonon vagy számítógépen megnyitja a csevegésed és a foglalásaid. Amikor ott megnyitod, ez az eszköz kijelentkezik a Fetiviből.',
     sendLink: 'Küldj egy linket',
     linkSent: 'Elküldve. Nézd meg a postafiókod; a link 1 óráig érvényes.',
   },
