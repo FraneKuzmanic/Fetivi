@@ -1,8 +1,8 @@
 // Fetivi Host service worker: web push only, no offline caching.
 // A push shows one notification and tells open windows to refresh the inbox; a tap opens it.
 
-/** Same-origin paths only; anything else opens the Inbox. */
-const safePath = (url) => (typeof url === 'string' && /^\/(?!\/)/.test(url) ? url : '/inbox');
+/** Same-origin paths only (as LoginPage's return path); anything else opens the Inbox. */
+const safePath = (url) => (typeof url === 'string' && /^\/(?![/\\])/.test(url) ? url : '/inbox');
 
 self.addEventListener('push', (event) => {
   let message = {};
@@ -20,6 +20,7 @@ self.addEventListener('push', (event) => {
         data: { url },
       });
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      // inbox-events.ts listens for this type; keep the two in step.
       for (const client of windows) client.postMessage({ type: 'fetivi-host-inbox' });
     })(),
   );

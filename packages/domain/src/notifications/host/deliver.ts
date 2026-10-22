@@ -6,7 +6,7 @@ import { hostNotificationDeliveries } from '../../db/schema/notifications';
 import { properties, units } from '../../db/schema/properties';
 import { stays } from '../../db/schema/stays';
 import type { Mailer } from '../../mail';
-import { type PushMessage, type PushSender, pushTopic } from '../guest/push';
+import { type PushMessage, type PushSender, type PushSendOptions, pushTopic } from '../guest/push';
 import {
   composeHostDigestEmail,
   composeHostDigestPush,
@@ -195,7 +195,7 @@ async function send(
     email: string;
     message: { subject: string; text: string };
     push: PushMessage;
-    urgency: 'normal' | 'high';
+    urgency: NonNullable<PushSendOptions['urgency']>;
   },
 ): Promise<HostDeliveryResult> {
   const result: HostDeliveryResult = { ...SKIPPED };

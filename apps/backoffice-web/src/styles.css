@@ -2248,8 +2248,14 @@ html:has(.wizard-footer) {
   padding: 0 16px;
   border-radius: var(--radius-sm);
   color: var(--gray-500);
+  position: relative;
   font-weight: 500;
   cursor: pointer;
+}
+
+/* The global input rule would stretch the hidden radio to full width. */
+.segmented.choice input {
+  width: 1px;
 }
 
 .segmented.choice label:has(input:checked) {

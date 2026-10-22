@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { HANDOFF_REASON_LABELS } from '../../handoff/vocabulary';
 import {
   composeHostDigestEmail,
   composeHostDigestPush,
@@ -41,6 +42,12 @@ describe('host message email', () => {
     expect(text).toContain('Reason: Problem');
     expect(text).toContain('Replies to this email do not reach the guest.');
     expect(text).not.toContain(GUEST_TEXT);
+  });
+
+  it('words the reason as the Inbox does', () => {
+    const { text } = composeHostMessageEmail(facts({ reason: 'guest_asked' }), ORIGIN);
+    expect(text).toContain(`Reason: ${HANDOFF_REASON_LABELS.guest_asked}`);
+    expect(HANDOFF_REASON_LABELS.guest_asked).toBe('Asked to contact you');
   });
 });
 

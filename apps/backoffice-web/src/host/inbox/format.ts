@@ -1,12 +1,6 @@
-import type { HandoffReason } from '@fetivi/domain/handoff-vocabulary';
 import type { HostMessage } from '../../api';
 
-export const REASON_LABELS: Record<HandoffReason, string> = {
-  property_question: 'Question about the unit',
-  problem: 'Problem',
-  request: 'Request',
-  guest_asked: 'Asked to contact you',
-};
+export { HANDOFF_REASON_LABELS as REASON_LABELS } from '@fetivi/domain/handoff-vocabulary';
 
 /** The words the host reads: the translation once it is there, else the guest's own. */
 export const shownText = (m: HostMessage) => m.translation ?? m.text;

@@ -107,7 +107,7 @@ interface MemoryPush {
   sub: PushKeys;
   message: PushMessage;
   topic: string;
-  urgency: 'normal' | 'high';
+  urgency: NonNullable<PushSendOptions['urgency']>;
 }
 
 /** Test sender: keeps sent pushes; endpoints in `gone` answer 'gone'. */

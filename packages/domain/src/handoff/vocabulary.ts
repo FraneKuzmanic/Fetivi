@@ -5,6 +5,14 @@
 export const HANDOFF_REASONS = ['property_question', 'problem', 'request', 'guest_asked'] as const;
 export type HandoffReason = (typeof HANDOFF_REASONS)[number];
 
+/** What the host reads for each reason, in the Inbox and in host emails and pushes. */
+export const HANDOFF_REASON_LABELS: Record<HandoffReason, string> = {
+  property_question: 'Question about the unit',
+  problem: 'Problem',
+  request: 'Request',
+  guest_asked: 'Asked to contact you',
+};
+
 /** Set by Fetivi, never by the guest. `urgent` bypasses the host's digest. */
 export const HANDOFF_URGENCIES = ['normal', 'urgent'] as const;
 export type HandoffUrgency = (typeof HANDOFF_URGENCIES)[number];

@@ -14,6 +14,7 @@ export function onPushMessage(listener: () => void): () => void {
   const container = typeof navigator === 'undefined' ? undefined : navigator.serviceWorker;
   if (!container) return () => {};
   const handle = (event: MessageEvent) => {
+    // The message type public/sw.js posts after a push; keep the two in step.
     if ((event.data as { type?: string } | null)?.type === 'fetivi-host-inbox') listener();
   };
   container.addEventListener('message', handle);

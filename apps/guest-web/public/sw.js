@@ -2,7 +2,7 @@
 // A push shows one notification and tells open windows to check the inbox; a tap opens the app.
 
 /** Same-origin paths only; anything else opens the Chat. */
-const safePath = (url) => (typeof url === 'string' && /^\/(?!\/)/.test(url) ? url : '/chat');
+const safePath = (url) => (typeof url === 'string' && /^\/(?![/\\])/.test(url) ? url : '/chat');
 
 self.addEventListener('push', (event) => {
   let message = {};

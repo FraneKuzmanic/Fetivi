@@ -1,4 +1,8 @@
-import type { HandoffReason, HandoffUrgency } from '../../handoff/vocabulary';
+import {
+  type HandoffReason,
+  type HandoffUrgency,
+  HANDOFF_REASON_LABELS as REASON_LABELS,
+} from '../../handoff/vocabulary';
 import type { CivilDate } from '../../time';
 import type { PushMessage } from '../guest/push';
 import { formatCivilDate } from '../provider/compose';
@@ -7,13 +11,6 @@ import { HOST_INBOX_PATH } from './vocabulary';
 // Host emails and pushes about Host messages: plain English, like the rest of the back office.
 // They carry no guest text, no booker name and no PIN, and point to the Inbox, where the host
 // replies (no reply-by-email, PRD §6.6).
-
-export const REASON_LABELS: Record<HandoffReason, string> = {
-  property_question: 'Question about the property',
-  problem: 'Problem',
-  request: 'Request',
-  guest_asked: 'Wants to talk to you',
-};
 
 /** What a host notification may say about a Host message. Deliberately no `text` field. */
 export interface HostMessageFacts {
