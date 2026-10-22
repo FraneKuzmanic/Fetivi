@@ -1,6 +1,8 @@
-// Guest notification vocabulary. Imports nothing: `@fetivi/ui/payloads` and guest-web bundle this
-// file through the `@fetivi/domain/notification-vocabulary` subpath, and the pgEnums are built
+// Guest notification vocabulary. Imports only types: `@fetivi/ui/payloads` and guest-web bundle
+// this file through the `@fetivi/domain/notification-vocabulary` subpath, and the pgEnums are built
 // from it.
+
+import type { CalendarSource } from '../../calendar/vocabulary';
 
 /**
  * Every notification a guest receives. The Order kinds keep the exact `ORDER_NOTIFICATIONS`
@@ -59,11 +61,22 @@ export const EVENING_REMINDER_TIME = '18:00';
 /** The guest-reminders cron (UTC); arrival and checkout notices are picked up within 15 minutes. */
 export const GUEST_REMINDERS_CRON = '*/15 * * * *';
 
-/** The booking platforms a Stay can come from (calendar feed sources). */
-export type ReviewPlatform = 'airbnb' | 'booking';
+/** The guest-app path a notice opens: My trip for Orders, the Guide for the Stay, else the Chat. */
+export const NOTICE_PATHS = {
+  order_confirmed: '/trip',
+  order_new_proposal: '/trip',
+  order_cancelled: '/trip',
+  order_declined: '/trip',
+  order_expired: '/trip',
+  order_failed: '/trip',
+  order_reminder: '/trip',
+  host_reply: '/chat',
+  arrival_details: '/guide',
+  checkout_reminder: '/guide',
+} as const satisfies Record<GuestNotificationKind, '/trip' | '/guide' | '/chat'>;
 
-/** Where the checkout review line links: the guest's own trips page on the platform. */
-export const REVIEW_LINKS: Record<ReviewPlatform, string> = {
+/** Where the checkout review line links, per calendar feed source: the guest's trips page there. */
+export const REVIEW_LINKS: Record<CalendarSource, string> = {
   airbnb: 'https://www.airbnb.com/trips',
   booking: 'https://secure.booking.com/myreservations.html',
 };

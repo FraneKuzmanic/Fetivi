@@ -1,5 +1,7 @@
 // The contracts of Fetivi's own streamed components. React-free: the chat backend validates with
 // these through `@fetivi/ui/payloads`, and the guest app re-checks stored parts before rendering.
+
+import { CALENDAR_SOURCES } from '@fetivi/domain/calendar-vocabulary';
 import { PLACE_CATEGORIES, STALENESS_STATUSES } from '@fetivi/domain/catalog-vocabulary';
 import {
   HANDOFF_LIMITS,
@@ -225,7 +227,7 @@ export const inboxItem = z.discriminatedUnion('kind', [
     startTime: z.string().nullable().default(null),
     /** 'HH:mm'. */
     checkoutTime: z.string().nullable().default(null),
-    reviewPlatform: z.enum(['airbnb', 'booking']).nullable().default(null),
+    reviewPlatform: z.enum(CALENDAR_SOURCES).nullable().default(null),
     reviewUrl: z.string().url().nullable().default(null),
     at: z.string(),
   }),

@@ -1,9 +1,11 @@
 import { eq } from 'drizzle-orm';
+import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { findConversation, getOrCreateConversation, loadMessages } from '../conversations/store';
 import { accounts } from '../db/schema/accounts';
 import { handoffMessages } from '../db/schema/handoff';
 import { pendingActions } from '../db/schema/pending-actions';
+import { createJobQueue, ensureQueues, QUEUES, uuidFrom } from '../jobs/queue';
 import { loadGuestProjection } from '../projection/load';
 import type { GuestLanguage } from '../property/vocabulary';
 import { releasePending } from '../services/pending/create-order';
@@ -319,6 +321,36 @@ describe('host inbox', () => {
     );
     expect(again).toBe('already-delivered');
     expect(guestNotifyJobs()).toHaveLength(1);
+  });
+
+  it('enqueues the guest notification only when the reply commits', async () => {
+    const boss = new PgBoss({ connectionString: testDb.url, supervise: false, schedule: false });
+    boss.on('error', console.error);
+    await boss.start();
+    try {
+      await ensureQueues(boss);
+      const real = { db: testDb.db, queue: createJobQueue(boss), now: () => clock };
+      const { g, message } = await sent();
+      const input = { hostId: g.hostId, accountId: g.hostId, id: message.id, markRead: true };
+      const jobId = uuidFrom(`handoff:${message.id}:host_reply`);
+      await expect(
+        testDb.db.transaction(async (tx) => {
+          await replyToHandoff({ ...real, db: tx }, { ...input, text: 'Rolled back.' });
+          throw new Error('roll back');
+        }),
+      ).rejects.toThrow('roll back');
+      expect(await boss.getJobById(QUEUES.guestNotify, jobId)).toBeNull();
+      expect((await rowsOf(g.spaceId))[0]?.replyText).toBeNull();
+
+      await replyToHandoff(real, { ...input, text: 'Committed.' });
+      expect((await boss.getJobById(QUEUES.guestNotify, jobId))?.data).toEqual({
+        kind: 'host_reply',
+        spaceId: g.spaceId,
+        handoffId: message.id,
+      });
+    } finally {
+      await boss.stop({ graceful: false, timeout: 1000 });
+    }
   });
 
   it('an acting admin’s reply does not mark the message Read', async () => {

@@ -3,13 +3,15 @@ import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { findConversation, getOrCreateConversation, loadMessages } from '../../conversations/store';
 import { calendarEvents, calendarFeeds } from '../../db/schema/calendar';
+import { destinations } from '../../db/schema/catalog';
 import { handoffMessages } from '../../db/schema/handoff';
 import {
   emailSuppressions,
   guestNotificationDeliveries,
   pushSubscriptions,
 } from '../../db/schema/notifications';
-import { orders } from '../../db/schema/orders';
+import { offers } from '../../db/schema/offers';
+import { orderProposals, orders } from '../../db/schema/orders';
 import { spaces } from '../../db/schema/spaces';
 import { stays } from '../../db/schema/stays';
 import { INBOX_PART_TYPE } from '../../handoff/vocabulary';
@@ -324,6 +326,30 @@ describe('deliverGuestNotification: reminder', () => {
     await testDb.db.update(orders).set({ status: 'cancelled' }).where(eq(orders.id, ref.orderId));
     expect(await deliverGuestNotification(deps().deps, { kind: 'order_reminder', ...ref })).toEqual(
       skipped,
+    );
+  });
+  it('keeps to property time when the Offer lies in another zone', async () => {
+    const g = await guest();
+    const ref = await confirmedOrder(g);
+    const [offer] = await testDb.db
+      .select({ destinationId: offers.destinationId })
+      .from(orders)
+      .innerJoin(offers, eq(offers.id, orders.offerId))
+      .where(eq(orders.id, ref.orderId));
+    await testDb.db
+      .update(destinations)
+      .set({ timezone: 'Pacific/Kiritimati' })
+      .where(eq(destinations.id, offer?.destinationId as string));
+    await deliverGuestNotification(deps().deps, { kind: 'order_confirmed', ...ref });
+    expect((await inboxNotices(g.spaceId))[0]).toMatchObject({ date: DAY, startTime: '09:00' });
+    // A whole-day item: still on in Zagreb at 14:00, though the day has ended at the destination.
+    await testDb.db
+      .update(orderProposals)
+      .set({ startsAt: null })
+      .where(eq(orderProposals.id, ref.proposalId));
+    const midday = deps({ now: () => new Date('2027-05-02T12:00:00Z') }).deps;
+    expect((await deliverGuestNotification(midday, { kind: 'order_reminder', ...ref })).inbox).toBe(
+      'sent',
     );
   });
 });

@@ -2,7 +2,6 @@ import { and, asc, eq, sql } from 'drizzle-orm';
 import { findConversation } from '../../conversations/store';
 import type { Executor } from '../../db/client';
 import { calendarEvents, calendarFeeds } from '../../db/schema/calendar';
-import { destinations } from '../../db/schema/catalog';
 import { handoffMessages } from '../../db/schema/handoff';
 import { offers, offerTranslations } from '../../db/schema/offers';
 import { orderProposals, orders } from '../../db/schema/orders';
@@ -123,8 +122,7 @@ async function loadOrderBase(
       proposal: { date: orderProposals.date, startsAt: orderProposals.startsAt },
       sourceTitle: offers.title,
       translatedTitle: offerTranslations.title,
-      destinationZone: destinations.timezone,
-      propertyZone: properties.timezone,
+      zone: properties.timezone,
     })
     .from(orders)
     .innerJoin(orderProposals, eq(orderProposals.orderId, orders.id))
@@ -138,18 +136,17 @@ async function loadOrderBase(
         eq(offerTranslations.language, spaces.language),
       ),
     )
-    .leftJoin(destinations, eq(destinations.id, offers.destinationId))
     .innerJoin(stays, eq(stays.id, orders.stayId))
     .innerJoin(units, eq(units.id, stays.unitId))
     .innerJoin(properties, eq(properties.id, units.propertyId))
     .where(and(eq(orders.id, data.orderId), eq(orderProposals.id, data.proposalId)));
   if (!row) return null;
-  const zone = row.destinationZone ?? row.propertyZone;
   if (data.kind === 'order_reminder') {
     if (row.order.status !== 'confirmed' || row.order.currentProposalId !== data.proposalId) {
       return null;
     }
-    const startsAt = row.proposal.startsAt ?? endOfCivilDay(row.proposal.date, zone);
+    // Property time throughout, as the machine schedules the reminder and the receipts show it.
+    const startsAt = row.proposal.startsAt ?? endOfCivilDay(row.proposal.date, row.zone);
     if (startsAt <= now) return null;
   }
   return {
@@ -161,7 +158,7 @@ async function loadOrderBase(
       offerTitle: row.translatedTitle ?? row.sourceTitle,
       date: row.proposal.date,
       startTime: row.proposal.startsAt
-        ? toLocalDateTime(row.proposal.startsAt, zone).slice(11)
+        ? toLocalDateTime(row.proposal.startsAt, row.zone).slice(11)
         : null,
     },
   };

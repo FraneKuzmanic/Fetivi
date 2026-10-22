@@ -1,14 +1,9 @@
 import { DateTime } from 'luxon';
-import { CALENDAR_SOURCE_LABELS } from '../../calendar/vocabulary';
+import { CALENDAR_SOURCE_LABELS, type CalendarSource } from '../../calendar/vocabulary';
 import type { GuestLanguage } from '../../property/vocabulary';
 import type { CivilDate } from '../../time';
 import { GUEST_COPY } from './copy';
-import {
-  type GuestNotificationKind,
-  isOrderGuestKind,
-  REVIEW_LINKS,
-  type ReviewPlatform,
-} from './vocabulary';
+import { type GuestNotificationKind, NOTICE_PATHS, REVIEW_LINKS } from './vocabulary';
 
 // Guest email and push text, pure: the loader gathers the facts. Neither ever carries contact
 // data, the PIN, door codes or the Wi-Fi password; the arrival notice only points to the Guide.
@@ -17,23 +12,12 @@ import {
 export interface GuestNoticeFacts {
   offerTitle: string | null;
   date: CivilDate | null;
-  /** 'HH:mm' in the Offer's zone. */
+  /** 'HH:mm' property time, as the guest's receipts show it. */
   startTime: string | null;
   /** 'HH:mm', the unit's checkout time. */
   checkoutTime: string | null;
   /** The booking platform the Stay came from; null for a Stay registered by hand. */
-  reviewPlatform: ReviewPlatform | null;
-}
-
-export function reviewLink(platform: ReviewPlatform): string {
-  return REVIEW_LINKS[platform];
-}
-
-/** The guest-app path a notice opens: My trip for Orders, the Guide for the Stay, else the Chat. */
-export function noticePath(kind: GuestNotificationKind): '/trip' | '/guide' | '/chat' {
-  if (isOrderGuestKind(kind) || kind === 'order_reminder') return '/trip';
-  if (kind === 'arrival_details' || kind === 'checkout_reminder') return '/guide';
-  return '/chat';
+  reviewPlatform: CalendarSource | null;
 }
 
 function fill(template: string, values: Record<string, string>): string {
@@ -66,9 +50,9 @@ export function composeGuestEmail(
   if (kind === 'checkout_reminder' && facts.checkoutTime) {
     lines.push(fill(copy.checkoutTimeLine, v));
   }
-  lines.push('', `${copy.openApp}: ${guestOrigin}${noticePath(kind)}`);
+  lines.push('', `${copy.openApp}: ${guestOrigin}${NOTICE_PATHS[kind]}`);
   if (kind === 'checkout_reminder' && facts.reviewPlatform) {
-    lines.push('', fill(copy.reviewLine, v), reviewLink(facts.reviewPlatform));
+    lines.push('', fill(copy.reviewLine, v), REVIEW_LINKS[facts.reviewPlatform]);
   }
   lines.push('', copy.signature);
   return { subject: fill(text.subject, v), text: lines.join('\n') };
@@ -82,5 +66,5 @@ export function composeGuestPush(
 ): { title: string; body: string; url: string } {
   const text = GUEST_COPY[language].kinds[kind];
   const v = values(facts, language);
-  return { title: fill(text.pushTitle, v), body: fill(text.pushBody, v), url: noticePath(kind) };
+  return { title: fill(text.pushTitle, v), body: fill(text.pushBody, v), url: NOTICE_PATHS[kind] };
 }

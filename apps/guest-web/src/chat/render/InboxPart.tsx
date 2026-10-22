@@ -1,10 +1,11 @@
+import { CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
+import { NOTICE_PATHS } from '@fetivi/domain/notification-vocabulary';
 import type { InboxItem } from '@fetivi/ui/payloads';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Mascot } from '../../shell/Mascot';
 import { noticeText } from './labels';
 
-const PLATFORM_NAMES = { airbnb: 'Airbnb', booking: 'Booking.com' } as const;
 /** Stands in for the platform name, so the name can be a link inside the translated sentence. */
 const PLATFORM_SLOT = '\u0000';
 
@@ -38,9 +39,7 @@ function NoticePart({ notice }: { notice: Extract<InboxItem, { kind: 'notice' }>
   const { t, i18n } = useTranslation();
   const words = noticeText(t, i18n.language, notice);
   if (!words) return null;
-  const toGuide =
-    notice.notification === 'arrival_details' || notice.notification === 'checkout_reminder';
-  const toTrip = notice.notification.startsWith('order_');
+  const path = NOTICE_PATHS[notice.notification];
   const platform = notice.reviewPlatform;
   const [beforeName, afterName] =
     platform && notice.reviewUrl
@@ -59,15 +58,15 @@ function NoticePart({ notice }: { notice: Extract<InboxItem, { kind: 'notice' }>
             <p>
               {beforeName}
               <a href={notice.reviewUrl} target="_blank" rel="noopener noreferrer">
-                {PLATFORM_NAMES[platform]}
+                {CALENDAR_SOURCE_LABELS[platform]}
               </a>
               {afterName}
             </p>
           )}
         </div>
-        {(toTrip || toGuide) && (
-          <Link to={toTrip ? '/trip' : '/guide'} className="text-button">
-            {t(toTrip ? 'notice.seeTrip' : 'notice.openGuide')}
+        {path !== '/chat' && (
+          <Link to={path} className="text-button">
+            {t(path === '/trip' ? 'notice.seeTrip' : 'notice.openGuide')}
           </Link>
         )}
       </div>

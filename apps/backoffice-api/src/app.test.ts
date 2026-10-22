@@ -58,14 +58,12 @@ describe('backoffice-api', () => {
     expect(() => loadConfig({ PORT: 'abc' })).toThrow();
   });
 
-  it('needs a Resend key for resend, and resend in production', () => {
+  it('needs a Resend key for resend, and resend and a sender in production', () => {
     expect(() => loadConfig({ MAIL_TRANSPORT: 'resend' })).toThrow(/RESEND_API_KEY/);
     expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/MAIL_TRANSPORT/);
-    const config = loadConfig({
-      NODE_ENV: 'production',
-      MAIL_TRANSPORT: 'resend',
-      RESEND_API_KEY: 're_x',
-    });
+    const resend = { NODE_ENV: 'production', MAIL_TRANSPORT: 'resend', RESEND_API_KEY: 're_x' };
+    expect(() => loadConfig(resend)).toThrow(/MAIL_FROM/);
+    const config = loadConfig({ ...resend, MAIL_FROM: 'Fetivi <notifications@fetivi.test>' });
     expect(config.MAIL_TRANSPORT).toBe('resend');
   });
 });

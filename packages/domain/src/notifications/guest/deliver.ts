@@ -4,11 +4,11 @@ import { guestNotificationDeliveries } from '../../db/schema/notifications';
 import { INBOX_PART_TYPE } from '../../handoff/vocabulary';
 import { uuidFrom } from '../../jobs/queue';
 import type { Mailer } from '../../mail';
-import { composeGuestEmail, composeGuestPush, reviewLink } from './compose';
+import { composeGuestEmail, composeGuestPush } from './compose';
 import type { GuestNotifyJobData } from './enqueue';
 import { type GuestNotice, loadGuestNotice } from './load';
 import { deletePushSubscription, listPushSubscriptions, type PushSender, pushTopic } from './push';
-import { CHANNELS_BY_KIND, GUEST_CHANNELS, type GuestChannel } from './vocabulary';
+import { CHANNELS_BY_KIND, GUEST_CHANNELS, type GuestChannel, REVIEW_LINKS } from './vocabulary';
 
 export interface GuestNotifyDeps {
   db: Db;
@@ -59,7 +59,7 @@ export function noticeInboxData(notice: GuestNotice, now: Date) {
     startTime: facts.startTime,
     checkoutTime: facts.checkoutTime,
     reviewPlatform: facts.reviewPlatform,
-    reviewUrl: facts.reviewPlatform ? reviewLink(facts.reviewPlatform) : null,
+    reviewUrl: facts.reviewPlatform ? REVIEW_LINKS[facts.reviewPlatform] : null,
     at: now.toISOString(),
   };
 }

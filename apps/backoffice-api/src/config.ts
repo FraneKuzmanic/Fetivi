@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const DEV_MAIL_FROM = 'Fetivi <notifications@localhost>';
+
 const optionalString = z
   .string()
   .optional()
@@ -17,7 +19,7 @@ const schema = z
     /** console logs mail (development); resend sends it (required in production). */
     MAIL_TRANSPORT: z.enum(['console', 'resend']).default('console'),
     RESEND_API_KEY: optionalString,
-    MAIL_FROM: z.string().default('Fetivi <notifications@localhost>'),
+    MAIL_FROM: z.string().default(DEV_MAIL_FROM),
     /** Resend's webhook signing secret (whsec_...); without it the bounce webhook is off. */
     RESEND_WEBHOOK_SECRET: optionalString,
     NODE_ENV: z.string().optional(),
@@ -38,6 +40,10 @@ const schema = z
   .refine((c) => c.NODE_ENV !== 'production' || c.MAIL_TRANSPORT === 'resend', {
     message: 'MAIL_TRANSPORT=resend is required in production',
     path: ['MAIL_TRANSPORT'],
+  })
+  .refine((c) => c.NODE_ENV !== 'production' || c.MAIL_FROM !== DEV_MAIL_FROM, {
+    message: 'MAIL_FROM is required in production',
+    path: ['MAIL_FROM'],
   });
 
 export type Config = z.infer<typeof schema>;

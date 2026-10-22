@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from './config';
 
+/** The production mail settings that have dev defaults. */
+const mail = {
+  MAIL_FROM: 'Fetivi <notifications@fetivi.test>',
+  GUEST_ORIGIN: 'https://fetivi.test',
+};
+
 describe('jobs config', () => {
   it('has a dev Provider link secret outside production', () => {
     expect(loadConfig({}).PROVIDER_LINK_SECRET.length).toBeGreaterThanOrEqual(32);
   });
 
   it('requires a real Provider link secret in production', () => {
-    const resend = { MAIL_TRANSPORT: 'resend', RESEND_API_KEY: 're_x' };
+    const resend = { MAIL_TRANSPORT: 'resend', RESEND_API_KEY: 're_x', ...mail };
     expect(() => loadConfig({ NODE_ENV: 'production', ...resend })).toThrow(/PROVIDER_LINK_SECRET/);
     const secret = 'a'.repeat(40);
     expect(
@@ -29,14 +35,24 @@ describe('jobs config', () => {
     expect(() => loadConfig({ NODE_ENV: 'production', PROVIDER_LINK_SECRET: secret })).toThrow(
       /MAIL_TRANSPORT/,
     );
-    expect(
-      loadConfig({
-        NODE_ENV: 'production',
-        PROVIDER_LINK_SECRET: secret,
-        MAIL_TRANSPORT: 'resend',
-        RESEND_API_KEY: 're_x',
-      }).MAIL_TRANSPORT,
-    ).toBe('resend');
+    const prod = {
+      NODE_ENV: 'production',
+      PROVIDER_LINK_SECRET: secret,
+      MAIL_TRANSPORT: 'resend',
+      RESEND_API_KEY: 're_x',
+    };
+    expect(loadConfig({ ...prod, ...mail }).MAIL_TRANSPORT).toBe('resend');
+  });
+
+  it('requires a real sender and guest origin in production', () => {
+    const prod = {
+      NODE_ENV: 'production',
+      PROVIDER_LINK_SECRET: 'a'.repeat(40),
+      MAIL_TRANSPORT: 'resend',
+      RESEND_API_KEY: 're_x',
+    };
+    expect(() => loadConfig({ ...prod, GUEST_ORIGIN: mail.GUEST_ORIGIN })).toThrow(/MAIL_FROM/);
+    expect(() => loadConfig({ ...prod, MAIL_FROM: mail.MAIL_FROM })).toThrow(/GUEST_ORIGIN/);
   });
 
   it('takes both VAPID keys or neither', () => {
