@@ -82,7 +82,32 @@ export const en: GuestCopy = {
       pushTitle: 'Checkout is tomorrow',
       pushBody: 'The checkout steps are in the Guide.',
     },
+    weather_warning: {
+      subject: 'Weather warning from DHMZ ({{level}})',
+      lines: [
+        'DHMZ, the Croatian weather service, has issued a weather warning ({{level}}) for {{area}}, {{time}}:',
+        '"{{event}}. {{description}}"',
+      ],
+      pushTitle: 'Weather warning ({{level}})',
+      pushBody: '{{event}}, {{time}}',
+    },
+    ferry_disruption: {
+      subject: 'Jadrolinija notice about line {{lines}}',
+      lines: [
+        'Jadrolinija\'s notice says: "{{noticeTitle}}"',
+        'It may affect {{offer}} on {{date}} (line {{lines}}). Please read the notice before you go: {{noticeUrl}}',
+      ],
+      pushTitle: 'Jadrolinija notice: line {{lines}}',
+      pushBody: '{{offer}}, {{date}}',
+    },
   },
+  warningLevels: { yellow: 'yellow', orange: 'orange', red: 'red' },
+  warningTime: '{{from}} – {{to}}',
+  sailingAdvisory:
+    'Sea conditions may disrupt sailings on line {{lines}} ({{offer}}, {{date}}). Check with {{operator}} before you go: {{operatorUrl}}',
+  orderStands:
+    "Your booking stays as it is unless the provider cancels it. If they do, I'll tell you straight away.",
+  sourceLine: 'Source: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Please leave by {{checkoutTime}}.',
   reviewLine: "If you'd like to share how your stay went, you can leave a review on {{platform}}.",
   spaceEmails: {

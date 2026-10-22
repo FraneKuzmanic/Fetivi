@@ -193,6 +193,17 @@ export const hu: Messages = {
     checkoutBy: 'Kérjük, {{checkoutTime}}-ig hagyd el a szállást.',
     review:
       'Ha szeretnéd elmondani, milyen volt a tartózkodásod, írhatsz értékelést itt: {{platform}}.',
+    weather_warning:
+      'A DHMZ, a horvát meteorológiai szolgálat figyelmeztetést adott ki erre a területre: {{area}}, {{time}}:',
+    ferry_disruption: 'A Jadrolinija közleménye szerint:',
+    ferryAffects:
+      'Ez érintheti ezt: {{offer}}, {{date}} ({{lines}} vonal). Indulás előtt olvasd el a közleményt.',
+    sailingAdvisory:
+      'A tengeri viszonyok megzavarhatják a járatokat a(z) {{lines}} vonalon ({{offer}}, {{date}}). Indulás előtt érdeklődj itt: {{operator}}.',
+    orderStands:
+      'A foglalásod érvényes marad, hacsak a szolgáltató le nem mondja. Ha mégis, azonnal szólok.',
+    readNotice: 'A Jadrolinija közleménye',
+    checkOperator: 'Járatok állapota: {{operator}}',
     seeTrip: 'Megnézem az Utazásomban',
     openGuide: 'Útmutató megnyitása',
   },

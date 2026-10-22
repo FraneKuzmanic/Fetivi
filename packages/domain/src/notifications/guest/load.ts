@@ -37,6 +37,7 @@ const NO_FACTS: GuestNoticeFacts = {
   startTime: null,
   checkoutTime: null,
   reviewPlatform: null,
+  safety: null,
 };
 
 interface Base {
@@ -88,6 +89,9 @@ export async function loadGuestNotice(
 async function loadBase(db: Executor, data: GuestNotifyJobData, now: Date): Promise<Base | null> {
   if (isOrderGuestKind(data.kind) || data.kind === 'order_reminder') {
     return loadOrderBase(db, data, now);
+  }
+  if (data.kind === 'weather_warning' || data.kind === 'ferry_disruption') {
+    return loadSafetyBase(db, data, now);
   }
   if (data.kind === 'host_reply') {
     if (!data.handoffId) return null;
@@ -160,6 +164,39 @@ async function loadOrderBase(
       startTime: row.proposal.startsAt
         ? toLocalDateTime(row.proposal.startsAt, row.zone).slice(11)
         : null,
+    },
+  };
+}
+
+/**
+ * Safety goes to every open Space, a possibly cancelled Stay included. A warning that has expired
+ * by send time is dropped; a ferry notice is still sent when its Order has moved on, since it is
+ * about the line, not the Order.
+ */
+async function loadSafetyBase(
+  db: Executor,
+  data: GuestNotifyJobData,
+  now: Date,
+): Promise<Base | null> {
+  const { spaceId, safety } = data;
+  if (!spaceId || !safety) return null;
+  if (safety.source === 'DHMZ' && Date.parse(safety.expires) <= now.getTime()) return null;
+  const [row] = await db
+    .select({ closedAt: spaces.closedAt })
+    .from(spaces)
+    .where(eq(spaces.id, spaceId));
+  if (!row || row.closedAt <= now) return null;
+  const item = safety.source === 'DHMZ' ? safety.advisory : safety.affected;
+  return {
+    spaceId,
+    email: null,
+    orderId: safety.source === 'Jadrolinija' ? safety.affected.orderId : null,
+    facts: {
+      ...NO_FACTS,
+      offerTitle: item?.title ?? null,
+      date: item?.date ?? null,
+      startTime: item?.startTime ?? null,
+      safety,
     },
   };
 }

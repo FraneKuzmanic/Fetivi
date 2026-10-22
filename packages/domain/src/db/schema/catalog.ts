@@ -78,6 +78,8 @@ export const catalogRecords = pgTable(
     transportMode: transportMode('transport_mode'),
     links: jsonb('links').$type<{ label: string; url: string }[]>().notNull().default([]),
     travelMinutes: smallint('travel_minutes'),
+    /** Ferry and catamaran lines (FERRY_LINES ids) a visit depends on; safety alerts match on them. */
+    ferryLines: text('ferry_lines').array().notNull().default(sql`'{}'::text[]`),
     /** A source URL per field, `{ fieldName: httpsUrl }`. */
     fieldSources: jsonb('field_sources')
       .$type<Partial<Record<SourceField, string>>>()

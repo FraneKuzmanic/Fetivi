@@ -232,6 +232,13 @@
       "when": 1792701305089,
       "tag": "0032_conversation_weather_note",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792704197179,
+      "tag": "0033_safety_alerts",
+      "breakpoints": true
     }
   ]
 }

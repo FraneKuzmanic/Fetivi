@@ -20,6 +20,10 @@ export const GUEST_NOTIFICATION_KINDS = [
   'host_reply',
   'arrival_details',
   'checkout_reminder',
+  /** Safety, always sent to every open space in the Stay: an official DHMZ weather warning. */
+  'weather_warning',
+  /** Safety, always sent to every open space in the Stay: a ferry notice touching a plan item or Order. */
+  'ferry_disruption',
 ] as const;
 export type GuestNotificationKind = (typeof GUEST_NOTIFICATION_KINDS)[number];
 
@@ -53,6 +57,8 @@ export const CHANNELS_BY_KIND: Record<GuestNotificationKind, readonly GuestChann
   host_reply: ['email', 'push'],
   arrival_details: GUEST_CHANNELS,
   checkout_reminder: GUEST_CHANNELS,
+  weather_warning: GUEST_CHANNELS,
+  ferry_disruption: GUEST_CHANNELS,
 };
 
 /** Property-local time of the evening-before reminders (Order item, checkout). */
@@ -73,6 +79,8 @@ export const NOTICE_PATHS = {
   host_reply: '/chat',
   arrival_details: '/guide',
   checkout_reminder: '/guide',
+  weather_warning: '/chat',
+  ferry_disruption: '/trip',
 } as const satisfies Record<GuestNotificationKind, '/trip' | '/guide' | '/chat'>;
 
 /** Where the checkout review line links, per calendar feed source: the guest's trips page there. */

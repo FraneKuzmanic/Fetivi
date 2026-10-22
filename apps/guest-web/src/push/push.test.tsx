@@ -235,6 +235,7 @@ describe('InboxPart notices', () => {
     checkoutTime: null,
     reviewPlatform: null,
     reviewUrl: null,
+    safety: null,
     at: '2027-05-01T10:00:00Z',
     ...over,
   });

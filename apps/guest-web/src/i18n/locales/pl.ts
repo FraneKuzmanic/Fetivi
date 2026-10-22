@@ -191,6 +191,17 @@ export const pl: Messages = {
     checkoutBy: 'Prosimy o opuszczenie apartamentu do {{checkoutTime}}.',
     review:
       'Jeśli chcesz podzielić się wrażeniami z pobytu, możesz zostawić opinię na {{platform}}.',
+    weather_warning:
+      'DHMZ, chorwacka służba meteorologiczna, wydała ostrzeżenie dla obszaru {{area}}, {{time}}:',
+    ferry_disruption: 'Komunikat Jadrolinii brzmi:',
+    ferryAffects:
+      'Może to dotyczyć: {{offer}}, {{date}} (linia {{lines}}). Przeczytaj komunikat przed wyjazdem.',
+    sailingAdvisory:
+      'Warunki na morzu mogą zakłócić rejsy na linii {{lines}} ({{offer}}, {{date}}). Przed wyjazdem sprawdź u przewoźnika {{operator}}.',
+    orderStands:
+      'Twoja rezerwacja pozostaje bez zmian, chyba że usługodawca ją odwoła. Jeśli tak się stanie, od razu dam Ci znać.',
+    readNotice: 'Przeczytaj komunikat Jadrolinii',
+    checkOperator: 'Stan linii: {{operator}}',
     seeTrip: 'Zobacz w Mojej podróży',
     openGuide: 'Otwórz Przewodnik',
   },

@@ -1,3 +1,4 @@
+import { FERRY_LINES, FERRY_OPERATOR_INFO } from '@fetivi/domain/alerts-vocabulary';
 import {
   CATALOG_KINDS,
   CATALOG_LIMITS,
@@ -19,7 +20,14 @@ import {
   catalog,
   type LatLng,
 } from '../../api';
-import { NumberField, Section, SelectField, TextArea, TextField } from '../../forms/fields';
+import {
+  CheckboxField,
+  NumberField,
+  Section,
+  SelectField,
+  TextArea,
+  TextField,
+} from '../../forms/fields';
 import {
   CATALOG_KIND_LABELS,
   PLACE_CATEGORY_LABELS,
@@ -77,6 +85,34 @@ function CoordsFields({ value, onChange }: { value: Coords; onChange: (c: Coords
 
 const EVENT_TIME_HINT = "In the destination's time zone.";
 
+/** Ticked lines, kept in table order. */
+function FerryLinesField({
+  value,
+  onChange,
+}: {
+  value: readonly string[];
+  onChange: (lines: string[]) => void;
+}) {
+  const toggle = (id: string, on: boolean) =>
+    onChange(FERRY_LINES.map((l) => l.id).filter((l) => (l === id ? on : value.includes(l))));
+  return (
+    <fieldset className="row-editor ferry-lines">
+      <legend>Ferry and catamaran lines</legend>
+      <small className="muted">
+        Guests get Jadrolinija notices and wind advisories for these lines.
+      </small>
+      {FERRY_LINES.map((line) => (
+        <CheckboxField
+          key={line.id}
+          label={`${/^\d+$/.test(line.id) ? `${line.id} ` : ''}${line.route} · ${FERRY_OPERATOR_INFO[line.operator].name}`}
+          checked={value.includes(line.id)}
+          onChange={(on) => toggle(line.id, on)}
+        />
+      ))}
+    </fieldset>
+  );
+}
+
 /** /admin/catalog/destinations/:id/new/:kind: the kind's required fields, then the full editor. */
 export function NewRecordPage() {
   const { id = '', kind: kindParam = '' } = useParams();
@@ -90,6 +126,7 @@ export function NewRecordPage() {
   const [startsAt, setStartsAt] = useState<string | null>(null);
   const [endsAt, setEndsAt] = useState<string | null>(null);
   const [travelMinutes, setTravelMinutes] = useState<number | null>(null);
+  const [ferryLines, setFerryLines] = useState<string[]>([]);
   const [destinationName, setDestinationName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -113,9 +150,9 @@ export function NewRecordPage() {
       case 'event':
         return { kind, ...text, startsAt: startsAt ?? '', endsAt: endsAt ?? '', location };
       case 'transport_note':
-        return { kind, ...text, transportMode };
+        return { kind, ...text, transportMode, ferryLines };
       case 'day_trip':
-        return { kind, ...text, travelMinutes: travelMinutes ?? 0, location };
+        return { kind, ...text, travelMinutes: travelMinutes ?? 0, location, ferryLines };
     }
   }
 
@@ -210,6 +247,9 @@ export function NewRecordPage() {
                 <CoordsFields value={coords} onChange={setCoords} />
               </>
             ) : null}
+            {kind === 'day_trip' || kind === 'transport_note' ? (
+              <FerryLinesField value={ferryLines} onChange={setFerryLines} />
+            ) : null}
           </div>
           {error ? <p role="alert">{error}</p> : null}
           <div className="actions">
@@ -236,6 +276,7 @@ type Draft = Pick<
   | 'endsAt'
   | 'transportMode'
   | 'travelMinutes'
+  | 'ferryLines'
   | 'links'
   | 'fieldSources'
   | 'seasons'
@@ -255,6 +296,7 @@ const draftOf = (r: CatalogRecord): Draft => ({
   endsAt: r.endsAt,
   transportMode: r.transportMode,
   travelMinutes: r.travelMinutes,
+  ferryLines: r.ferryLines,
   links: r.links,
   fieldSources: r.fieldSources,
   seasons: r.seasons,
@@ -282,9 +324,14 @@ function detailsBody(kind: CatalogKind, d: Draft, location: LatLng | null): Cata
         websiteUrl: d.websiteUrl,
       };
     case 'transport_note':
-      return { transportMode: d.transportMode ?? 'other' };
+      return { transportMode: d.transportMode ?? 'other', ferryLines: d.ferryLines };
     case 'day_trip':
-      return { travelMinutes: d.travelMinutes ?? 0, location, websiteUrl: d.websiteUrl };
+      return {
+        travelMinutes: d.travelMinutes ?? 0,
+        location,
+        websiteUrl: d.websiteUrl,
+        ferryLines: d.ferryLines,
+      };
   }
 }
 
@@ -343,6 +390,7 @@ export function RecordPage() {
       'endsAt',
       'transportMode',
       'travelMinutes',
+      'ferryLines',
     ]);
     setCoords(coordsOf(saved.location));
   };
@@ -444,6 +492,9 @@ export function RecordPage() {
               max={CATALOG_LIMITS.travelMinutesMax}
               onChange={set('travelMinutes')}
             />
+          ) : null}
+          {kind === 'day_trip' || kind === 'transport_note' ? (
+            <FerryLinesField value={draft.ferryLines} onChange={set('ferryLines')} />
           ) : null}
           {kind !== 'transport_note' ? (
             <>

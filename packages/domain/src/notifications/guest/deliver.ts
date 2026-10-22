@@ -60,6 +60,8 @@ export function noticeInboxData(notice: GuestNotice, now: Date) {
     checkoutTime: facts.checkoutTime,
     reviewPlatform: facts.reviewPlatform,
     reviewUrl: facts.reviewPlatform ? REVIEW_LINKS[facts.reviewPlatform] : null,
+    /** Safety kinds: the source's own words, worded around by the guest app. */
+    safety: facts.safety,
     at: now.toISOString(),
   };
 }

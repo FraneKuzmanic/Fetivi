@@ -194,6 +194,17 @@ export const fr: Messages = {
     checkoutBy: 'Merci de libérer le logement avant {{checkoutTime}}.',
     review:
       'Si vous souhaitez partager votre expérience, vous pouvez laisser un avis sur {{platform}}.',
+    weather_warning:
+      'Le DHMZ, le service météorologique croate, a émis une alerte pour {{area}}, {{time}} :',
+    ferry_disruption: 'L’avis de Jadrolinija dit :',
+    ferryAffects:
+      'Cela peut concerner {{offer}} le {{date}} (ligne {{lines}}). Lisez l’avis avant de partir.',
+    sailingAdvisory:
+      'L’état de la mer peut perturber les traversées sur la ligne {{lines}} ({{offer}}, {{date}}). Renseignez-vous auprès de {{operator}} avant de partir.',
+    orderStands:
+      'Votre réservation reste valable, sauf si le prestataire l’annule. Dans ce cas, je vous préviens tout de suite.',
+    readNotice: 'Lire l’avis de Jadrolinija',
+    checkOperator: 'État des lignes : {{operator}}',
     seeTrip: 'Voir dans Mon séjour',
     openGuide: 'Ouvrir le Guide',
   },

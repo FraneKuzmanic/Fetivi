@@ -1,12 +1,16 @@
 import { DateTime } from 'luxon';
+import { FERRY_OPERATOR_INFO, ferryLine, type SafetyAlertFacts } from '../../alerts/vocabulary';
 import { CALENDAR_SOURCE_LABELS, type CalendarSource } from '../../calendar/vocabulary';
 import type { GuestLanguage } from '../../property/vocabulary';
 import type { CivilDate } from '../../time';
+import { WEATHER_CREDITS } from '../../weather/vocabulary';
 import { GUEST_COPY } from './copy';
 import { type GuestNotificationKind, NOTICE_PATHS, REVIEW_LINKS } from './vocabulary';
 
 // Guest email and push text, pure: the loader gathers the facts. Neither ever carries contact
 // data, the PIN, door codes or the Wi-Fi password; the arrival notice only points to the Guide.
+// Safety text quotes its source (DHMZ, Jadrolinija) and never says a sailing is cancelled in
+// Fetivi's own words.
 
 /** What a notice says, beyond its kind. Null where the kind has no such fact. */
 export interface GuestNoticeFacts {
@@ -18,10 +22,51 @@ export interface GuestNoticeFacts {
   checkoutTime: string | null;
   /** The booking platform the Stay came from; null for a Stay registered by hand. */
   reviewPlatform: CalendarSource | null;
+  /** Safety kinds: the warning or notice, in its source's own words. */
+  safety: SafetyAlertFacts | null;
 }
 
 function fill(template: string, values: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, name: string) => values[name] ?? '');
+}
+
+/** A numbered line by its number; a line without one (Bura Line) by its route. */
+const lineLabel = (id: string) => (/^\d+$/.test(id) ? id : (ferryLine(id)?.route ?? id));
+
+const DHMZ_URL = WEATHER_CREDITS.find((c) => c.source === 'DHMZ')?.url ?? '';
+
+function safetyValues(
+  safety: SafetyAlertFacts | null,
+  language: GuestLanguage,
+): Record<string, string> {
+  if (!safety) return {};
+  const copy = GUEST_COPY[language];
+  const at = (iso: string) =>
+    DateTime.fromISO(iso, { zone: safety.timezone, locale: language }).toFormat(
+      `${copy.dateFormat} HH:mm`,
+    );
+  if (safety.source === 'DHMZ') {
+    const line = safety.advisory?.lines[0];
+    const operator = FERRY_OPERATOR_INFO[ferryLine(line ?? '')?.operator ?? 'other'];
+    return {
+      level: copy.warningLevels[safety.level],
+      area: safety.area,
+      event: safety.event,
+      description: safety.description,
+      time: fill(copy.warningTime, { from: at(safety.onset), to: at(safety.expires) }),
+      lines: (safety.advisory?.lines ?? []).map(lineLabel).join(', '),
+      operator: operator.name,
+      operatorUrl: operator.url ?? '',
+      source: safety.source,
+      sourceUrl: DHMZ_URL,
+    };
+  }
+  return {
+    lines: safety.affected.lines.map(lineLabel).join(', '),
+    noticeTitle: safety.title,
+    noticeUrl: safety.url,
+    source: safety.source,
+  };
 }
 
 function values(facts: GuestNoticeFacts, language: GuestLanguage): Record<string, string> {
@@ -34,6 +79,7 @@ function values(facts: GuestNoticeFacts, language: GuestLanguage): Record<string
     date: facts.startTime ? fill(copy.dateAtTime, { date: day, time: facts.startTime }) : day,
     checkoutTime: facts.checkoutTime ?? '',
     platform: facts.reviewPlatform ? CALENDAR_SOURCE_LABELS[facts.reviewPlatform] : '',
+    ...safetyValues(facts.safety, language),
   };
 }
 
@@ -49,6 +95,14 @@ export function composeGuestEmail(
   const lines = text.lines.map((line) => fill(line, v));
   if (kind === 'checkout_reminder' && facts.checkoutTime) {
     lines.push(fill(copy.checkoutTimeLine, v));
+  }
+  const { safety } = facts;
+  if (kind === 'weather_warning' && safety?.source === 'DHMZ') {
+    if (safety.advisory) lines.push('', fill(copy.sailingAdvisory, v));
+    lines.push('', fill(copy.sourceLine, v));
+  }
+  if (kind === 'ferry_disruption' && safety?.source === 'Jadrolinija' && safety.affected.orderId) {
+    lines.push('', copy.orderStands);
   }
   lines.push('', `${copy.openApp}: ${guestOrigin}${NOTICE_PATHS[kind]}`);
   if (kind === 'checkout_reminder' && facts.reviewPlatform) {

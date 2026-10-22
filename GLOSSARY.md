@@ -80,6 +80,10 @@ _Avoid_: Forecast (for the whole report)
 **Warning area**:
 The DHMZ warning regions a Property falls in, a county and a marine region, taken from the nearest coastal reference town. A Property with no town close enough has unknown warnings.
 
+**Ferry line**:
+A ferry or catamaran line by its state line number (9603) or, without one, its operator's route (Bura Line). Day trips and transport notes record the lines they depend on, so Safety alerts can match a notice to a guest's plan.
+_Avoid_: route, connection
+
 ## Services
 
 **Order**:
@@ -204,5 +208,9 @@ On the Host side, the back-office list of Host messages. On the guest side, inbo
 _Avoid_: notifications tab, mailbox
 
 **Notice**:
-An inbox message from Fetivi about the guest's Orders or Stay: a booking confirmed, changed or cancelled, the reminder the evening before, arrival details ready, the checkout reminder. Also sent by email, and by push on Android when the guest asked for alerts. Never shown to the model.
+An inbox message from Fetivi about the guest's Orders or Stay: a booking confirmed, changed or cancelled, the reminder the evening before, arrival details ready, the checkout reminder, and Safety alerts. Also sent by email, and by push on Android when the guest asked for alerts. Never shown to the model.
 _Avoid_: alert, system message
+
+**Safety alert**:
+A Notice about an official weather warning, or a ferry or catamaran operator's notice touching a plan item or Order; sent to every open Space in the Stay; always attributed to its source, in the source's own words.
+_Avoid_: cancellation notice (Fetivi never states a cancellation)

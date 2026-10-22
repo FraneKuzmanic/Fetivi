@@ -66,6 +66,11 @@ export type WarningLanguage = 'hr' | 'en';
 
 export interface WeatherSource {
   report(place: WeatherPlace, language: WarningLanguage, now: Date): Promise<WeatherReport>;
+  /**
+   * DHMZ warnings alone. Throws `WeatherFeedError` when a feed fails with no stale body to stand
+   * in; null when no warning area covers `place` (unknown, never "none").
+   */
+  warnings(place: GeoPoint, language: WarningLanguage, now: Date): Promise<WeatherWarning[] | null>;
 }
 
 export interface WeatherSourceOptions {
@@ -160,7 +165,7 @@ export function createWeatherSource(options: WeatherSourceOptions): WeatherSourc
     return null;
   }
 
-  async function warnings(place: WeatherPlace, language: WarningLanguage, now: Date) {
+  async function warnings(place: GeoPoint, language: WarningLanguage, now: Date) {
     const feeds = await Promise.all(
       DHMZ_FEEDS.warnings.map((url) => cache.get(url, FEED_POLICIES.warnings)),
     );
@@ -168,6 +173,7 @@ export function createWeatherSource(options: WeatherSourceOptions): WeatherSourc
   }
 
   return {
+    warnings,
     async report(place, language, now) {
       const [f, s, u, w] = await Promise.allSettled([
         forecast(place),

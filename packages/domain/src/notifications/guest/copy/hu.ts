@@ -86,7 +86,32 @@ export const hu: GuestCopy = {
       pushTitle: 'Holnap van a kijelentkezés',
       pushBody: 'A kijelentkezés lépései az Útmutatóban vannak.',
     },
+    weather_warning: {
+      subject: 'A DHMZ időjárási figyelmeztetése ({{level}})',
+      lines: [
+        'A DHMZ, a horvát meteorológiai szolgálat időjárási figyelmeztetést ({{level}}) adott ki erre a területre: {{area}}, {{time}}:',
+        '„{{event}}. {{description}}”',
+      ],
+      pushTitle: 'Időjárási figyelmeztetés ({{level}})',
+      pushBody: '{{event}}, {{time}}',
+    },
+    ferry_disruption: {
+      subject: 'A Jadrolinija közleménye a(z) {{lines}} vonalról',
+      lines: [
+        'A Jadrolinija közleménye szerint: „{{noticeTitle}}”',
+        'Ez érintheti ezt: {{offer}}, {{date}} ({{lines}} vonal). Indulás előtt olvasd el a közleményt: {{noticeUrl}}',
+      ],
+      pushTitle: 'Jadrolinija közlemény: {{lines}} vonal',
+      pushBody: '{{offer}}, {{date}}',
+    },
   },
+  warningLevels: { yellow: 'sárga', orange: 'narancs', red: 'piros' },
+  warningTime: '{{from}} – {{to}}',
+  sailingAdvisory:
+    'A tengeri viszonyok megzavarhatják a járatokat a(z) {{lines}} vonalon ({{offer}}, {{date}}). Indulás előtt érdeklődj itt: {{operator}}, {{operatorUrl}}',
+  orderStands:
+    'A foglalásod érvényes marad, hacsak a szolgáltató le nem mondja. Ha mégis, azonnal szólok.',
+  sourceLine: 'Forrás: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Kérjük, {{checkoutTime}}-ig hagyd el a szállást.',
   reviewLine:
     'Ha szeretnéd elmondani, milyen volt a tartózkodásod, írhatsz értékelést itt: {{platform}}.',

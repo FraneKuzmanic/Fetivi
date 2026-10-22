@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import { FERRY_LINE_IDS } from '../alerts/vocabulary';
 import { type Db, type Executor, pgCode } from '../db/client';
 import {
   type CatalogRecordRow,
@@ -71,6 +72,13 @@ async function checked<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
+/** Ferry line ids deduplicated, in FERRY_LINES order; unknown ids are dropped. */
+function withLines<T extends { ferryLines?: string[] }>(values: T): T {
+  if (!values.ferryLines) return values;
+  const given = new Set(values.ferryLines);
+  return { ...values, ferryLines: FERRY_LINE_IDS.filter((id) => given.has(id)) };
+}
+
 /** Inserts a record at revision 1 and enqueues its translation in the same transaction. */
 export async function createCatalogRecord(
   db: Db,
@@ -82,7 +90,7 @@ export async function createCatalogRecord(
     db.transaction(async (tx) => {
       const [record] = await tx
         .insert(catalogRecords)
-        .values({ ...values, createdAt: now, updatedAt: now })
+        .values({ ...withLines(values), createdAt: now, updatedAt: now })
         .returning();
       if (!record) throw new Error('catalog record insert returned nothing');
       await enqueueCatalogTranslation(tx, queue, record);
@@ -115,7 +123,7 @@ export async function updateCatalogRecord(
       const [record] = await tx
         .update(catalogRecords)
         .set({
-          ...changes,
+          ...withLines(changes),
           updatedAt: now,
           ...(textChanged
             ? {

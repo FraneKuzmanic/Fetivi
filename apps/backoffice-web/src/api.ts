@@ -733,6 +733,8 @@ export interface CatalogRecord extends CatalogRecordSummary {
   transportMode: TransportMode | null;
   links: CatalogLink[];
   travelMinutes: number | null;
+  /** FERRY_LINES ids a day trip or transport note depends on (safety alerts). */
+  ferryLines: string[];
   fieldSources: FieldSources;
   /** Null for the seed or a deleted account. */
   verifiedByEmail: string | null;
@@ -766,10 +768,16 @@ export type CatalogRecordInput =
       venueName?: string | null;
       websiteUrl?: string | null;
     })
-  | (RecordText & { kind: 'transport_note'; transportMode: TransportMode; links?: CatalogLink[] })
+  | (RecordText & {
+      kind: 'transport_note';
+      transportMode: TransportMode;
+      links?: CatalogLink[];
+      ferryLines?: string[];
+    })
   | (RecordText & {
       kind: 'day_trip';
       travelMinutes: number;
+      ferryLines?: string[];
       location?: LatLng | null;
       websiteUrl?: string | null;
     });
@@ -789,6 +797,7 @@ export type CatalogRecordPatch = Partial<{
   transportMode: TransportMode;
   links: CatalogLink[];
   travelMinutes: number;
+  ferryLines: string[];
   fieldSources: FieldSources;
 }>;
 

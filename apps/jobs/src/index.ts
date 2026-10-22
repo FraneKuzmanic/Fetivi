@@ -4,14 +4,16 @@ import {
   createDb,
   createJobQueue,
   createMailer,
+  createWeatherSource,
   createWebPushSender,
 } from '@fetivi/domain';
 import { loadConfig } from './config';
-import { egress } from './egress';
+import { createJobsEgress } from './egress';
 import { createJobs } from './jobs';
 import { startJobRunner } from './runner';
 
 const config = loadConfig();
+const egress = createJobsEgress({ jadrolinija: config.JADROLINIJA_RSS_ENABLED });
 const { db, pool } = createDb(config.DATABASE_URL);
 const model = createAnthropicTranslationModel({
   apiKey: config.ANTHROPIC_API_KEY,
@@ -34,6 +36,7 @@ const push =
       })
     : null;
 if (!push) console.warn('VAPID keys are not set: push notifications are skipped');
+const weather = createWeatherSource({ fetch: egress.fetch, userAgent: config.WEATHER_USER_AGENT });
 const boss = await startJobRunner({
   connectionString: config.DATABASE_URL,
   jobs: (boss) =>
@@ -57,6 +60,9 @@ const boss = await startJobRunner({
       },
       fetch: egress.fetch,
       webOrigin: config.WEB_ORIGIN,
+      weather,
+      jadrolinija: config.JADROLINIJA_RSS_ENABLED,
+      userAgent: config.WEATHER_USER_AGENT,
     }),
 });
 console.log('job runner started');

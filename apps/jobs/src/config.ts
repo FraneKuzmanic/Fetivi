@@ -35,6 +35,16 @@ const schema = z
     VAPID_PUBLIC_KEY: optionalString,
     VAPID_PRIVATE_KEY: optionalString,
     VAPID_SUBJECT: z.string().default('mailto:admin@localhost'),
+    /** DHMZ and Jadrolinija get an identifying agent; production sets a reachable one. */
+    WEATHER_USER_AGENT: z
+      .string()
+      .min(10)
+      .default('Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)'),
+    /** Off until Jadrolinija gives written permission to poll its feed (PRD §9). */
+    JADROLINIJA_RSS_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((v) => v === 'true'),
   })
   .refine(
     (c) => c.NODE_ENV !== 'production' || c.PROVIDER_LINK_SECRET !== DEV_PROVIDER_LINK_SECRET,

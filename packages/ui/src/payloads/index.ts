@@ -1,6 +1,7 @@
 // The contracts of Fetivi's own streamed components. React-free: the chat backend validates with
 // these through `@fetivi/ui/payloads`, and the guest app re-checks stored parts before rendering.
 
+import { FERRY_LINE_IDS } from '@fetivi/domain/alerts-vocabulary';
 import { CALENDAR_SOURCES } from '@fetivi/domain/calendar-vocabulary';
 import { PLACE_CATEGORIES, STALENESS_STATUSES } from '@fetivi/domain/catalog-vocabulary';
 import {
@@ -284,6 +285,43 @@ export const elicitationPayload = z
 
 export { INBOX_PART_TYPE };
 
+/** A plan item or booked Order a safety alert names (`AffectedItem`). */
+const affectedItem = z.object({
+  title: z.string(),
+  /** Civil date 'YYYY-MM-DD'. */
+  date: z.string(),
+  /** 'HH:mm'. */
+  startTime: z.string().nullable(),
+  orderId: z.string().nullable(),
+  lines: z.array(z.enum(FERRY_LINE_IDS)),
+});
+
+/** A safety alert's facts (`SafetyAlertFacts`): the source's own words, never Fetivi's. */
+const safetyFacts = z.discriminatedUnion('source', [
+  z.object({
+    source: z.literal('DHMZ'),
+    level: z.enum(WARNING_LEVELS),
+    type: z.enum(WARNING_TYPES),
+    event: z.string(),
+    description: z.string(),
+    area: z.string(),
+    /** ISO instants. */
+    onset: z.string(),
+    expires: z.string(),
+    timezone: z.string(),
+    advisory: affectedItem.nullable(),
+  }),
+  z.object({
+    source: z.literal('Jadrolinija'),
+    noticeId: z.string(),
+    /** As published, in Croatian. */
+    title: z.string(),
+    url: z.string().url(),
+    timezone: z.string(),
+    affected: affectedItem,
+  }),
+]);
+
 /**
  * An inbox message in the Chat: the host's reply, or a notice (an Order or Stay notification)
  * that the guest app words in the current language. Notices never reach the model.
@@ -312,6 +350,7 @@ export const inboxItem = z.discriminatedUnion('kind', [
     checkoutTime: z.string().nullable().default(null),
     reviewPlatform: z.enum(CALENDAR_SOURCES).nullable().default(null),
     reviewUrl: z.string().url().nullable().default(null),
+    safety: safetyFacts.nullable().default(null),
     at: z.string(),
   }),
 ]);
@@ -325,6 +364,7 @@ export type ElicitationPayload = z.infer<typeof elicitationPayload>;
 export type HostMessageDraftPayload = z.infer<typeof hostMessageDraft>;
 export type HostMessageSentPayload = z.infer<typeof hostMessageSent>;
 export type InboxItem = z.infer<typeof inboxItem>;
+export type SafetyFactsPayload = z.infer<typeof safetyFacts>;
 export type DayPlanPayload = z.infer<typeof dayPlan>;
 export type PlanItemPayload = z.infer<typeof planItem>;
 export type WeatherCardPayload = z.infer<typeof weatherCard>;

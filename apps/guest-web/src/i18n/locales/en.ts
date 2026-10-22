@@ -188,6 +188,17 @@ export const en = {
     checkout_reminder: 'A reminder that checkout is tomorrow. The checkout steps are in the Guide.',
     checkoutBy: 'Please leave by {{checkoutTime}}.',
     review: "If you'd like to share how your stay went, you can leave a review on {{platform}}.",
+    weather_warning:
+      'DHMZ, the Croatian weather service, has issued a warning for {{area}}, {{time}}:',
+    ferry_disruption: "Jadrolinija's notice says:",
+    ferryAffects:
+      'It may affect {{offer}} on {{date}} (line {{lines}}). Please read the notice before you go.',
+    sailingAdvisory:
+      'Sea conditions may disrupt sailings on line {{lines}} ({{offer}}, {{date}}). Check with {{operator}} before you go.',
+    orderStands:
+      "Your booking stays as it is unless the provider cancels it. If they do, I'll tell you straight away.",
+    readNotice: "Read Jadrolinija's notice",
+    checkOperator: 'Line status at {{operator}}',
     seeTrip: 'See it in My trip',
     openGuide: 'Open the Guide',
   },

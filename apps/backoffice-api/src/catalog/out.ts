@@ -126,6 +126,7 @@ export async function recordDetail(
     transportMode: row.transportMode,
     links: row.links,
     travelMinutes: row.travelMinutes,
+    ferryLines: row.ferryLines,
     fieldSources: row.fieldSources,
     /** Null for the seed or a deleted account. */
     verifiedByEmail: verifier[0]?.email ?? null,

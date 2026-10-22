@@ -803,6 +803,46 @@ input {
   font-weight: 500;
 }
 
+/* A safety notice: the warning level as the weather card shows it, then the source's own words. */
+.notice-level {
+  --level: #e8b400;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.notice-level svg {
+  flex-shrink: 0;
+  color: var(--level);
+}
+
+.notice-level[data-level="orange"] {
+  --level: #e07000;
+}
+
+.notice-level[data-level="red"] {
+  --level: #c62828;
+}
+
+.notice-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--sky-200);
+  overflow-wrap: anywhere;
+}
+
+.notice-quote cite {
+  font-size: 0.8125rem;
+  font-style: normal;
+}
+
 /* The host's reply: their own bubble in the mascot's warm tone, without Fetivi's avatar. */
 .host-row {
   display: flex;

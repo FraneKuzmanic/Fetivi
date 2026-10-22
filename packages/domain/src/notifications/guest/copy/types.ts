@@ -1,4 +1,5 @@
 import type { SpaceTokenPurpose } from '../../../spaces/vocabulary';
+import type { WarningLevel } from '../../../weather/vocabulary';
 import type { GuestNotificationKind } from '../vocabulary';
 
 /** One notification's email and push text. Placeholders are `{{name}}`. */
@@ -20,6 +21,16 @@ export interface GuestCopy {
   /** An Order item's date with its start time. */
   dateAtTime: string;
   kinds: Record<GuestNotificationKind, KindCopy>;
+  /** A DHMZ warning level, as it reads inside the weather warning's sentences. */
+  warningLevels: Record<WarningLevel, string>;
+  /** A warning's span, `{{from}}` and `{{to}}` formatted in the property's zone. */
+  warningTime: string;
+  /** Added to a wind warning when a plan item or Order depends on a line that day. */
+  sailingAdvisory: string;
+  /** Added to a ferry notice that touches a booked Order: the Provider's word stands. */
+  orderStands: string;
+  /** Added to a weather warning: the source and its site. */
+  sourceLine: string;
   /** Added to the checkout reminder when the unit has a checkout time. */
   checkoutTimeLine: string;
   /** Added to the checkout email when the Stay came from a booking platform; neutral, no rating. */

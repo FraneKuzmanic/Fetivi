@@ -1,6 +1,7 @@
 import { CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
 import { NOTICE_PATHS } from '@fetivi/domain/notification-vocabulary';
 import type { InboxItem } from '@fetivi/ui/payloads';
+import { Warning } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Mascot } from '../../shell/Mascot';
@@ -12,7 +13,8 @@ const PLATFORM_SLOT = '\u0000';
 /**
  * An inbox message in the Chat. The host's reply sits in the host's own bubble without Fetivi's
  * mascot; a translated reply says so and keeps the host's words one tap away. A notice (an Order
- * or Stay notification) is Fetivi speaking, worded here in the current language.
+ * or Stay notification) is Fetivi speaking, worded here in the current language. A safety notice
+ * quotes its source (DHMZ, Jadrolinija) in the source's own words, with a link to it.
  */
 export function InboxPart({ item }: { item: InboxItem }) {
   const { t } = useTranslation();
@@ -52,7 +54,33 @@ function NoticePart({ notice }: { notice: Extract<InboxItem, { kind: 'notice' }>
       </span>
       <div className="fetivi-turn">
         <div className="bubble fetivi notice">
+          {words.safety?.level && (
+            <p className="notice-level" data-level={words.safety.level}>
+              <Warning size={18} aria-hidden="true" />
+              {words.safety.levelLabel}
+            </p>
+          )}
           <p>{words.text}</p>
+          {words.safety && (
+            <blockquote className="notice-quote" cite={words.safety.sourceUrl}>
+              <p>{words.safety.quote}</p>
+              <cite>
+                <a href={words.safety.sourceUrl} target="_blank" rel="noopener noreferrer">
+                  {words.safety.source}
+                </a>
+              </cite>
+            </blockquote>
+          )}
+          {words.safety?.more.map((sentence) => (
+            <p key={sentence}>{sentence}</p>
+          ))}
+          {words.safety?.links.map((link) => (
+            <p key={link.href}>
+              <a href={link.href} target="_blank" rel="noopener noreferrer">
+                {link.label}
+              </a>
+            </p>
+          ))}
           {words.checkoutBy && <p>{words.checkoutBy}</p>}
           {platform && notice.reviewUrl && (
             <p>

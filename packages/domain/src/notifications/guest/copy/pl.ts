@@ -89,7 +89,32 @@ export const pl: GuestCopy = {
       pushTitle: 'Wymeldowanie jest jutro',
       pushBody: 'Kroki wymeldowania znajdziesz w Przewodniku.',
     },
+    weather_warning: {
+      subject: 'Ostrzeżenie pogodowe DHMZ ({{level}})',
+      lines: [
+        'DHMZ, chorwacka służba meteorologiczna, wydała ostrzeżenie pogodowe ({{level}}) dla obszaru {{area}}, {{time}}:',
+        '„{{event}}. {{description}}”',
+      ],
+      pushTitle: 'Ostrzeżenie pogodowe ({{level}})',
+      pushBody: '{{event}}, {{time}}',
+    },
+    ferry_disruption: {
+      subject: 'Komunikat Jadrolinii o linii {{lines}}',
+      lines: [
+        'Komunikat Jadrolinii brzmi: „{{noticeTitle}}”',
+        'Może to dotyczyć: {{offer}}, {{date}} (linia {{lines}}). Przeczytaj komunikat przed wyjazdem: {{noticeUrl}}',
+      ],
+      pushTitle: 'Komunikat Jadrolinii: linia {{lines}}',
+      pushBody: '{{offer}}, {{date}}',
+    },
   },
+  warningLevels: { yellow: 'żółte', orange: 'pomarańczowe', red: 'czerwone' },
+  warningTime: '{{from}} – {{to}}',
+  sailingAdvisory:
+    'Warunki na morzu mogą zakłócić rejsy na linii {{lines}} ({{offer}}, {{date}}). Przed wyjazdem sprawdź u przewoźnika {{operator}}: {{operatorUrl}}',
+  orderStands:
+    'Twoja rezerwacja pozostaje bez zmian, chyba że usługodawca ją odwoła. Jeśli tak się stanie, od razu dam Ci znać.',
+  sourceLine: 'Źródło: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Prosimy o opuszczenie apartamentu do {{checkoutTime}}.',
   reviewLine:
     'Jeśli chcesz podzielić się wrażeniami z pobytu, możesz zostawić opinię na {{platform}}.',

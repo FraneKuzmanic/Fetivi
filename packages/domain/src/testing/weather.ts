@@ -1,11 +1,13 @@
 // Test-only weather: a fixed report, an always-down source, and a fetch that serves the recorded
-// DHMZ and MET Norway responses (`weather/recorded/`), so no test reaches the network.
+// DHMZ and MET Norway responses (`weather/recorded/`) and the recorded Jadrolinija feed
+// (`alerts/recorded/`), so no test reaches the network.
 import { readFileSync } from 'node:fs';
 import type { Egress } from '@fetivi/egress';
 import { DateTime } from 'luxon';
+import { JADROLINIJA_FEED } from '../alerts/vocabulary';
 import type { CivilDate } from '../time';
 import { DHMZ_FEEDS } from '../weather/dhmz';
-import { WeatherUnavailableError } from '../weather/errors';
+import { WeatherFeedError, WeatherUnavailableError } from '../weather/errors';
 import type { WeatherReport, WeatherSource } from '../weather/source';
 
 const ZONE = 'Europe/Zagreb';
@@ -87,6 +89,10 @@ export function fixedWeatherSource(
       calls++;
       return typeof report === 'function' ? report(now) : report;
     },
+    async warnings(_place, _language, now) {
+      calls++;
+      return (typeof report === 'function' ? report(now) : report).warnings ?? null;
+    },
   };
 }
 
@@ -95,6 +101,9 @@ export function unavailableWeatherSource(): WeatherSource {
   return {
     async report() {
       throw new WeatherUnavailableError('no weather source answered');
+    },
+    async warnings() {
+      throw new WeatherFeedError('meteo.hr feed unavailable');
     },
   };
 }
@@ -109,11 +118,13 @@ export interface RecordedWeatherFetchOptions {
   down?: readonly string[];
   /** Replacement bodies by exact URL. */
   bodies?: Readonly<Record<string, string>>;
+  /** Which Jadrolinija recording to serve: the 9603 suspension (default) or the live fetch. */
+  jadrolinija?: 'live' | 'suspension';
 }
 
 /**
  * A fetch serving the recorded feeds by URL. Any Locationforecast point gets the Trogir
- * recording. Anything else is a 404.
+ * recording; the Jadrolinija feed gets `options.jadrolinija`. Anything else is a 404.
  */
 export function recordedWeatherFetch(options: RecordedWeatherFetchOptions = {}): Egress['fetch'] & {
   readonly urls: string[];
@@ -134,6 +145,16 @@ export function recordedWeatherFetch(options: RecordedWeatherFetchOptions = {}):
     }
     const replaced = options.bodies?.[url];
     if (replaced !== undefined) return new Response(replaced);
+    if (url === JADROLINIJA_FEED) {
+      const name =
+        options.jadrolinija === 'live'
+          ? 'jadrolinija-vijesti.xml'
+          : 'jadrolinija-vijesti-suspension.xml';
+      return new Response(
+        readFileSync(new URL(`../alerts/recorded/${name}`, import.meta.url), 'utf8'),
+        { headers: { 'Content-Type': 'application/xml; charset=utf-8' } },
+      );
+    }
     if (url.startsWith(METNO_PREFIX)) {
       return new Response(recordedFile('metno-trogir.json'), {
         headers: { 'Content-Type': 'application/json' },

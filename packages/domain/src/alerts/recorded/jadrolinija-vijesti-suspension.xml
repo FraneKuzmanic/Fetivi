@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:a10="http://www.w3.org/2005/Atom" version="2.0">
+ <channel>
+  <title>Jadrolinija Vijesti</title>
+  <link>https://www.jadrolinija.hr/</link>
+  <description>Jadrolinija vijesti</description>
+  <category>Obavijesti</category>
+  <a10:contributor>
+   <a10:name></a10:name>
+  </a10:contributor>
+  <a10:link rel="self" type="application/rss+xml" href="https://www.jadrolinija.hr/feeds/vijesti"/>
+  <item>
+   <guid isPermaLink="false">urn:uuid:81</guid>
+   <link>https://www.jadrolinija.hr/hr/novost/linije-u-prekidu15102026</link>
+   <a10:author>
+    <a10:name></a10:name>
+   </a10:author>
+   <category>Obavijesti</category>
+   <title>Linije u prekidu, 15.10.2026</title>
+   <description>Linije u prekidu, 15.10.2026</description>
+   <pubDate>Wed, 14 Oct 2026 16:14:47 Z</pubDate>
+   <a10:content type="text">&lt;p&gt;Katamaranska linija 9603 Jelsa - Bol - Split s polaskom iz luke Jelsa u 06:00 isploviti će iz luke Stari Grad…&lt;/p&gt;</a10:content>
+  </item>
+ </channel>
+</rss>

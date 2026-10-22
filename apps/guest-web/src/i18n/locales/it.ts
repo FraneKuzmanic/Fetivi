@@ -192,6 +192,17 @@ export const it: Messages = {
     checkoutBy: 'Ti chiediamo di lasciare l’alloggio entro le {{checkoutTime}}.',
     review:
       'Se vuoi raccontare com’è andato il soggiorno, puoi lasciare una recensione su {{platform}}.',
+    weather_warning:
+      'Il DHMZ, il servizio meteorologico croato, ha emesso un’allerta per {{area}}, {{time}}:',
+    ferry_disruption: 'L’avviso di Jadrolinija dice:',
+    ferryAffects:
+      'Potrebbe riguardare {{offer}} il {{date}} (linea {{lines}}). Leggi l’avviso prima di partire.',
+    sailingAdvisory:
+      'Le condizioni del mare potrebbero disturbare le corse sulla linea {{lines}} ({{offer}}, {{date}}). Prima di partire verifica con {{operator}}.',
+    orderStands:
+      'La tua prenotazione resta valida, a meno che il fornitore non la cancelli. Se succede, te lo dico subito.',
+    readNotice: 'Leggi l’avviso di Jadrolinija',
+    checkOperator: 'Stato delle linee: {{operator}}',
     seeTrip: 'Vedi in Il mio viaggio',
     openGuide: 'Apri la Guida',
   },

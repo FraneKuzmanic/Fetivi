@@ -83,7 +83,32 @@ export const hr: GuestCopy = {
       pushTitle: 'Odjava je sutra',
       pushBody: 'Koraci za odjavu su u Vodiču.',
     },
+    weather_warning: {
+      subject: 'Upozorenje DHMZ-a na vrijeme ({{level}})',
+      lines: [
+        'DHMZ, Državni hidrometeorološki zavod, izdao je upozorenje na vrijeme ({{level}}) za {{area}}, {{time}}:',
+        '„{{event}}. {{description}}”',
+      ],
+      pushTitle: 'Upozorenje na vrijeme ({{level}})',
+      pushBody: '{{event}}, {{time}}',
+    },
+    ferry_disruption: {
+      subject: 'Obavijest Jadrolinije o liniji {{lines}}',
+      lines: [
+        'Obavijest Jadrolinije glasi: „{{noticeTitle}}”',
+        'Može utjecati na {{offer}} ({{date}}, linija {{lines}}). Molimo pročitajte obavijest prije polaska: {{noticeUrl}}',
+      ],
+      pushTitle: 'Obavijest Jadrolinije: linija {{lines}}',
+      pushBody: '{{offer}}, {{date}}',
+    },
   },
+  warningLevels: { yellow: 'žuto', orange: 'narančasto', red: 'crveno' },
+  warningTime: '{{from}} – {{to}}',
+  sailingAdvisory:
+    'Stanje mora može poremetiti plovidbu na liniji {{lines}} ({{offer}}, {{date}}). Prije polaska provjerite kod prijevoznika {{operator}}: {{operatorUrl}}',
+  orderStands:
+    'Vaša rezervacija ostaje kakva jest, osim ako je pružatelj otkaže. Ako je otkaže, odmah ću vam javiti.',
+  sourceLine: 'Izvor: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Molimo napustite smještaj do {{checkoutTime}}.',
   reviewLine: 'Ako želite podijeliti kako vam je bilo, recenziju možete ostaviti na {{platform}}.',
   spaceEmails: {

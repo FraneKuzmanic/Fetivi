@@ -55,6 +55,16 @@ describe('jobs config', () => {
     expect(() => loadConfig({ ...prod, MAIL_FROM: mail.MAIL_FROM })).toThrow(/GUEST_ORIGIN/);
   });
 
+  it('keeps the Jadrolinija feed off unless it is turned on', () => {
+    expect(loadConfig({}).JADROLINIJA_RSS_ENABLED).toBe(false);
+    expect(loadConfig({ JADROLINIJA_RSS_ENABLED: 'true' }).JADROLINIJA_RSS_ENABLED).toBe(true);
+    expect(() => loadConfig({ JADROLINIJA_RSS_ENABLED: 'yes' })).toThrow(/JADROLINIJA/);
+  });
+
+  it('has an identifying weather user agent', () => {
+    expect(loadConfig({}).WEATHER_USER_AGENT).toMatch(/^Fetivi\//);
+  });
+
   it('takes both VAPID keys or neither', () => {
     expect(loadConfig({}).VAPID_PUBLIC_KEY).toBeUndefined();
     expect(() => loadConfig({ VAPID_PUBLIC_KEY: 'pub' })).toThrow(/VAPID/);

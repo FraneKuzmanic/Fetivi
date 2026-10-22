@@ -1,5 +1,7 @@
+import { FERRY_OPERATOR_INFO, ferryLine } from '@fetivi/domain/alerts-vocabulary';
 import type { PriceUnit } from '@fetivi/domain/offer-vocabulary';
 import type { OrderStatus, PaymentStatus } from '@fetivi/domain/order-vocabulary';
+import type { WarningLevel } from '@fetivi/domain/weather-vocabulary';
 import type {
   AvailabilityPickerLabels,
   ChoiceCardLabels,
@@ -272,21 +274,116 @@ const NOTICE_KEYS = {
   order_reminder: 'notice.order_reminder',
   arrival_details: 'notice.arrival_details',
   checkout_reminder: 'notice.checkout_reminder',
+  weather_warning: 'notice.weather_warning',
+  ferry_disruption: 'notice.ferry_disruption',
 } as const satisfies Partial<Record<Notice['notification'], string>>;
 
 const isShownNotice = (kind: Notice['notification']): kind is keyof typeof NOTICE_KEYS =>
   kind in NOTICE_KEYS;
 
+/**
+ * A safety notice's parts: Fetivi's frame is in the interface language; the quote is the source's
+ * own words, never translated, never Fetivi saying a sailing is cancelled.
+ */
+export interface SafetyWords {
+  /** Weather warnings only, for the level chip. */
+  level: WarningLevel | null;
+  levelLabel: string | null;
+  quote: string;
+  source: string;
+  sourceUrl: string;
+  /** Further sentences: what it may affect, the sailing advisory, that a booking stands. */
+  more: string[];
+  links: { href: string; label: string }[];
+}
+
+export interface NoticeWords {
+  text: string;
+  checkoutBy: string | null;
+  safety: SafetyWords | null;
+}
+
+/** A line as guests know it: the number, or the route for a line without one. */
+const lineLabel = (id: string) => (/^\d+$/.test(id) ? id : (ferryLine(id)?.route ?? id));
+
+const DHMZ_URL = 'https://meteo.hr';
+
+function safetyWords(t: TFunction, language: string, notice: Notice): NoticeWords | null {
+  const facts = notice.safety;
+  if (!facts) return null;
+  const f = orderFormat(t, language);
+  const when = (item: { date: string; startTime: string | null }) =>
+    f.dateTime(item.date, item.startTime ? `${item.date}T${item.startTime}` : null);
+  if (facts.source === 'DHMZ') {
+    const time = weatherLabels(t, language).warningTime(facts.onset, facts.expires, facts.timezone);
+    const advisory = facts.advisory;
+    const operator = advisory
+      ? FERRY_OPERATOR_INFO[ferryLine(advisory.lines[0] ?? '')?.operator ?? 'other']
+      : null;
+    return {
+      text: t('notice.weather_warning', { area: facts.area, time }),
+      checkoutBy: null,
+      safety: {
+        level: facts.level,
+        levelLabel: t(`weather.level_${facts.level}`),
+        quote: [facts.event, facts.description].filter(Boolean).join('. '),
+        source: 'DHMZ',
+        sourceUrl: DHMZ_URL,
+        more: advisory
+          ? [
+              t('notice.sailingAdvisory', {
+                lines: advisory.lines.map(lineLabel).join(', '),
+                offer: advisory.title,
+                date: when(advisory),
+                operator: operator?.name ?? '',
+              }),
+            ]
+          : [],
+        links:
+          operator?.url != null
+            ? [
+                {
+                  href: operator.url,
+                  label: t('notice.checkOperator', { operator: operator.name }),
+                },
+              ]
+            : [],
+      },
+    };
+  }
+  const { affected } = facts;
+  return {
+    text: t('notice.ferry_disruption'),
+    checkoutBy: null,
+    safety: {
+      level: null,
+      levelLabel: null,
+      quote: facts.title,
+      source: 'Jadrolinija',
+      sourceUrl: facts.url,
+      more: [
+        t('notice.ferryAffects', {
+          offer: affected.title,
+          date: when(affected),
+          lines: affected.lines.map(lineLabel).join(', '),
+        }),
+        ...(affected.orderId ? [t('notice.orderStands')] : []),
+      ],
+      links: [{ href: facts.url, label: t('notice.readNotice') }],
+    },
+  };
+}
+
 /** A notice's sentences in the interface language, dates as the receipts show them; null if never shown. */
-export function noticeText(
-  t: TFunction,
-  language: string,
-  notice: Notice,
-): { text: string; checkoutBy: string | null } | null {
+export function noticeText(t: TFunction, language: string, notice: Notice): NoticeWords | null {
   if (!isShownNotice(notice.notification)) return null;
+  if (notice.notification === 'weather_warning' || notice.notification === 'ferry_disruption') {
+    return safetyWords(t, language, notice);
+  }
   const f = orderFormat(t, language);
   const { date, startTime, checkoutTime } = notice;
   return {
+    safety: null,
     text: t(NOTICE_KEYS[notice.notification], {
       offer: notice.offerTitle ?? '',
       date: date ? f.dateTime(date, startTime ? `${date}T${startTime}` : null) : '',

@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { DisruptionAlertFacts, WarningAlertFacts } from '../../alerts/vocabulary';
 import { findConversation, getOrCreateConversation, loadMessages } from '../../conversations/store';
 import { calendarEvents, calendarFeeds } from '../../db/schema/calendar';
 import { destinations } from '../../db/schema/catalog';
@@ -556,6 +557,109 @@ describe('deliverGuestNotification: Stay notices', () => {
         ),
       );
     expect(rows.map((r) => r.channel).sort()).toEqual(['email', 'inbox', 'push']);
+  });
+});
+
+describe('deliverGuestNotification: safety alerts', () => {
+  const ZONE = 'Europe/Zagreb';
+  const warning = (over: Partial<WarningAlertFacts> = {}): WarningAlertFacts => ({
+    source: 'DHMZ',
+    level: 'yellow',
+    type: 'wind',
+    event: 'Yellow wind warning',
+    description: 'Strong bura.',
+    area: 'Middle Dalmatia region',
+    onset: '2027-05-01T08:00:00.000Z',
+    expires: '2027-05-01T21:59:59.000Z',
+    timezone: ZONE,
+    advisory: null,
+    ...over,
+  });
+  const notice = (orderId: string | null): DisruptionAlertFacts => ({
+    source: 'Jadrolinija',
+    noticeId: 'urn:uuid:81',
+    title: 'Linije u prekidu, 2.5.2027',
+    url: 'https://www.jadrolinija.hr/hr/novost/linije-u-prekidu',
+    timezone: ZONE,
+    affected: { title: 'Bol day trip', date: DAY, startTime: '09:00', orderId, lines: ['9603'] },
+  });
+
+  it('sends a warning on every channel, quoting DHMZ, and the inbox keeps the facts', async () => {
+    const g = await guest();
+    await optIn(g.spaceId);
+    const { deps: d, mailer, push } = deps();
+    const data = { kind: 'weather_warning' as const, spaceId: g.spaceId, safety: warning() };
+    expect(await deliverGuestNotification(d, data)).toEqual({
+      inbox: 'sent',
+      email: 'sent',
+      push: 'sent',
+    });
+    expect(mailer.sent[0]?.text).toContain('"Yellow wind warning. Strong bura."');
+    expect(push.sent[0]?.message.title).toBe('Weather warning (yellow)');
+    expect((await inboxNotices(g.spaceId))[0]).toMatchObject({
+      notification: 'weather_warning',
+      safety: { source: 'DHMZ', level: 'yellow', area: 'Middle Dalmatia region' },
+    });
+    // AC 4: the same warning again sends nothing.
+    expect(await deliverGuestNotification(d, data)).toEqual({
+      inbox: 'already_sent',
+      email: 'already_sent',
+      push: 'already_sent',
+    });
+  });
+
+  it('still alerts a possibly cancelled Stay, but not a closed space or an expired warning', async () => {
+    const skipped = { inbox: 'skipped', email: 'skipped', push: 'skipped' };
+    const g = await guest();
+    await testDb.db.update(stays).set({ possiblyCancelled: true }).where(eq(stays.id, g.stayId));
+    expect(
+      (
+        await deliverGuestNotification(deps().deps, {
+          kind: 'weather_warning',
+          spaceId: g.spaceId,
+          safety: warning(),
+        })
+      ).inbox,
+    ).toBe('sent');
+    const expired = warning({ expires: '2027-05-01T09:00:00.000Z' });
+    expect(
+      await deliverGuestNotification(deps().deps, {
+        kind: 'weather_warning',
+        spaceId: g.spaceId,
+        safety: expired,
+      }),
+    ).toEqual(skipped);
+    const h = await guest();
+    await testDb.db.update(spaces).set({ closedAt: NOW }).where(eq(spaces.id, h.spaceId));
+    expect(
+      await deliverGuestNotification(deps().deps, {
+        kind: 'ferry_disruption',
+        spaceId: h.spaceId,
+        safety: notice(null),
+      }),
+    ).toEqual(skipped);
+  });
+
+  it("sends a ferry notice in Jadrolinija's words, with the Order line for a booking", async () => {
+    const g = await guest();
+    await optIn(g.spaceId);
+    const { deps: d, mailer } = deps();
+    await deliverGuestNotification(d, {
+      kind: 'ferry_disruption',
+      spaceId: g.spaceId,
+      safety: notice('11111111-1111-4111-8111-111111111111'),
+    });
+    const text = mailer.sent[0]?.text ?? '';
+    expect(text).toContain(`Jadrolinija's notice says: "Linije u prekidu, 2.5.2027"`);
+    expect(text).toContain('unless the provider cancels it');
+    expect(text).not.toMatch(/cancelled|suspended/i);
+    expect((await inboxNotices(g.spaceId))[0]).toMatchObject({
+      notification: 'ferry_disruption',
+      orderId: '11111111-1111-4111-8111-111111111111',
+      offerTitle: 'Bol day trip',
+      date: DAY,
+      startTime: '09:00',
+    });
   });
 });
 

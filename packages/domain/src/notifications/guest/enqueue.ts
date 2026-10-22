@@ -1,3 +1,4 @@
+import type { SafetyAlertFacts } from '../../alerts/vocabulary';
 import type { Executor } from '../../db/client';
 import { type JobQueue, QUEUES, uuidFrom } from '../../jobs/queue';
 import { orderJobKey } from '../../orders/timers';
@@ -13,6 +14,8 @@ export interface GuestNotifyJobData {
   orderId?: string;
   proposalId?: string;
   handoffId?: string;
+  /** Safety kinds carry their facts: the feed may have changed by send time. No contact fields. */
+  safety?: SafetyAlertFacts;
 }
 
 /**
@@ -28,6 +31,19 @@ export function guestNotificationKey(data: GuestNotifyJobData): string {
     return `order:${need(data.orderId, kind)}:proposal:${need(data.proposalId, kind)}:remind`;
   }
   if (kind === 'host_reply') return `handoff:${need(data.handoffId, kind)}:host_reply`;
+  // Safety keys leave out the language, area and advisory: one alert per warning or notice.
+  if (kind === 'weather_warning') {
+    const w = data.safety;
+    if (w?.source !== 'DHMZ') throw new Error(`guest notification ${kind} is missing its facts`);
+    return `space:${need(data.spaceId, kind)}:${kind}:${w.type}:${w.level}:${w.onset}:${w.expires}`;
+  }
+  if (kind === 'ferry_disruption') {
+    const d = data.safety;
+    if (d?.source !== 'Jadrolinija') {
+      throw new Error(`guest notification ${kind} is missing its facts`);
+    }
+    return `space:${need(data.spaceId, kind)}:${kind}:jadrolinija:${d.noticeId}`;
+  }
   return `space:${need(data.spaceId, kind)}:${kind}`;
 }
 

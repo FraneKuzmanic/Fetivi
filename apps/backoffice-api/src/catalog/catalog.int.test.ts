@@ -230,6 +230,32 @@ describe('records', () => {
     expect(response.json()).toEqual({ error: 'invalid-input' });
   });
 
+  it('keeps the ferry lines of a day trip, in table order, and refuses an unknown line', async () => {
+    const tripBody = {
+      kind: 'day_trip',
+      title: 'Bol',
+      description: 'Zlatni rat by catamaran.',
+      travelMinutes: 90,
+      ferryLines: ['9603', '635', '9603'],
+    };
+    const trip = await post(t.app, records(), tripBody, adminCookie);
+    expect(trip.statusCode).toBe(201);
+    expect(trip.json().ferryLines).toEqual(['635', '9603']);
+    const read = await get(t.app, recordUrl(trip.json().id), adminCookie);
+    expect(read.json().ferryLines).toEqual(['635', '9603']);
+
+    const cleared = await patch(t.app, recordUrl(trip.json().id), { ferryLines: [] }, adminCookie);
+    expect(cleared.json().ferryLines).toEqual([]);
+
+    const unknown = await post(
+      t.app,
+      records(),
+      { ...tripBody, ferryLines: ['2026'] },
+      adminCookie,
+    );
+    expect(unknown.statusCode).toBe(400);
+  });
+
   it('strips markup from the description', async () => {
     const place = await createPlace({ description: 'Good fish.<script>alert(1)</script>' });
     expect(place.description).not.toContain('<script>');

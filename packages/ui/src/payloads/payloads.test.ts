@@ -311,6 +311,7 @@ describe('inbox item', () => {
             startTime: '09:30',
             checkoutTime: '10:00',
             reviewPlatform: 'airbnb',
+            safety: null,
           },
         },
         now,
@@ -318,6 +319,57 @@ describe('inbox item', () => {
       expect(inboxItem.parse(data)).toEqual(data);
       expect(JSON.stringify(data)).not.toContain('guest@example.test');
     }
+  });
+
+  it('takes the facts of a weather warning and a ferry notice, and refuses a foreign link', () => {
+    const affected = {
+      title: 'Bol day trip',
+      date: '2026-10-15',
+      startTime: '08:00',
+      orderId: null,
+      lines: ['9603'],
+    };
+    const warning = {
+      source: 'DHMZ',
+      level: 'yellow',
+      type: 'wind',
+      event: 'Yellow wind warning',
+      description: 'Bura.',
+      area: 'Middle Dalmatia region',
+      onset: '2026-10-22T14:00:00.000Z',
+      expires: '2026-10-22T21:59:59.000Z',
+      timezone: 'Europe/Zagreb',
+      advisory: affected,
+    };
+    const notice = {
+      source: 'Jadrolinija',
+      noticeId: 'urn:uuid:81',
+      title: 'Linije u prekidu, 15.10.2026',
+      url: 'https://www.jadrolinija.hr/hr/novost/linije-u-prekidu15102026',
+      timezone: 'Europe/Zagreb',
+      affected,
+    };
+    const base = { kind: 'notice', at: '2026-10-14T16:00:00Z' };
+    for (const [notification, safety] of [
+      ['weather_warning', warning],
+      ['ferry_disruption', notice],
+    ] as const) {
+      expect(inboxItem.parse({ ...base, notification, safety })).toMatchObject({ safety });
+    }
+    expect(
+      inboxItem.safeParse({
+        ...base,
+        notification: 'ferry_disruption',
+        safety: { ...notice, url: 'not a url' },
+      }).success,
+    ).toBe(false);
+    expect(
+      inboxItem.safeParse({
+        ...base,
+        notification: 'ferry_disruption',
+        safety: { ...notice, affected: { ...affected, lines: ['2026'] } },
+      }).success,
+    ).toBe(false);
   });
 });
 

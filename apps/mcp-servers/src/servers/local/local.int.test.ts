@@ -44,6 +44,7 @@ const switchableWeather: WeatherSource = {
     weatherLanguages.push(language);
     return weather.report(place, language, now);
   },
+  warnings: (place, language, now) => weather.warnings(place, language, now),
 };
 
 let t: TestServer;

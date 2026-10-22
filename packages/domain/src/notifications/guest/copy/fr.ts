@@ -86,7 +86,32 @@ export const fr: GuestCopy = {
       pushTitle: 'Le départ, c’est demain',
       pushBody: 'Les étapes du départ sont dans le Guide.',
     },
+    weather_warning: {
+      subject: 'Alerte météo du DHMZ ({{level}})',
+      lines: [
+        'Le DHMZ, le service météorologique croate, a émis une alerte météo ({{level}}) pour {{area}}, {{time}} :',
+        '« {{event}}. {{description}} »',
+      ],
+      pushTitle: 'Alerte météo ({{level}})',
+      pushBody: '{{event}}, {{time}}',
+    },
+    ferry_disruption: {
+      subject: 'Avis de Jadrolinija sur la ligne {{lines}}',
+      lines: [
+        'L’avis de Jadrolinija dit : « {{noticeTitle}} »',
+        'Cela peut concerner {{offer}} le {{date}} (ligne {{lines}}). Lisez l’avis avant de partir : {{noticeUrl}}',
+      ],
+      pushTitle: 'Avis Jadrolinija : ligne {{lines}}',
+      pushBody: '{{offer}}, {{date}}',
+    },
   },
+  warningLevels: { yellow: 'jaune', orange: 'orange', red: 'rouge' },
+  warningTime: '{{from}} – {{to}}',
+  sailingAdvisory:
+    'L’état de la mer peut perturber les traversées sur la ligne {{lines}} ({{offer}}, {{date}}). Renseignez-vous auprès de {{operator}} avant de partir : {{operatorUrl}}',
+  orderStands:
+    'Votre réservation reste valable, sauf si le prestataire l’annule. Dans ce cas, je vous préviens tout de suite.',
+  sourceLine: 'Source : {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Merci de libérer le logement avant {{checkoutTime}}.',
   reviewLine:
     'Si vous souhaitez partager votre expérience, vous pouvez laisser un avis sur {{platform}}.',

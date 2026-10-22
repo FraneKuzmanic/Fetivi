@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { recordedWeatherFetch, WEATHER_RECORDED_AT } from '../testing/weather';
 import { DHMZ_FEEDS } from './dhmz';
-import { WeatherUnavailableError } from './errors';
+import { WeatherFeedError, WeatherUnavailableError } from './errors';
 import { metnoUrl } from './metno';
 import { createWeatherSource, type WeatherPlace } from './source';
 
@@ -144,6 +144,16 @@ describe('createWeatherSource', () => {
   it('throws WeatherUnavailableError when every part fails', async () => {
     const { weather } = source({ down: ['https://'] });
     await expect(weather.report(TROGIR, 'en', NOW)).rejects.toThrow(WeatherUnavailableError);
+  });
+
+  it('answers warnings alone, null without a warning area, and throws when a feed is down', async () => {
+    const { fetch, weather } = source();
+    const warnings = await weather.warnings(TROGIR, 'en', NOW);
+    expect(warnings?.map((w) => w.type)).toEqual(['wind', 'thunderstorm']);
+    expect(fetch.urls.every((url) => url.startsWith('https://meteo.hr/'))).toBe(true);
+    expect(await weather.warnings(ZAGREB, 'en', NOW)).toBeNull();
+    const down = source({ down: [DHMZ_FEEDS.warnings[1]] }).weather;
+    await expect(down.warnings(TROGIR, 'en', NOW)).rejects.toThrow(WeatherFeedError);
   });
 
   it('reuses the cache across reports', async () => {

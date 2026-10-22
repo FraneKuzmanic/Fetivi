@@ -9,6 +9,7 @@ import {
   stripMarkdownHtml,
   TRANSPORT_MODES,
 } from '@fetivi/domain';
+import { FERRY_LINE_IDS } from '@fetivi/domain/alerts-vocabulary';
 import { z } from 'zod';
 import { HHMM, latLng, line, optionalLine, phone, zone } from '../properties/schemas';
 
@@ -65,6 +66,9 @@ const common = {
 
 const link = z.strictObject({ label: line(LIMITS.title), url: httpsUrl });
 
+/** The ferry and catamaran lines a visit depends on; safety alerts match on them. */
+const ferryLines = z.array(z.enum(FERRY_LINE_IDS)).max(FERRY_LINE_IDS.length);
+
 /** Per kind: the fields of a create, with the optional ones marked. */
 const placeFields = {
   ...common,
@@ -86,12 +90,14 @@ const transportFields = {
   ...common,
   transportMode: z.enum(TRANSPORT_MODES),
   links: z.array(link).max(CATALOG_LIMITS.linksPerNote).optional(),
+  ferryLines: ferryLines.optional(),
 };
 const dayTripFields = {
   ...common,
   travelMinutes: z.number().int().min(1).max(CATALOG_LIMITS.travelMinutesMax),
   location: latLng.optional(),
   websiteUrl: optionalUrl.optional(),
+  ferryLines: ferryLines.optional(),
 };
 
 export const RecordCreate = z.discriminatedUnion('kind', [

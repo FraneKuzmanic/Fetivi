@@ -1025,6 +1025,15 @@ button svg,
   font-size: 14px;
 }
 
+/* Each checkbox row is already a full tap height. */
+.ferry-lines {
+  gap: 4px;
+}
+
+.ferry-lines > small {
+  margin-bottom: 4px;
+}
+
 /* Rows are divided by a line, not boxed: one level of panels. */
 .row-editor-item {
   display: grid;

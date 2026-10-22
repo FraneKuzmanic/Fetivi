@@ -15,6 +15,7 @@ import {
   pollCalendarsJob,
   stayNotifyJob,
 } from './poll-calendars';
+import { type SafetyAlertsDeps, safetyAlertsJob } from './safety-alerts';
 import { spaceEmailJob } from './space-email';
 import { translateBlockJob } from './translate-block';
 import { translateCatalogRecordJob } from './translate-catalog-record';
@@ -28,7 +29,8 @@ export function createJobs(
     GuestNotifyDeps &
     HostNotifyDeps &
     CalendarJobDeps &
-    HandoffJobDeps,
+    HandoffJobDeps &
+    SafetyAlertsDeps,
 ): JobDefinition[] {
   // The runner hands each handler the data its own queue was sent.
   return [
@@ -46,5 +48,6 @@ export function createJobs(
     hostNotifyJob(deps) as JobDefinition,
     hostDigestsJob(deps),
     spaceEmailJob(deps) as JobDefinition,
+    safetyAlertsJob(deps),
   ];
 }

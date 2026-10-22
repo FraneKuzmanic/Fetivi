@@ -189,6 +189,17 @@ export const hr: Messages = {
     checkout_reminder: 'Podsjetnik: odjava je sutra. Koraci za odjavu su u Vodiču.',
     checkoutBy: 'Molimo napustite smještaj do {{checkoutTime}}.',
     review: 'Ako želite podijeliti kako vam je bilo, recenziju možete ostaviti na {{platform}}.',
+    weather_warning:
+      'DHMZ, Državni hidrometeorološki zavod, izdao je upozorenje za {{area}}, {{time}}:',
+    ferry_disruption: 'Obavijest Jadrolinije glasi:',
+    ferryAffects:
+      'Može utjecati na {{offer}} ({{date}}, linija {{lines}}). Molimo pročitajte obavijest prije polaska.',
+    sailingAdvisory:
+      'Stanje mora može poremetiti plovidbu na liniji {{lines}} ({{offer}}, {{date}}). Prije polaska provjerite kod prijevoznika {{operator}}.',
+    orderStands:
+      'Vaša rezervacija ostaje kakva jest, osim ako je pružatelj otkaže. Ako je otkaže, odmah ću vam javiti.',
+    readNotice: 'Pročitajte obavijest Jadrolinije',
+    checkOperator: 'Stanje linija: {{operator}}',
     seeTrip: 'Pogledajte u Mojem putovanju',
     openGuide: 'Otvorite Vodič',
   },

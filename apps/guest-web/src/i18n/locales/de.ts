@@ -196,6 +196,17 @@ export const de: Messages = {
     checkoutBy: 'Bitte verlassen Sie die Unterkunft bis {{checkoutTime}} Uhr.',
     review:
       'Wenn Sie erzählen möchten, wie Ihr Aufenthalt war, können Sie eine Bewertung auf {{platform}} hinterlassen.',
+    weather_warning:
+      'Der kroatische Wetterdienst DHMZ hat eine Warnung für {{area}} herausgegeben, {{time}}:',
+    ferry_disruption: 'Der Hinweis von Jadrolinija lautet:',
+    ferryAffects:
+      'Das kann {{offer}} am {{date}} betreffen (Linie {{lines}}). Bitte lesen Sie den Hinweis, bevor Sie losfahren.',
+    sailingAdvisory:
+      'Der Seegang kann Fahrten auf der Linie {{lines}} stören ({{offer}}, {{date}}). Fragen Sie vor der Abfahrt bei {{operator}} nach.',
+    orderStands:
+      'Ihre Buchung bleibt bestehen, solange der Anbieter sie nicht storniert. Falls doch, sage ich Ihnen sofort Bescheid.',
+    readNotice: 'Hinweis von Jadrolinija lesen',
+    checkOperator: 'Linienstatus bei {{operator}}',
     seeTrip: 'In Meine Reise ansehen',
     openGuide: 'Reiseführer öffnen',
   },
