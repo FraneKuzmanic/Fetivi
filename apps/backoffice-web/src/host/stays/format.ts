@@ -1,3 +1,4 @@
+import { PIN_WARNING_DAYS } from '@fetivi/domain/stay-vocabulary';
 import type { PropertySummary, Stay } from '../../api';
 
 // Labels for Stays. Dates are civil dates, so they are formatted in UTC and never shift a day.
@@ -61,6 +62,22 @@ export function guestsLabel(partySize: number): string {
 }
 
 /** "just now", "12 min ago", "3 h ago", "2 days ago". */
+/** The Stays page's one warning line: Stays and calendar bookings close to check-in without a PIN. */
+export function pinWarningText(stays: number, proposals: number): string | null {
+  const parts: string[] = [];
+  if (stays === 1)
+    parts.push(`1 Stay starts within ${PIN_WARNING_DAYS} days and its PIN is not marked as sent.`);
+  if (stays > 1)
+    parts.push(
+      `${stays} Stays start within ${PIN_WARNING_DAYS} days and their PIN is not marked as sent.`,
+    );
+  if (proposals === 1)
+    parts.push(`1 booking starts within ${PIN_WARNING_DAYS} days and has no PIN yet.`);
+  if (proposals > 1)
+    parts.push(`${proposals} bookings start within ${PIN_WARNING_DAYS} days and have no PIN yet.`);
+  return parts.length > 0 ? parts.join(' ') : null;
+}
+
 export function agoLabel(iso: string, now: Date = new Date()): string {
   const minutes = Math.floor((now.getTime() - new Date(iso).getTime()) / 60_000);
   if (minutes < 1) return 'just now';

@@ -187,6 +187,18 @@ describe('plan', () => {
     });
   });
 
+  it('does not pair a Stay already under way: the new event is proposed, the Stay stays put', () => {
+    const actions = run(
+      [known('c', 'confirmed', '2026-10-17', '2026-10-21')],
+      [ev('new-uid', '2026-11-02', '2026-11-05')],
+      [stay('stay-c', '2026-10-17', '2026-10-21')],
+    );
+    expect(types(actions)).toEqual(['insert', 'vanish']);
+    expect(actions).toContainEqual(
+      expect.objectContaining({ type: 'insert', uid: 'new-uid', status: 'pending', stayId: null }),
+    );
+  });
+
   it('does not pair when two bookings vanished and two appeared', () => {
     const actions = run(
       [

@@ -6,6 +6,7 @@ import {
   nights,
   nightsLabel,
   PHASE_LABELS,
+  pinWarningText,
   releaseText,
 } from './format';
 
@@ -39,5 +40,21 @@ describe('Stay labels', () => {
     expect(agoLabel('2026-10-19T07:00:00Z', now)).toBe('3 h ago');
     expect(agoLabel('2026-10-18T09:00:00Z', now)).toBe('1 day ago');
     expect(agoLabel('2026-10-16T09:00:00Z', now)).toBe('3 days ago');
+  });
+});
+
+describe('pinWarningText', () => {
+  it('is empty without warnings', () => {
+    expect(pinWarningText(0, 0)).toBeNull();
+  });
+
+  it('counts Stays and calendar bookings in one line', () => {
+    expect(pinWarningText(1, 0)).toBe(
+      '1 Stay starts within 3 days and its PIN is not marked as sent.',
+    );
+    expect(pinWarningText(2, 1)).toBe(
+      '2 Stays start within 3 days and their PIN is not marked as sent. 1 booking starts within 3 days and has no PIN yet.',
+    );
+    expect(pinWarningText(0, 2)).toBe('2 bookings start within 3 days and have no PIN yet.');
   });
 });

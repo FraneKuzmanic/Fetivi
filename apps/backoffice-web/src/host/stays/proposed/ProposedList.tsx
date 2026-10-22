@@ -1,5 +1,4 @@
 import { CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
-import { PIN_WARNING_DAYS } from '@fetivi/domain/stay-vocabulary';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Link } from 'react-router';
 import { host, type StayProposals } from '../../../api';
@@ -9,9 +8,18 @@ import { BookingLinksStep } from './BookingLinksStep';
 
 /**
  * Bookings read from the unit calendars, waiting for Confirm or Not a booking. Renders nothing
- * when there are none, so the Stays page stays quiet.
+ * when there are none, so the Stays page stays quiet. `onWarned` gets the number close to
+ * check-in, which the Stays page counts in its one warning line.
  */
-export function ProposedList({ unitId, several }: { unitId?: string; several: boolean }) {
+export function ProposedList({
+  unitId,
+  several,
+  onWarned,
+}: {
+  unitId?: string;
+  several: boolean;
+  onWarned?: (count: number) => void;
+}) {
   const headingId = useId();
   const { busy, error, run } = useAction();
   const [data, setData] = useState<StayProposals | null>(null);
@@ -25,12 +33,15 @@ export function ProposedList({ unitId, several }: { unitId?: string; several: bo
     void load();
   }, [load]);
 
+  const warned = data?.proposals.filter((p) => p.pinWarning).length ?? 0;
+  useEffect(() => onWarned?.(warned), [onWarned, warned]);
+
   if (!data) return error ? <p role="alert">{error}</p> : null;
   const { proposals, bookingLinks } = data;
-  const warned = proposals.filter((p) => p.pinWarning).length;
 
   function dismiss(id: string) {
-    if (!window.confirm('Not a booking? Fetivi will not propose these dates again.')) return;
+    if (!window.confirm('Not a booking? Fetivi will not propose this calendar entry again.'))
+      return;
     void run(async () => {
       await host.dismissProposal(id);
       setData(await host.stayProposals(unitId));
@@ -42,13 +53,6 @@ export function ProposedList({ unitId, several }: { unitId?: string; several: bo
       {proposals.length > 0 ? (
         <section className="proposals" aria-labelledby={headingId}>
           <h2 id={headingId}>To confirm ({proposals.length})</h2>
-          {warned > 0 ? (
-            <p className="warning">
-              {warned === 1
-                ? `1 booking starts within ${PIN_WARNING_DAYS} days and has no PIN yet.`
-                : `${warned} bookings start within ${PIN_WARNING_DAYS} days and have no PIN yet.`}
-            </p>
-          ) : null}
           {error ? <p role="alert">{error}</p> : null}
           <ul className="rows">
             {proposals.map((p) => (
@@ -64,7 +68,12 @@ export function ProposedList({ unitId, several }: { unitId?: string; several: bo
                   {p.summaries.length > 0 ? (
                     <span className="muted proposal-summary">
                       {p.summaries
-                        .map((s) => `${CALENDAR_SOURCE_LABELS[s.source]}: ${s.summary}`)
+                        // One source is already named by its chip.
+                        .map((s) =>
+                          p.sources.length > 1
+                            ? `${CALENDAR_SOURCE_LABELS[s.source]}: ${s.summary}`
+                            : s.summary,
+                        )
                         .join(' · ')}
                     </span>
                   ) : null}

@@ -124,7 +124,10 @@ async function type(element: HTMLInputElement, value: string) {
 describe('ProposedList', () => {
   it('shows a merged proposal with both source chips and warns about a close check-in', async () => {
     stubApi();
-    await mount('/stays', <ProposedList several={false} />, '/stays');
+    const onWarned = vi.fn();
+    await mount('/stays', <ProposedList several={false} onWarned={onWarned} />, '/stays');
+    expect(onWarned).toHaveBeenLastCalledWith(1);
+    expect(document.querySelector('.warning')).toBeNull();
     expect(document.querySelector('h2')?.textContent).toBe('To confirm (2)');
     const rows = document.querySelectorAll('.proposal-row');
     expect(rows).toHaveLength(2);
@@ -132,9 +135,7 @@ describe('ProposedList', () => {
     expect(chips).toEqual(['Airbnb', 'Booking.com']);
     expect(rows[0]?.textContent).toContain('Airbnb: Reserved');
     expect(rows[1]?.textContent).toContain('Check-in soon');
-    expect(document.querySelector('.warning')?.textContent).toBe(
-      '1 booking starts within 3 days and has no PIN yet.',
-    );
+    expect(rows[1]?.querySelector('.proposal-summary')?.textContent).toBe('CLOSED - Not available');
     expect(rows[0]?.querySelector('a')?.getAttribute('href')).toBe('/stays/proposed/e1');
   });
 
@@ -148,7 +149,7 @@ describe('ProposedList', () => {
     confirm.mockReturnValue(true);
     await click(button('Not a booking'));
     expect(confirm).toHaveBeenLastCalledWith(
-      'Not a booking? Fetivi will not propose these dates again.',
+      'Not a booking? Fetivi will not propose this calendar entry again.',
     );
     expect(calls.filter((c) => c.method === 'POST').map((c) => c.url)).toEqual([
       '/api/host/stay-proposals/e1/dismiss',
@@ -170,6 +171,8 @@ describe('ConfirmProposalPage', () => {
     expect(document.body.textContent).toContain('from the Airbnb and Booking.com calendars');
     const guests = document.querySelector<HTMLInputElement>('input[type="number"]');
     if (!guests) throw new Error('no guests field');
+    expect(guests.value).toBe('');
+    expect(guests.required).toBe(true);
     await type(guests, '3');
     await click(button('Confirm and get PIN'));
     expect(calls.find((c) => c.url.endsWith('/confirm'))).toEqual({
@@ -183,6 +186,9 @@ describe('ConfirmProposalPage', () => {
   it('shows why a confirm failed', async () => {
     stubApi({ confirm: json({ error: 'proposal-gone' }, 409) });
     await mount('/stays/proposed/e1', <ConfirmProposalPage />, '/stays/proposed/:id');
+    const guests = document.querySelector<HTMLInputElement>('input[type="number"]');
+    if (!guests) throw new Error('no guests field');
+    await type(guests, '2');
     await click(button('Confirm and get PIN'));
     expect(document.querySelector('[role="alert"]')?.textContent).toBe(messageFor('proposal-gone'));
   });

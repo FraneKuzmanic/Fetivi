@@ -119,6 +119,7 @@ export function NumberField({
   max,
   step = 1,
   placeholder,
+  required,
 }: FieldProps & {
   value: number | null;
   onChange: (value: number | null) => void;
@@ -126,6 +127,7 @@ export function NumberField({
   max: number;
   step?: number | 'any';
   placeholder?: string;
+  required?: boolean;
 }) {
   return (
     <Field label={label} hint={hint} hideLabel={hideLabel}>
@@ -140,6 +142,7 @@ export function NumberField({
           max={max}
           step={step}
           placeholder={placeholder}
+          required={required}
           onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
         />
       )}

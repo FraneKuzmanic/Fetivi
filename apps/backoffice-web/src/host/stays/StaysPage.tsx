@@ -1,10 +1,16 @@
-import { PIN_WARNING_DAYS } from '@fetivi/domain/stay-vocabulary';
 import { Plus } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { host, type PropertySummary, type Stay } from '../../api';
 import { useAction } from '../../useAction';
-import { dateRange, guestsLabel, liveUnits, nightsLabel, PHASE_LABELS } from './format';
+import {
+  dateRange,
+  guestsLabel,
+  liveUnits,
+  nightsLabel,
+  PHASE_LABELS,
+  pinWarningText,
+} from './format';
 import { ProposedList } from './proposed/ProposedList';
 
 export function StayChips({ stay }: { stay: Stay }) {
@@ -28,6 +34,7 @@ export function StaysPage() {
   const { error, run } = useAction();
   const [properties, setProperties] = useState<PropertySummary[]>([]);
   const [list, setList] = useState<Stay[] | null>(null);
+  const [proposalsWarned, setProposalsWarned] = useState(0);
   const unitId = params.get('unit') ?? '';
   const past = params.get('past') === '1';
 
@@ -51,7 +58,10 @@ export function StaysPage() {
   const several = properties.length > 1;
   // Only live units can have Stays.
   const units = liveUnits(properties);
-  const warned = list?.filter((s) => s.pinWarning).length ?? 0;
+  const warning = pinWarningText(
+    list?.filter((s) => s.pinWarning).length ?? 0,
+    past ? 0 : proposalsWarned,
+  );
 
   return (
     <>
@@ -91,14 +101,14 @@ export function StaysPage() {
         ) : null}
       </div>
       {error ? <p role="alert">{error}</p> : null}
-      {past ? null : <ProposedList unitId={unitId || undefined} several={several} />}
-      {warned > 0 ? (
-        <p className="warning">
-          {warned === 1
-            ? `1 Stay starts within ${PIN_WARNING_DAYS} days and its PIN is not marked as sent.`
-            : `${warned} Stays start within ${PIN_WARNING_DAYS} days and their PIN is not marked as sent.`}
-        </p>
-      ) : null}
+      {warning ? <p className="warning">{warning}</p> : null}
+      {past ? null : (
+        <ProposedList
+          unitId={unitId || undefined}
+          several={several}
+          onWarned={setProposalsWarned}
+        />
+      )}
       {list === null && !error ? <p className="muted">Loading…</p> : null}
       {list?.length === 0 ? (
         <p className="muted">

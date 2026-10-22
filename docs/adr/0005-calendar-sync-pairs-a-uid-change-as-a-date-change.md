@@ -13,8 +13,8 @@ If a new UID were always read as a new booking, every Booking.com date change wo
 The sync planner (`packages/domain/src/calendar/reconcile.ts`) handles both behaviours:
 
 - A kept UID with new dates is a plain date change: the Stay moves through `updateStay`, the PIN stays, and the host gets one email.
-- A changed UID is read as a date change only when, in one poll of one feed, **exactly one** confirmed event of an active Stay vanished and **exactly one** new usable event appeared. The new event is linked to that Stay, the old event row is deleted instead of marked vanished, and the Stay moves if the dates differ.
-- Anything more ambiguous (two vanished, two new, or a vanished event whose Stay already ended) is not paired. The Stay is marked possibly cancelled (when it has not started yet) and the new event becomes a proposal. The host decides.
+- A changed UID is read as a date change only when, in one poll of one feed, **exactly one** confirmed event of a Stay that has not started yet vanished and **exactly one** new usable event appeared. The new event is linked to that Stay, the old event row is deleted instead of marked vanished, and the Stay moves if the dates differ.
+- Anything more ambiguous (two vanished, two new, or a vanished event whose Stay has already started or ended) is not paired. Platforms drop started stays from their exports, so pairing one would move the current guest's Stay to the new dates. The Stay is marked possibly cancelled (when it has not started yet) and the new event becomes a proposal. The host decides.
 
 ## Consequences
 

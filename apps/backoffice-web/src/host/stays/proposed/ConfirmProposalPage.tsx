@@ -15,7 +15,7 @@ export function ConfirmProposalPage() {
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
   const [proposal, setProposal] = useState<StayProposal | null | undefined>(undefined);
-  const [partySize, setPartySize] = useState<number | null>(2);
+  const [partySize, setPartySize] = useState<number | null>(null);
   const [bookerName, setBookerName] = useState<string | null>(null);
   const [reservationNumber, setReservationNumber] = useState<string | null>(null);
   const [language, setLanguage] = useState<GuestLanguage>('en');
@@ -78,6 +78,7 @@ export function ConfirmProposalPage() {
                 value={partySize}
                 min={STAY_LIMITS.partySize.min}
                 max={STAY_LIMITS.partySize.max}
+                required
                 onChange={setPartySize}
               />
               <div className="field-row">

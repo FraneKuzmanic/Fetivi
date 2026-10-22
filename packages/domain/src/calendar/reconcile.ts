@@ -127,9 +127,10 @@ export function plan(input: PlanInput): SyncAction[] {
     justVanished.push({ event: k, stay, flag });
   }
 
-  // 3. A UID change: exactly one booking vanished and exactly one new one appeared.
+  // 3. A UID change: exactly one booking vanished and exactly one new one appeared. A Stay
+  // already under way is never paired (exports drop started stays), so its guest is not moved.
   const fresh = [...fetched.values()].filter((f) => !knownUids.has(f.uid));
-  const pairable = justVanished.filter((v) => v.stay);
+  const pairable = justVanished.filter((v) => v.stay && v.stay.checkIn >= today);
   const paired = pairable.length === 1 && fresh.length === 1 ? pairable[0] : undefined;
   const pairedNew = paired ? fresh[0] : undefined;
   for (const v of justVanished) {

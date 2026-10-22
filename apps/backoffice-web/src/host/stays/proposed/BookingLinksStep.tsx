@@ -39,7 +39,7 @@ export function BookingLinksStep({
           Add <strong className="mono-text">{domain}</strong>
           <CopyButton text={domain} label="Copy domain" />
         </li>
-        <li>Come back here and tap Done.</li>
+        <li>Come back here and choose Done.</li>
       </ol>
       {error ? <p role="alert">{error}</p> : null}
       <div className="actions">

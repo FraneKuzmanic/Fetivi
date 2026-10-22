@@ -1,4 +1,4 @@
-import { CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
+import { CALENDAR_LIMITS, CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
 import { Trash } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useId, useState } from 'react';
 import { type CalendarFeed, host, type UnitCalendars } from '../../../api';
@@ -94,7 +94,7 @@ export function CalendarsPanel({ unitId }: { unitId: string }) {
             label="Calendar export link"
             hint="From Airbnb or Booking.com. It starts with https://."
             value={url}
-            maxLength={2048}
+            maxLength={CALENDAR_LIMITS.urlLength}
             required
             onChange={setUrl}
           />

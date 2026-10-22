@@ -73,9 +73,9 @@ export function StayPage() {
 
       <div className="editor">
         {stay.possiblyCancelled ? (
-          <section className="panel" aria-labelledby="cancelled-heading">
+          <section className="warning" aria-labelledby="cancelled-heading">
             <h2 id="cancelled-heading">Possibly cancelled</h2>
-            <p className="warning">
+            <p>
               This booking disappeared from the {calendarsText(stay.calendarSources)}. It may be
               cancelled. The PIN keeps working until you decide.
             </p>
