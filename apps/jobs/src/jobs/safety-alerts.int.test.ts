@@ -37,7 +37,7 @@ let boss: PgBoss;
 let queue: JobQueue;
 let destinationId: string;
 
-/** The day before the reconstructed 9603 notice ("Linije u prekidu, 15.10.2026"). */
+/** The day before the reconstructed 9603 bulletin ("Linije u prekidu, 15.10.2026"). */
 const FERRY_NOW = new Date('2026-10-14T10:00:00Z');
 
 beforeAll(async () => {
@@ -183,7 +183,7 @@ describe('safety-alerts job', () => {
     }
   });
 
-  it('sends a Jadrolinija notice only to the space whose plan uses the named line (AC 2, AC 3)', async () => {
+  it('sends a Jadrolinija bulletin only to the space whose plan uses the named line (AC 2, AC 3)', async () => {
     const now = FERRY_NOW;
     const bol = await dayTrip('Bol', ['9603'], now);
     const hvar = await dayTrip('Hvar', ['635'], now);
@@ -207,7 +207,7 @@ describe('safety-alerts job', () => {
         spaceId: onLine.spaceId,
         safety: {
           source: 'Jadrolinija',
-          noticeId: 'urn:uuid:81',
+          bulletinId: 'urn:uuid:81',
           title: 'Linije u prekidu, 15.10.2026',
           url: 'https://www.jadrolinija.hr/hr/novost/linije-u-prekidu15102026',
           timezone: 'Europe/Zagreb',

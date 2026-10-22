@@ -1,7 +1,7 @@
-import { FERRY_OPERATOR_INFO, ferryLine } from '@fetivi/domain/alerts-vocabulary';
+import { ferryLineLabel, lineOperator } from '@fetivi/domain/alerts-vocabulary';
 import type { PriceUnit } from '@fetivi/domain/offer-vocabulary';
 import type { OrderStatus, PaymentStatus } from '@fetivi/domain/order-vocabulary';
-import type { WarningLevel } from '@fetivi/domain/weather-vocabulary';
+import { DHMZ_URL, type WarningLevel } from '@fetivi/domain/weather-vocabulary';
 import type {
   AvailabilityPickerLabels,
   ChoiceCardLabels,
@@ -303,11 +303,6 @@ export interface NoticeWords {
   safety: SafetyWords | null;
 }
 
-/** A line as guests know it: the number, or the route for a line without one. */
-const lineLabel = (id: string) => (/^\d+$/.test(id) ? id : (ferryLine(id)?.route ?? id));
-
-const DHMZ_URL = 'https://meteo.hr';
-
 function safetyWords(t: TFunction, language: string, notice: Notice): NoticeWords | null {
   const facts = notice.safety;
   if (!facts) return null;
@@ -317,9 +312,7 @@ function safetyWords(t: TFunction, language: string, notice: Notice): NoticeWord
   if (facts.source === 'DHMZ') {
     const time = weatherLabels(t, language).warningTime(facts.onset, facts.expires, facts.timezone);
     const advisory = facts.advisory;
-    const operator = advisory
-      ? FERRY_OPERATOR_INFO[ferryLine(advisory.lines[0] ?? '')?.operator ?? 'other']
-      : null;
+    const operator = advisory ? lineOperator(advisory.lines[0]) : null;
     return {
       text: t('notice.weather_warning', { area: facts.area, time }),
       checkoutBy: null,
@@ -332,7 +325,7 @@ function safetyWords(t: TFunction, language: string, notice: Notice): NoticeWord
         more: advisory
           ? [
               t('notice.sailingAdvisory', {
-                lines: advisory.lines.map(lineLabel).join(', '),
+                lines: advisory.lines.map(ferryLineLabel).join(', '),
                 offer: advisory.title,
                 date: when(advisory),
                 operator: operator?.name ?? '',
@@ -365,11 +358,11 @@ function safetyWords(t: TFunction, language: string, notice: Notice): NoticeWord
         t('notice.ferryAffects', {
           offer: affected.title,
           date: when(affected),
-          lines: affected.lines.map(lineLabel).join(', '),
+          lines: affected.lines.map(ferryLineLabel).join(', '),
         }),
         ...(affected.orderId ? [t('notice.orderStands')] : []),
       ],
-      links: [{ href: facts.url, label: t('notice.readNotice') }],
+      links: [{ href: facts.url, label: t('notice.readBulletin') }],
     },
   };
 }

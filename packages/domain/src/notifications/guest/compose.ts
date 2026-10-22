@@ -1,9 +1,9 @@
 import { DateTime } from 'luxon';
-import { FERRY_OPERATOR_INFO, ferryLine, type SafetyAlertFacts } from '../../alerts/vocabulary';
+import { ferryLineLabel, lineOperator, type SafetyAlertFacts } from '../../alerts/vocabulary';
 import { CALENDAR_SOURCE_LABELS, type CalendarSource } from '../../calendar/vocabulary';
 import type { GuestLanguage } from '../../property/vocabulary';
 import type { CivilDate } from '../../time';
-import { WEATHER_CREDITS } from '../../weather/vocabulary';
+import { DHMZ_URL } from '../../weather/vocabulary';
 import { GUEST_COPY } from './copy';
 import { type GuestNotificationKind, NOTICE_PATHS, REVIEW_LINKS } from './vocabulary';
 
@@ -30,11 +30,6 @@ function fill(template: string, values: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, name: string) => values[name] ?? '');
 }
 
-/** A numbered line by its number; a line without one (Bura Line) by its route. */
-const lineLabel = (id: string) => (/^\d+$/.test(id) ? id : (ferryLine(id)?.route ?? id));
-
-const DHMZ_URL = WEATHER_CREDITS.find((c) => c.source === 'DHMZ')?.url ?? '';
-
 function safetyValues(
   safety: SafetyAlertFacts | null,
   language: GuestLanguage,
@@ -46,15 +41,14 @@ function safetyValues(
       `${copy.dateFormat} HH:mm`,
     );
   if (safety.source === 'DHMZ') {
-    const line = safety.advisory?.lines[0];
-    const operator = FERRY_OPERATOR_INFO[ferryLine(line ?? '')?.operator ?? 'other'];
+    const operator = lineOperator(safety.advisory?.lines[0]);
     return {
       level: copy.warningLevels[safety.level],
       area: safety.area,
       event: safety.event,
       description: safety.description,
       time: fill(copy.warningTime, { from: at(safety.onset), to: at(safety.expires) }),
-      lines: (safety.advisory?.lines ?? []).map(lineLabel).join(', '),
+      lines: (safety.advisory?.lines ?? []).map(ferryLineLabel).join(', '),
       operator: operator.name,
       operatorUrl: operator.url ?? '',
       source: safety.source,
@@ -62,9 +56,9 @@ function safetyValues(
     };
   }
   return {
-    lines: safety.affected.lines.map(lineLabel).join(', '),
-    noticeTitle: safety.title,
-    noticeUrl: safety.url,
+    lines: safety.affected.lines.map(ferryLineLabel).join(', '),
+    bulletinTitle: safety.title,
+    bulletinUrl: safety.url,
     source: safety.source,
   };
 }

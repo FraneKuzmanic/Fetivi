@@ -95,14 +95,14 @@ export const pl: GuestCopy = {
         'DHMZ, chorwacka służba meteorologiczna, wydała ostrzeżenie pogodowe ({{level}}) dla obszaru {{area}}, {{time}}:',
         '„{{event}}. {{description}}”',
       ],
-      pushTitle: 'Ostrzeżenie pogodowe ({{level}})',
+      pushTitle: 'Ostrzeżenie pogodowe DHMZ ({{level}})',
       pushBody: '{{event}}, {{time}}',
     },
     ferry_disruption: {
       subject: 'Komunikat Jadrolinii o linii {{lines}}',
       lines: [
-        'Komunikat Jadrolinii brzmi: „{{noticeTitle}}”',
-        'Może to dotyczyć: {{offer}}, {{date}} (linia {{lines}}). Przeczytaj komunikat przed wyjazdem: {{noticeUrl}}',
+        'Komunikat Jadrolinii brzmi: „{{bulletinTitle}}”',
+        'Może to dotyczyć: {{offer}}, {{date}} (linia {{lines}}). Przeczytaj komunikat przed wyjazdem: {{bulletinUrl}}',
       ],
       pushTitle: 'Komunikat Jadrolinii: linia {{lines}}',
       pushBody: '{{offer}}, {{date}}',

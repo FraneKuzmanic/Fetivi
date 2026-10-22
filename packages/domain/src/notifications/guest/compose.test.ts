@@ -4,6 +4,7 @@ import type {
   DisruptionAlertFacts,
   WarningAlertFacts,
 } from '../../alerts/vocabulary';
+import { GUEST_LANGUAGES } from '../../property/vocabulary';
 import { composeGuestEmail, composeGuestPush, type GuestNoticeFacts } from './compose';
 import { GUEST_NOTIFICATION_KINDS } from './vocabulary';
 
@@ -47,7 +48,7 @@ const WARNING: WarningAlertFacts = {
 };
 const NOTICE: DisruptionAlertFacts = {
   source: 'Jadrolinija',
-  noticeId: 'urn:uuid:81',
+  bulletinId: 'urn:uuid:81',
   title: 'Linije u prekidu, 15.10.2026',
   url: 'https://www.jadrolinija.hr/hr/novost/linije-u-prekidu15102026',
   timezone: ZONE,
@@ -222,9 +223,17 @@ describe('composeGuestPush', () => {
     expect(composeGuestPush('arrival_details', STAY, 'en').url).toBe('/guide');
   });
 
+  it('names DHMZ in every language of a weather warning push', () => {
+    for (const language of GUEST_LANGUAGES) {
+      expect(composeGuestPush('weather_warning', safetyFacts(WARNING), language).title).toContain(
+        'DHMZ',
+      );
+    }
+  });
+
   it('gives the safety kinds a short attributed text', () => {
     expect(composeGuestPush('weather_warning', safetyFacts(WARNING), 'en')).toEqual({
-      title: 'Weather warning (orange)',
+      title: 'DHMZ weather warning (orange)',
       body: 'Orange wind warning, Thu 22 Oct 16:00 – Thu 22 Oct 23:59',
       url: '/chat',
     });

@@ -577,7 +577,7 @@ describe('deliverGuestNotification: safety alerts', () => {
   });
   const notice = (orderId: string | null): DisruptionAlertFacts => ({
     source: 'Jadrolinija',
-    noticeId: 'urn:uuid:81',
+    bulletinId: 'urn:uuid:81',
     title: 'Linije u prekidu, 2.5.2027',
     url: 'https://www.jadrolinija.hr/hr/novost/linije-u-prekidu',
     timezone: ZONE,
@@ -595,7 +595,7 @@ describe('deliverGuestNotification: safety alerts', () => {
       push: 'sent',
     });
     expect(mailer.sent[0]?.text).toContain('"Yellow wind warning. Strong bura."');
-    expect(push.sent[0]?.message.title).toBe('Weather warning (yellow)');
+    expect(push.sent[0]?.message.title).toBe('DHMZ weather warning (yellow)');
     expect((await inboxNotices(g.spaceId))[0]).toMatchObject({
       notification: 'weather_warning',
       safety: { source: 'DHMZ', level: 'yellow', area: 'Middle Dalmatia region' },

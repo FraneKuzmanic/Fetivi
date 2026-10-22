@@ -343,7 +343,7 @@ describe('inbox item', () => {
     };
     const notice = {
       source: 'Jadrolinija',
-      noticeId: 'urn:uuid:81',
+      bulletinId: 'urn:uuid:81',
       title: 'Linije u prekidu, 15.10.2026',
       url: 'https://www.jadrolinija.hr/hr/novost/linije-u-prekidu15102026',
       timezone: 'Europe/Zagreb',

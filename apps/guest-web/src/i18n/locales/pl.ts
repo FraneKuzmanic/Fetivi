@@ -200,7 +200,7 @@ export const pl: Messages = {
       'Warunki na morzu mogą zakłócić rejsy na linii {{lines}} ({{offer}}, {{date}}). Przed wyjazdem sprawdź u przewoźnika {{operator}}.',
     orderStands:
       'Twoja rezerwacja pozostaje bez zmian, chyba że usługodawca ją odwoła. Jeśli tak się stanie, od razu dam Ci znać.',
-    readNotice: 'Przeczytaj komunikat Jadrolinii',
+    readBulletin: 'Przeczytaj komunikat Jadrolinii',
     checkOperator: 'Stan linii: {{operator}}',
     seeTrip: 'Zobacz w Mojej podróży',
     openGuide: 'Otwórz Przewodnik',

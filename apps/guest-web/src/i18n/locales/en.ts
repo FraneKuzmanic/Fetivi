@@ -197,7 +197,7 @@ export const en = {
       'Sea conditions may disrupt sailings on line {{lines}} ({{offer}}, {{date}}). Check with {{operator}} before you go.',
     orderStands:
       "Your booking stays as it is unless the provider cancels it. If they do, I'll tell you straight away.",
-    readNotice: "Read Jadrolinija's notice",
+    readBulletin: "Read Jadrolinija's notice",
     checkOperator: 'Line status at {{operator}}',
     seeTrip: 'See it in My trip',
     openGuide: 'Open the Guide',

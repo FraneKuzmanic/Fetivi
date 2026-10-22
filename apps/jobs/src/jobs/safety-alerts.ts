@@ -29,7 +29,7 @@ export interface SafetyAlertsDeps {
 }
 
 /**
- * Every 10 minutes: one guest-notify job per (DHMZ warning or Jadrolinija notice, open Space it
+ * Every 10 minutes: one guest-notify job per (DHMZ warning or Jadrolinija bulletin, open Space it
  * touches). The key is the job id and the ledger key, so repeated runs add nothing (one alert per
  * warning per space). One feed failing never stops the other. Ferryhopper `get_disruptions` is
  * deliberately not a source: spike S3 found no Croatian data in it.
@@ -72,8 +72,9 @@ export function safetyAlertsJob(deps: SafetyAlertsDeps): JobDefinition {
             headers: { 'User-Agent': deps.userAgent },
           });
           if (!response.ok) throw new Error(`Jadrolinija feed answered ${response.status}`);
-          const notices = parseJadrolinijaFeed(await response.text());
-          for (const notice of notices) ferryJobs.push(...disruptionAlerts(notice, spaces, now));
+          const bulletins = parseJadrolinijaFeed(await response.text());
+          for (const bulletin of bulletins)
+            ferryJobs.push(...disruptionAlerts(bulletin, spaces, now));
           ferry = 'ok';
         } catch (error) {
           console.error('safety-alerts: Jadrolinija feed unavailable', error);
@@ -84,7 +85,7 @@ export function safetyAlertsJob(deps: SafetyAlertsDeps): JobDefinition {
       for (const data of [...warningJobs, ...ferryJobs]) {
         await enqueueGuestNotification(deps.db, deps.queue, data);
       }
-      // Ids and counts only, never notice text.
+      // Ids and counts only, never bulletin text.
       console.log(
         JSON.stringify({
           job: QUEUES.safetyAlerts,

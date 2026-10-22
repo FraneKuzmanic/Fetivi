@@ -81,8 +81,12 @@ _Avoid_: Forecast (for the whole report)
 The DHMZ warning regions a Property falls in, a county and a marine region, taken from the nearest coastal reference town. A Property with no town close enough has unknown warnings.
 
 **Ferry line**:
-A ferry or catamaran line by its state line number (9603) or, without one, its operator's route (Bura Line). Day trips and transport notes record the lines they depend on, so Safety alerts can match a notice to a guest's plan.
+A ferry or catamaran line by its state line number (9603) or, without one, its operator's route (Bura Line). Day trips and transport notes record the lines they depend on, so Safety alerts can match a Ferry bulletin to a guest's plan.
 _Avoid_: route, connection
+
+**Ferry bulletin**:
+An item in a ferry operator's own news feed (Jadrolinija's RSS), in Croatian, that may name lines and days. Untrusted input: only its title and link reach the guest, quoted and attributed.
+_Avoid_: notice (a Notice is Fetivi's inbox message)
 
 ## Services
 
@@ -212,5 +216,5 @@ An inbox message from Fetivi about the guest's Orders or Stay: a booking confirm
 _Avoid_: alert, system message
 
 **Safety alert**:
-A Notice about an official weather warning, or a ferry or catamaran operator's notice touching a plan item or Order; sent to every open Space in the Stay; always attributed to its source, in the source's own words.
+A Notice about an official weather warning, or a Ferry bulletin touching a plan item or Order; sent to every open Space in the Stay; always attributed to its source, in the source's own words.
 _Avoid_: cancellation notice (Fetivi never states a cancellation)

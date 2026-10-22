@@ -203,7 +203,7 @@ export const fr: Messages = {
       'L’état de la mer peut perturber les traversées sur la ligne {{lines}} ({{offer}}, {{date}}). Renseignez-vous auprès de {{operator}} avant de partir.',
     orderStands:
       'Votre réservation reste valable, sauf si le prestataire l’annule. Dans ce cas, je vous préviens tout de suite.',
-    readNotice: 'Lire l’avis de Jadrolinija',
+    readBulletin: 'Lire l’avis de Jadrolinija',
     checkOperator: 'État des lignes : {{operator}}',
     seeTrip: 'Voir dans Mon séjour',
     openGuide: 'Ouvrir le Guide',

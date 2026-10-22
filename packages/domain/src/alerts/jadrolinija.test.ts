@@ -9,29 +9,29 @@ const SUSPENSION = recorded('jadrolinija-vijesti-suspension.xml');
 const LIVE = recorded('jadrolinija-vijesti.xml');
 
 describe('parseJadrolinijaFeed', () => {
-  it('reads the suspension notice, its pubDate as local time', () => {
-    const [notice, ...rest] = parseJadrolinijaFeed(SUSPENSION);
+  it('reads the suspension bulletin, its pubDate as local time', () => {
+    const [bulletin, ...rest] = parseJadrolinijaFeed(SUSPENSION);
     expect(rest).toEqual([]);
-    expect(notice).toMatchObject({
+    expect(bulletin).toMatchObject({
       id: 'urn:uuid:81',
       title: 'Linije u prekidu, 15.10.2026',
       url: 'https://www.jadrolinija.hr/hr/novost/linije-u-prekidu15102026',
       // "16:14:47 Z" is Zagreb wall-clock time, not UTC.
       publishedLocal: '2026-10-14T16:14',
     });
-    expect(notice?.text).toContain('Katamaranska linija 9603');
-    expect(notice?.text).not.toContain('<p>');
+    expect(bulletin?.text).toContain('Katamaranska linija 9603');
+    expect(bulletin?.text).not.toContain('<p>');
   });
 
   it('reads the live recording, which names no line', () => {
-    const [notice] = parseJadrolinijaFeed(LIVE);
-    expect(notice).toMatchObject({
+    const [bulletin] = parseJadrolinijaFeed(LIVE);
+    expect(bulletin).toMatchObject({
       id: 'urn:uuid:82',
       title: 'Svi Jadrolinijini brodovi plove prema redu plovidbe',
       url: 'https://www.jadrolinija.hr/news-single/stanje-u-pomorskom-prometu',
       publishedLocal: '2026-10-14T16:10',
     });
-    expect(linesIn(notice?.text ?? '', 'jadrolinija')).toEqual([]);
+    expect(linesIn(bulletin?.text ?? '', 'jadrolinija')).toEqual([]);
   });
 
   it('falls back to the official page for a link to another host or over http', () => {
@@ -65,8 +65,8 @@ describe('parseJadrolinijaFeed', () => {
 
 describe('linesIn', () => {
   it('finds 9603 and ignores years, times and dates', () => {
-    const [notice] = parseJadrolinijaFeed(SUSPENSION);
-    expect(linesIn(notice?.text ?? '', 'jadrolinija')).toEqual(['9603']);
+    const [bulletin] = parseJadrolinijaFeed(SUSPENSION);
+    expect(linesIn(bulletin?.text ?? '', 'jadrolinija')).toEqual(['9603']);
     expect(linesIn('2026 06:00 15.10.2026 1000', 'jadrolinija')).toEqual([]);
   });
 

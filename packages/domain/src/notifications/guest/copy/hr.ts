@@ -89,14 +89,14 @@ export const hr: GuestCopy = {
         'DHMZ, Državni hidrometeorološki zavod, izdao je upozorenje na vrijeme ({{level}}) za {{area}}, {{time}}:',
         '„{{event}}. {{description}}”',
       ],
-      pushTitle: 'Upozorenje na vrijeme ({{level}})',
+      pushTitle: 'DHMZ upozorenje na vrijeme ({{level}})',
       pushBody: '{{event}}, {{time}}',
     },
     ferry_disruption: {
       subject: 'Obavijest Jadrolinije o liniji {{lines}}',
       lines: [
-        'Obavijest Jadrolinije glasi: „{{noticeTitle}}”',
-        'Može utjecati na {{offer}} ({{date}}, linija {{lines}}). Molimo pročitajte obavijest prije polaska: {{noticeUrl}}',
+        'Obavijest Jadrolinije glasi: „{{bulletinTitle}}”',
+        'Može utjecati na {{offer}} ({{date}}, linija {{lines}}). Molimo pročitajte obavijest prije polaska: {{bulletinUrl}}',
       ],
       pushTitle: 'Obavijest Jadrolinije: linija {{lines}}',
       pushBody: '{{offer}}, {{date}}',

@@ -2,11 +2,11 @@ import { DateTime } from 'luxon';
 import type { GuestNotifyJobData } from '../notifications/guest/enqueue';
 import { type CivilDate, startOfCivilDay } from '../time';
 import type { WeatherWarning } from '../weather/source';
-import { datesIn, type FerryNotice, linesIn } from './jadrolinija';
+import { datesIn, type FerryBulletin, linesIn } from './jadrolinija';
 import type { AlertSpace } from './spaces';
 import type { AffectedItem } from './vocabulary';
 
-// Which Spaces a warning or a ferry notice touches, pure. Nothing here ever decides that a sailing
+// Which Spaces a warning or a ferry bulletin touches, pure. Nothing here ever decides that a sailing
 // is cancelled: the facts carry the source's own words and the line ids, nothing more.
 
 /** By date, then time (any time last), then an Order before a suggestion. */
@@ -74,17 +74,17 @@ export function warningAlerts(
 }
 
 /**
- * One ferry_disruption job per Space with an item, today or later, on a day the notice covers and
- * on a line it names. The earliest such item is named. No line in the notice → no job.
+ * One ferry_disruption job per Space with an item, today or later, on a day the bulletin covers and
+ * on a line it names. The earliest such item is named. No line in the bulletin → no job.
  */
 export function disruptionAlerts(
-  notice: FerryNotice,
+  bulletin: FerryBulletin,
   spaces: readonly AlertSpace[],
   now: Date,
 ): GuestNotifyJobData[] {
-  const noticeLines = linesIn(notice.text, 'jadrolinija');
-  if (noticeLines.length === 0) return [];
-  const days = datesIn(notice.text, notice.publishedLocal.slice(0, 10));
+  const bulletinLines = linesIn(bulletin.text, 'jadrolinija');
+  if (bulletinLines.length === 0) return [];
+  const days = datesIn(bulletin.text, bulletin.publishedLocal.slice(0, 10));
   const jobs: GuestNotifyJobData[] = [];
   for (const space of spaces) {
     const today = DateTime.fromJSDate(now, { zone: space.zone }).toISODate() as CivilDate;
@@ -92,7 +92,9 @@ export function disruptionAlerts(
       .sort(byWhen)
       .find(
         (i) =>
-          i.date >= today && days.includes(i.date) && i.lines.some((l) => noticeLines.includes(l)),
+          i.date >= today &&
+          days.includes(i.date) &&
+          i.lines.some((l) => bulletinLines.includes(l)),
       );
     if (!item) continue;
     jobs.push({
@@ -100,11 +102,11 @@ export function disruptionAlerts(
       spaceId: space.spaceId,
       safety: {
         source: 'Jadrolinija',
-        noticeId: notice.id,
-        title: notice.title,
-        url: notice.url,
+        bulletinId: bulletin.id,
+        title: bulletin.title,
+        url: bulletin.url,
         timezone: space.zone,
-        affected: { ...item, lines: item.lines.filter((l) => noticeLines.includes(l)) },
+        affected: { ...item, lines: item.lines.filter((l) => bulletinLines.includes(l)) },
       },
     });
   }

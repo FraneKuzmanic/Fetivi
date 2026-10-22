@@ -313,7 +313,7 @@ const safetyFacts = z.discriminatedUnion('source', [
   }),
   z.object({
     source: z.literal('Jadrolinija'),
-    noticeId: z.string(),
+    bulletinId: z.string(),
     /** As published, in Croatian. */
     title: z.string(),
     url: z.string().url(),
@@ -364,7 +364,6 @@ export type ElicitationPayload = z.infer<typeof elicitationPayload>;
 export type HostMessageDraftPayload = z.infer<typeof hostMessageDraft>;
 export type HostMessageSentPayload = z.infer<typeof hostMessageSent>;
 export type InboxItem = z.infer<typeof inboxItem>;
-export type SafetyFactsPayload = z.infer<typeof safetyFacts>;
 export type DayPlanPayload = z.infer<typeof dayPlan>;
 export type PlanItemPayload = z.infer<typeof planItem>;
 export type WeatherCardPayload = z.infer<typeof weatherCard>;

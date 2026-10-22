@@ -201,7 +201,7 @@ export const it: Messages = {
       'Le condizioni del mare potrebbero disturbare le corse sulla linea {{lines}} ({{offer}}, {{date}}). Prima di partire verifica con {{operator}}.',
     orderStands:
       'La tua prenotazione resta valida, a meno che il fornitore non la cancelli. Se succede, te lo dico subito.',
-    readNotice: 'Leggi l’avviso di Jadrolinija',
+    readBulletin: 'Leggi l’avviso di Jadrolinija',
     checkOperator: 'Stato delle linee: {{operator}}',
     seeTrip: 'Vedi in Il mio viaggio',
     openGuide: 'Apri la Guida',

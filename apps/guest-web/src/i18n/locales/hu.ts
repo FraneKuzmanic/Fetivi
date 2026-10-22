@@ -202,7 +202,7 @@ export const hu: Messages = {
       'A tengeri viszonyok megzavarhatják a járatokat a(z) {{lines}} vonalon ({{offer}}, {{date}}). Indulás előtt érdeklődj itt: {{operator}}.',
     orderStands:
       'A foglalásod érvényes marad, hacsak a szolgáltató le nem mondja. Ha mégis, azonnal szólok.',
-    readNotice: 'A Jadrolinija közleménye',
+    readBulletin: 'A Jadrolinija közleménye',
     checkOperator: 'Járatok állapota: {{operator}}',
     seeTrip: 'Megnézem az Utazásomban',
     openGuide: 'Útmutató megnyitása',

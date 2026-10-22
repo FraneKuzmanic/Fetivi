@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { recordedWeatherFetch, WEATHER_RECORDED_AT } from '../testing/weather';
 import { createWeatherSource, type WeatherWarning } from '../weather/source';
-import { type FerryNotice, parseJadrolinijaFeed } from './jadrolinija';
+import { type FerryBulletin, parseJadrolinijaFeed } from './jadrolinija';
 import { disruptionAlerts, warningAlerts } from './match';
 import type { AlertSpace } from './spaces';
 import type { AffectedItem, DisruptionAlertFacts, WarningAlertFacts } from './vocabulary';
@@ -103,8 +103,8 @@ describe('warningAlerts', () => {
 });
 
 describe('disruptionAlerts', () => {
-  let notice: FerryNotice;
-  // Two days before the notice's day, so the 15 Oct items are still ahead.
+  let bulletin: FerryBulletin;
+  // Two days before the bulletin's day, so the 15 Oct items are still ahead.
   const BEFORE = new Date('2026-10-13T10:00:00Z');
 
   beforeAll(() => {
@@ -113,8 +113,8 @@ describe('disruptionAlerts', () => {
       'utf8',
     );
     const [first] = parseJadrolinijaFeed(xml);
-    if (!first) throw new Error('no recorded notice');
-    notice = first;
+    if (!first) throw new Error('no recorded bulletin');
+    bulletin = first;
   });
 
   const on15 = (over: Partial<AffectedItem> = {}) =>
@@ -123,11 +123,11 @@ describe('disruptionAlerts', () => {
     space({ spaceId, checkIn: '2026-10-13', items });
 
   it('alerts a space with a 9603 item on 15 Oct, with the lines in common', () => {
-    const jobs = disruptionAlerts(notice, [stay([on15()])], BEFORE);
+    const jobs = disruptionAlerts(bulletin, [stay([on15()])], BEFORE);
     expect(jobs).toHaveLength(1);
     expect(jobs[0]?.safety as DisruptionAlertFacts).toEqual({
       source: 'Jadrolinija',
-      noticeId: 'urn:uuid:81',
+      bulletinId: 'urn:uuid:81',
       title: 'Linije u prekidu, 15.10.2026',
       url: 'https://www.jadrolinija.hr/hr/novost/linije-u-prekidu15102026',
       timezone: ZONE,
@@ -140,15 +140,15 @@ describe('disruptionAlerts', () => {
       stay([on15({ date: '2026-10-16' })], 'a'),
       stay([on15({ lines: ['635'] })], 'b'),
     ];
-    expect(disruptionAlerts(notice, spaces, BEFORE)).toEqual([]);
+    expect(disruptionAlerts(bulletin, spaces, BEFORE)).toEqual([]);
     const afterwards = new Date('2026-10-16T10:00:00Z');
-    expect(disruptionAlerts(notice, [stay([on15()])], afterwards)).toEqual([]);
+    expect(disruptionAlerts(bulletin, [stay([on15()])], afterwards)).toEqual([]);
   });
 
   it('names the earliest of two matching items, an Order first on a tie', () => {
     const order = on15({ title: 'Booked trip', orderId: 'o1', startTime: '09:00' });
     const jobs = disruptionAlerts(
-      notice,
+      bulletin,
       [stay([on15({ startTime: '11:00' }), on15({ startTime: '09:00' }), order])],
       BEFORE,
     );
@@ -156,13 +156,13 @@ describe('disruptionAlerts', () => {
     expect(jobs[0]?.safety).toMatchObject({ affected: { orderId: 'o1' } });
   });
 
-  it('makes nothing for a notice that names no line', () => {
-    const quiet = { ...notice, text: 'U pomorskom prometu nema poteškoća, 15.10.2026' };
+  it('makes nothing for a bulletin that names no line', () => {
+    const quiet = { ...bulletin, text: 'U pomorskom prometu nema poteškoća, 15.10.2026' };
     expect(disruptionAlerts(quiet, [stay([on15()])], BEFORE)).toEqual([]);
   });
 
-  it('uses the publication day when the notice has no date', () => {
-    const undated = { ...notice, text: 'Katamaranska linija 9603 u prekidu' };
+  it('uses the publication day when the bulletin has no date', () => {
+    const undated = { ...bulletin, text: 'Katamaranska linija 9603 u prekidu' };
     expect(disruptionAlerts(undated, [stay([on15({ date: '2026-10-14' })])], BEFORE)).toHaveLength(
       1,
     );

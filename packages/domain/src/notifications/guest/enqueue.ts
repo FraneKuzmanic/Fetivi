@@ -42,7 +42,7 @@ export function guestNotificationKey(data: GuestNotifyJobData): string {
     if (d?.source !== 'Jadrolinija') {
       throw new Error(`guest notification ${kind} is missing its facts`);
     }
-    return `space:${need(data.spaceId, kind)}:${kind}:jadrolinija:${d.noticeId}`;
+    return `space:${need(data.spaceId, kind)}:${kind}:jadrolinija:${d.bulletinId}`;
   }
   return `space:${need(data.spaceId, kind)}:${kind}`;
 }

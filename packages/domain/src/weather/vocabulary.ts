@@ -49,8 +49,10 @@ export interface WeatherCredit {
 }
 
 /** Both licences ask only for credit: DHMZ Open Licence, MET Norway CC BY 4.0. */
+export const DHMZ_URL = 'https://meteo.hr';
+
 export const WEATHER_CREDITS: readonly WeatherCredit[] = [
-  { source: 'DHMZ', label: 'Sea, UV and warnings: DHMZ', url: 'https://meteo.hr' },
+  { source: 'DHMZ', label: 'Sea, UV and warnings: DHMZ', url: DHMZ_URL },
   { source: 'MET Norway', label: 'Forecast: MET Norway (CC BY 4.0)', url: 'https://www.met.no/en' },
 ];
 

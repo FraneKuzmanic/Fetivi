@@ -13,7 +13,7 @@ export class FerryFeedError extends Error {
   override name = 'FerryFeedError';
 }
 
-export interface FerryNotice {
+export interface FerryBulletin {
   /** The guid, else the link. */
   id: string;
   title: string;
@@ -59,7 +59,7 @@ const PUB_DATE = /(\d{1,2}) ([A-Z][a-z]{2}) (\d{4}) (\d{2}):(\d{2})/;
 
 /**
  * The wall-clock fields of an RFC 822 pubDate. Jadrolinija labels Croatian local time "Z"
- * (research §1), so the zone is ignored.
+ * (seen in the recorded feed), so the zone is ignored.
  */
 function localPubDate(value: string): string | null {
   const match = PUB_DATE.exec(value);
@@ -77,13 +77,13 @@ function localPubDate(value: string): string | null {
 }
 
 /** The feed's items; an item without a title, an id or a readable pubDate is skipped. */
-export function parseJadrolinijaFeed(xml: string): FerryNotice[] {
+export function parseJadrolinijaFeed(xml: string): FerryBulletin[] {
   if (XMLValidator.validate(xml) !== true) throw new FerryFeedError('malformed XML (rss)');
   const doc = parser.parse(xml) as Node;
   const channel = (doc.rss as Node | undefined)?.channel as Node | undefined;
   if (!channel || typeof channel !== 'object') throw new FerryFeedError('missing <rss><channel>');
   const items = Array.isArray(channel.item) ? (channel.item as Node[]) : [];
-  const notices: FerryNotice[] = [];
+  const bulletins: FerryBulletin[] = [];
   for (const item of items) {
     const title = stripMarkup(text(item.title), { singleLine: true });
     const link = text(item.link);
@@ -93,7 +93,7 @@ export function parseJadrolinijaFeed(xml: string): FerryNotice[] {
     const body = [text(item.description), text(item['a10:content'])]
       .map((part) => stripMarkup(part))
       .filter((part) => part !== '' && part !== title);
-    notices.push({
+    bulletins.push({
       id,
       title,
       url: vettedUrl(link),
@@ -101,7 +101,7 @@ export function parseJadrolinijaFeed(xml: string): FerryNotice[] {
       publishedLocal,
     });
   }
-  return notices;
+  return bulletins;
 }
 
 /** Line ids of `operator` named in `text`; the table filters out years, times and dates. */

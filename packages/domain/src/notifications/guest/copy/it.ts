@@ -89,14 +89,14 @@ export const it: GuestCopy = {
         'Il DHMZ, il servizio meteorologico croato, ha emesso un’allerta meteo ({{level}}) per {{area}}, {{time}}:',
         '«{{event}}. {{description}}»',
       ],
-      pushTitle: 'Allerta meteo ({{level}})',
+      pushTitle: 'Allerta meteo DHMZ ({{level}})',
       pushBody: '{{event}}, {{time}}',
     },
     ferry_disruption: {
       subject: 'Avviso di Jadrolinija sulla linea {{lines}}',
       lines: [
-        'L’avviso di Jadrolinija dice: «{{noticeTitle}}»',
-        'Potrebbe riguardare {{offer}} il {{date}} (linea {{lines}}). Leggi l’avviso prima di partire: {{noticeUrl}}',
+        'L’avviso di Jadrolinija dice: «{{bulletinTitle}}»',
+        'Potrebbe riguardare {{offer}} il {{date}} (linea {{lines}}). Leggi l’avviso prima di partire: {{bulletinUrl}}',
       ],
       pushTitle: 'Avviso Jadrolinija: linea {{lines}}',
       pushBody: '{{offer}}, {{date}}',

@@ -92,14 +92,14 @@ export const hu: GuestCopy = {
         'A DHMZ, a horvát meteorológiai szolgálat időjárási figyelmeztetést ({{level}}) adott ki erre a területre: {{area}}, {{time}}:',
         '„{{event}}. {{description}}”',
       ],
-      pushTitle: 'Időjárási figyelmeztetés ({{level}})',
+      pushTitle: 'DHMZ időjárási figyelmeztetés ({{level}})',
       pushBody: '{{event}}, {{time}}',
     },
     ferry_disruption: {
       subject: 'A Jadrolinija közleménye a(z) {{lines}} vonalról',
       lines: [
-        'A Jadrolinija közleménye szerint: „{{noticeTitle}}”',
-        'Ez érintheti ezt: {{offer}}, {{date}} ({{lines}} vonal). Indulás előtt olvasd el a közleményt: {{noticeUrl}}',
+        'A Jadrolinija közleménye szerint: „{{bulletinTitle}}”',
+        'Ez érintheti ezt: {{offer}}, {{date}} ({{lines}} vonal). Indulás előtt olvasd el a közleményt: {{bulletinUrl}}',
       ],
       pushTitle: 'Jadrolinija közlemény: {{lines}} vonal',
       pushBody: '{{offer}}, {{date}}',
