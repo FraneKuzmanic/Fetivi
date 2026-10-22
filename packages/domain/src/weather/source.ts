@@ -52,7 +52,7 @@ export interface WeatherWarning {
 export interface WeatherReport {
   /** null: MET Norway unavailable now. */
   forecast: { updatedAt: string; days: ForecastDay[] } | null;
-  /** null: unavailable, or no station with a reading within range. */
+  /** null: unavailable, or no station with a reading today within range. */
   sea: SeaReading | null;
   /** null: unavailable, or no station with a reading today within range. */
   uv: UvReading | null;
@@ -124,11 +124,16 @@ export function createWeatherSource(options: WeatherSourceOptions): WeatherSourc
     return { updatedAt, days: dailyForecast(steps, place.timezone) };
   }
 
-  async function sea(place: WeatherPlace): Promise<SeaReading | null> {
+  const today = (place: WeatherPlace, now: Date) =>
+    DateTime.fromJSDate(now, { zone: place.timezone }).toISODate();
+
+  async function sea(place: WeatherPlace, now: Date): Promise<SeaReading | null> {
     const table = parseStationTable(
       await cache.get(DHMZ_FEEDS.sea, FEED_POLICIES.sea),
       'Temperature_mora',
     );
+    // A reading from today: yesterday's table (before DHMZ's first update) does not count.
+    if (table.date !== today(place, now)) return null;
     for (const station of byDistance(SEA_STATIONS, place, WEATHER_LIMITS.maxStationKm)) {
       const reading = latestReading(table, station.name);
       if (reading) {
@@ -145,7 +150,7 @@ export function createWeatherSource(options: WeatherSourceOptions): WeatherSourc
   async function uv(place: WeatherPlace, now: Date): Promise<UvReading | null> {
     const table = parseStationTable(await cache.get(DHMZ_FEEDS.uv, FEED_POLICIES.uv), 'UV_indeks');
     // "Today's" UV: yesterday's table (before DHMZ's first update) does not count.
-    if (table.date !== DateTime.fromJSDate(now, { zone: place.timezone }).toISODate()) return null;
+    if (table.date !== today(place, now)) return null;
     for (const station of byDistance(UV_STATIONS, place, WEATHER_LIMITS.maxStationKm)) {
       const reading = maxReading(table, station.name);
       if (reading) {
@@ -166,7 +171,7 @@ export function createWeatherSource(options: WeatherSourceOptions): WeatherSourc
     async report(place, language, now) {
       const [f, s, u, w] = await Promise.allSettled([
         forecast(place),
-        sea(place),
+        sea(place, now),
         uv(place, now),
         warnings(place, language, now),
       ]);

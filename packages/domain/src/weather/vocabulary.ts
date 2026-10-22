@@ -61,4 +61,6 @@ export const WEATHER_LIMITS = {
   maxStationKm: 60,
   /** The farthest a warning-area reference town may be from the property. */
   maxAreaKm: 40,
+  /** Warnings a get_weather result and the weather card carry; the most severe stay. */
+  maxWarnings: 12,
 } as const;

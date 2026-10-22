@@ -103,6 +103,16 @@ describe('createWeatherSource', () => {
     expect(report.sea?.station).toBe('Malinska');
   });
 
+  it("gives no sea or UV from yesterday's table", async () => {
+    const sameDay = await source().weather.report(OPATIJA, 'en', NOW);
+    expect(sameDay.sea).not.toBeNull();
+    expect(sameDay.uv).not.toBeNull();
+    // 00:30 on 23 October in Zagreb, before DHMZ's first update of the day.
+    const report = await source().weather.report(OPATIJA, 'en', new Date('2026-10-22T22:30:00Z'));
+    expect(report.sea).toBeNull();
+    expect(report.uv).toBeNull();
+  });
+
   it('keeps the other parts when MET Norway is down', async () => {
     const report = await source({ down: ['https://api.met.no/'] }).weather.report(
       TROGIR,

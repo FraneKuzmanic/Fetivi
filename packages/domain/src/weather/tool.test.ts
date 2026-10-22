@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { sampleWeatherReport } from '../testing/weather';
 import type { WeatherPlace } from './source';
 import { WeatherDateError, weatherToolDate, weatherToolResult } from './tool';
-import { WEATHER_CREDITS } from './vocabulary';
+import { WEATHER_CREDITS, WEATHER_LIMITS } from './vocabulary';
 
 const PLACE: WeatherPlace = { lat: 43.5167, lng: 16.2511, timezone: 'Europe/Zagreb' };
 // 23:30 in Zagreb on 14 July: already the 14th locally, still the 14th in UTC too.
@@ -81,5 +81,29 @@ describe('weatherToolResult', () => {
     } as typeof report;
     expect(weatherToolResult(later, PLACE, '2026-07-14', noon).warnings).toEqual([]);
     expect(weatherToolResult(later, PLACE, '2026-07-15', noon).warnings).toHaveLength(1);
+  });
+
+  it('drops a warning that ends before the asked day, though it is still in force now', () => {
+    // Asked at noon on the 14th about the 15th: today's wind warning ends at midnight.
+    expect(weatherToolResult(report, PLACE, '2026-07-15', noon).warnings).toEqual([]);
+  });
+
+  it('keeps at most WEATHER_LIMITS.maxWarnings, the most severe, in onset order', () => {
+    const base = report.warnings?.[0];
+    if (!base) throw new Error('sample has a warning');
+    const many = Array.from({ length: WEATHER_LIMITS.maxWarnings + 2 }, (_, i) => ({
+      ...base,
+      level: i === WEATHER_LIMITS.maxWarnings + 1 ? ('red' as const) : ('yellow' as const),
+      event: `warning ${i}`,
+    }));
+    const warnings = weatherToolResult(
+      { ...report, warnings: many },
+      PLACE,
+      '2026-07-14',
+      noon,
+    ).warnings;
+    expect(warnings).toHaveLength(WEATHER_LIMITS.maxWarnings);
+    expect(warnings?.at(-1)?.level).toBe('red');
+    expect(warnings?.[0]?.event).toBe('warning 0');
   });
 });

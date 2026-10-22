@@ -1,6 +1,11 @@
 import type { Egress } from '@fetivi/egress';
 import { describe, expect, it } from 'vitest';
-import { createFeedCache, FEED_CACHE_MAX_ENTRIES, FEED_POLICIES } from './cache';
+import {
+  createFeedCache,
+  FEED_CACHE_MAX_ENTRIES,
+  FEED_FAILURE_BACKOFF_MS,
+  FEED_POLICIES,
+} from './cache';
 import { WeatherFeedError } from './errors';
 
 const URL_A = 'https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=43.52&lon=16.25';
@@ -111,6 +116,29 @@ describe('createFeedCache', () => {
     const h = harness();
     h.queue(status(429));
     await expect(h.cache.get(URL_A, FEED_POLICIES.metno)).rejects.toThrow(WeatherFeedError);
+  });
+
+  it('backs off after a failure instead of asking again on every get', async () => {
+    const h = harness();
+    h.queue(ok('old'), status(429), ok('new'));
+    await h.cache.get(URL_A, FEED_POLICIES.metno);
+    h.advance(31 * MINUTE);
+    expect(await h.cache.get(URL_A, FEED_POLICIES.metno)).toBe('old');
+    h.advance(FEED_FAILURE_BACKOFF_MS - 1);
+    expect(await h.cache.get(URL_A, FEED_POLICIES.metno)).toBe('old');
+    expect(h.calls).toHaveLength(2);
+    h.advance(1);
+    expect(await h.cache.get(URL_A, FEED_POLICIES.metno)).toBe('new');
+    expect(h.calls).toHaveLength(3);
+  });
+
+  it('backs off with nothing cached too, throwing without a request', async () => {
+    const h = harness();
+    h.queue(status(403));
+    await expect(h.cache.get(URL_A, FEED_POLICIES.metno)).rejects.toThrow(WeatherFeedError);
+    h.advance(MINUTE);
+    await expect(h.cache.get(URL_A, FEED_POLICIES.metno)).rejects.toThrow('status 403');
+    expect(h.calls).toHaveLength(1);
   });
 
   it('makes one request for concurrent gets', async () => {

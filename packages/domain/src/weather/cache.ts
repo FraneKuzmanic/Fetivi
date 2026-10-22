@@ -4,7 +4,8 @@ import { WeatherFeedError } from './errors';
 // A per-process cache in front of the weather feeds. MET Norway's terms ask clients to respect
 // `Expires`, to revalidate with `If-Modified-Since`, and to identify themselves; DHMZ asks
 // nothing, and gets plain TTLs. A failed refresh serves the last body for a while
-// (stale-if-error), and never retries in a loop: a 403 or 429 from MET takes the same path.
+// (stale-if-error), and never retries in a loop: a 403 or 429 from MET takes the same path, and
+// after any failure the feed is left alone for FEED_FAILURE_BACKOFF_MS.
 
 export interface FeedPolicy {
   /** Fresh for this long; for a conditional feed only when the answer has no usable Expires. */
@@ -24,6 +25,9 @@ export const FEED_POLICIES = {
   uv: { ttlMs: 30 * MINUTE, staleIfErrorMs: 3 * HOUR },
   metno: { ttlMs: 30 * MINUTE, staleIfErrorMs: 6 * HOUR, conditional: true },
 } as const satisfies Record<string, FeedPolicy>;
+
+/** After a failed refresh, how long the feed is not asked again (the stale body or error stands). */
+export const FEED_FAILURE_BACKOFF_MS = 5 * MINUTE;
 
 /** MET URLs vary by point; the oldest entry goes first past this. */
 export const FEED_CACHE_MAX_ENTRIES = 256;
@@ -49,6 +53,8 @@ interface Entry {
 export function createFeedCache(options: FeedCacheOptions): FeedCache {
   const entries = new Map<string, Entry>();
   const inFlight = new Map<string, Promise<string>>();
+  /** URL → when it may be asked again, and why the last refresh failed. */
+  const backoff = new Map<string, { until: number; failure: string }>();
 
   function freshUntil(response: Response, policy: FeedPolicy, now: number): number {
     if (policy.conditional) {
@@ -73,6 +79,15 @@ export function createFeedCache(options: FeedCacheOptions): FeedCache {
     if (oldest !== null) entries.delete(oldest);
   }
 
+  /** The last body while it is within the stale window, else the feed error. */
+  function stale(url: string, policy: FeedPolicy, failure: string): string {
+    const cached = entries.get(url);
+    if (cached && options.clock().getTime() - cached.fetchedAt <= policy.staleIfErrorMs) {
+      return cached.body;
+    }
+    throw new WeatherFeedError(`${new URL(url).host} feed unavailable: ${failure}`);
+  }
+
   async function refresh(url: string, policy: FeedPolicy): Promise<string> {
     const cached = entries.get(url);
     const headers: Record<string, string> = { 'User-Agent': options.userAgent };
@@ -84,11 +99,13 @@ export function createFeedCache(options: FeedCacheOptions): FeedCache {
       const response = await options.fetch(url, { headers });
       const now = options.clock().getTime();
       if (response.status === 304 && cached) {
+        backoff.delete(url);
         store(url, { ...cached, fetchedAt: now, freshUntil: freshUntil(response, policy, now) });
         return cached.body;
       }
       if (response.ok) {
         const body = await response.text();
+        backoff.delete(url);
         store(url, {
           body,
           fetchedAt: now,
@@ -101,10 +118,11 @@ export function createFeedCache(options: FeedCacheOptions): FeedCache {
     } catch (err) {
       failure = err instanceof Error ? err.message : String(err);
     }
-    if (cached && options.clock().getTime() - cached.fetchedAt <= policy.staleIfErrorMs) {
-      return cached.body;
-    }
-    throw new WeatherFeedError(`${new URL(url).host} feed unavailable: ${failure}`);
+    backoff.delete(url);
+    backoff.set(url, { until: options.clock().getTime() + FEED_FAILURE_BACKOFF_MS, failure });
+    if (backoff.size > FEED_CACHE_MAX_ENTRIES)
+      backoff.delete(backoff.keys().next().value as string);
+    return stale(url, policy, failure);
   }
 
   return {
@@ -112,6 +130,10 @@ export function createFeedCache(options: FeedCacheOptions): FeedCache {
       const cached = entries.get(url);
       if (cached && options.clock().getTime() < cached.freshUntil) {
         return Promise.resolve(cached.body);
+      }
+      const failed = backoff.get(url);
+      if (failed && options.clock().getTime() < failed.until) {
+        return new Promise((resolve) => resolve(stale(url, policy, failed.failure)));
       }
       const pending = inFlight.get(url);
       if (pending) return pending;

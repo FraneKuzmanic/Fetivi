@@ -195,7 +195,7 @@ export const weatherCard = z.object({
         expires: z.string(),
       }),
     )
-    .max(12)
+    .max(WEATHER_LIMITS.maxWarnings)
     .nullable(),
   credits: z
     .array(z.object({ source: z.enum(WEATHER_SOURCES), label: z.string(), url: z.string() }))

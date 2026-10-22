@@ -1,8 +1,8 @@
 import { DateTime } from 'luxon';
-import { type CivilDate, endOfCivilDay } from '../time';
+import { type CivilDate, endOfCivilDay, startOfCivilDay } from '../time';
 import type { ForecastDay } from './metno';
 import type { SeaReading, UvReading, WeatherPlace, WeatherReport, WeatherWarning } from './source';
-import { WEATHER_CREDITS, WEATHER_LIMITS, type WeatherCredit } from './vocabulary';
+import { WARNING_LEVELS, WEATHER_CREDITS, WEATHER_LIMITS, type WeatherCredit } from './vocabulary';
 
 // What get_weather answers: the asked day and the next two, the sea, UV and the DHMZ warnings in
 // force over those days, with the credits both licences ask for. The nulls keep their meaning
@@ -51,6 +51,16 @@ export function weatherToolDate(
   return date;
 }
 
+/** At most WEATHER_LIMITS.maxWarnings, keeping the most severe, in their original order. */
+function capWarnings(warnings: WeatherWarning[]): WeatherWarning[] {
+  if (warnings.length <= WEATHER_LIMITS.maxWarnings) return warnings;
+  const severity = (w: WeatherWarning) => WARNING_LEVELS.indexOf(w.level);
+  const kept = new Set(
+    [...warnings].sort((a, b) => severity(b) - severity(a)).slice(0, WEATHER_LIMITS.maxWarnings),
+  );
+  return warnings.filter((w) => kept.has(w));
+}
+
 /** The report narrowed to `date` and the next days (WEATHER_LIMITS.toolDays in all). */
 export function weatherToolResult(
   report: WeatherReport,
@@ -58,6 +68,8 @@ export function weatherToolResult(
   date: CivilDate,
   now: Date,
 ): WeatherToolResult {
+  // In force over the returned days: not over before the asked day starts, nor before now.
+  const from = Math.max(now.getTime(), startOfCivilDay(date, place.timezone).getTime());
   const until = endOfCivilDay(
     shift(date, WEATHER_LIMITS.toolDays - 1, place.timezone),
     place.timezone,
@@ -71,10 +83,13 @@ export function weatherToolResult(
     forecastUpdatedAt: report.forecast?.updatedAt ?? null,
     sea: report.sea,
     uv: report.uv,
-    warnings:
-      report.warnings?.filter(
-        (w) => Date.parse(w.expires) > now.getTime() && Date.parse(w.onset) < until.getTime(),
-      ) ?? null,
+    warnings: report.warnings
+      ? capWarnings(
+          report.warnings.filter(
+            (w) => Date.parse(w.expires) > from && Date.parse(w.onset) < until.getTime(),
+          ),
+        )
+      : null,
     credits: [...WEATHER_CREDITS],
   };
 }
