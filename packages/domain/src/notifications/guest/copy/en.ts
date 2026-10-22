@@ -85,6 +85,24 @@ export const en: GuestCopy = {
   },
   checkoutTimeLine: 'Please leave by {{checkoutTime}}.',
   reviewLine: "If you'd like to share how your stay went, you can leave a review on {{platform}}.",
+  spaceEmails: {
+    verify_email: {
+      subject: 'Confirm your email for Fetivi',
+      lines: [
+        'Please confirm this is your email. Then I can send you updates about your stay here, like replies from your host.',
+        'The link works for 24 hours.',
+      ],
+      action: 'Confirm my email',
+    },
+    recover: {
+      subject: 'Your link back to Fetivi',
+      lines: [
+        'Here is your link to open your Fetivi on this or another device, with your chat and bookings.',
+        "It works once, for 1 hour. If you didn't ask for it, you can ignore this email.",
+      ],
+      action: 'Open my Fetivi',
+    },
+  },
   openApp: 'Open Fetivi',
   signature: 'Fetivi',
 };

@@ -53,6 +53,8 @@ const newMediaDir = () => mkdtemp(path.join(os.tmpdir(), 'fetivi-chat-media-'));
 
 export interface TestApp {
   app: FastifyInstance;
+  /** Receives the app's jobs (dropped by default). */
+  queue: JobQueue;
   db: Db;
   testDb: TestDatabase;
   clock: { now: () => Date; advance: (ms: number) => void };
@@ -63,7 +65,10 @@ export interface TestApp {
 }
 
 /** A chat-backend app on its own test database, with a movable clock. */
-export async function createTestApp(options: { trustProxy?: string } = {}): Promise<TestApp> {
+export async function createTestApp(
+  options: { trustProxy?: string; queue?: JobQueue } = {},
+): Promise<TestApp> {
+  const queue = options.queue ?? noopQueue;
   const testDb = await createTestDatabase();
   const mediaDir = await newMediaDir();
   let current = START.getTime();
@@ -83,6 +88,7 @@ export async function createTestApp(options: { trustProxy?: string } = {}): Prom
     appOrigin: APP_TEST_ORIGIN,
     now: clock.now,
     logger: false,
+    queue,
     media: createLocalMediaStore(mediaDir),
     trustProxy: options.trustProxy,
     tokens,
@@ -91,6 +97,7 @@ export async function createTestApp(options: { trustProxy?: string } = {}): Prom
   await app.ready();
   return {
     app,
+    queue,
     db: testDb.db,
     testDb,
     clock,
@@ -224,6 +231,7 @@ export async function createChatTestApp(options: {
     appOrigin: APP_TEST_ORIGIN,
     now: clock.now,
     logger: false,
+    queue: options.queue ?? noopQueue,
     media: createLocalMediaStore(mediaDir),
     tokens: { key, issuer: TEST_ISSUER, mcpBaseUrl: TEST_MCP_BASE },
     chat: { model: options.model, mcpFetch },
@@ -266,6 +274,7 @@ async function createInProcessChatTestApp(options: {
     appOrigin: APP_TEST_ORIGIN,
     now: clock.now,
     logger: false,
+    queue: options.queue ?? noopQueue,
     media: createLocalMediaStore(mediaDir),
     tokens: {
       key: await loadSigningKey(undefined),
@@ -331,4 +340,23 @@ export function readStream(response: LightMyRequestResponse): UIMessageChunk[] {
     chunks.push(JSON.parse(data) as UIMessageChunk);
   }
   return chunks;
+}
+
+/** A browser on its own: keeps the cookies the server sets and sends them back. */
+export function browser(app: FastifyInstance) {
+  const jar = new Map<string, string>();
+  const cookie = () => [...jar.values()].join('; ') || undefined;
+  const keep = (response: LightMyRequestResponse) => {
+    for (const c of response.cookies) {
+      if (c.maxAge === 0 || c.value === '') jar.delete(c.name);
+      else jar.set(c.name, `${c.name}=${c.value}`);
+    }
+    return response;
+  };
+  return {
+    jar,
+    get: async (url: string) => keep(await get(app, url, cookie())),
+    write: async (method: 'POST' | 'PATCH', url: string, body?: unknown, origin?: string | null) =>
+      keep(await write(method, app, url, body, { cookie: cookie(), origin })),
+  };
 }

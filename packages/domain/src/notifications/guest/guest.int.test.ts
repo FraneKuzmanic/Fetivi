@@ -120,8 +120,12 @@ async function inboxNotices(spaceId: string) {
     .map((p) => p.data as Record<string, unknown>);
 }
 
-async function optIn(spaceId: string, email = 'guest@example.test') {
-  await testDb.db.update(spaces).set({ email, emailOptInAt: NOW }).where(eq(spaces.id, spaceId));
+/** An opted-in space email, verified unless `verified` is false. */
+async function optIn(spaceId: string, email = 'guest@example.test', verified = true) {
+  await testDb.db
+    .update(spaces)
+    .set({ email, emailOptInAt: NOW, emailVerifiedAt: verified ? NOW : null })
+    .where(eq(spaces.id, spaceId));
 }
 
 describe('deliverGuestNotification: Order kinds', () => {
@@ -378,7 +382,7 @@ describe('deliverGuestNotification: host reply', () => {
     return row.id;
   }
 
-  it('emails an opted-in space and pushes, without a second inbox row', async () => {
+  it('emails a verified space email and pushes, without a second inbox row', async () => {
     const g = await guest();
     await optIn(g.spaceId);
     const handoffId = await delivered(g, NOW);
@@ -397,6 +401,20 @@ describe('deliverGuestNotification: host reply', () => {
     expect(mailer.sent[0]?.text).not.toContain('hair dryer');
     expect(push.sent[0]?.message.url).toBe('/chat');
     expect(await inboxNotices(g.spaceId)).toHaveLength(0);
+  });
+
+  it('emails no one while the space email is unverified, and still pushes', async () => {
+    const g = await guest();
+    await optIn(g.spaceId, 'guest@example.test', false);
+    const handoffId = await delivered(g, NOW);
+    const { deps: d, mailer } = deps();
+    const job: GuestNotifyJobData = { kind: 'host_reply', spaceId: g.spaceId, handoffId };
+    expect(await deliverGuestNotification(d, job)).toEqual({
+      inbox: 'skipped',
+      email: 'skipped',
+      push: 'sent',
+    });
+    expect(mailer.sent).toHaveLength(0);
   });
 
   it('emails no one without an opt-in, and skips an undelivered reply', async () => {
@@ -446,6 +464,18 @@ describe('deliverGuestNotification: Stay notices', () => {
     }
     expect(mailer.sent[0]?.text).toContain(`${ORIGIN}/guide`);
   });
+
+  it.each(['arrival_details', 'checkout_reminder'] as const)(
+    'sends %s to inbox and push but no email while the space email is unverified',
+    async (kind) => {
+      const g = await guest();
+      await optIn(g.spaceId, 'guest@example.test', false);
+      const { deps: d, mailer } = deps();
+      const result = await deliverGuestNotification(d, { kind, spaceId: g.spaceId });
+      expect(result).toEqual({ inbox: 'sent', email: 'skipped', push: 'sent' });
+      expect(mailer.sent).toHaveLength(0);
+    },
+  );
 
   it('skips a possibly cancelled Stay and a closed space', async () => {
     const skipped = { inbox: 'skipped', email: 'skipped', push: 'skipped' };

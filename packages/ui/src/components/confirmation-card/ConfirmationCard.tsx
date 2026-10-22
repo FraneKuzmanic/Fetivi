@@ -51,6 +51,7 @@ export function ConfirmationCard({
   onConfirm,
   onCancel,
   labels,
+  initialValues,
 }: {
   draft: OrderDraft;
   /** The form the server asked for, in order. */
@@ -59,10 +60,12 @@ export function ConfirmationCard({
   onConfirm: (content: Record<string, string>) => void;
   onCancel: () => void;
   labels: ConfirmationCardLabels;
+  /** Values the form starts with, such as the email the guest already gave; still editable. */
+  initialValues?: Partial<Record<ContactField, string>>;
 }) {
   const id = useId();
   const form = useRef<HTMLFormElement>(null);
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>(() => ({ ...initialValues }));
   const [errors, setErrors] = useState<readonly ContactField[]>([]);
   const sending = state === 'sending';
   const headingId = `${id}-heading`;

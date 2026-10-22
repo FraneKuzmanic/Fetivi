@@ -4,6 +4,7 @@ import type { OrderSummaryPayload } from '@fetivi/ui/payloads';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { receiptLabels } from '../../chat/render/labels';
+import { EmailOffer } from '../../email/EmailOffer';
 import { AlertOffer } from '../../push/AlertOffer';
 import { MascotSays } from '../../shell/Mascot';
 import { getOrders } from './orders-api';
@@ -45,7 +46,12 @@ export function OrdersSection() {
         <MascotSays>{t('trip.noOrders')}</MascotSays>
       ) : (
         <>
-          {orders.orders.some((o) => !isFinalOrderStatus(o.status)) && <AlertOffer />}
+          {orders.orders.some((o) => !isFinalOrderStatus(o.status)) && (
+            <>
+              <AlertOffer />
+              <EmailOffer />
+            </>
+          )}
           <ul className="trip-orders">
             {orders.orders.map((order) => (
               <li key={order.id}>

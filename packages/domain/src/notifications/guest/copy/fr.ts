@@ -90,6 +90,24 @@ export const fr: GuestCopy = {
   checkoutTimeLine: 'Merci de libérer le logement avant {{checkoutTime}}.',
   reviewLine:
     'Si vous souhaitez partager votre expérience, vous pouvez laisser un avis sur {{platform}}.',
+  spaceEmails: {
+    verify_email: {
+      subject: 'Confirmez votre e-mail pour Fetivi',
+      lines: [
+        "Merci de confirmer que c'est bien votre adresse e-mail. Je pourrai ensuite vous envoyer des nouvelles de votre séjour, comme les réponses de votre hôte.",
+        'Le lien est valable 24 heures.',
+      ],
+      action: 'Confirmer mon e-mail',
+    },
+    recover: {
+      subject: 'Votre lien pour revenir sur Fetivi',
+      lines: [
+        'Voici votre lien pour ouvrir votre Fetivi sur cet appareil ou un autre, avec votre conversation et vos réservations.',
+        "Il fonctionne une seule fois, pendant 1 heure. Si vous ne l'avez pas demandé, vous pouvez ignorer cet e-mail.",
+      ],
+      action: 'Ouvrir mon Fetivi',
+    },
+  },
   openApp: 'Ouvrir Fetivi',
   signature: 'Fetivi',
 };

@@ -5,7 +5,7 @@ import { allotmentSlots } from '../../db/schema/offers';
 import { inventoryHolds, orders } from '../../db/schema/orders';
 import { pendingActions } from '../../db/schema/pending-actions';
 import { spaces } from '../../db/schema/spaces';
-import { createJobQueue, ensureQueues, type JobQueue } from '../../jobs/queue';
+import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../../jobs/queue';
 import type { GuestOfferScope } from '../../offers/guest';
 import { createOrder, type OrderDeps } from '../../orders/machine';
 import {
@@ -255,10 +255,16 @@ describe('completeOrder', () => {
     expect(await ordersOf(offerId)).toHaveLength(1);
   });
 
-  it('stores the card email on the space with the first opt-in time', async () => {
+  it('stores the card email on the space with the first opt-in time and queues verification', async () => {
     const g = await seedGuestUnit(testDb.db, { now: NOW });
     const space = async () =>
       (await testDb.db.select().from(spaces).where(eq(spaces.id, g.spaceId)))[0];
+    const verifyJobs = async () =>
+      (
+        await testDb.db.execute(
+          sql`select 1 from pgboss.job where name = ${QUEUES.spaceEmail} and data->>'spaceId' = ${g.spaceId} and data->>'purpose' = 'verify_email'`,
+        )
+      ).rows.length;
     const prepare = async () => {
       const offer = await allotment();
       return (
@@ -273,8 +279,11 @@ describe('completeOrder', () => {
     expect(after).toMatchObject({
       email: 'guest@example.test',
       emailOptInAt: clock,
+      emailVerifiedAt: null,
       updatedAt: clock,
     });
+    expect(await verifyJobs()).toBe(1);
+    await testDb.db.update(spaces).set({ emailVerifiedAt: clock }).where(eq(spaces.id, g.spaceId));
 
     // A replay writes nothing.
     const later = new Date(clock.getTime() + 60_000);
@@ -282,7 +291,17 @@ describe('completeOrder', () => {
     await completeOrder(deps(), { pendingId: first, ...ctx(g), contact: CONTACT });
     expect((await space())?.updatedAt).toEqual(after?.updatedAt);
 
-    // A later card with a new email replaces it and keeps the opt-in time.
+    // The same address typed differently is the same address: still verified, no new link.
+    const again = await prepare();
+    await completeOrder(deps(), {
+      pendingId: again,
+      ...ctx(g),
+      contact: { ...CONTACT, email: 'Guest@Example.test' },
+    });
+    expect(await space()).toMatchObject({ email: 'guest@example.test', emailVerifiedAt: NOW });
+    expect(await verifyJobs()).toBe(1);
+
+    // A later card with a new email replaces it, keeps the opt-in time and needs verifying.
     const second = await prepare();
     await completeOrder(deps(), {
       pendingId: second,
@@ -292,8 +311,10 @@ describe('completeOrder', () => {
     expect(await space()).toMatchObject({
       email: 'other@example.test',
       emailOptInAt: after?.emailOptInAt,
+      emailVerifiedAt: null,
       updatedAt: later,
     });
+    expect(await verifyJobs()).toBe(2);
     clock = NOW;
   });
 

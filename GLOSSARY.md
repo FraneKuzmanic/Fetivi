@@ -135,8 +135,16 @@ The copy-ready text a Host sends a guest party with the Unit's link and the PIN,
 _Avoid_: Invitation, welcome message
 
 **Space**:
-One device's private world inside a Stay, opened by entering the Stay's PIN on that device; a new PIN entry always opens a new, empty Space. It closes at the end of the Stay's checkout day.
+One device's private world inside a Stay, opened by entering the Stay's PIN on that device; a new PIN entry always opens a new, empty Space. It closes at the end of the Stay's checkout day. A Recovery link moves it to another device.
 _Avoid_: Session, account, profile
+
+**Email opt-in**:
+The one consent, given on the first Order's card or when the guest asks for updates, that lets Fetivi use a Space's email for Order confirmations, recovery and updates. Updates are emailed only once the address is confirmed by link. Daily tips by email are a separate opt-in, off by default.
+_Avoid_: account, registration, subscription
+
+**Recovery link**:
+A single-use emailed link, valid for an hour, that moves a Space to the device that opens it, also during the read-only period after checkout.
+_Avoid_: login link, magic link
 
 **Situation**:
 Where a Space stands at a given moment — before arrival, in the Stay, or after checkout, inside or outside a Destination, with or without the Host's own Offers — which decides the scopes its tokens carry.

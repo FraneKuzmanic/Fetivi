@@ -90,6 +90,24 @@ export const hu: GuestCopy = {
   checkoutTimeLine: 'Kérjük, {{checkoutTime}}-ig hagyd el a szállást.',
   reviewLine:
     'Ha szeretnéd elmondani, milyen volt a tartózkodásod, írhatsz értékelést itt: {{platform}}.',
+  spaceEmails: {
+    verify_email: {
+      subject: 'Erősítsd meg az e-mail-címed a Fetivihez',
+      lines: [
+        'Kérlek, erősítsd meg, hogy ez a te e-mail-címed. Így küldhetek neked híreket a szállásodról, például a szállásadód válaszait.',
+        'A link 24 óráig érvényes.',
+      ],
+      action: 'E-mail-cím megerősítése',
+    },
+    recover: {
+      subject: 'A linked vissza a Fetivihez',
+      lines: [
+        'Ezzel a linkkel megnyithatod a Fetividet ezen vagy egy másik eszközön, a csevegéssel és a foglalásaiddal együtt.',
+        'Egyszer használható, 1 óráig. Ha nem te kérted, nyugodtan hagyd figyelmen kívül ezt az e-mailt.',
+      ],
+      action: 'Fetivim megnyitása',
+    },
+  },
   openApp: 'Fetivi megnyitása',
   signature: 'Fetivi',
 };

@@ -184,6 +184,34 @@ describe('ConfirmationCard', () => {
     });
   });
 
+  it('starts from the given values, which still validate', () => {
+    const onConfirm = vi.fn();
+    mount(
+      <ConfirmationCard
+        draft={DRAFT}
+        fields={FIELDS}
+        state="open"
+        onConfirm={onConfirm}
+        onCancel={vi.fn()}
+        labels={CARD}
+        initialValues={{ email: 'guest@example.test' }}
+      />,
+    );
+    expect(input('email').value).toBe('guest@example.test');
+    type(input('email'), 'not-an-email');
+    type(input('name'), 'Ana');
+    type(input('phone'), '+385 91 000');
+    submit();
+    expect(onConfirm).not.toHaveBeenCalled();
+    type(input('email'), 'guest@example.test');
+    submit();
+    expect(onConfirm).toHaveBeenCalledWith({
+      email: 'guest@example.test',
+      name: 'Ana',
+      phone: '+385 91 000',
+    });
+  });
+
   it('skips an empty optional field', () => {
     const onConfirm = vi.fn();
     mount(

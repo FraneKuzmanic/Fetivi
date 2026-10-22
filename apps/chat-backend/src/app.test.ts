@@ -1,4 +1,5 @@
 import { createDb, createLocalMediaStore } from '@fetivi/domain';
+import { noopQueue } from '@fetivi/domain/testing';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { loadConfig } from './config';
@@ -14,6 +15,7 @@ const deps = {
   logger: false,
   tokens,
   chat: NO_CHAT,
+  queue: noopQueue,
   // Nothing is written in these tests.
   media: createLocalMediaStore('unused-media'),
 };
@@ -40,8 +42,9 @@ describe('chat-backend', () => {
     await app.close();
   });
 
-  // No visitor mode and no preview: only the link check and PIN entry work without a space.
-  it('has exactly two public /api routes: the link check and PIN entry', async () => {
+  // No visitor mode and no preview: without a space only the link check, PIN entry and the
+  // emailed links (verification and recovery) work.
+  it('has exactly the link check, PIN entry and emailed links as public /api routes', async () => {
     const app = buildApp(deps);
     const routes: { method: string; url: string; access: unknown }[] = [];
     app.addHook('onRoute', (route) => {
@@ -55,7 +58,13 @@ describe('chat-backend', () => {
       .filter((r) => r.url.startsWith('/api/') && r.access === 'public' && r.method !== 'HEAD')
       .map((r) => `${r.method} ${r.url}`)
       .sort();
-    expect(publicApi).toEqual(['GET /api/access/:slug', 'POST /api/access/:slug/pin']);
+    expect(publicApi).toEqual([
+      'GET /api/access/:slug',
+      'POST /api/access/:slug/pin',
+      'POST /api/access/:slug/recovery',
+      'POST /api/email/verify',
+      'POST /api/recovery/restore',
+    ]);
     expect(routes.filter((r) => r.url.startsWith('/api/')).every((r) => r.access)).toBe(true);
     await app.close();
   });

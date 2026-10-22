@@ -1,8 +1,9 @@
-import { UserCircle } from '@phosphor-icons/react';
+import { GearSix, UserCircle } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 import { ChatTab } from '../chat/ChatTab';
+import { EmailProvider } from '../email/EmailProvider';
 import { GuideTab } from '../guide/GuideTab';
 import { InboxProvider, useInbox } from '../inbox/InboxProvider';
 import { TripTab } from '../my-trip/TripTab';
@@ -15,9 +16,11 @@ import { TabBar } from './TabBar';
 export function Shell(props: { tab?: Tab; unread?: number; children?: ReactNode }) {
   return (
     <InboxProvider>
-      <PushProvider>
-        <ShellLayout {...props} />
-      </PushProvider>
+      <EmailProvider>
+        <PushProvider>
+          <ShellLayout {...props} />
+        </PushProvider>
+      </EmailProvider>
     </InboxProvider>
   );
 }
@@ -43,6 +46,10 @@ function ShellLayout({
             <NavLink to="/about-me" className="header-link">
               <UserCircle aria-hidden="true" />
               <span className="visually-hidden">{t('header.aboutMe')}</span>
+            </NavLink>
+            <NavLink to="/settings" className="header-link">
+              <GearSix aria-hidden="true" />
+              <span className="visually-hidden">{t('header.settings')}</span>
             </NavLink>
             <LanguageMenu />
           </div>

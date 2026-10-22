@@ -86,6 +86,24 @@ export const hr: GuestCopy = {
   },
   checkoutTimeLine: 'Molimo napustite smještaj do {{checkoutTime}}.',
   reviewLine: 'Ako želite podijeliti kako vam je bilo, recenziju možete ostaviti na {{platform}}.',
+  spaceEmails: {
+    verify_email: {
+      subject: 'Potvrdite svoju e-adresu za Fetivi',
+      lines: [
+        'Molim vas potvrdite da je ovo vaša e-adresa. Tada vam mogu slati novosti o vašem boravku, poput odgovora vašeg domaćina.',
+        'Poveznica vrijedi 24 sata.',
+      ],
+      action: 'Potvrdi e-adresu',
+    },
+    recover: {
+      subject: 'Vaša poveznica natrag u Fetivi',
+      lines: [
+        'Evo vaše poveznice za otvaranje Fetivija na ovom ili drugom uređaju, s vašim razgovorom i rezervacijama.',
+        'Vrijedi jednom, 1 sat. Ako je niste tražili, možete zanemariti ovu poruku.',
+      ],
+      action: 'Otvori moj Fetivi',
+    },
+  },
   openApp: 'Otvorite Fetivi',
   signature: 'Fetivi',
 };

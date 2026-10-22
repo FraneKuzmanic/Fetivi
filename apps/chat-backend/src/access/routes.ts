@@ -19,7 +19,7 @@ export interface AccessRouteDeps {
 }
 
 /** What the guest app learns about its space: no names, no unit or property details. */
-const spaceView = (s: ResolvedSpace) => ({
+export const spaceView = (s: ResolvedSpace) => ({
   language: s.space.language,
   closedAt: s.space.closedAt.toISOString(),
   closed: s.closed,

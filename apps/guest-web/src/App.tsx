@@ -3,6 +3,9 @@ import { AboutMePage } from './about-me/AboutMePage';
 import { AccessPage } from './access/AccessPage';
 import { NoLinkPage } from './access/NoLinkPage';
 import { GuideSection } from './guide/GuideSection';
+import { RecoverPage } from './recovery/RecoverPage';
+import { VerifyEmailPage } from './recovery/VerifyEmailPage';
+import { SettingsPage } from './settings/SettingsPage';
 import { TAB_NAMES } from './shell/EmptyTab';
 import { RequireSpace } from './shell/RequireSpace';
 import { Shell } from './shell/Shell';
@@ -14,6 +17,9 @@ export function App({ initial }: { initial?: SpaceState }) {
     <SpaceProvider initial={initial}>
       <Routes>
         <Route path="/u/:slug" element={<AccessPage />} />
+        {/* Emailed links: they work on any device, with or without a space. */}
+        <Route path="/recover" element={<RecoverPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         {TAB_NAMES.map((tab) => (
           <Route
             key={tab}
@@ -41,6 +47,16 @@ export function App({ initial }: { initial?: SpaceState }) {
             <RequireSpace>
               <Shell>
                 <AboutMePage />
+              </Shell>
+            </RequireSpace>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <RequireSpace>
+              <Shell>
+                <SettingsPage />
               </Shell>
             </RequireSpace>
           }

@@ -1,4 +1,4 @@
-import type { Db, MediaStore } from '@fetivi/domain';
+import type { Db, JobQueue, MediaStore } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
 import type { LanguageModel } from 'ai';
 import Fastify from 'fastify';
@@ -6,6 +6,7 @@ import { aboutMeRoutes } from './about-me/routes';
 import { registerAccess } from './access/plugin';
 import { accessRoutes } from './access/routes';
 import { chatRoutes } from './chat/routes';
+import { emailRoutes } from './email/routes';
 import { guideRoutes } from './guide/routes';
 import { registerErrorHandler } from './http-error';
 import { inboxRoutes } from './inbox/routes';
@@ -13,6 +14,7 @@ import { createToolCatalog } from './mcp/tools';
 import { mediaRoutes } from './media/routes';
 import { orderRoutes } from './orders/routes';
 import { pushRoutes } from './push/routes';
+import { recoveryRoutes } from './recovery/routes';
 import { savedPlaceRoutes } from './saved-places/routes';
 import type { TokenConfig } from './tokens/mint';
 import { tokenRoutes } from './tokens/routes';
@@ -28,6 +30,8 @@ export interface AppDeps {
   trustProxy?: string | undefined;
   /** Guest token signing for the MCP servers; its public key is served as the JWKS. */
   tokens: TokenConfig;
+  /** Sends jobs (the email and recovery mails) for the jobs process to work. */
+  queue: JobQueue;
   /** Block media files, served to guests through /api/media. */
   media: MediaStore;
   /** Web push: the VAPID public key, or null (unset) when push is not configured. */
@@ -61,6 +65,8 @@ export function buildApp(deps: AppDeps) {
     mcpBinding({ tokens: deps.tokens, mcpFetch: deps.chat.mcpFetch, catalog: createToolCatalog() });
   app.register(orderRoutes, { db, now, tools });
   app.register(inboxRoutes, { db, now });
+  app.register(emailRoutes, { db, now, queue: deps.queue });
+  app.register(recoveryRoutes, { db, now, queue: deps.queue });
   app.register(pushRoutes, { db, now, publicKey: deps.push?.publicKey ?? null });
   app.register(guideRoutes, { db, now, tools });
   app.register(mediaRoutes, { db, now, media: deps.media });

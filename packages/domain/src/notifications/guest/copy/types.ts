@@ -1,3 +1,4 @@
+import type { SpaceTokenPurpose } from '../../../spaces/vocabulary';
 import type { GuestNotificationKind } from '../vocabulary';
 
 /** One notification's email and push text. Placeholders are `{{name}}`. */
@@ -23,6 +24,8 @@ export interface GuestCopy {
   checkoutTimeLine: string;
   /** Added to the checkout email when the Stay came from a booking platform; neutral, no rating. */
   reviewLine: string;
+  /** The verification and recovery mails: body lines, then the action label before the link. */
+  spaceEmails: Record<SpaceTokenPurpose, { subject: string; lines: string[]; action: string }>;
   /** Precedes the app link at the end of every email. */
   openApp: string;
   signature: string;

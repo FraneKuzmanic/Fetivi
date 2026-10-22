@@ -10,6 +10,7 @@ import {
 import { componentPart } from '@fetivi/ui/payloads';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { EmailOffer } from '../../email/EmailOffer';
 import { mediaUrl } from '../../guide/guide-api';
 import { propertyInfoLabels } from '../../guide/labels';
 import { useInbox } from '../../inbox/InboxProvider';
@@ -102,7 +103,12 @@ export function ComponentPart({
             status={status}
             labels={hostSentLabels(t, i18n.language)}
           />
-          {status === 'sent' && <AlertOffer />}
+          {status === 'sent' && (
+            <>
+              <AlertOffer />
+              <EmailOffer />
+            </>
+          )}
         </>
       );
     }

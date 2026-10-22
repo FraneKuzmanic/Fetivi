@@ -6,7 +6,8 @@ export interface JobDefinition<T extends object = object> {
   queue?: Omit<Queue, 'name'>;
   /** Cron expression in UTC; omit for jobs that are only sent on demand. */
   cron?: string;
-  handler: (data: T) => Promise<void>;
+  /** The runner always passes `job`; tests that call a handler directly may leave it out. */
+  handler: (data: T, job?: { id: string }) => Promise<void>;
 }
 
 export interface JobRunnerOptions {
@@ -31,7 +32,7 @@ export async function startJobRunner(options: JobRunnerOptions): Promise<PgBoss>
   for (const job of jobs) {
     await boss.createQueue(job.name, job.queue);
     await boss.work<object>(job.name, { pollingIntervalSeconds: fast ? 0.5 : 2 }, async (batch) => {
-      for (const item of batch) await job.handler(item.data);
+      for (const item of batch) await job.handler(item.data, { id: item.id });
     });
     if (job.cron) await boss.schedule(job.name, job.cron);
   }

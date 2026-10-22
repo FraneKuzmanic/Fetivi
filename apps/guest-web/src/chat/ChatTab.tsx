@@ -3,6 +3,7 @@ import type { UIMessage } from 'ai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TripFlow } from '../about-me/TripFlow';
+import { useEmail } from '../email/EmailProvider';
 import { useInbox } from '../inbox/InboxProvider';
 import { MascotSays } from '../shell/Mascot';
 import { useSpace } from '../space';
@@ -146,6 +147,7 @@ export function ChatView({
   const busy = status === 'submitted' || status === 'streaming';
   const closed = space?.closed ?? true;
   const { version } = useInbox();
+  const refreshEmail = useEmail().refresh;
   const seenVersion = useRef(version);
 
   // A host reply arrived: show it once nothing is on its way.
@@ -210,8 +212,10 @@ export function ChatView({
     wasBusy.current = busy;
     if (!was || busy || !answering.current) return;
     answering.current = false;
+    // A confirmed card may have given the Space its email.
+    if (status === 'ready') refreshEmail();
     if (status === 'ready' && !asksToConfirm(messages.at(-1))) focusComposer();
-  }, [busy, status, messages, focusComposer]);
+  }, [busy, status, messages, focusComposer, refreshEmail]);
 
   // A failed answer unmounts this view while the history reloads.
   const errorKey = error && lastRequest.current === 'text' ? chatErrorKey(error) : notice;

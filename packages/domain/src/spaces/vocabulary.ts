@@ -26,3 +26,19 @@ export const PIN_LIMITS = {
   /** pin_attempts rows older than this are deleted. */
   keepMs: DAY,
 } as const;
+
+/** What an emailed Space link does. */
+export type SpaceTokenPurpose = 'verify_email' | 'recover';
+
+/** A verification link works for a day. */
+export const SPACE_VERIFY_TTL_MS = DAY;
+/** A recovery link is short-lived: it opens the Space on any device. */
+export const SPACE_RECOVERY_TTL_MS = HOUR;
+/** Mails per Space and purpose in an hour; more requests are dropped silently. */
+export const SPACE_EMAILS_PER_HOUR = 3;
+
+/** The guest app page each link opens. */
+export const SPACE_EMAIL_PATHS = {
+  verify_email: '/verify-email',
+  recover: '/recover',
+} as const satisfies Record<SpaceTokenPurpose, string>;

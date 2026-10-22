@@ -17,6 +17,7 @@ export const QUEUES = {
   guestReminders: 'guest-reminders',
   hostNotify: 'host-notify',
   hostDigests: 'host-digests',
+  spaceEmail: 'space-email',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -50,6 +51,8 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   hostNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
   // The cron fan-out; the next slot runs again anyway.
   hostDigests: { retryLimit: 1, expireInSeconds: 120 },
+  // The idempotency key makes a retry send one email; the throttle bounds requests.
+  spaceEmail: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
 };
 
 /**

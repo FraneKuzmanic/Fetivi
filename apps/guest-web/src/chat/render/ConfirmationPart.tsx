@@ -2,6 +2,7 @@ import { ConfirmationCard, type ContactField } from '@fetivi/ui';
 import { elicitationPayload } from '@fetivi/ui/payloads';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useEmail } from '../../email/EmailProvider';
 import { confirmationLabels } from './labels';
 
 // The card's own field order: stored parts are jsonb, which does not keep the schema's key order.
@@ -29,6 +30,8 @@ export function ConfirmationPart({
   onAnswer: (answer: CardAnswer) => void;
 }) {
   const { t, i18n } = useTranslation();
+  // The email the guest already gave starts the card; it stays required and editable.
+  const known = useEmail().state?.email;
   const parsed = useMemo(() => elicitationPayload.safeParse(data), [data]);
   if (!parsed.success || parsed.data.draft === null) return null;
   const { draft, requestedSchema, toolName, toolCallId } = parsed.data;
@@ -39,12 +42,15 @@ export function ConfirmationPart({
   }));
   return (
     <ConfirmationCard
+      // The form starts from `initialValues` once; an email read after the card showed restarts it.
+      key={known ?? ''}
       draft={draft}
       fields={fields}
       state={state}
       onConfirm={(content) => onAnswer({ toolName, toolCallId, action: 'accept', content })}
       onCancel={() => onAnswer({ toolName, toolCallId, action: 'cancel' })}
       labels={confirmationLabels(t, i18n.language)}
+      initialValues={known ? { email: known } : undefined}
     />
   );
 }

@@ -16,7 +16,9 @@ export type ErrorCode =
   | 'saved-places-unavailable'
   | 'chat-unavailable'
   | 'turn-failed'
-  | 'push-endpoint';
+  | 'push-endpoint'
+  | 'invalid-token'
+  | 'no-email';
 
 export class HttpError extends Error {
   override name = 'HttpError';

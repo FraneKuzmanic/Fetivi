@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { Executor } from '../../db/client';
 import { offers, offerTranslations } from '../../db/schema/offers';
@@ -13,6 +13,7 @@ import type { PaymentMode, PriceUnit } from '../../offers/vocabulary';
 import { createOrder, getOrder, type OrderDeps, OrderRuleError } from '../../orders/machine';
 import type { OrderStatus, PaymentStatus } from '../../orders/vocabulary';
 import type { GuestLanguage } from '../../property/vocabulary';
+import { optInSpaceEmail } from '../../spaces/email';
 import { toLocalDateTime } from '../../time';
 import { AdapterError, adapterFor, confirmHeldOrder } from '../adapters';
 import {
@@ -356,16 +357,9 @@ export async function completeOrder(
       await markPending(tx, row.id, 'released', now);
       return { ok: false, code: RULE_CODES[error.code] ?? 'invalid-input' };
     }
-    // The card's email goes on the space with its opt-in: the latest email wins, the first
-    // opt-in time is kept (ticket 26 adds verification and recovery).
-    await tx
-      .update(spaces)
-      .set({
-        email: contact.email,
-        emailOptInAt: sql`coalesce(${spaces.emailOptInAt}, ${now})`,
-        updatedAt: now,
-      })
-      .where(eq(spaces.id, row.spaceId));
+    // The card's email is the Space's one opt-in (confirmations, recovery, updates); a new
+    // address is verified by link before updates are emailed to it.
+    await optInSpaceEmail(tx, deps.queue, { spaceId: row.spaceId, email: contact.email, now });
     await markPending(tx, row.id, 'consumed', now);
     return { ok: true, orderId: row.orderId, replay: false };
   });

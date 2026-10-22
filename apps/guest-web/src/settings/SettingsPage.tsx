@@ -1,0 +1,117 @@
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useEmail } from '../email/EmailProvider';
+import { resendVerification, setTips } from '../email/email-api';
+import { requestRecovery } from '../recovery/recovery-api';
+import { useSpace } from '../space';
+
+type Sent = 'idle' | 'busy' | 'sent' | 'failed';
+
+/**
+ * The Space's email and how to open it on another device. The email is shown, never asked for
+ * here: it is asked at booking or with the update offer.
+ */
+export function SettingsPage() {
+  const { t } = useTranslation();
+  const { state: space } = useSpace();
+  const closed = space.status === 'ready' ? space.space.closed : true;
+  const { state, set } = useEmail();
+  const heading = useRef<HTMLHeadingElement>(null);
+  const [resend, setResend] = useState<Sent>('idle');
+  const [link, setLink] = useState<Sent>('idle');
+  const [tipsFailed, setTipsFailed] = useState(false);
+
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
+
+  const send = async (run: () => Promise<void>, update: (s: Sent) => void) => {
+    update('busy');
+    try {
+      await run();
+      update('sent');
+    } catch {
+      update('failed');
+    }
+  };
+
+  const toggleTips = async (tips: boolean) => {
+    setTipsFailed(false);
+    try {
+      set(await setTips(tips));
+    } catch {
+      setTipsFailed(true);
+    }
+  };
+
+  const email = state?.email ?? null;
+
+  return (
+    <section className="settings" aria-labelledby="tab-title">
+      <h1 id="tab-title" ref={heading} tabIndex={-1}>
+        {t('settings.title')}
+      </h1>
+
+      <section className="settings-section" aria-labelledby="settings-email">
+        <h2 id="settings-email">{t('settings.emailTitle')}</h2>
+        {state === null ? (
+          <p className="status">{t('common.loading')}</p>
+        ) : email === null ? (
+          <p className="settings-note">{t('settings.noEmail')}</p>
+        ) : (
+          <>
+            <p className="settings-email">
+              <span>{email}</span>
+              <span className={state.verified ? 'settings-badge confirmed' : 'settings-badge'}>
+                {t(state.verified ? 'settings.confirmed' : 'settings.waiting')}
+              </span>
+            </p>
+            {!state.verified && !closed && (
+              <button
+                type="button"
+                className="text-button settings-inline"
+                disabled={resend === 'busy'}
+                onClick={() => send(resendVerification, setResend)}
+              >
+                {t('settings.resend')}
+              </button>
+            )}
+            {!closed && (
+              <label className="email-check">
+                <input
+                  type="checkbox"
+                  checked={state.tips}
+                  onChange={(e) => toggleTips(e.target.checked)}
+                />
+                {t('settings.tips')}
+              </label>
+            )}
+            <p className="status" role="status">
+              {resend === 'sent'
+                ? t('settings.resent')
+                : resend === 'failed' || tipsFailed
+                  ? t('error.network')
+                  : ''}
+            </p>
+          </>
+        )}
+      </section>
+
+      <section className="settings-section" aria-labelledby="settings-device">
+        <h2 id="settings-device">{t('settings.deviceTitle')}</h2>
+        <p className="settings-note">{t(email ? 'settings.deviceIntro' : 'settings.noEmail')}</p>
+        <button
+          type="button"
+          className="button settings-action"
+          disabled={!email || link === 'busy'}
+          onClick={() => send(requestRecovery, setLink)}
+        >
+          {t('settings.sendLink')}
+        </button>
+        <p className="status" role="status">
+          {link === 'sent' ? t('settings.linkSent') : link === 'failed' ? t('error.network') : ''}
+        </p>
+      </section>
+    </section>
+  );
+}

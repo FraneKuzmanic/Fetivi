@@ -15,6 +15,7 @@ import {
   pollCalendarsJob,
   stayNotifyJob,
 } from './poll-calendars';
+import { spaceEmailJob } from './space-email';
 import { translateBlockJob } from './translate-block';
 import { translateCatalogRecordJob } from './translate-catalog-record';
 import { type HandoffJobDeps, translateHandoffJob } from './translate-handoff';
@@ -44,5 +45,6 @@ export function createJobs(
     guestRemindersJob(deps),
     hostNotifyJob(deps) as JobDefinition,
     hostDigestsJob(deps),
+    spaceEmailJob(deps) as JobDefinition,
   ];
 }

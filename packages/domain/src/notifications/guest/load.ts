@@ -25,7 +25,7 @@ export interface GuestNotice {
   conversationId: string | null;
   /** False once the Stay has ended: push is skipped. */
   spaceOpen: boolean;
-  /** The address to email, or null: none given, not opted in, or suppressed. */
+  /** The address to email, or null: none given, not verified, or suppressed. */
   email: string | null;
   orderId: string | null;
   facts: GuestNoticeFacts;
@@ -62,14 +62,14 @@ export async function loadGuestNotice(
     .select({
       language: spaces.language,
       email: spaces.email,
-      emailOptInAt: spaces.emailOptInAt,
+      emailVerifiedAt: spaces.emailVerifiedAt,
       closedAt: spaces.closedAt,
     })
     .from(spaces)
     .where(eq(spaces.id, base.spaceId));
   if (!space) return null;
-  // Order kinds email the Order's own address; the rest only an opted-in space email (26 verifies).
-  let email = base.email ?? (space.emailOptInAt ? space.email : null);
+  // Order kinds email the Order's own address; updates go only to a verified space email.
+  let email = base.email ?? (space.emailVerifiedAt ? space.email : null);
   if (email && (await isEmailSuppressed(db, email))) email = null;
   const conversation = await findConversation(db, base.spaceId);
   return {

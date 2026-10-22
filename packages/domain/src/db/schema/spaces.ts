@@ -1,4 +1,4 @@
-import { bigint, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { properties } from './properties';
 import { stays } from './stays';
 import { guestLanguage } from './translations';
@@ -16,10 +16,17 @@ export const spaces = pgTable(
     language: guestLanguage('language').notNull(),
     /** = stays.active_until, kept in step by the stays store. The PIN and chat stop here. */
     closedAt: timestamp('closed_at', { withTimezone: true }).notNull(),
-    /** Given on the first Order's card; the latest wins. Full opt-in and verification are ticket 26. */
+    /** The one opt-in address (first Order card or the update offer), stored trimmed and lower-case; the latest wins. */
     email: text('email'),
     /** The one opt-in covering confirmations, recovery and alerts (PRD §6.1); the first time is kept. */
     emailOptInAt: timestamp('email_opt_in_at', { withTimezone: true }),
+    /**
+     * Set when the guest opened a verification or recovery link sent to the current email; cleared
+     * when the email changes. Updates are emailed only when set.
+     */
+    emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+    /** The separate, unticked daily-tip email opt-in (ticket 30 sends); null = no tips by email. */
+    tipsEmailOptInAt: timestamp('tips_email_opt_in_at', { withTimezone: true }),
     /** Set the first time the push offer was answered; never offered again. */
     pushOfferedAt: timestamp('push_offered_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
@@ -29,6 +36,26 @@ export const spaces = pgTable(
 );
 
 export type SpaceRow = typeof spaces.$inferSelect;
+
+export const spaceTokenPurpose = pgEnum('space_token_purpose', ['verify_email', 'recover']);
+
+/** Single-use emailed links for a Space; they go with the Space. */
+export const spaceTokens = pgTable(
+  'space_tokens',
+  {
+    /** Hex SHA-256 of the token sent by mail; the token itself is never stored. */
+    tokenHash: text('token_hash').primaryKey(),
+    spaceId: uuid('space_id')
+      .notNull()
+      .references(() => spaces.id, { onDelete: 'cascade' }),
+    purpose: spaceTokenPurpose('purpose').notNull(),
+    /** The address the mail went to. */
+    email: text('email').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [index('space_tokens_space_purpose_idx').on(t.spaceId, t.purpose, t.createdAt)],
+);
 
 /** Failed PIN entries only; rows older than PIN_LIMITS.keepMs are deleted on the next attempt. */
 export const pinAttempts = pgTable(

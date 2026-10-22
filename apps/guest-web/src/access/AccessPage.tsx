@@ -4,6 +4,7 @@ import { Navigate, useNavigate, useParams } from 'react-router';
 import { ApiError, checkLink } from '../api';
 import { setLanguage } from '../i18n';
 import { navigatorLanguages, pickBrowserLanguage } from '../i18n/browser-language';
+import { RecoveryRequest } from '../recovery/RecoveryRequest';
 import { entryDecision, storedLanguage, storeLanguage, useSpace } from '../space';
 import { LanguagePicker } from './LanguagePicker';
 import { NoLinkPage } from './NoLinkPage';
@@ -58,16 +59,19 @@ export function AccessPage() {
           }}
         />
       ) : (
-        <PinForm
-          slug={slug}
-          language={language}
-          headingRef={heading}
-          onEntered={(space) => {
-            setSpace(space);
-            navigate('/chat', { replace: true });
-          }}
-          onChangeLanguage={() => setStep('language')}
-        />
+        <>
+          <PinForm
+            slug={slug}
+            language={language}
+            headingRef={heading}
+            onEntered={(space) => {
+              setSpace(space);
+              navigate('/chat', { replace: true });
+            }}
+            onChangeLanguage={() => setStep('language')}
+          />
+          <RecoveryRequest slug={slug} />
+        </>
       )}
     </main>
   );
