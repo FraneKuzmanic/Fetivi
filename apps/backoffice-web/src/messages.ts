@@ -36,6 +36,12 @@ const MESSAGES: Record<string, string> = {
   'import-failed': 'Reading the manual failed. Please try again in a minute.',
   'import-not-configured': 'Importing manuals is not available right now. Please contact Fetivi.',
   'draft-resolved': 'This draft was already handled. Reload the page.',
+  'invalid-calendar-url':
+    'Paste the export link of an Airbnb or Booking.com calendar (it starts with https://).',
+  'calendar-exists': 'This calendar is already added.',
+  'too-many-calendars': 'A unit can have up to 6 calendars.',
+  'proposal-gone': 'This booking was already handled. Reload the page.',
+  'not-possibly-cancelled': 'This Stay is not marked as possibly cancelled.',
 };
 
 export function messageFor(code: string): string {

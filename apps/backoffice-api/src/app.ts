@@ -3,6 +3,7 @@ import Fastify from 'fastify';
 import { adminRoutes } from './admin/routes';
 import { registerAuth } from './auth/plugin';
 import { authRoutes } from './auth/routes';
+import { calendarRoutes } from './calendars/routes';
 import { catalogRoutes } from './catalog/routes';
 import { hostRoutes } from './host/routes';
 import { registerErrorHandler } from './http-error';
@@ -50,5 +51,6 @@ export function buildApp(deps: AppDeps) {
   app.register(providerRoutes, { db, queue, now });
   app.register(providerLinkRoutes, { db, queue, now });
   app.register(stayRoutes, { db, now, guestOrigin });
+  app.register(calendarRoutes, { db, queue, now, guestOrigin });
   return app;
 }

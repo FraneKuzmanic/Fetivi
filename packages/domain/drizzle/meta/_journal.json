@@ -169,6 +169,13 @@
       "when": 1792620227015,
       "tag": "0023_manual_imports",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792667457450,
+      "tag": "0024_calendar_sync",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import type { CalendarSource } from '@fetivi/domain/calendar-vocabulary';
 import type {
   CatalogKind,
   ImageSource,
@@ -382,6 +383,8 @@ export interface Stay {
   arrivalReleaseLocal: string;
   activeUntil: string;
   possiblyCancelled: boolean;
+  /** The calendars this Stay was registered from or linked to; empty for a manual Stay. */
+  calendarSources: CalendarSource[];
   pinSentAt: string | null;
   handoverLanguage: GuestLanguage;
   /** The unit's permanent link; never contains the PIN. */
@@ -402,6 +405,47 @@ export interface StayInput {
 }
 
 export type StayPatch = Partial<StayInput> & { pinSent?: boolean };
+
+/** A unit's calendar link; the URL itself is never sent back (its query is the export secret). */
+export interface CalendarFeed {
+  id: string;
+  unitId: string;
+  source: CalendarSource;
+  /** Host and path only. */
+  label: string;
+  lastPolledAt: string | null;
+  lastOkAt: string | null;
+  /** 'fetch-failed' | 'http-<status>' | 'too-large' | 'not-a-calendar'. */
+  lastError: string | null;
+  createdAt: string;
+}
+
+export interface UnitCalendars {
+  feeds: CalendarFeed[];
+  bookingLinks: { needed: boolean; approvedAt: string | null; domain: string; propertyId: string };
+}
+
+/** One or more calendar events with identical dates on a unit, awaiting Confirm or Not a booking. */
+export interface StayProposal {
+  id: string;
+  unitId: string;
+  unitName: string;
+  propertyId: string;
+  propertyName: string;
+  timezone: string;
+  checkIn: string;
+  checkout: string;
+  sources: CalendarSource[];
+  summaries: { source: CalendarSource; summary: string }[];
+  pinWarning: boolean;
+}
+
+export interface StayProposals {
+  proposals: StayProposal[];
+  bookingLinks: { domain: string; pending: { propertyId: string; propertyName: string }[] };
+}
+
+export type ProposalConfirm = Omit<StayInput, 'checkIn' | 'checkout'>;
 
 export interface AdminPropertyRow {
   id: string;
@@ -524,6 +568,20 @@ export const host = {
     post<Stay>(`/api/host/units/${unitId}/stays`, body),
   updateStay: (id: string, body: StayPatch) => patch<Stay>(`/api/host/stays/${id}`, body),
   deleteStay: (id: string) => remove(`/api/host/stays/${id}`),
+  keepStay: (id: string) => post<Stay>(`/api/host/stays/${id}/keep`),
+  calendars: (unitId: string) => api<UnitCalendars>(`/api/host/units/${unitId}/calendars`),
+  addCalendar: (unitId: string, url: string) =>
+    post<CalendarFeed>(`/api/host/units/${unitId}/calendars`, { url }),
+  removeCalendar: (id: string) => remove(`/api/host/calendars/${id}`),
+  stayProposals: (unitId?: string) =>
+    api<StayProposals>(
+      `/api/host/stay-proposals${unitId ? `?unitId=${encodeURIComponent(unitId)}` : ''}`,
+    ),
+  confirmProposal: (id: string, body: ProposalConfirm) =>
+    post<Stay>(`/api/host/stay-proposals/${id}/confirm`, body),
+  dismissProposal: (id: string) => post(`/api/host/stay-proposals/${id}/dismiss`),
+  approveBookingLinks: (propertyId: string) =>
+    post(`/api/host/properties/${propertyId}/booking-links-approved`),
 };
 
 // --- Catalog (admin) -----------------------------------------------------------------------------

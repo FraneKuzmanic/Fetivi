@@ -119,6 +119,17 @@ _Avoid_: Reservation, booking
 **Active Stay**:
 A Stay from its registration until the end of its checkout day in the Property's time zone; its PIN works and is unique among the Property's Active Stays.
 
+**Calendar feed**:
+A Unit's Airbnb or Booking.com iCal export link that Fetivi reads about every 30 minutes.
+_Avoid_: Sync, channel
+
+**Proposed Stay**:
+A calendar event, or the events of several feeds with identical dates, awaiting the Host's Confirm or "Not a booking".
+_Avoid_: Pending booking
+
+**Possibly cancelled**:
+A Stay whose calendar event disappeared; its PIN works until the Host cancels or keeps it.
+
 **Hand-over message**:
 The copy-ready text a Host sends a guest party with the Unit's link and the PIN, never the PIN inside the link, in one of the seven guest languages.
 _Avoid_: Invitation, welcome message

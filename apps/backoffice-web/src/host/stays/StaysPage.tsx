@@ -5,6 +5,7 @@ import { Link, useSearchParams } from 'react-router';
 import { host, type PropertySummary, type Stay } from '../../api';
 import { useAction } from '../../useAction';
 import { dateRange, guestsLabel, liveUnits, nightsLabel, PHASE_LABELS } from './format';
+import { ProposedList } from './proposed/ProposedList';
 
 export function StayChips({ stay }: { stay: Stay }) {
   return (
@@ -90,6 +91,7 @@ export function StaysPage() {
         ) : null}
       </div>
       {error ? <p role="alert">{error}</p> : null}
+      {past ? null : <ProposedList unitId={unitId || undefined} several={several} />}
       {warned > 0 ? (
         <p className="warning">
           {warned === 1

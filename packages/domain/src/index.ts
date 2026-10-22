@@ -1,4 +1,5 @@
 export * from './about-me';
+export * from './calendar';
 export * from './catalog';
 export * from './conversations';
 export * from './db/client';

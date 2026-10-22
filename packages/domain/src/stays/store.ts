@@ -1,5 +1,5 @@
 import { and, eq, gt } from 'drizzle-orm';
-import { type Db, type Executor, pgCode } from '../db/client';
+import { type Executor, pgCode, type Tx } from '../db/client';
 import { accounts } from '../db/schema/accounts';
 import { properties, units } from '../db/schema/properties';
 import { spaces } from '../db/schema/spaces';
@@ -22,6 +22,9 @@ export interface StayInput {
 }
 
 export type StayChanges = Partial<StayInput> & { pinSent?: boolean };
+
+/** Runs inside the Stay's transaction after the write (with the property row locked); a throw rolls it back. */
+export type StayHook = (tx: Tx, row: StayRow) => Promise<void>;
 
 /** Practically unreachable: a property has tens of active Stays among 10⁶ PINs. */
 const MAX_PIN_DRAWS = 50;
@@ -112,11 +115,11 @@ async function activePins(tx: Executor, propertyId: string, now: Date): Promise<
 }
 
 export async function registerStay(
-  db: Db,
+  db: Executor,
   unitId: string,
   input: StayInput,
   now: Date,
-  options: { pin?: PinSource } = {},
+  options: { pin?: PinSource; inTransaction?: StayHook } = {},
 ): Promise<StayRow> {
   return withStayChecks(() =>
     db.transaction(async (tx) => {
@@ -148,6 +151,7 @@ export async function registerStay(
         })
         .returning();
       if (!row) throw new Error('insert returned no row');
+      await options.inTransaction?.(tx, row);
       return row;
     }),
   );
@@ -159,10 +163,11 @@ export async function registerStay(
  * Stays cannot be edited, so no edit can revive an old PIN next to a newer one.
  */
 export async function updateStay(
-  db: Db,
+  db: Executor,
   stayId: string,
   changes: StayChanges,
   now: Date,
+  options: { inTransaction?: StayHook } = {},
 ): Promise<StayRow> {
   return withStayChecks(() =>
     db.transaction(async (tx) => {
@@ -209,6 +214,7 @@ export async function updateStay(
         .update(spaces)
         .set({ closedAt: row.activeUntil, updatedAt: now })
         .where(eq(spaces.stayId, stayId));
+      await options.inTransaction?.(tx, row);
       return row;
     }),
   );

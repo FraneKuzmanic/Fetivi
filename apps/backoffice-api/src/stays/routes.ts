@@ -1,24 +1,19 @@
 import {
   type Db,
-  type Executor,
   InvalidTimeInputError,
-  needsPinWarning,
   properties,
   registerStay,
   type StayRow,
   StayRuleError,
-  stayPhase,
   stays,
-  toLocalDateTime,
-  units,
   updateStay,
 } from '@fetivi/domain';
 import { and, asc, desc, eq, gt, inArray, lte } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { HttpError } from '../http-error';
-import { unitLink } from '../properties/qr';
 import { findOwnedUnit, ownedUnitIds } from '../properties/store';
+import { findOwnedStay, ownedStayOut, selectStays, staysOut } from './out';
 import { StayCreate, StayPatch, StaysQuery } from './schemas';
 
 export interface StayDeps {
@@ -39,7 +34,7 @@ const STAY_ERROR_STATUS: Record<StayRuleError['code'], number> = {
 };
 
 /** Turns Stay rule and time errors into HTTP errors. */
-async function withStayErrors<T>(run: () => Promise<T>): Promise<T> {
+export async function withStayErrors<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
   } catch (error) {
@@ -52,72 +47,19 @@ async function withStayErrors<T>(run: () => Promise<T>): Promise<T> {
 }
 
 /** The host id comes only from request.auth, never from the client. */
-function hostIdOf(request: FastifyRequest): string {
+export function hostIdOf(request: FastifyRequest): string {
   const hostId = request.auth.hostId;
   if (!hostId) throw new HttpError(403, 'forbidden');
   return hostId;
 }
-
-/** A Stay with the unit and property fields its output needs, scoped to the host's units. */
-const selectStays = (db: Executor) =>
-  db
-    .select({
-      stay: stays,
-      unitName: units.name,
-      qrSlug: units.qrSlug,
-      propertyId: properties.id,
-      propertyName: properties.name,
-      timezone: properties.timezone,
-    })
-    .from(stays)
-    .innerJoin(units, eq(units.id, stays.unitId))
-    .innerJoin(properties, eq(properties.id, units.propertyId));
-
-type StayJoin = Awaited<ReturnType<ReturnType<typeof selectStays>['execute']>>[number];
 
 export async function stayRoutes(app: FastifyInstance, deps: StayDeps): Promise<void> {
   const { db, guestOrigin } = deps;
   const host = { config: { access: 'host' as const } };
   const idOf = (request: FastifyRequest) => IdParams.parse(request.params).id;
 
-  function stayOut(row: StayJoin) {
-    const { stay, timezone } = row;
-    const now = deps.now();
-    return {
-      id: stay.id,
-      unitId: stay.unitId,
-      unitName: row.unitName,
-      propertyId: row.propertyId,
-      propertyName: row.propertyName,
-      timezone,
-      checkIn: stay.checkIn,
-      checkout: stay.checkout,
-      partySize: stay.partySize,
-      bookerName: stay.bookerName,
-      reservationNumber: stay.reservationNumber,
-      pin: stay.pin,
-      arrivalReleaseAt: stay.arrivalReleaseAt.toISOString(),
-      arrivalReleaseLocal: toLocalDateTime(stay.arrivalReleaseAt, timezone),
-      activeUntil: stay.activeUntil.toISOString(),
-      possiblyCancelled: stay.possiblyCancelled,
-      pinSentAt: stay.pinSentAt?.toISOString() ?? null,
-      handoverLanguage: stay.handoverLanguage,
-      unitLink: row.qrSlug ? unitLink(guestOrigin, row.qrSlug) : null,
-      phase: stayPhase(stay, timezone, now),
-      pinWarning: needsPinWarning(stay, timezone, now),
-      createdAt: stay.createdAt.toISOString(),
-      updatedAt: stay.updatedAt.toISOString(),
-    };
-  }
-
-  async function findOwnedStay(hostId: string, id: string): Promise<StayJoin> {
-    const [row] = await selectStays(db).where(and(eq(stays.id, id), eq(properties.hostId, hostId)));
-    if (!row) throw new HttpError(404, 'not-found');
-    return row;
-  }
-
-  const detailOf = async (hostId: string, stay: StayRow) =>
-    stayOut(await findOwnedStay(hostId, stay.id));
+  const ctx = () => ({ now: deps.now(), guestOrigin });
+  const detailOf = (hostId: string, stay: StayRow) => ownedStayOut(db, hostId, stay.id, ctx());
 
   app.get('/api/host/stays', host, async (request) => {
     const hostId = hostIdOf(request);
@@ -132,7 +74,7 @@ export async function stayRoutes(app: FastifyInstance, deps: StayDeps): Promise<
     const rows = past
       ? await selectStays(db).where(scope).orderBy(desc(stays.checkout)).limit(PAST_LIMIT)
       : await selectStays(db).where(scope).orderBy(asc(stays.checkIn), asc(stays.createdAt));
-    return { stays: rows.map(stayOut) };
+    return { stays: await staysOut(db, rows, ctx()) };
   });
 
   app.post('/api/host/units/:id/stays', host, async (request, reply) => {
@@ -144,12 +86,12 @@ export async function stayRoutes(app: FastifyInstance, deps: StayDeps): Promise<
   });
 
   app.get('/api/host/stays/:id', host, async (request) =>
-    stayOut(await findOwnedStay(hostIdOf(request), idOf(request))),
+    ownedStayOut(db, hostIdOf(request), idOf(request), ctx()),
   );
 
   app.patch('/api/host/stays/:id', host, async (request) => {
     const hostId = hostIdOf(request);
-    const { stay } = await findOwnedStay(hostId, idOf(request));
+    const { stay } = await findOwnedStay(db, hostId, idOf(request));
     const body = StayPatch.parse(request.body);
     const updated = await withStayErrors(() => updateStay(db, stay.id, body, deps.now()));
     return detailOf(hostId, updated);

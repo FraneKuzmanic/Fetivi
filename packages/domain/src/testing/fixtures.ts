@@ -44,6 +44,28 @@ const ZONE = 'Europe/Zagreb';
 /** A job queue that drops every job, for tests that write through the store without pg-boss. */
 export const noopQueue: JobQueue = { send: async () => {}, publish: async () => {} };
 
+export interface RecordedJob {
+  name: string;
+  data: object;
+  id: string | undefined;
+}
+
+/**
+ * A job queue that records sends and inserts nothing. Like pg-boss it ignores a second send
+ * with the same id; unlike it, a send stays recorded when the caller's transaction rolls back.
+ */
+export function recordingQueue(): JobQueue & { readonly jobs: RecordedJob[] } {
+  const jobs: RecordedJob[] = [];
+  return {
+    jobs,
+    async send(name, data, _tx, options = {}) {
+      if (options.id && jobs.some((j) => j.id === options.id)) return;
+      jobs.push({ name, data, id: options.id });
+    },
+    async publish() {},
+  };
+}
+
 /** Test-only: publishes every record as if its translation job had run. */
 export async function publishCatalog(db: Db, destinationId: string): Promise<void> {
   const records = await db

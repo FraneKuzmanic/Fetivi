@@ -1,3 +1,4 @@
+import { CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
 import { handOverMessages } from '@fetivi/domain/handover';
 import { GUEST_LANGUAGES } from '@fetivi/domain/vocabulary';
 import { Copy } from '@phosphor-icons/react';
@@ -65,9 +66,45 @@ export function StayPage() {
         {stay.propertyName} · {stay.unitName} · {nightsLabel(stay.checkIn, stay.checkout)} ·{' '}
         {guestsLabel(stay.partySize)}
       </p>
+      {stay.calendarSources.length > 0 ? (
+        <p className="muted">From the {calendarsText(stay.calendarSources)}</p>
+      ) : null}
       {error ? <p role="alert">{error}</p> : null}
 
       <div className="editor">
+        {stay.possiblyCancelled ? (
+          <section className="panel" aria-labelledby="cancelled-heading">
+            <h2 id="cancelled-heading">Possibly cancelled</h2>
+            <p className="warning">
+              This booking disappeared from the {calendarsText(stay.calendarSources)}. It may be
+              cancelled. The PIN keeps working until you decide.
+            </p>
+            <div className="actions">
+              <button
+                type="button"
+                className="danger"
+                disabled={busy}
+                onClick={() => {
+                  if (window.confirm('Cancel this Stay? Its PIN stops working.')) {
+                    void run(async () => {
+                      await host.deleteStay(id);
+                      navigate('/stays', { replace: true });
+                    });
+                  }
+                }}
+              >
+                Cancel the Stay
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void run(async () => setStay(await host.keepStay(id)))}
+              >
+                Keep the Stay
+              </button>
+            </div>
+          </section>
+        ) : null}
         <section className="panel" aria-labelledby="pin-heading">
           <h2 id="pin-heading">{params.get('new') ? 'Stay registered' : 'PIN'}</h2>
           <p className="muted">
@@ -136,6 +173,13 @@ export function StayPage() {
       </div>
     </>
   );
+}
+
+/** "Airbnb calendar", "Airbnb and Booking.com calendars"; "calendar" when none is linked any more. */
+function calendarsText(sources: Stay['calendarSources']): string {
+  if (sources.length === 0) return 'calendar';
+  const names = sources.map((s) => CALENDAR_SOURCE_LABELS[s]).join(' and ');
+  return `${names} ${sources.length > 1 ? 'calendars' : 'calendar'}`;
 }
 
 /** The two copy-ready hand-over messages in the language the host picks. */
@@ -217,7 +261,7 @@ function MessageBox({
 }
 
 /** Copies to the clipboard; if the browser refuses, selects the text for Ctrl+C instead. */
-function CopyButton({
+export function CopyButton({
   text,
   label,
   box,

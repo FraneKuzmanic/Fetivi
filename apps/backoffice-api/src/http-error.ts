@@ -33,7 +33,12 @@ export type ErrorCode =
   | 'manual-empty'
   | 'import-failed'
   | 'import-not-configured'
-  | 'draft-resolved';
+  | 'draft-resolved'
+  | 'invalid-calendar-url'
+  | 'calendar-exists'
+  | 'too-many-calendars'
+  | 'proposal-gone'
+  | 'not-possibly-cancelled';
 
 export class HttpError extends Error {
   override name = 'HttpError';

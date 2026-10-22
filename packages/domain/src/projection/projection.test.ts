@@ -57,6 +57,7 @@ const property: PropertyRow = {
   checkInTime: '15:00:00',
   approvedAt: at,
   approvedBy: null,
+  bookingLinksApprovedAt: null,
   createdAt: at,
   updatedAt: at,
 };

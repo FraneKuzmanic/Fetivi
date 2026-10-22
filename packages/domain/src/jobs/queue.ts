@@ -9,6 +9,9 @@ export const QUEUES = {
   translateOffer: 'translate-offer',
   orderTimer: 'order-timer',
   orderNotify: 'order-notify',
+  pollCalendars: 'poll-calendars',
+  pollCalendar: 'poll-calendar',
+  stayNotify: 'stay-notify',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -27,6 +30,11 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   // Short database work; the machine makes a retried or duplicate run a no-op.
   orderTimer: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
   orderNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
+  // The cron fan-out; the next slot runs again anyway.
+  pollCalendars: { retryLimit: 1, expireInSeconds: 120 },
+  // One feed; a failed fetch is recorded on the feed, so retries cover crashes only.
+  pollCalendar: { retryLimit: 2, retryDelay: 60, retryBackoff: true, expireInSeconds: 120 },
+  stayNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
 };
 
 /**

@@ -87,6 +87,8 @@ export const properties = pgTable(
     /** Set once by an admin; units can go live from then on. */
     approvedAt: timestamp('approved_at', { withTimezone: true }),
     approvedBy: uuid('approved_by').references(() => accounts.id, { onDelete: 'set null' }),
+    /** The host marked Fetivi's guest domain approved in the Booking.com extranet (22). */
+    bookingLinksApprovedAt: timestamp('booking_links_approved_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

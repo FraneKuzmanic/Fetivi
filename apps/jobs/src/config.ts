@@ -15,6 +15,8 @@ const schema = z
     PROVIDER_LINK_SECRET: z.string().min(32).default(DEV_PROVIDER_LINK_SECRET),
     /** The back-office origin the Provider page is served from (production https://host.<domain>). */
     PROVIDER_LINK_BASE_URL: z.url().default('http://localhost:5174'),
+    /** The back-office origin, for links in host emails (production https://host.<domain>). */
+    WEB_ORIGIN: z.url().default('http://localhost:5174'),
   })
   .refine(
     (c) => c.NODE_ENV !== 'production' || c.PROVIDER_LINK_SECRET !== DEV_PROVIDER_LINK_SECRET,

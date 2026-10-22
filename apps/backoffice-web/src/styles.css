@@ -1318,6 +1318,97 @@ button svg,
   }
 }
 
+/* --- Calendars and proposed Stays (22) ------------------------------------------------------- */
+
+.feed-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 10px 12px 10px 16px;
+}
+
+.feed-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.feed-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.feed-error {
+  color: var(--danger);
+}
+
+.feed-label {
+  overflow-wrap: anywhere;
+}
+
+.help summary {
+  cursor: pointer;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  color: var(--blue-600);
+}
+
+.help p {
+  margin: 4px 0 8px;
+}
+
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.steps-list .copy-row {
+  margin-top: 6px;
+}
+
+.proposals {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.proposals h2 {
+  margin: 0;
+}
+
+.proposal-row {
+  display: grid;
+  gap: 10px 16px;
+  align-items: center;
+  padding: 14px 16px;
+}
+
+.proposal-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.proposal-summary {
+  font-size: 13px;
+}
+
+@media (min-width: 700px) {
+  .proposal-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+}
+
 .media-panel {
   display: flex;
   flex-direction: column;

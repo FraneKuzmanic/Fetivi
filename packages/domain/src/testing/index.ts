@@ -1,3 +1,10 @@
+export {
+  BOOKING_SAMPLE,
+  type FixtureEvent,
+  ics,
+  type StubResponse,
+  stubFetch,
+} from '../calendar/fixtures';
 export { minimalDocx, minimalPdf, plainZip } from '../property/manual-import/fixtures';
 export {
   emptyExtraction,

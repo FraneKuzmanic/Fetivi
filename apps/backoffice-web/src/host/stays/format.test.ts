@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { dateRange, guestsLabel, nights, nightsLabel, PHASE_LABELS, releaseText } from './format';
+import {
+  agoLabel,
+  dateRange,
+  guestsLabel,
+  nights,
+  nightsLabel,
+  PHASE_LABELS,
+  releaseText,
+} from './format';
 
 describe('Stay labels', () => {
   it('formats a date range day first', () => {
@@ -22,5 +30,14 @@ describe('Stay labels', () => {
     expect(releaseText('2026-10-20T00:00')).toBe('Arrival details from 20 Oct, 00:00');
     expect(guestsLabel(1)).toBe('1 guest');
     expect(guestsLabel(4)).toBe('4 guests');
+  });
+
+  it('says how long ago a calendar was checked', () => {
+    const now = new Date('2026-10-19T10:00:00Z');
+    expect(agoLabel('2026-10-19T09:59:30Z', now)).toBe('just now');
+    expect(agoLabel('2026-10-19T09:48:00Z', now)).toBe('12 min ago');
+    expect(agoLabel('2026-10-19T07:00:00Z', now)).toBe('3 h ago');
+    expect(agoLabel('2026-10-18T09:00:00Z', now)).toBe('1 day ago');
+    expect(agoLabel('2026-10-16T09:00:00Z', now)).toBe('3 days ago');
   });
 });

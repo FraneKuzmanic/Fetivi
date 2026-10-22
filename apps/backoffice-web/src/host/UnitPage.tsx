@@ -18,6 +18,7 @@ import { AmenitiesEditor } from './AmenitiesEditor';
 import { BlockEditor, SecretWarnings } from './BlockEditor';
 import { BlockList, preview } from './BlockList';
 import { CORE_SECTIONS, CoreField } from './CoreFields';
+import { CalendarsPanel } from './stays/proposed/CalendarsPanel';
 import { TranslationChip } from './translations/TranslationChip';
 import { usePendingRefresh } from './translations/usePendingRefresh';
 import { CompletenessBar } from './wizard/CompletenessBar';
@@ -116,6 +117,7 @@ export function UnitPage() {
         ) : null}
         <QrPanel detail={detail} />
         <StaysPanel detail={detail} />
+        {detail.qrSlug ? <CalendarsPanel unitId={detail.id} /> : null}
 
         <Section title="Unit name" onSave={saveFields(['name'])}>
           <TextField

@@ -15,6 +15,7 @@ import { VerifyEmailPage } from './auth/VerifyEmailPage';
 import { PropertiesPage } from './host/PropertiesPage';
 import { NewPropertyPage, PropertyPage } from './host/PropertyPage';
 import { NewStayPage } from './host/stays/NewStayPage';
+import { ConfirmProposalPage } from './host/stays/proposed/ConfirmProposalPage';
 import { StayPage } from './host/stays/StayPage';
 import { StaysPage } from './host/stays/StaysPage';
 import { UnitPage } from './host/UnitPage';
@@ -125,6 +126,14 @@ export function App() {
           element={
             <Page area="host">
               <NewStayPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/stays/proposed/:id"
+          element={
+            <Page area="host">
+              <ConfirmProposalPage />
             </Page>
           }
         />

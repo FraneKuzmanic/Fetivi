@@ -31,6 +31,8 @@ const boss = await startJobRunner({
         secret: config.PROVIDER_LINK_SECRET,
         baseUrl: config.PROVIDER_LINK_BASE_URL,
       },
+      fetch: egress.fetch,
+      webOrigin: config.WEB_ORIGIN,
     }),
 });
 console.log('job runner started');

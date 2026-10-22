@@ -27,6 +27,7 @@ function property(overrides: Partial<PropertyRow> = {}): PropertyRow {
     buildingDoorCode: null,
     approvedAt: null,
     approvedBy: null,
+    bookingLinksApprovedAt: null,
     createdAt: at,
     updatedAt: at,
     ...overrides,

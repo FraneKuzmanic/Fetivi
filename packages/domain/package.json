@@ -13,7 +13,8 @@
     "./handover": "./src/stays/handover.ts",
     "./projection-types": "./src/projection/types.ts",
     "./stay-vocabulary": "./src/stays/vocabulary.ts",
-    "./about-me-vocabulary": "./src/about-me/vocabulary.ts"
+    "./about-me-vocabulary": "./src/about-me/vocabulary.ts",
+    "./calendar-vocabulary": "./src/calendar/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
