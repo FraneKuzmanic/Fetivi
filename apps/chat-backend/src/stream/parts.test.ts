@@ -1,3 +1,5 @@
+import { weatherToolResult } from '@fetivi/domain';
+import { sampleWeatherReport } from '@fetivi/domain/testing';
 import type { UIMessageChunk } from 'ai';
 import { describe, expect, it } from 'vitest';
 import { componentFor, withComponentParts } from './parts';
@@ -274,5 +276,28 @@ describe('day plan component', () => {
     expect(componentFor('update_plan', "That date is outside the guest's stay.")).toBeNull();
     expect(componentFor('get_plan', { plan: { ...plan, days: [] } })).toBeNull();
     expect(componentFor('get_plan', { plan: null })).toBeNull();
+  });
+});
+
+describe('weather component', () => {
+  const place = { lat: 43.52, lng: 16.25, timezone: 'Europe/Zagreb' };
+  const value = weatherToolResult(
+    sampleWeatherReport('2027-07-15'),
+    place,
+    '2027-07-15',
+    new Date('2027-07-15T08:00:00Z'),
+  );
+
+  it('shows a get_weather result as the weather card, without the fields it does not show', () => {
+    const part = componentFor('get_weather', value);
+    expect(part?.name).toBe('weather');
+    expect(part?.payload).not.toHaveProperty('forecastUpdatedAt');
+    expect(part?.name === 'weather' && part.payload.days?.[0]).not.toHaveProperty('symbolCode');
+  });
+
+  it('shows nothing for an error text', () => {
+    expect(
+      componentFor('get_weather', 'The weather services are not answering right now.'),
+    ).toBeNull();
   });
 });

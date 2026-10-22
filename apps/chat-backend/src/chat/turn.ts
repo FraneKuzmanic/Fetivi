@@ -4,6 +4,7 @@ import {
   type ConversationRow,
   type Db,
   findConversation,
+  type GuestProjection,
   getAboutMe,
   getOrCreateConversation,
   loadMessages,
@@ -13,6 +14,7 @@ import {
   type ResolvedSpace,
   recordTurnMetrics,
   type SpaceContext,
+  type WeatherSource,
 } from '@fetivi/domain';
 import { INBOX_PART_TYPE, inboxItem } from '@fetivi/ui/payloads';
 import {
@@ -35,6 +37,7 @@ import {
   projectionChangeNote,
   situationNote,
   systemInstructions,
+  weatherNote,
 } from '../prompt/prompt';
 import { presentationTools } from '../stream/presentation';
 import type { ToolBinding, TurnTools } from '../tools/registry';
@@ -47,6 +50,8 @@ export interface ChatDeps {
   model: LanguageModel | null;
   /** The guest tools: over MCP, or in process for V0 (TOOL_TRANSPORT). */
   tools: ToolBinding;
+  /** Asked directly for the weather note, not over MCP, so a turn's MCP time stays the model's. */
+  weather: WeatherSource;
   log: FastifyBaseLogger;
 }
 
@@ -229,6 +234,28 @@ const loopDeps = (deps: ChatDeps, turn: OpenTurn, conversation: ConversationRow)
 });
 
 /**
+ * The weather summary (architecture §4.3), asked of the weather source directly, not over MCP,
+ * so the turn's MCP time stays the model's tool calls. Only inside a destination and before
+ * checkout; null when the source fails, which keeps the last note.
+ */
+async function currentWeatherNote(
+  deps: ChatDeps,
+  turn: OpenTurn,
+  projection: GuestProjection,
+): Promise<string | null> {
+  const { location, timezone } = projection.property;
+  if (!turn.ctx.insideDestination || turn.ctx.phase === 'ended' || !location) return null;
+  try {
+    // English warnings: the note is for the model, which answers in the guest's language.
+    const report = await deps.weather.report({ ...location, timezone }, 'en', turn.startedAt);
+    return weatherNote(report, { now: turn.startedAt, timezone });
+  } catch (err) {
+    deps.log.warn({ err }, 'weather note skipped');
+    return null;
+  }
+}
+
+/**
  * One guest turn, streamed. Throws HttpError before the stream starts. The user message and the
  * answer are stored together only when the turn completes, so a failed turn leaves the history
  * (and the cached prompt prefix) as it was.
@@ -261,9 +288,11 @@ export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Pro
       checkout: projection.stay.checkout,
       phase: turn.ctx.phase,
     });
+    const weatherText = await currentWeatherNote(deps, turn, projection);
     const notes = [
       projectionChangeNote(conversation.projection, projection),
       note === conversation.situationNote ? null : note,
+      weatherText === null || weatherText === conversation.weatherNote ? null : weatherText,
       aboutMeText === conversation.aboutMeNote ? null : aboutMeText,
       hostReplyNote(replies.texts),
     ].filter((n) => n !== null);
@@ -287,6 +316,7 @@ export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Pro
           projection,
           situationNote: note,
           aboutMeNote: aboutMeText ?? conversation.aboutMeNote,
+          weatherNote: weatherText ?? conversation.weatherNote,
           hostReplyNotedSeq: replies.notedSeq,
           now: deps.now(),
         });

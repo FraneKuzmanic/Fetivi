@@ -226,3 +226,63 @@ describe('day plan in the chat', () => {
     expect(html.match(/Nothing planned yet/g)).toHaveLength(2);
   });
 });
+
+describe('weather card in the chat', () => {
+  const weather = (warnings: unknown[] | null) =>
+    ({
+      type: 'data-component',
+      id: 'w1',
+      data: {
+        name: 'weather',
+        payload: {
+          date: '2027-07-15',
+          timezone: 'Europe/Zagreb',
+          days: [
+            {
+              date: '2027-07-15',
+              sky: 'showers',
+              tempMinC: 20.1,
+              tempMaxC: 26.8,
+              precipitationMm: 4.2,
+              windMaxMs: 5.1,
+            },
+          ],
+          sea: { station: 'Split', temperatureC: 23.4, measuredAt: '2027-07-15T14:00' },
+          uv: { station: 'Split', maxToday: 7.1, measuredAt: '2027-07-15T13:00' },
+          warnings,
+          credits: [
+            { source: 'DHMZ', label: 'Sea, UV and warnings: DHMZ', url: 'https://meteo.hr' },
+            { source: 'MET Norway', label: 'Forecast: MET Norway', url: 'https://www.met.no/en' },
+          ],
+        },
+      },
+    }) as const;
+  const wind = {
+    level: 'orange',
+    type: 'wind',
+    event: 'Orange wind warning',
+    description: 'Severe bura gusts.',
+    area: 'Middle Dalmatia region',
+    onset: '2027-07-15T14:00:00.000Z',
+    expires: '2027-07-15T21:59:59.000Z',
+  };
+
+  it('renders a stored weather part as the card, the warning level in words', () => {
+    const html = render([question, answer([weather([wind])])]);
+    expect(html).toContain('Weather');
+    expect(html).toContain('Orange warning');
+    expect(html).toContain('Severe bura gusts.');
+    expect(html).toContain('Thu 4:00 PM – 11:59 PM');
+    expect(html).toContain('20–27 °C');
+    expect(html).toContain('4.2 mm rain');
+    expect(html).toContain('Sea 23 °C at Split');
+    expect(html).toContain('UV up to 7 today (high) at Split');
+    expect(html).toContain('href="https://www.met.no/en"');
+    expect(html).toContain('MET Norway (forecast, CC BY 4.0)');
+  });
+
+  it('says warnings could not be checked when they are unknown', () => {
+    const html = render([question, answer([weather(null)])]);
+    expect(html).toContain('the official weather warnings just now.');
+  });
+});

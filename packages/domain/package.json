@@ -18,7 +18,8 @@
     "./calendar-vocabulary": "./src/calendar/vocabulary.ts",
     "./handoff-vocabulary": "./src/handoff/vocabulary.ts",
     "./notification-vocabulary": "./src/notifications/guest/vocabulary.ts",
-    "./host-notification-vocabulary": "./src/notifications/host/vocabulary.ts"
+    "./host-notification-vocabulary": "./src/notifications/host/vocabulary.ts",
+    "./weather-vocabulary": "./src/weather/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -29,6 +30,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "0.133.0",
     "drizzle-orm": "0.45.4",
+    "fast-xml-parser": "5.11.1",
     "luxon": "3.7.2",
     "mammoth": "1.13.0",
     "pg": "8.23.1",

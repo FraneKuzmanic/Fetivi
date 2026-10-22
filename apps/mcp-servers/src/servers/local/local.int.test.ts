@@ -6,8 +6,18 @@ import {
   replaceAboutMe,
   seedTrogir,
   updateAboutMe,
+  type WarningLanguage,
+  type WeatherReport,
+  type WeatherSource,
 } from '@fetivi/domain';
-import { noopQueue, publishCatalog, seedGuestUnit } from '@fetivi/domain/testing';
+import {
+  fixedWeatherSource,
+  noopQueue,
+  publishCatalog,
+  sampleWeatherReport,
+  seedGuestUnit,
+  unavailableWeatherSource,
+} from '@fetivi/domain/testing';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { contextOf, createTestServer, signToken, type TestServer } from '../../testing';
@@ -15,7 +25,26 @@ import { IDENTITY_ARGS } from '../tool';
 
 const WINTER = new Date('2027-01-15T08:00:00Z');
 const SUMMER = new Date('2027-07-10T08:00:00Z');
-const CATALOG_TOOLS = ['search_places', 'get_place', 'search_events', 'get_transport_notes'];
+const CATALOG_TOOLS = [
+  'search_places',
+  'get_place',
+  'search_events',
+  'get_weather',
+  'get_transport_notes',
+];
+// SUMMER is 10:00 on this day in Zagreb.
+const SUMMER_DAY = '2027-07-10';
+const SAMPLE = sampleWeatherReport(SUMMER_DAY);
+
+// The server is built once; each weather test swaps the source behind it.
+let weather: WeatherSource = fixedWeatherSource(SAMPLE);
+const weatherLanguages: WarningLanguage[] = [];
+const switchableWeather: WeatherSource = {
+  report(place, language, now) {
+    weatherLanguages.push(language);
+    return weather.report(place, language, now);
+  },
+};
 
 let t: TestServer;
 let a: Awaited<ReturnType<typeof seedGuestUnit>>;
@@ -54,7 +83,7 @@ async function call(token: string, name: string, args: Record<string, unknown> =
 }
 
 beforeAll(async () => {
-  t = await createTestServer({ listen: true, now: () => SUMMER });
+  t = await createTestServer({ listen: true, now: () => SUMMER, weather: switchableWeather });
   const { destinationId } = await seedTrogir(t.db, noopQueue, WINTER);
   await publishCatalog(t.db, destinationId);
 
@@ -101,7 +130,7 @@ const listNames = async (token: string) => {
 };
 
 describe('local tool list', () => {
-  it('lists the four catalog tools inside a destination', async () => {
+  it('lists the catalog tools and get_weather inside a destination', async () => {
     const tools = await listNames(tokenA);
     expect(tools.map((tool) => tool.name)).toEqual(CATALOG_TOOLS);
     const identity = new Set<string>(IDENTITY_ARGS.map((x) => x.toLowerCase()));
@@ -208,5 +237,110 @@ describe('local tools', () => {
       () => 'error',
     );
     expect(outcome).toBe('error');
+  });
+});
+
+describe('get_weather', () => {
+  const withWeather = async <T>(source: WeatherSource, run: () => Promise<T>) => {
+    weather = source;
+    try {
+      return await run();
+    } finally {
+      weather = fixedWeatherSource(SAMPLE);
+    }
+  };
+
+  it('is open-world and read-only', async () => {
+    const tool = (await listNames(tokenA)).find((x) => x.name === 'get_weather');
+    expect(tool?.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: true });
+    expect(Object.keys(tool?.inputSchema.properties ?? {})).toEqual(['date']);
+  });
+
+  it('answers the asked day and the next two, with sea, UV, warnings and both credits', async () => {
+    weatherLanguages.length = 0;
+    const result = await call(tokenA, 'get_weather', {});
+    expect(result.isError).toBeFalsy();
+    const out = result.structuredContent as {
+      date: string;
+      timezone: string;
+      days: { date: string }[];
+      sea: unknown;
+      uv: unknown;
+      warnings: unknown[];
+      credits: { source: string; url: string }[];
+    };
+    expect(out.date).toBe(SUMMER_DAY);
+    expect(out.timezone).toBe('Europe/Zagreb');
+    expect(out.days.map((d) => d.date)).toEqual(['2027-07-10', '2027-07-11', '2027-07-12']);
+    expect(out.sea).toEqual(SAMPLE.sea);
+    expect(out.uv).toEqual(SAMPLE.uv);
+    expect(out.warnings).toEqual(SAMPLE.warnings);
+    expect(out.credits.map((c) => c.source)).toEqual(['DHMZ', 'MET Norway']);
+    // The Italian guest gets DHMZ's English text.
+    expect(weatherLanguages).toEqual(['en']);
+    expect(JSON.parse((result.content as { text: string }[])[0]?.text ?? '')).toEqual(out);
+  });
+
+  it('starts at the asked date', async () => {
+    const result = await call(tokenA, 'get_weather', { date: '2027-07-11' });
+    const out = result.structuredContent as { date: string; days: { date: string }[] };
+    expect(out.date).toBe('2027-07-11');
+    expect(out.days.map((d) => d.date)).toEqual(['2027-07-11', '2027-07-12']);
+  });
+
+  it('asks for Croatian warnings for a Croatian guest', async () => {
+    weatherLanguages.length = 0;
+    const token = await tokenFor(a.spaceId, { claims: { lang: 'hr' } });
+    expect((await call(token, 'get_weather', {})).isError).toBeFalsy();
+    expect(weatherLanguages).toEqual(['hr']);
+  });
+
+  it('refuses a past day and one more than 8 days ahead', async () => {
+    expect(await call(tokenA, 'get_weather', { date: '2027-07-09' })).toMatchObject({
+      isError: true,
+      content: [{ type: 'text', text: 'I can only check the weather from today on.' }],
+    });
+    expect(await call(tokenA, 'get_weather', { date: '2027-07-19' })).toMatchObject({
+      isError: true,
+      content: [
+        {
+          type: 'text',
+          text: 'Forecasts reach about 8 days ahead; ask again closer to the day.',
+        },
+      ],
+    });
+    expect((await call(tokenA, 'get_weather', { date: '2027-07-18' })).isError).toBeFalsy();
+  });
+
+  it('says so when no weather service answers', async () => {
+    const result = await withWeather(unavailableWeatherSource(), () =>
+      call(tokenA, 'get_weather', {}),
+    );
+    expect(result).toMatchObject({
+      isError: true,
+      content: [{ type: 'text', text: 'The weather services are not answering right now.' }],
+    });
+  });
+
+  it('passes unchecked warnings and an unavailable forecast through as null', async () => {
+    const partial: WeatherReport = { ...SAMPLE, forecast: null, warnings: null };
+    const result = await withWeather(fixedWeatherSource(partial), () =>
+      call(tokenA, 'get_weather', {}),
+    );
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toMatchObject({
+      days: null,
+      forecastUpdatedAt: null,
+      warnings: null,
+      sea: SAMPLE.sea,
+    });
+  });
+
+  // Not registered for such a token, so a call cannot reach the handler at all.
+  it('is not there outside a destination or without catalog:read', async () => {
+    for (const token of [tokenB, await tokenFor(a.spaceId, { scope: '' })]) {
+      expect((await listNames(token)).map((x) => x.name)).not.toContain('get_weather');
+      await expect(call(token, 'get_weather', {})).rejects.toThrow('Tool get_weather not found');
+    }
   });
 });

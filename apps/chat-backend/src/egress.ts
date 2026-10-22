@@ -1,7 +1,13 @@
 import { createEgress } from '@fetivi/egress';
 
 // Hosts this process may call. Later tickets add entries.
-export const EGRESS_ALLOWLIST: readonly string[] = ['api.anthropic.com'];
+// Weather (DHMZ and MET Norway): the turn's weather note, and V0's get_weather.
+export const EGRESS_ALLOWLIST: readonly string[] = [
+  'api.anthropic.com',
+  'vrijeme.hr',
+  'meteo.hr',
+  'api.met.no',
+];
 
 export const egress = createEgress({ allowlist: EGRESS_ALLOWLIST });
 

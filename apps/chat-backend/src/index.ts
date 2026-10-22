@@ -1,4 +1,10 @@
-import { createDb, createJobQueue, createLocalMediaStore, ensureQueues } from '@fetivi/domain';
+import {
+  createDb,
+  createJobQueue,
+  createLocalMediaStore,
+  createWeatherSource,
+  ensureQueues,
+} from '@fetivi/domain';
 import { PgBoss } from 'pg-boss';
 import { buildApp } from './app';
 import { createChatModel } from './chat/model';
@@ -23,6 +29,8 @@ await boss.start();
 await ensureQueues(boss);
 const queue = createJobQueue(boss);
 const inProcess = config.TOOL_TRANSPORT === 'inprocess';
+// One weather source per process (the turn's weather note and V0's get_weather), so one cache.
+const weather = createWeatherSource({ fetch: egress.fetch, userAgent: config.WEATHER_USER_AGENT });
 
 const app = buildApp({
   db,
@@ -35,6 +43,7 @@ const app = buildApp({
   chat: {
     model: createChatModel({ apiKey: config.ANTHROPIC_API_KEY, fetch: egress.fetch }),
     mcpFetch: mcpEgress(new URL(config.MCP_PUBLIC_URL)).fetch,
+    weather,
     ...(inProcess
       ? {
           tools: inProcessBinding({
@@ -42,6 +51,7 @@ const app = buildApp({
             now: () => new Date(),
             queue,
             requestStateSecret: config.REQUEST_STATE_SECRET,
+            weather,
           }),
         }
       : {}),

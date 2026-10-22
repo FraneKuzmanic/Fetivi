@@ -9,7 +9,10 @@ import {
   type Need,
   type Pace,
   type PartyShape,
+  type SkyCode,
   type StayPhase,
+  type WarningType,
+  type WeatherReport,
 } from '@fetivi/domain';
 import type { SystemModelMessage } from 'ai';
 import { DateTime } from 'luxon';
@@ -186,4 +189,98 @@ export function hostReplyNote(replies: string[]): string | null {
         `The host replied to the guest's message (the guest sees it in the chat): "${text}". Use it if relevant; don't repeat it word for word.`,
     )
     .join('\n\n');
+}
+
+const SKY_EN: Record<SkyCode, string> = {
+  clear: 'clear',
+  partly_cloudy: 'partly cloudy',
+  cloudy: 'cloudy',
+  fog: 'fog',
+  light_rain: 'light rain',
+  rain: 'rain',
+  heavy_rain: 'heavy rain',
+  showers: 'showers',
+  thunder: 'thunderstorms',
+  sleet: 'sleet',
+  snow: 'snow',
+};
+
+const WARNING_EN: Record<WarningType, string> = {
+  wind: 'wind',
+  snow_ice: 'snow and ice',
+  thunderstorm: 'thunderstorm',
+  fog: 'fog',
+  high_temperature: 'heat',
+  low_temperature: 'cold',
+  coastal_event: 'coastal',
+  forest_fire: 'forest fire',
+  avalanche: 'avalanche',
+  rain: 'rain',
+  flooding: 'flooding',
+  rain_flood: 'rain and flood',
+  other: 'weather',
+};
+
+const WEATHER_DAY = 'cccc d LLLL';
+
+/**
+ * The weather note's text, appended when it differs from the last one. English and rounded to
+ * whole degrees, millimetres and m/s, so it changes a few times a day, not every turn. Unknown
+ * warnings are said to be unchecked, never "none". Null when the report holds nothing.
+ */
+export function weatherNote(
+  report: WeatherReport,
+  input: { now: Date; timezone: string },
+): string | null {
+  const { forecast, sea, uv, warnings } = report;
+  if (!forecast && !sea && !uv && !warnings) return null;
+  const local = (instant: Date | string) =>
+    (typeof instant === 'string' ? DateTime.fromISO(instant) : DateTime.fromJSDate(instant))
+      .setZone(input.timezone)
+      .setLocale('en-GB');
+  const today = local(input.now).startOf('day');
+  const tomorrow = today.plus({ days: 1 });
+  const dayWord = (at: DateTime) =>
+    at.hasSame(today, 'day')
+      ? 'today'
+      : at.hasSame(tomorrow, 'day')
+        ? 'tomorrow'
+        : `on ${at.toFormat(WEATHER_DAY)}`;
+
+  const parts: string[] = [];
+  const days = (forecast?.days ?? []).filter(
+    (d) => d.date === today.toISODate() || d.date === tomorrow.toISODate(),
+  );
+  if (days.length === 0) parts.push('The forecast is not available now.');
+  for (const d of days) {
+    const name = d.date === today.toISODate() ? 'Today' : 'Tomorrow';
+    const rain = d.precipitationMm < 0.5 ? 'no rain' : `${Math.round(d.precipitationMm)} mm rain`;
+    const label = DateTime.fromISO(d.date).setLocale('en-GB').toFormat(WEATHER_DAY);
+    parts.push(
+      `${name} (${label}): ${SKY_EN[d.sky]}, ${Math.round(d.tempMinC)}–${Math.round(d.tempMaxC)} °C, ` +
+        `${rain}, wind up to ${Math.round(d.windMaxMs)} m/s.`,
+    );
+  }
+  if (sea) parts.push(`Sea ${Math.round(sea.temperatureC)} °C at ${sea.station}.`);
+  if (uv) parts.push(`UV up to ${Math.round(uv.maxToday)} today.`);
+  if (warnings === null) {
+    parts.push('DHMZ warnings could not be checked.');
+  } else if (warnings.length === 0) {
+    parts.push('No DHMZ warnings in force.');
+  } else {
+    const items = warnings.map((w) => {
+      const onset = local(w.onset);
+      const expires = local(w.expires);
+      const until = `${expires.toFormat('HH:mm')} ${dayWord(expires)}`;
+      const span =
+        onset <= local(input.now)
+          ? `until ${until}`
+          : onset.hasSame(expires, 'day')
+            ? `from ${onset.toFormat('HH:mm')} to ${until}`
+            : `from ${onset.toFormat('HH:mm')} ${dayWord(onset)} to ${until}`;
+      return `${w.level} ${WARNING_EN[w.type]} warning (${w.area}) ${span}`;
+    });
+    parts.push(`DHMZ warnings: ${items.join('; ')}.`);
+  }
+  return `Weather (forecast MET Norway; sea, UV and warnings DHMZ; mention the source when you use it): ${parts.join(' ')}`;
 }

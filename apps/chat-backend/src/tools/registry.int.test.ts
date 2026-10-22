@@ -20,6 +20,7 @@ import {
   seedOrderableOffer,
   seedProvider,
   type TestDatabase,
+  unavailableWeatherSource,
 } from '@fetivi/domain/testing';
 import { createEgress, type Egress } from '@fetivi/egress';
 import { buildMcpTestApp, TEST_REQUEST_STATE_SECRET } from '@fetivi/mcp-servers/testing';
@@ -70,6 +71,7 @@ beforeAll(async () => {
     now: clock.now,
     queue: noopQueue,
     requestStateSecret: TEST_REQUEST_STATE_SECRET,
+    weather: unavailableWeatherSource(),
   });
 });
 
@@ -111,6 +113,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'search_places',
       'get_place',
       'search_events',
+      'get_weather',
       'get_transport_notes',
       'list_offers',
       'check_availability',
@@ -131,6 +134,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'search_places',
       'get_place',
       'search_events',
+      'get_weather',
       'get_transport_notes',
       'list_offers',
       'check_availability',
@@ -178,6 +182,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'search_places',
       'get_place',
       'search_events',
+      'get_weather',
       'get_transport_notes',
       'list_my_orders',
       'get_plan',

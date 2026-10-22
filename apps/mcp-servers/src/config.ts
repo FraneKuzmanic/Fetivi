@@ -26,6 +26,11 @@ const schema = z
     NODE_ENV: z.string().optional(),
     /** Seals the elicitation `requestState` (HMAC); the same in every instance; required in production. */
     REQUEST_STATE_SECRET: z.string().min(32).default(DEV_REQUEST_STATE_SECRET),
+    /** MET Norway requires an identifying agent with contact details; production sets a reachable one. */
+    WEATHER_USER_AGENT: z
+      .string()
+      .min(10)
+      .default('Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)'),
   })
   .refine(
     (c) => c.NODE_ENV !== 'production' || c.REQUEST_STATE_SECRET !== DEV_REQUEST_STATE_SECRET,

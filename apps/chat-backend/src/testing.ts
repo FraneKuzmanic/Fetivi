@@ -15,12 +15,14 @@ import {
   SPACE_COOKIE,
   type ToolTransport,
   units,
+  type WeatherSource,
 } from '@fetivi/domain';
 import {
   createTestDatabase,
   noopQueue,
   type SeededGuestUnit,
   type TestDatabase,
+  unavailableWeatherSource,
 } from '@fetivi/domain/testing';
 import { createEgress, type Egress } from '@fetivi/egress';
 import {
@@ -47,6 +49,7 @@ export const NO_CHAT: AppDeps['chat'] = {
   mcpFetch: async () => {
     throw new Error('no MCP servers in this test');
   },
+  weather: unavailableWeatherSource(),
 };
 
 const newMediaDir = () => mkdtemp(path.join(os.tmpdir(), 'fetivi-chat-media-'));
@@ -198,8 +201,11 @@ export async function createChatTestApp(options: {
   transport?: ToolTransport;
   /** The VAPID public key the push routes serve. */
   pushPublicKey?: string;
+  /** The turn's and get_weather's weather; every upstream down by default. */
+  weather?: WeatherSource;
 }): Promise<ChatTestApp> {
   if (options.transport === 'inprocess') return createInProcessChatTestApp(options);
+  const weather = options.weather ?? unavailableWeatherSource();
   const testDb = await createTestDatabase();
   const mediaDir = await newMediaDir();
   let current = Date.now();
@@ -218,6 +224,7 @@ export async function createChatTestApp(options: {
     publicBase: TEST_MCP_BASE,
     now: clock.now,
     overrides: options.probe ? { local: buildProbeServer } : {},
+    weather,
     ...(options.queue ? { queue: options.queue } : {}),
   });
   await mcpApp.listen({ host: '127.0.0.1', port: 0 });
@@ -234,7 +241,7 @@ export async function createChatTestApp(options: {
     queue: options.queue ?? noopQueue,
     media: createLocalMediaStore(mediaDir),
     tokens: { key, issuer: TEST_ISSUER, mcpBaseUrl: TEST_MCP_BASE },
-    chat: { model: options.model, mcpFetch },
+    chat: { model: options.model, mcpFetch, weather },
     push: { publicKey: options.pushPublicKey ?? null },
   });
   await app.ready();
@@ -257,8 +264,10 @@ async function createInProcessChatTestApp(options: {
   model: LanguageModel | null;
   probe?: boolean;
   queue?: JobQueue;
+  weather?: WeatherSource;
 }): Promise<ChatTestApp> {
   if (options.probe) throw new Error('the probe server runs only over MCP');
+  const weather = options.weather ?? unavailableWeatherSource();
   const testDb = await createTestDatabase();
   const mediaDir = await newMediaDir();
   let current = Date.now();
@@ -291,7 +300,9 @@ async function createInProcessChatTestApp(options: {
         now: clock.now,
         queue: options.queue ?? noopQueue,
         requestStateSecret: TEST_REQUEST_STATE_SECRET,
+        weather,
       }),
+      weather,
     },
   });
   await app.ready();

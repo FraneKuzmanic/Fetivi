@@ -67,6 +67,8 @@ export interface AppendTurnInput {
   aboutMeNote: string | null;
   /** The seq up to which host replies are now noted; left as it is when omitted. */
   hostReplyNotedSeq?: number;
+  /** The weather note the model has now been given; left as it is when omitted. */
+  weatherNote?: string | null;
   now: Date;
 }
 
@@ -127,6 +129,7 @@ export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> 
         ...(input.hostReplyNotedSeq === undefined
           ? {}
           : { hostReplyNotedSeq: input.hostReplyNotedSeq }),
+        ...(input.weatherNote === undefined ? {} : { weatherNote: input.weatherNote }),
         updatedAt: input.now,
       })
       .where(eq(conversations.id, input.conversationId));

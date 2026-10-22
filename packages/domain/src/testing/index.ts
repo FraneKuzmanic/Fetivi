@@ -13,3 +13,11 @@ export {
 } from '../property/manual-import/sample-manual';
 export { createTestDatabase, type TestDatabase } from './database';
 export * from './fixtures';
+export {
+  fixedWeatherSource,
+  type RecordedWeatherFetchOptions,
+  recordedWeatherFetch,
+  sampleWeatherReport,
+  unavailableWeatherSource,
+  WEATHER_RECORDED_AT,
+} from './weather';

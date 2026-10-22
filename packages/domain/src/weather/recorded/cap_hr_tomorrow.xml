@@ -1,0 +1,1422 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+	<identifier>2.49.0.0.191.0.HR.261022201823.LDZM</identifier>
+	<sender>https://meteo.hr</sender>
+	<sent>2026-10-22T20:18:23+02:00</sent>
+	<status>Actual</status>
+	<msgType>Alert</msgType>
+	<scope>Public</scope>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Grad Zagreb</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR031</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR050</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Zagrebačka</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR011</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR065</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Krapinsko-zagorska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR012</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR064</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Varaždinska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR015</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR062</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Koprivničko-križevačka</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR016</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR063</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Međimurska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR030</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR061</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Bjelovarsko-bilogorska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR017</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR021</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 03:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Virovitičko-podravska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR020</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR022</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 03:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Požeško-slavonska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR021</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR023</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 03:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Brodsko-posavska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR022</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR024</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 03:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Osječko-baranjska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR024</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR025</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 03:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Vukovarsko-srijemska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR026</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR026</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Sisačko-moslavačka</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR013</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR028</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Karlovačka</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR014</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR027</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena u unutrašnjosti zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Primorsko-goranska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR018</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR031</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za vjetar</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 22:00:00+02:00</onset>
+		<expires>2026-10-23 23:59:59+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Duž obale jak južni i jugozapadni vjetar s olujnim udarima.</description>
+		<instruction>  BUDITE NA OPREZU zbog krhotina koje lete nošene jakim vjetrom. Mogući su lokalizirani prekidi u aktivnostima na otvorenom.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>1; Wind</value>
+		</parameter>
+		<area>
+			<areaDesc>Istarska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR028</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR036</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za grmljavinsku oluju</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 21:00:00+02:00</onset>
+		<expires>2026-10-23 23:59:59+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Mjestimice izraženiji pljuskovi praćeni grmljavinom.</description>
+		<instruction>  BUDITE NA OPREZU zbog mogućih jačih grmljavinskih nevremena. Posebno pripazite u izloženim područjima kao što su planine, šume i livade odnosno otvoreni tereni. Mogući su prekidi u aktivnostima na otvorenom.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>3; Thunderstorm</value>
+		</parameter>
+		<area>
+			<areaDesc>Istarska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR028</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR036</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za maglu</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Vidljivost mjestimice značajno smanjena u unutrašnjosti zbog guste magle.</description>
+		<instruction>  BUDITE NA OPREZU zbog rasprostranjene, lokalno guste magle. Moguć je izraženiji utjecaj na svakodnevne vanjske aktivnosti. Moguć je prekid rada zračnih luka te kašnjenja kao i otežano prometovanje uslijed izrazito smanjenje vidljivosti zbog čega putovanja mogu potrajati dulje od uobičajenog.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Ličko-senjska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR019</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR032</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Grad Zagreb</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR031</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR050</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Zagrebačka</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR011</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR065</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Krapinsko-zagorska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR012</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR064</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Varaždinska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR015</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR062</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Koprivničko-križevačka</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR016</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR063</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Međimurska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR030</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR061</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Bjelovarsko-bilogorska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR017</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR021</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 03:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Virovitičko-podravska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR020</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR022</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 03:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Požeško-slavonska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR021</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR023</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 03:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Brodsko-posavska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR022</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR024</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 03:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Osječko-baranjska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR024</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR025</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 03:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Vukovarsko-srijemska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR026</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR026</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Sisačko-moslavačka</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR013</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR028</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Karlovačka</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR014</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR027</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog in hinterlands.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Primorsko-goranska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR018</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR031</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow wind warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 22:00:00+02:00</onset>
+		<expires>2026-10-23 23:59:59+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Strong wind with gale force gusts along the coast.</description>
+		<instruction>  STAY ALERT for debris carried by strong winds. Debris and tree branches carried by the wind may cause localised interruptions in outdoor activities.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>1; Wind</value>
+		</parameter>
+		<area>
+			<areaDesc>Istarska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR028</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR036</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow thunderstorm warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 21:00:00+02:00</onset>
+		<expires>2026-10-23 23:59:59+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Severe thundershowers locally.</description>
+		<instruction>  STAY ALERT for possible heavy thunderstorms. Be especially careful in high-exposure areas such as mountains, forests, meadows and open grounds. Interruptions in outdoor activities are possible.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>3; Thunderstorm</value>
+		</parameter>
+		<area>
+			<areaDesc>Istarska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR028</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR036</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow fog warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 10:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Significantly reduced visibility in places caused by dense fog in hinterlands.</description>
+		<instruction>  STAY ALERT for widespread and locally thick fog. Major impact on daily outdoor activities is possible. Airport disruptions, delays and traffic difficulties are possible due to extremely reduced visibility, which might result in travel taking longer than usual.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>4; Fog</value>
+		</parameter>
+		<area>
+			<areaDesc>Ličko-senjska</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR019</value>
+			</geocode>
+			<geocode>
+				<valueName>NUTS3</valueName>
+				<value>HR032</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za vjetar</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 21:00:00+02:00</onset>
+		<expires>2026-10-23 23:59:59+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Moguće je jako jugo i jugozapadni vjetar. </description>
+		<instruction>  
+UTJECAJ: Iako su uobičajene i česte u ovoj regiji, očekuje se lokalno ili potencijalno opasne brzine vjetra koje uzrokuju valove rizične za manja plovila.
+Neiskusni pomorci, posebno oni koji upravljaju manjim brodovima, trebali bi izbjegavati plovidbu u tim uvjetima i obratiti pozornost na pomorsku prognozu te pri planiranju razmotriti vjetar i uvjete na moru. Moguće je da neki katamarani neće ploviti pa ako putujete, pratite informacije o prometu.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>1; Wind</value>
+		</parameter>
+		<area>
+			<areaDesc>Zapadna obala Istre</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR801</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za vjetar</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 21:00:00+02:00</onset>
+		<expires>2026-10-23 23:59:59+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Mjestimice jako jugo. Najjači udari vjetra 35-40 čvorova  (65-75 km/h)</description>
+		<instruction>  
+UTJECAJ: Iako su uobičajene i česte u ovoj regiji, očekuje se lokalno ili potencijalno opasne brzine vjetra koje uzrokuju valove rizične za manja plovila.
+Neiskusni pomorci, posebno oni koji upravljaju manjim brodovima, trebali bi izbjegavati plovidbu u tim uvjetima i obratiti pozornost na pomorsku prognozu te pri planiranju razmotriti vjetar i uvjete na moru. Moguće je da neki katamarani neće ploviti pa ako putujete, pratite informacije o prometu.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>1; Wind</value>
+		</parameter>
+		<area>
+			<areaDesc>Kvarner i Kvarnerić</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR802</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>hr</language>
+		<category>Met</category>
+		<event>Žuto upozorenje za vjetar</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 07:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Mjestimice pojačana bura, uglavnom na širem senjskom području. Najjači udari vjetra 35-40 čvorova  (65-75 km/h)</description>
+		<instruction>  
+UTJECAJ: Iako su uobičajene i česte u ovoj regiji, očekuje se lokalno ili potencijalno opasne brzine vjetra koje uzrokuju valove rizične za manja plovila.
+Neiskusni pomorci, posebno oni koji upravljaju manjim brodovima, trebali bi izbjegavati plovidbu u tim uvjetima i obratiti pozornost na pomorsku prognozu te pri planiranju razmotriti vjetar i uvjete na moru. Moguće je da neki katamarani neće ploviti pa ako putujete, pratite informacije o prometu.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>1; Wind</value>
+		</parameter>
+		<area>
+			<areaDesc>Velebitski kanal</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR803</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow wind warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 21:00:00+02:00</onset>
+		<expires>2026-10-23 23:59:59+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Strong SE and SW wind possibl</description>
+		<instruction>  IMPACT: Although rather usual in this region, locally or potentially dangerous wind speeds are expected to produce dangerous wave conditions to small crafts. Inexperienced mariners, especially those operating smaller vessels, should avoid navigating in these conditions.
+Mariners should pay close attention to the marine forecast  and consider wind and sea conditions in planning. It is possible that some ferry lines will not operate so follow traffic information if travelling.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>1; Wind</value>
+		</parameter>
+		<area>
+			<areaDesc>West Istrian coast</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR801</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow wind warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 21:00:00+02:00</onset>
+		<expires>2026-10-23 23:59:59+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Locally strong SE wind. Maximum wind gusts 35-40 knots (65-75 km/h)</description>
+		<instruction>  IMPACT: Although rather usual in this region, locally or potentially dangerous wind speeds are expected to produce dangerous wave conditions to small crafts. Inexperienced mariners, especially those operating smaller vessels, should avoid navigating in these conditions.
+Mariners should pay close attention to the marine forecast  and consider wind and sea conditions in planning. It is possible that some ferry lines will not operate so follow traffic information if travelling.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>1; Wind</value>
+		</parameter>
+		<area>
+			<areaDesc>Kvarner i Kvarneric</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR802</value>
+			</geocode>
+		</area>
+	</info>
+	<info>
+		<language>en</language>
+		<category>Met</category>
+		<event>Yellow wind warning</event>
+		<responseType>None</responseType>
+		<urgency>Future</urgency>
+		<severity>Moderate</severity>
+		<certainty>Likely</certainty>
+		<onset>2026-10-23 00:00:00+02:00</onset>
+		<expires>2026-10-23 07:00:00+02:00</expires>
+		<senderName>DHMZ Državni hidrometeorološki zavod</senderName>
+		<description>Locally fresh NE wind possible, mostly in Senj area. Maximum wind gusts 35-40 knots (65-75 km/h)</description>
+		<instruction>  IMPACT: Although rather usual in this region, locally or potentially dangerous wind speeds are expected to produce dangerous wave conditions to small crafts. Inexperienced mariners, especially those operating smaller vessels, should avoid navigating in these conditions.
+Mariners should pay close attention to the marine forecast  and consider wind and sea conditions in planning. It is possible that some ferry lines will not operate so follow traffic information if travelling.
+		</instruction>
+		<parameter>
+			<valueName>awareness_level</valueName>
+			<value>2; yellow; Moderate</value>
+		</parameter>
+		<parameter>
+			<valueName>awareness_type</valueName>
+			<value>1; Wind</value>
+		</parameter>
+		<area>
+			<areaDesc>Velebit channel</areaDesc>
+			<geocode>
+				<valueName>EMMA_ID</valueName>
+				<value>HR803</value>
+			</geocode>
+		</area>
+	</info>
+</alert>

@@ -60,6 +60,9 @@ const candidate = (toolName: string, value: unknown): unknown => {
       return isRecord(value) && isRecord(value.plan)
         ? { name: 'day-plan', payload: value.plan }
         : null;
+    case 'get_weather':
+      // Parsing keeps what the card shows; symbol codes and forecastUpdatedAt stay in the result.
+      return isRecord(value) ? { name: 'weather', payload: value } : null;
     case 'draft_host_message': {
       // The emergency path: 112 first, then the host's phone, as the Guide's contacts card.
       if (!isRecord(value) || value.outcome !== 'emergency' || !isRecord(value.emergency)) {

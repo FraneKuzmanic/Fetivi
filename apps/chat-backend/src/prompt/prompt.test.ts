@@ -8,6 +8,7 @@ import {
   PACES,
   PARTY_SHAPES,
 } from '@fetivi/domain';
+import { sampleWeatherReport } from '@fetivi/domain/testing';
 import { describe, expect, it } from 'vitest';
 import { INSTRUCTIONS } from './instructions';
 import {
@@ -18,6 +19,7 @@ import {
   projectionChangeNote,
   situationNote,
   systemInstructions,
+  weatherNote,
 } from './prompt';
 
 const projection: GuestProjection = {
@@ -249,5 +251,76 @@ describe('host instructions', () => {
     expect(INSTRUCTIONS).toContain('first write one short sentence offering it');
     expect(INSTRUCTIONS).toContain('Once it is sent, confirm it in one short sentence.');
     expect(INSTRUCTIONS).toContain('Do not also call show_property_info for it.');
+  });
+});
+
+describe('weatherNote', () => {
+  const timezone = 'Europe/Zagreb';
+  // 12:00 in Zagreb.
+  const now = new Date('2026-10-22T10:00:00Z');
+  const report = sampleWeatherReport('2026-10-22');
+  const head =
+    'Weather (forecast MET Norway; sea, UV and warnings DHMZ; mention the source when you use it): ';
+
+  it('words today, tomorrow, the sea, UV and the warnings in force', () => {
+    expect(weatherNote(report, { now, timezone })).toBe(
+      `${head}Today (Thursday 22 October): partly cloudy, 21–29 °C, no rain, wind up to 8 m/s. ` +
+        'Tomorrow (Friday 23 October): showers, 20–27 °C, 4 mm rain, wind up to 5 m/s. ' +
+        'Sea 23 °C at Split. UV up to 7 today. ' +
+        'DHMZ warnings: yellow wind warning (Middle Dalmatia region) from 16:00 to 23:59 today.',
+    );
+  });
+
+  it('says a warning already running lasts until its end', () => {
+    const later = new Date('2026-10-22T15:00:00Z');
+    expect(weatherNote(report, { now: later, timezone })).toContain(
+      'yellow wind warning (Middle Dalmatia region) until 23:59 today.',
+    );
+  });
+
+  it('says warnings could not be checked when they are null, never that there are none', () => {
+    const note = weatherNote({ ...report, warnings: null }, { now, timezone });
+    expect(note).toContain('DHMZ warnings could not be checked.');
+    expect(note).not.toContain('No DHMZ warnings');
+  });
+
+  it('says none are in force for an empty list', () => {
+    expect(weatherNote({ ...report, warnings: [] }, { now, timezone })).toContain(
+      'No DHMZ warnings in force.',
+    );
+  });
+
+  it('stays the same for small changes, so it is not appended every turn', () => {
+    const days = report.forecast?.days ?? [];
+    const nudged = {
+      ...report,
+      forecast: {
+        updatedAt: '2026-10-22T09:00:00Z',
+        days: days.map((d) => ({
+          ...d,
+          tempMaxC: d.tempMaxC - 0.2,
+          precipitationMm: d.precipitationMm + 0.1,
+        })),
+      },
+      sea: report.sea && { ...report.sea, temperatureC: 23.2, measuredAt: '2026-10-22T15:00' },
+    };
+    expect(weatherNote(nudged, { now, timezone })).toBe(weatherNote(report, { now, timezone }));
+  });
+
+  it('leaves out an unknown sea or UV and says when the forecast is missing', () => {
+    const note = weatherNote({ ...report, forecast: null, sea: null, uv: null }, { now, timezone });
+    expect(note).toBe(
+      `${head}The forecast is not available now. DHMZ warnings: yellow wind warning (Middle Dalmatia region) from 16:00 to 23:59 today.`,
+    );
+  });
+
+  it('is null when the report holds nothing', () => {
+    const empty = { ...report, forecast: null, sea: null, uv: null, warnings: null };
+    expect(weatherNote(empty, { now, timezone })).toBeNull();
+  });
+
+  it('is announced in the instructions', () => {
+    expect(INSTRUCTIONS).toContain('call get_weather');
+    expect(INSTRUCTIONS).toContain('a weather summary');
   });
 });

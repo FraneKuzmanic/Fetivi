@@ -4,6 +4,7 @@ import {
   type GuestIdentity,
   type JobQueue,
   type Scope,
+  type WeatherSource,
 } from '@fetivi/domain';
 import {
   type CallToolResult,
@@ -73,6 +74,8 @@ export interface ToolDeps {
   queue: JobQueue;
   /** HMAC key of the confirmation `requestState`, at least 32 bytes. */
   requestStateSecret: string;
+  /** Weather for get_weather; shared per process so its cache is. */
+  weather: WeatherSource;
 }
 
 /** One guest tool as data: the MCP servers register it, V0 calls it in process. */

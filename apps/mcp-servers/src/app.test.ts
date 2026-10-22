@@ -3,6 +3,7 @@ import { noopQueue } from '@fetivi/domain/testing';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { loadConfig } from './config';
+import { EGRESS_ALLOWLIST } from './egress';
 import { createTestKeys } from './testing';
 
 // The pg pool connects lazily, so no database is needed for these tests.
@@ -65,5 +66,15 @@ describe('mcp-servers', () => {
     expect(
       loadConfig({ NODE_ENV: 'production', REQUEST_STATE_SECRET: secret }).REQUEST_STATE_SECRET,
     ).toBe(secret);
+  });
+});
+
+describe('egress allowlist', () => {
+  // AC5: weather comes from DHMZ and MET Norway only; Open-Meteo's licence rules it out.
+  it('has the weather hosts and no Open-Meteo', () => {
+    expect(EGRESS_ALLOWLIST).toEqual(
+      expect.arrayContaining(['vrijeme.hr', 'meteo.hr', 'api.met.no']),
+    );
+    expect(EGRESS_ALLOWLIST.filter((host) => /open-?meteo/i.test(host))).toEqual([]);
   });
 });

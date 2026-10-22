@@ -1,4 +1,4 @@
-import type { Db, JobQueue, MediaStore } from '@fetivi/domain';
+import type { Db, JobQueue, MediaStore, WeatherSource } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
 import type { LanguageModel } from 'ai';
 import Fastify from 'fastify';
@@ -44,6 +44,8 @@ export interface AppDeps {
     mcpFetch: Egress['fetch'];
     /** How the guest tools run; MCP when unset. V0 passes the in-process binding. */
     tools?: ToolBinding;
+    /** The turn's weather summary; one source per process, shared with V0's get_weather. */
+    weather: WeatherSource;
   };
 }
 
@@ -72,6 +74,13 @@ export function buildApp(deps: AppDeps) {
   app.register(pushRoutes, { db, now, publicKey: deps.push?.publicKey ?? null });
   app.register(guideRoutes, { db, now, tools });
   app.register(mediaRoutes, { db, now, media: deps.media });
-  app.register(chatRoutes, { db, now, model: deps.chat.model, tools, log: app.log });
+  app.register(chatRoutes, {
+    db,
+    now,
+    model: deps.chat.model,
+    tools,
+    weather: deps.chat.weather,
+    log: app.log,
+  });
   return app;
 }

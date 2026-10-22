@@ -7,6 +7,7 @@ import {
   PlaceCarousel,
   PropertyInfoCard,
   ReceiptCard,
+  WeatherCard,
 } from '@fetivi/ui';
 import { componentPart } from '@fetivi/ui/payloads';
 import { useMemo } from 'react';
@@ -24,6 +25,7 @@ import {
   placeLabels,
   planLabels,
   receiptLabels,
+  weatherLabels,
 } from './labels';
 import { useSavedPlaces } from './SavedPlaces';
 
@@ -127,6 +129,8 @@ export function ComponentPart({
           }
         />
       );
+    case 'weather':
+      return <WeatherCard report={part.payload} labels={weatherLabels(t, i18n.language)} />;
     case 'property-info':
       return (
         <PropertyInfoCard

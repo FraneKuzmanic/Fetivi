@@ -4,9 +4,14 @@ import {
   PLACE_CATEGORIES,
   type PlaceDetail,
   type PlaceSearch,
+  SKY_CODES,
   STALENESS_STATUSES,
   TRANSPORT_MODES,
   type TransportNote,
+  WARNING_LEVELS,
+  WARNING_TYPES,
+  WEATHER_SOURCES,
+  type WeatherToolResult,
 } from '@fetivi/domain';
 import { z } from 'zod';
 
@@ -42,6 +47,11 @@ export const searchEventsInput = z.object({
 export const transportNotesInput = z.object({
   mode: z.enum(TRANSPORT_MODES).optional(),
   query: searchText.optional(),
+});
+export const getWeatherInput = z.object({
+  date: civilDate
+    .optional()
+    .describe('The day the guest asks about; default today at the property. Up to 8 days ahead.'),
 });
 
 const latLng = z.object({ lat: z.number(), lng: z.number() });
@@ -121,6 +131,36 @@ const transportNote = z.object({
   sources: z.array(source),
 });
 
+const forecastDay = z.object({
+  date: z.string(),
+  sky: z.enum(SKY_CODES),
+  symbolCode: z.string(),
+  tempMinC: z.number(),
+  tempMaxC: z.number(),
+  precipitationMm: z.number(),
+  windMaxMs: z.number(),
+  partial: z.boolean().describe('The forecast no longer covers midday: the rest of the day only.'),
+});
+const seaReading = z.object({
+  station: z.string(),
+  temperatureC: z.number(),
+  measuredAt: z.string().describe('Local YYYY-MM-DDTHH:mm.'),
+});
+const uvReading = z.object({
+  station: z.string(),
+  maxToday: z.number(),
+  measuredAt: z.string().describe('Local YYYY-MM-DDTHH:mm of the maximum.'),
+});
+const weatherWarning = z.object({
+  level: z.enum(WARNING_LEVELS),
+  type: z.enum(WARNING_TYPES),
+  event: z.string(),
+  description: z.string(),
+  area: z.string(),
+  onset: z.string(),
+  expires: z.string(),
+});
+
 export const searchPlacesOutput = z.object({
   date: z.string(),
   openAt: z.string().nullable(),
@@ -132,6 +172,24 @@ export const searchEventsOutput = z.object({
   results: z.array(eventSummary),
 });
 export const transportNotesOutput = z.object({ results: z.array(transportNote) });
+export const getWeatherOutput = z.object({
+  date: z.string(),
+  timezone: z.string(),
+  days: z
+    .array(forecastDay)
+    .nullable()
+    .describe('null: forecast unavailable now; empty: the day is past the forecast.'),
+  forecastUpdatedAt: z.string().nullable(),
+  sea: seaReading.nullable(),
+  uv: uvReading.nullable(),
+  warnings: z
+    .array(weatherWarning)
+    .nullable()
+    .describe('null: could not check DHMZ warnings now; empty: none in force.'),
+  credits: z.array(
+    z.object({ source: z.enum(WEATHER_SOURCES), label: z.string(), url: z.string() }),
+  ),
+});
 
 // A drift between the domain types and these schemas fails typecheck, not a tool call.
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
@@ -140,5 +198,6 @@ const _schemasMatch: [
   Same<z.infer<typeof placeDetail>, PlaceDetail>,
   Same<z.infer<typeof searchEventsOutput>, EventSearch>,
   Same<z.infer<typeof transportNote>, TransportNote>,
-] = [true, true, true, true];
+  Same<z.infer<typeof getWeatherOutput>, WeatherToolResult>,
+] = [true, true, true, true, true];
 void _schemasMatch;

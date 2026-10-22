@@ -13,8 +13,14 @@ import {
   type McpServerName,
   type SpaceContext,
   serverUrl,
+  type WeatherSource,
 } from '@fetivi/domain';
-import { createTestDatabase, noopQueue, type TestDatabase } from '@fetivi/domain/testing';
+import {
+  createTestDatabase,
+  noopQueue,
+  type TestDatabase,
+  unavailableWeatherSource,
+} from '@fetivi/domain/testing';
 import { createMcpFastifyApp } from '@modelcontextprotocol/fastify';
 import { McpServer } from '@modelcontextprotocol/server';
 import type { FastifyInstance } from 'fastify';
@@ -104,7 +110,12 @@ export interface TestServer {
 
 /** The MCP server process on its own test database, signed tokens from a test key. */
 export async function createTestServer(
-  options: { listen?: boolean; now?: () => Date } = {},
+  options: {
+    listen?: boolean;
+    now?: () => Date;
+    /** Default: every weather upstream down, so no test reaches the network. */
+    weather?: WeatherSource;
+  } = {},
 ): Promise<TestServer> {
   const testDb = await createTestDatabase();
   const keys = await createTestKeys();
@@ -123,6 +134,7 @@ export async function createTestServer(
     keys: keys.keys,
     queue: createJobQueue(boss),
     now: options.now,
+    weather: options.weather ?? unavailableWeatherSource(),
   });
   let url = '';
   if (options.listen) {
@@ -165,16 +177,17 @@ type MountOptions = Parameters<typeof mountServers>[1];
 
 /**
  * The four servers as buildApp mounts them, for other apps' tests; `overrides` swaps a server.
- * Jobs are dropped and the requestState key is fixed unless given.
+ * Jobs are dropped, the requestState key is fixed and every weather upstream is down unless given.
  */
 export function buildMcpTestApp(
-  opts: Omit<MountOptions, 'queue' | 'requestStateSecret'> &
-    Partial<Pick<MountOptions, 'queue' | 'requestStateSecret'>>,
+  opts: Omit<MountOptions, 'queue' | 'requestStateSecret' | 'weather'> &
+    Partial<Pick<MountOptions, 'queue' | 'requestStateSecret' | 'weather'>>,
 ): FastifyInstance {
   const app = createMcpFastifyApp({ host: '127.0.0.1', allowedHosts: ['127.0.0.1', 'localhost'] });
   mountServers(app, {
     queue: noopQueue,
     requestStateSecret: TEST_REQUEST_STATE_SECRET,
+    weather: unavailableWeatherSource(),
     ...opts,
   });
   return app;

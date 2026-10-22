@@ -35,6 +35,11 @@ const schema = z
       .string()
       .optional()
       .transform((s) => s || undefined),
+    /** MET Norway requires an identifying agent with contact details; production sets a reachable one. */
+    WEATHER_USER_AGENT: z
+      .string()
+      .min(10)
+      .default('Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)'),
   })
   .refine((c) => c.NODE_ENV !== 'production' || Boolean(c.GUEST_TOKEN_PRIVATE_KEY), {
     message: 'GUEST_TOKEN_PRIVATE_KEY is required in production',

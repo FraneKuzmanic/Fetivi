@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UV_indeks>
+	<Copyright>DHMZ - meteo.hr</Copyright>
+	<Datum>22.10.2026</Datum> 
+	<Podatci>
+		<Postaja>Postaja \ Termin mjerenja </Postaja>
+		<Termin>06</Termin>
+		<Termin>07</Termin>
+		<Termin>08</Termin>
+		<Termin>09</Termin>
+		<Termin>10</Termin>
+		<Termin>11</Termin>
+		<Termin>12</Termin>
+		<Termin>13</Termin>
+		<Termin>14</Termin>
+		<Termin>15</Termin>
+		<Termin>16</Termin>
+		<Termin>17</Termin>
+		<Termin>18</Termin>
+		<Termin>19</Termin>
+		<Termin>20</Termin>
+		<Termin>21</Termin>
+	</Podatci>
+	<Podatci>
+		<Postaja autom="1" ndm="5 m">Opatija</Postaja>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#00FF00">0.3</Termin>
+		<Termin boja="#00FF00">0.7</Termin>
+		<Termin boja="#00FF00">0.5</Termin>
+		<Termin boja="#00FF00">0.7</Termin>
+		<Termin boja="#00FF00">0.6</Termin>
+		<Termin boja="#00FF00">0.7</Termin>
+		<Termin boja="#00FF00">0.8</Termin>
+		<Termin boja="#00FF00">0.4</Termin>
+		<Termin boja="#00FF00">0.1</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin/>
+	</Podatci>
+	<Podatci>
+		<Postaja autom="1" ndm="1 m">Malinska</Postaja>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#00FF00">0.1</Termin>
+		<Termin boja="#00FF00">0.5</Termin>
+		<Termin boja="#00FF00">0.4</Termin>
+		<Termin boja="#00FF00">1.2</Termin>
+		<Termin boja="#00FF00">1.0</Termin>
+		<Termin boja="#00FF00">1.1</Termin>
+		<Termin boja="#00FF00">0.7</Termin>
+		<Termin boja="#00FF00">0.5</Termin>
+		<Termin boja="#00FF00">0.1</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin/>
+	</Podatci>
+	<Podatci>
+		<Postaja autom="1" ndm="2 m">Crikvenica</Postaja>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#00FF00">0.3</Termin>
+		<Termin boja="#00FF00">0.5</Termin>
+		<Termin boja="#00FF00">0.7</Termin>
+		<Termin boja="#00FF00">1.3</Termin>
+		<Termin boja="#00FF00">1.2</Termin>
+		<Termin boja="#00FF00">1.1</Termin>
+		<Termin boja="#00FF00">1.1</Termin>
+		<Termin boja="#00FF00">0.6</Termin>
+		<Termin boja="#00FF00">0.2</Termin>
+		<Termin boja="#00FF00">0.0</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin boja="#DBECFD">-</Termin>
+		<Termin/>
+	</Podatci>
+</UV_indeks>

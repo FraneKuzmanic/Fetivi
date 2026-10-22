@@ -1,4 +1,5 @@
 import {
+  createWeatherSource,
   type Db,
   type GuestIdentity,
   type JobQueue,
@@ -6,6 +7,7 @@ import {
   type McpServerName,
   type Scope,
   serverUrl,
+  type WeatherSource,
 } from '@fetivi/domain';
 import { createMcpFastifyApp } from '@modelcontextprotocol/fastify';
 import type { McpServer } from '@modelcontextprotocol/server';
@@ -13,6 +15,7 @@ import type { FastifyInstance } from 'fastify';
 import type { JWTVerifyGetKey } from 'jose';
 import { createGuestTokenVerifier } from './auth/verifier';
 import type { Config } from './config';
+import { egress } from './egress';
 import { buildLocalServer } from './servers/local/server';
 import { mountServer } from './servers/mount';
 import { buildServicesServer } from './servers/services/server';
@@ -22,7 +25,12 @@ import { buildTripServer } from './servers/trip/server';
 export interface AppDeps {
   config: Pick<
     Config,
-    'HOST' | 'MCP_ALLOWED_HOSTS' | 'MCP_PUBLIC_URL' | 'GUEST_TOKEN_ISSUER' | 'REQUEST_STATE_SECRET'
+    | 'HOST'
+    | 'MCP_ALLOWED_HOSTS'
+    | 'MCP_PUBLIC_URL'
+    | 'GUEST_TOKEN_ISSUER'
+    | 'REQUEST_STATE_SECRET'
+    | 'WEATHER_USER_AGENT'
   >;
   db: Db;
   /** Send-only: the Order machine enqueues its timers and notifications in its transaction. */
@@ -31,6 +39,8 @@ export interface AppDeps {
   keys: JWTVerifyGetKey;
   /** For the projection's release gate and catalog dates; token checks always run on the real clock. */
   now?: () => Date;
+  /** Built once here when not given, through the egress allowlist, so its cache is per process. */
+  weather?: WeatherSource;
 }
 
 export function buildApp(deps: AppDeps) {
@@ -46,6 +56,9 @@ export function buildApp(deps: AppDeps) {
     now,
     queue,
     requestStateSecret: config.REQUEST_STATE_SECRET,
+    weather:
+      deps.weather ??
+      createWeatherSource({ fetch: egress.fetch, userAgent: config.WEATHER_USER_AGENT }),
   });
   return app;
 }
@@ -62,11 +75,12 @@ export function mountServers(
     queue: JobQueue;
     /** HMAC key of the elicitation `requestState`, at least 32 bytes. */
     requestStateSecret: string;
+    weather: WeatherSource;
     overrides?: Partial<Record<McpServerName, (identity: GuestIdentity) => McpServer>>;
   },
 ) {
-  const { db, now, queue, requestStateSecret } = opts;
-  const deps = { db, now, queue, requestStateSecret };
+  const { db, now, queue, requestStateSecret, weather } = opts;
+  const deps = { db, now, queue, requestStateSecret, weather };
   // `local` needs no scope at the gate: outside a destination the token has no catalog:read, yet
   // the server still answers (an empty list now, web_fallback_search in 31); tools check per call.
   // `services` likewise: after checkout only list_my_orders is listed, and each tool checks its own.

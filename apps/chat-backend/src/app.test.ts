@@ -3,6 +3,7 @@ import { noopQueue } from '@fetivi/domain/testing';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { loadConfig } from './config';
+import { EGRESS_ALLOWLIST } from './egress';
 import { NO_CHAT } from './testing';
 import { loadSigningKey } from './tokens/keys';
 
@@ -80,10 +81,21 @@ describe('chat-backend', () => {
       TOOL_TRANSPORT: 'mcp',
       REQUEST_STATE_SECRET: 'dev-only-request-state-secret-change-me-in-production',
       MEDIA_DIR: '../../.data/media',
+      WEATHER_USER_AGENT: 'Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)',
     });
   });
 
   it('rejects an invalid port', () => {
     expect(() => loadConfig({ PORT: 'abc' })).toThrow();
+  });
+});
+
+describe('egress allowlist', () => {
+  // AC5: weather comes from DHMZ and MET Norway only; Open-Meteo's licence rules it out.
+  it('has the weather hosts and no Open-Meteo', () => {
+    expect(EGRESS_ALLOWLIST).toEqual(
+      expect.arrayContaining(['vrijeme.hr', 'meteo.hr', 'api.met.no']),
+    );
+    expect(EGRESS_ALLOWLIST.filter((host) => /open-?meteo/i.test(host))).toEqual([]);
   });
 });

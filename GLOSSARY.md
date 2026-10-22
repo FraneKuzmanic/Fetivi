@@ -73,6 +73,13 @@ How long after its Verification date a Catalog record stays trustworthy, set per
 **Recommendation count**:
 How many times a place or day trip was returned by a guest's place search, counted per day in the Destination's time zone. It tells the admin which records to re-check first.
 
+**Weather report**:
+The weather at a Property: a point forecast from MET Norway, and the sea temperature, UV index and official warnings from DHMZ. Each part may be unknown when its source does not answer; unknown warnings are never "no warnings".
+_Avoid_: Forecast (for the whole report)
+
+**Warning area**:
+The DHMZ warning regions a Property falls in, a county and a marine region, taken from the nearest coastal reference town. A Property with no town close enough has unknown warnings.
+
 ## Services
 
 **Order**:

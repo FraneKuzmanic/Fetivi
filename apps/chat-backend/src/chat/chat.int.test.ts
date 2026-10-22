@@ -7,11 +7,21 @@ import {
   type MessageRow,
   seedTrogir,
   turnMetrics,
+  type WeatherReport,
+  type WeatherSource,
 } from '@fetivi/domain';
-import { noopQueue, publishCatalog, seedGuestUnit, TROGIR } from '@fetivi/domain/testing';
+import {
+  fixedWeatherSource,
+  noopQueue,
+  publishCatalog,
+  sampleWeatherReport,
+  seedGuestUnit,
+  TROGIR,
+} from '@fetivi/domain/testing';
 import { simulateReadableStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { eq } from 'drizzle-orm';
+import { DateTime } from 'luxon';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
   type ChatTestApp,
@@ -69,8 +79,8 @@ const textStep = (text: string, delays: { initial?: number; chunk?: number } = {
 const mockModel = (steps: StreamResult[]) => new MockLanguageModelV4({ doStream: steps as never });
 
 const apps: ChatTestApp[] = [];
-async function setup(model: MockLanguageModelV4 | null, probe = false) {
-  const t = await createChatTestApp({ model, probe });
+async function setup(model: MockLanguageModelV4 | null, probe = false, weather?: WeatherSource) {
+  const t = await createChatTestApp({ model, probe, ...(weather ? { weather } : {}) });
   apps.push(t);
   const seed = await seedGuestUnit(t.db, {
     now: t.clock.now(),
@@ -307,6 +317,61 @@ describe('POST /api/chat', () => {
     for (const value of [...Object.values(seed.secrets), ...Object.values(seed.private)]) {
       expect(sent).not.toContain(value);
     }
+  });
+});
+
+describe('The weather note', () => {
+  const inDestination = (t: ChatTestApp) =>
+    t.db
+      .insert(destinations)
+      .values({ name: `Trogir ${randomUUID()}`, centre: TROGIR, radiusM: 10_000 });
+  const zagrebToday = (now: Date) =>
+    DateTime.fromJSDate(now, { zone: 'Europe/Zagreb' }).toISODate() as string;
+
+  it('appends the weather after the situation, once per change, and stores it', async () => {
+    let edit = (r: WeatherReport) => r;
+    const weather = fixedWeatherSource((now) => edit(sampleWeatherReport(zagrebToday(now))));
+    const model = mockModel([textStep('one'), textStep('two'), textStep('three')]);
+    const { t, cookie, space } = await setup(model, false, weather);
+    await inDestination(t);
+
+    await send(t, cookie, 'weather?');
+    const first = systemTexts(model.doStreamCalls[0]?.prompt ?? []).at(-1) ?? '';
+    expect(first).toMatch(/^Situation: it is .*\n\nWeather \(forecast MET Norway/s);
+    expect(first).toContain('yellow wind warning (Middle Dalmatia region)');
+    const { conversation } = await stored(t, space.space.id);
+    expect(conversation.weatherNote).toBe(first.slice(first.indexOf('Weather (')));
+
+    // Same report, same quarter hour: no new system message at all.
+    await send(t, cookie, 'and?');
+    const p2 = model.doStreamCalls[1]?.prompt ?? [];
+    expect(systemTexts(p2)).toHaveLength(2);
+
+    edit = (r) => ({ ...r, warnings: [] });
+    await send(t, cookie, 'still?');
+    const p3 = model.doStreamCalls[2]?.prompt ?? [];
+    expect(systemTexts(p3)).toHaveLength(3);
+    expect(systemTexts(p3)[2]).toMatch(/^Weather \(.*No DHMZ warnings in force\.$/);
+    expectAnthropicSystemOrder(p3);
+    expect((await stored(t, space.space.id)).conversation.weatherNote).toContain(
+      'No DHMZ warnings in force.',
+    );
+  });
+
+  it('adds no weather note when every source is down, or outside a destination', async () => {
+    const down = mockModel([textStep('one')]);
+    const a = await setup(down);
+    await inDestination(a.t);
+    await send(a.t, a.cookie, 'weather?');
+    expect(systemTexts(down.doStreamCalls[0]?.prompt ?? []).join()).not.toContain('Weather (');
+    expect((await stored(a.t, a.space.space.id)).conversation.weatherNote).toBeNull();
+
+    const weather = fixedWeatherSource((now) => sampleWeatherReport(zagrebToday(now)));
+    const outside = mockModel([textStep('one')]);
+    const b = await setup(outside, false, weather);
+    await send(b.t, b.cookie, 'weather?');
+    expect(systemTexts(outside.doStreamCalls[0]?.prompt ?? []).join()).not.toContain('Weather (');
+    expect(weather.calls).toBe(0);
   });
 });
 

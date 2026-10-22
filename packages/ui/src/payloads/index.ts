@@ -20,6 +20,13 @@ import { ORDER_STATUSES, PAYMENT_STATUSES } from '@fetivi/domain/order-vocabular
 import { PLAN_ITEM_KINDS } from '@fetivi/domain/plan-vocabulary';
 import { STAY_LIMITS } from '@fetivi/domain/stay-vocabulary';
 import { GUEST_LANGUAGES } from '@fetivi/domain/vocabulary';
+import {
+  SKY_CODES,
+  WARNING_LEVELS,
+  WARNING_TYPES,
+  WEATHER_LIMITS,
+  WEATHER_SOURCES,
+} from '@fetivi/domain/weather-vocabulary';
 import { z } from 'zod';
 import { propertyInfoCard } from './property-info';
 
@@ -150,6 +157,51 @@ export const dayPlan = z.object({
     .max(STAY_LIMITS.maxNights + 1),
 });
 
+/**
+ * get_weather's result as the weather card shows it; not strict, like placeCard. A null part is
+ * "could not check"; `warnings: []` is "none in force".
+ */
+export const weatherCard = z.object({
+  /** The asked civil date. */
+  date: z.string(),
+  /** The property's IANA zone; warning times are shown in it. */
+  timezone: z.string(),
+  days: z
+    .array(
+      z.object({
+        date: z.string(),
+        sky: z.enum(SKY_CODES),
+        tempMinC: z.number(),
+        tempMaxC: z.number(),
+        precipitationMm: z.number(),
+        windMaxMs: z.number(),
+      }),
+    )
+    .max(WEATHER_LIMITS.toolDays)
+    .nullable(),
+  sea: z
+    .object({ station: z.string(), temperatureC: z.number(), measuredAt: z.string() })
+    .nullable(),
+  uv: z.object({ station: z.string(), maxToday: z.number(), measuredAt: z.string() }).nullable(),
+  warnings: z
+    .array(
+      z.object({
+        level: z.enum(WARNING_LEVELS),
+        type: z.enum(WARNING_TYPES),
+        event: z.string(),
+        description: z.string(),
+        area: z.string(),
+        onset: z.string(),
+        expires: z.string(),
+      }),
+    )
+    .max(12)
+    .nullable(),
+  credits: z
+    .array(z.object({ source: z.enum(WEATHER_SOURCES), label: z.string(), url: z.string() }))
+    .min(1),
+});
+
 /** A streamed component: its name and a payload valid for that name. */
 export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('follow-up-chips'), payload: followUpChips }),
@@ -160,6 +212,7 @@ export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('property-info'), payload: propertyInfoCard }),
   z.object({ name: z.literal('host-message-sent'), payload: hostMessageSent }),
   z.object({ name: z.literal('day-plan'), payload: dayPlan }),
+  z.object({ name: z.literal('weather'), payload: weatherCard }),
 ]);
 
 /** The UI message part type of a confirmation card; its id is the paused tool call's id. */
@@ -274,3 +327,4 @@ export type HostMessageSentPayload = z.infer<typeof hostMessageSent>;
 export type InboxItem = z.infer<typeof inboxItem>;
 export type DayPlanPayload = z.infer<typeof dayPlan>;
 export type PlanItemPayload = z.infer<typeof planItem>;
+export type WeatherCardPayload = z.infer<typeof weatherCard>;

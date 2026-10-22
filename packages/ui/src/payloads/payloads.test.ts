@@ -1,4 +1,5 @@
-import { GUEST_NOTIFICATION_KINDS, noticeInboxData } from '@fetivi/domain';
+import { GUEST_NOTIFICATION_KINDS, noticeInboxData, weatherToolResult } from '@fetivi/domain';
+import { sampleWeatherReport } from '@fetivi/domain/testing';
 import { describe, expect, it } from 'vitest';
 import {
   availabilityPicker,
@@ -13,6 +14,7 @@ import {
   type PlaceCardPayload,
   placeCarousel,
   receiptCard,
+  weatherCard,
 } from '.';
 
 const PLACE: PlaceCardPayload = {
@@ -316,5 +318,40 @@ describe('inbox item', () => {
       expect(inboxItem.parse(data)).toEqual(data);
       expect(JSON.stringify(data)).not.toContain('guest@example.test');
     }
+  });
+});
+
+describe('weather', () => {
+  const place = { lat: 43.52, lng: 16.25, timezone: 'Europe/Zagreb' };
+  const result = weatherToolResult(
+    sampleWeatherReport('2027-07-15'),
+    place,
+    '2027-07-15',
+    new Date('2027-07-15T08:00:00Z'),
+  );
+
+  it('parses a get_weather result, dropping the fields the card does not show', () => {
+    const parsed = weatherCard.parse(result);
+    expect(parsed.days).toHaveLength(3);
+    expect(parsed.days?.[0]).not.toHaveProperty('symbolCode');
+    expect(parsed.credits.map((c) => c.source)).toEqual(['DHMZ', 'MET Norway']);
+    expect(componentPart.safeParse({ name: 'weather', payload: result }).success).toBe(true);
+  });
+
+  it('keeps unknown parts as null', () => {
+    const parsed = weatherCard.parse({
+      ...result,
+      days: null,
+      sea: null,
+      uv: null,
+      warnings: null,
+    });
+    expect(parsed).toMatchObject({ days: null, sea: null, uv: null, warnings: null });
+  });
+
+  it('refuses a card without credits or with an unknown sky', () => {
+    expect(weatherCard.safeParse({ ...result, credits: [] }).success).toBe(false);
+    const days = [{ ...result.days?.[0], sky: 'sunny' }];
+    expect(weatherCard.safeParse({ ...result, days }).success).toBe(false);
   });
 });

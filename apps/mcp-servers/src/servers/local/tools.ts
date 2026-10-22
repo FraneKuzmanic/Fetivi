@@ -7,11 +7,18 @@ import {
   listTransportNotes,
   searchEvents,
   searchPlaces,
+  WeatherDateError,
+  WeatherUnavailableError,
+  weatherPlaceOf,
+  weatherToolDate,
+  weatherToolResult,
 } from '@fetivi/domain';
-import { ClaimMismatchError, type GuestToolSpec, guestTool } from '../tool';
+import { ClaimMismatchError, GuestToolError, type GuestToolSpec, guestTool } from '../tool';
 import {
   getPlaceInput,
   getPlaceOutput,
+  getWeatherInput,
+  getWeatherOutput,
   searchEventsInput,
   searchEventsOutput,
   searchPlacesInput,
@@ -107,6 +114,44 @@ export const localTools: readonly GuestToolSpec[] = [
     listed,
     async handler(args, identity, { db, now }) {
       return visible(await searchEvents(db, catalogScope(identity), args, now()));
+    },
+  }),
+  guestTool({
+    name: 'get_weather',
+    config: {
+      title: 'Weather',
+      description:
+        "Weather at the guest's accommodation: the forecast for the asked day and the next two (MET Norway), the latest sea temperature and today's UV index from the nearest coastal station, and official DHMZ weather warnings in force. Credit the sources as given. If warnings is null, say you couldn't check warnings; never say there are none.",
+      scope: 'catalog:read',
+      inputSchema: getWeatherInput,
+      outputSchema: getWeatherOutput,
+      annotations: { ...readOnly, openWorldHint: true },
+    },
+    listed,
+    async handler(args, identity, { db, now, weather }) {
+      const place = visible(await weatherPlaceOf(db, identity.propertyId));
+      const at = now();
+      let date: string;
+      try {
+        date = weatherToolDate(place, args.date, at);
+      } catch (error) {
+        if (!(error instanceof WeatherDateError)) throw error;
+        throw new GuestToolError(
+          error.reason === 'past'
+            ? 'I can only check the weather from today on.'
+            : 'Forecasts reach about 8 days ahead; ask again closer to the day.',
+        );
+      }
+      // Warnings in Croatian for Croatian guests; DHMZ publishes only hr and en.
+      const language = identity.language === 'hr' ? 'hr' : 'en';
+      try {
+        return weatherToolResult(await weather.report(place, language, at), place, date, at);
+      } catch (error) {
+        if (error instanceof WeatherUnavailableError) {
+          throw new GuestToolError('The weather services are not answering right now.');
+        }
+        throw error;
+      }
     },
   }),
   guestTool({

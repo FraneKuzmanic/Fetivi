@@ -9,6 +9,7 @@ import type {
   HostSentLabels,
   PlaceLabels,
   ReceiptLabels,
+  WeatherLabels,
 } from '@fetivi/ui';
 import type { InboxItem } from '@fetivi/ui/payloads';
 import type { TFunction } from 'i18next';
@@ -172,6 +173,65 @@ export function planLabels(t: TFunction, language: string): DayPlanLabels {
     ask: (title) => t('trip.ask', { title }),
     askShort: t('trip.askShort'),
     plan: t('trip.planLabel'),
+  };
+}
+
+/** The WHO UV index bands. */
+const uvBand = (value: number) => {
+  const v = Math.round(value);
+  return v <= 2 ? 'low' : v <= 5 ? 'moderate' : v <= 7 ? 'high' : v <= 10 ? 'very_high' : 'extreme';
+};
+
+/** The weather card's strings; numbers, days and warning times in the interface language. */
+export function weatherLabels(t: TFunction, language: string): WeatherLabels {
+  const whole = new Intl.NumberFormat(language, { maximumFractionDigits: 0 });
+  const tenths = new Intl.NumberFormat(language, { maximumFractionDigits: 1 });
+  const day = new Intl.DateTimeFormat(language, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+  const dayKey = (instant: string, timeZone: string) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date(instant));
+  return {
+    heading: t('weather.heading'),
+    day: (date) => day.format(new Date(`${date}T12:00:00Z`)),
+    today: t('weather.today'),
+    tomorrow: t('weather.tomorrow'),
+    tempRange: (min, max) =>
+      t('weather.tempRange', { min: whole.format(min), max: whole.format(max) }),
+    rain: (mm) => t('weather.rain', { mm: tenths.format(mm) }),
+    wind: (ms) => t('weather.wind', { speed: whole.format(ms) }),
+    sea: (temp, station) => t('weather.sea', { temp: whole.format(temp), station }),
+    uv: (value, station) =>
+      t('weather.uv', {
+        value: whole.format(value),
+        band: t(`weather.uv_${uvBand(value)}`),
+        station,
+      }),
+    warningLevel: (level) => t(`weather.level_${level}`),
+    // "Thu 16:00 – 23:59" (in hr), or both days when the warning runs past midnight; at the property.
+    warningTime: (onset, expires, timeZone) => {
+      const dayTime = new Intl.DateTimeFormat(language, {
+        weekday: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone,
+      });
+      const time = new Intl.DateTimeFormat(language, { timeStyle: 'short', timeZone });
+      const sameDay = dayKey(onset, timeZone) === dayKey(expires, timeZone);
+      return t('weather.warningTime', {
+        from: dayTime.format(new Date(onset)),
+        to: (sameDay ? time : dayTime).format(new Date(expires)),
+      });
+    },
+    warningsUnknown: t('weather.warningsUnknown'),
+    noWarnings: t('weather.noWarnings'),
+    forecastUnavailable: t('weather.forecastUnavailable'),
+    sources: t('weather.sources'),
+    credit: (source) => t(source === 'DHMZ' ? 'weather.credit_dhmz' : 'weather.credit_met'),
+    skyName: (sky) => t(`weather.sky_${sky}`),
   };
 }
 

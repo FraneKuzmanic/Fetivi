@@ -39,6 +39,8 @@ export const conversations = pgTable('conversations', {
   situationNote: text('situation_note'),
   /** The text of the last About me note appended, or null if none was ever needed. */
   aboutMeNote: text('about_me_note'),
+  /** The text of the last weather note appended, or null before the first. */
+  weatherNote: text('weather_note'),
   /** When the guest last saw the Chat with its inbox messages; the badge counts inbox messages after it. */
   inboxSeenAt: timestamp('inbox_seen_at', { withTimezone: true }),
   /**

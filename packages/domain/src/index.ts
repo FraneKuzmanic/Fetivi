@@ -24,3 +24,4 @@ export * from './stays';
 export * from './time';
 export * from './tokens';
 export * from './translation';
+export * from './weather';
