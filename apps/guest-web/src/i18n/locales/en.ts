@@ -297,6 +297,16 @@ export const en = {
     orders: 'Reservations & orders',
     noOrders:
       "Nothing booked yet. When you find a trip you like, ask me in Chat and I'll book it with you.",
+    noPlan:
+      "Nothing planned yet. Tell me in Chat what you'd like to do and I'll put it on your days.",
+    today: 'Today',
+    anyTime: 'Any time',
+    nothingPlanned: 'Nothing planned yet',
+    booked: 'Booked',
+    ask: 'Ask Fetivi about {{title}}',
+    askShort: 'Ask Fetivi',
+    planLabel: 'Day plan',
+    askText: 'Tell me more about "{{title}}" on {{day}}.',
   },
   guide: {
     sectionsLabel: 'Guide sections',

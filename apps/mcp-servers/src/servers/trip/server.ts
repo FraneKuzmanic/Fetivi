@@ -5,8 +5,8 @@ import { SERVER_VERSION } from '../version';
 import { tripTools } from './tools';
 
 /**
- * The `trip` server for one guest: About me now, the day plan with ticket 27. update_about_me is
- * listed only while the token has about_me:write (before arrival and in stay). Special-category
+ * The `trip` server for one guest: the day plan and About me. update_plan and update_about_me are
+ * listed only while the token has the write scope (before arrival and in stay). Special-category
  * needs are readable here but never writable: only the guest app's own tap stores them.
  */
 export function buildTripServer(identity: GuestIdentity, deps: ToolDeps): McpServer {

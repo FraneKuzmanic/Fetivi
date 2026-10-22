@@ -302,6 +302,16 @@ export const hu: Messages = {
     orders: 'Foglalások és rendelések',
     noOrders:
       'Még nincs foglalásod. Ha találsz egy tetsző programot, kérdezz a Chatben, és együtt lefoglaljuk.',
+    noPlan:
+      'Még nincs semmi betervezve. Írd meg a Chatben, mit szeretnél csinálni, és beteszem a napjaidba.',
+    today: 'Ma',
+    anyTime: 'Bármikor',
+    nothingPlanned: 'Még nincs semmi betervezve',
+    booked: 'Lefoglalva',
+    ask: 'Kérdezd Fetivit erről: {{title}}',
+    askShort: 'Kérdezd Fetivit',
+    planLabel: 'Napi terv',
+    askText: 'Mesélj még erről: „{{title}}” ({{day}}).',
   },
   guide: {
     sectionsLabel: 'Az útmutató részei',

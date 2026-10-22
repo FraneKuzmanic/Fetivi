@@ -13,6 +13,7 @@ import { inboxRoutes } from './inbox/routes';
 import { createToolCatalog } from './mcp/tools';
 import { mediaRoutes } from './media/routes';
 import { orderRoutes } from './orders/routes';
+import { planRoutes } from './plan/routes';
 import { pushRoutes } from './push/routes';
 import { recoveryRoutes } from './recovery/routes';
 import { savedPlaceRoutes } from './saved-places/routes';
@@ -64,6 +65,7 @@ export function buildApp(deps: AppDeps) {
     deps.chat.tools ??
     mcpBinding({ tokens: deps.tokens, mcpFetch: deps.chat.mcpFetch, catalog: createToolCatalog() });
   app.register(orderRoutes, { db, now, tools });
+  app.register(planRoutes, { db, now, tools });
   app.register(inboxRoutes, { db, now });
   app.register(emailRoutes, { db, now, queue: deps.queue });
   app.register(recoveryRoutes, { db, now, queue: deps.queue });

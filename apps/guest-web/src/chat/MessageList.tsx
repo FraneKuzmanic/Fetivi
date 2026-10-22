@@ -26,6 +26,7 @@ const nameOf = (segment: Segment) =>
   'data' in segment ? (segment.data as { name?: unknown } | null)?.name : undefined;
 const isChips = (segment: Segment) => nameOf(segment) === 'follow-up-chips';
 const isPicker = (segment: Segment) => nameOf(segment) === 'availability-picker';
+const isDayPlan = (segment: Segment) => nameOf(segment) === 'day-plan';
 
 /**
  * The confirmation cards still waiting: open while the call has no result, sending while the
@@ -72,10 +73,12 @@ function segmentsOf(message: UIMessage, busy: boolean): Segment[] {
     if (isComponentPart(part))
       components.push({ key: part.id ?? `part-${index}`, data: part.data });
   });
+  // get_plan then update_plan in one answer: the later state is the one to show.
+  const lastPlan = components.findLast(isDayPlan);
   return [
     ...(text.length > 0 ? [{ key: 'text', text: text.join('\n') }] : []),
     ...cardsOf(message, busy),
-    ...components.filter((s) => !isChips(s)),
+    ...components.filter((s) => !isChips(s) && (!isDayPlan(s) || s === lastPlan)),
     ...components.filter(isChips),
   ];
 }

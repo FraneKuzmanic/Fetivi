@@ -54,6 +54,12 @@ const candidate = (toolName: string, value: unknown): unknown => {
       // Only a sent message gets its card; "not sent" is told by the model's words.
       if (!isRecord(value) || value.outcome !== 'sent') return null;
       return { name: 'host-message-sent', payload: { message: value.message } };
+    case 'get_plan':
+    case 'update_plan':
+      // Both show the plan they return: the whole stay, one day, or the days a change touched.
+      return isRecord(value) && isRecord(value.plan)
+        ? { name: 'day-plan', payload: value.plan }
+        : null;
     case 'draft_host_message': {
       // The emergency path: 112 first, then the host's phone, as the Guide's contacts card.
       if (!isRecord(value) || value.outcome !== 'emergency' || !isRecord(value.emergency)) {

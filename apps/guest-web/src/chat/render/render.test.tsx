@@ -163,3 +163,51 @@ describe('property info card in the chat', () => {
     expect(html).toContain('Copy Password');
   });
 });
+
+describe('day plan in the chat', () => {
+  const item = (id: string, title: string, time: string | null) => ({
+    id,
+    kind: 'suggestion',
+    date: '2027-07-15',
+    time,
+    title,
+    note: null,
+    placeId: null,
+    offerId: null,
+    orderId: null,
+    orderStatus: null,
+  });
+  const plan = (id: string, days: { date: string; items: unknown[] }[]) =>
+    ({
+      type: 'data-component',
+      id,
+      data: {
+        name: 'day-plan',
+        payload: { checkIn: '2027-07-14', checkout: '2027-07-16', today: '2027-07-15', days },
+      },
+    }) as const;
+
+  it('shows only the last timeline of an answer, without empty days or Ask buttons', () => {
+    const html = render([
+      question,
+      answer([
+        plan('p1', [{ date: '2027-07-15', items: [item('a', 'Old swim', null)] }]),
+        plan('p2', [
+          { date: '2027-07-14', items: [] },
+          { date: '2027-07-15', items: [item('a', 'Morning swim', '08:00')] },
+        ]),
+      ]),
+    ]);
+    expect(html.match(/class="fv-plan"/g)).toHaveLength(1);
+    expect(html).toContain('Morning swim');
+    expect(html).not.toContain('Old swim');
+    expect(html).not.toContain('Nothing planned yet');
+    expect(html).not.toContain('Ask Fetivi');
+  });
+
+  it('shows an empty day when one day was asked for', () => {
+    const html = render([question, answer([plan('p1', [{ date: '2027-07-15', items: [] }])])]);
+    expect(html).toContain('Thursday, July 15');
+    expect(html).toContain('Nothing planned yet');
+  });
+});

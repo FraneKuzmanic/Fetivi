@@ -2,6 +2,7 @@ import { useChat } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router';
 import { TripFlow } from '../about-me/TripFlow';
 import { useEmail } from '../email/EmailProvider';
 import { useInbox } from '../inbox/InboxProvider';
@@ -103,6 +104,12 @@ export function ChatTab() {
 
 const ignore = () => {};
 
+/** The question "Ask Fetivi about this" in My trip left in the navigation state, if any. */
+const askOf = (state: unknown): string | null => {
+  const ask = (state as { ask?: unknown } | null)?.ask;
+  return typeof ask === 'string' && ask.length > 0 ? ask.slice(0, 500) : null;
+};
+
 /** The conversation itself; `initial` must be the loaded history (useChat reads it once). */
 export function ChatView({
   initial,
@@ -130,7 +137,11 @@ export function ChatView({
     // A tap on a confirmation card goes to the server by itself.
     sendAutomaticallyWhen: hasGuestAnswer,
   });
-  const [draft, setDraft] = useState('');
+  const location = useLocation();
+  const navigate = useNavigate();
+  // "Ask Fetivi about this": the question waits in the composer; the guest sends it.
+  const [asked] = useState(() => askOf(location.state));
+  const [draft, setDraft] = useState(asked ?? '');
   // The About me flow; once finished its thanks stay until the guest sends a message.
   const [flow, setFlow] = useState<'closed' | 'open' | 'done'>('closed');
   // The text last sent, so a failed turn can put it back.
@@ -208,6 +219,13 @@ export function ChatView({
 
   // "Something else" on a choice card: the guest types their own answer.
   const focusComposer = useCallback(() => document.getElementById('chat-input')?.focus(), []);
+
+  // A reload or a step back must not put the question in again.
+  useEffect(() => {
+    if (asked === null) return;
+    focusComposer();
+    navigate('.', { replace: true, state: null });
+  }, [asked, focusComposer, navigate]);
 
   // The answered card made way for a receipt or words: the guest carries on in the composer.
   useEffect(() => {

@@ -238,3 +238,41 @@ describe('host message components', () => {
     ).toBeNull();
   });
 });
+
+describe('day plan component', () => {
+  const plan = {
+    checkIn: '2027-07-14',
+    checkout: '2027-07-16',
+    today: '2027-07-15',
+    days: [
+      {
+        date: '2027-07-15',
+        items: [
+          {
+            id: 'i1',
+            kind: 'suggestion',
+            date: '2027-07-15',
+            time: '09:00',
+            title: 'Swim at Pantan',
+            note: null,
+            placeId: null,
+            offerId: null,
+            orderId: null,
+            orderStatus: null,
+          },
+        ],
+      },
+    ],
+  };
+
+  it('shows the plan of get_plan and update_plan as a day plan', () => {
+    expect(componentFor('get_plan', { plan })).toEqual({ name: 'day-plan', payload: plan });
+    expect(componentFor('update_plan', { plan })).toEqual({ name: 'day-plan', payload: plan });
+  });
+
+  it('shows nothing for an error text or a malformed plan', () => {
+    expect(componentFor('update_plan', "That date is outside the guest's stay.")).toBeNull();
+    expect(componentFor('get_plan', { plan: { ...plan, days: [] } })).toBeNull();
+    expect(componentFor('get_plan', { plan: null })).toBeNull();
+  });
+});

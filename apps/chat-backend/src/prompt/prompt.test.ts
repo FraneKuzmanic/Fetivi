@@ -87,6 +87,11 @@ describe('system text', () => {
     expect(INSTRUCTIONS).not.toContain('menu');
   });
 
+  it('keeps the day plan to what the guest asked for and never calls it a booking', () => {
+    expect(INSTRUCTIONS).toContain('update_plan only when the guest asks or agrees');
+    expect(INSTRUCTIONS).toContain('A plan item is not a booking.');
+  });
+
   it('puts the cache breakpoint on its single block', () => {
     expect(systemInstructions('text')).toEqual([
       {

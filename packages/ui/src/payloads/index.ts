@@ -17,6 +17,8 @@ import {
   PRICE_UNITS,
 } from '@fetivi/domain/offer-vocabulary';
 import { ORDER_STATUSES, PAYMENT_STATUSES } from '@fetivi/domain/order-vocabulary';
+import { PLAN_ITEM_KINDS } from '@fetivi/domain/plan-vocabulary';
+import { STAY_LIMITS } from '@fetivi/domain/stay-vocabulary';
 import { GUEST_LANGUAGES } from '@fetivi/domain/vocabulary';
 import { z } from 'zod';
 import { propertyInfoCard } from './property-info';
@@ -121,6 +123,33 @@ export const hostMessageSent = z.object({
   }),
 });
 
+/** One plan item as the timeline shows it; not strict, like placeCard. */
+export const planItem = z.object({
+  id: z.string().min(1),
+  kind: z.enum(PLAN_ITEM_KINDS),
+  date: z.string(),
+  /** 'HH:mm' at the property; null = any time. */
+  time: z.string().nullable(),
+  title: z.string().min(1),
+  note: z.string().nullable(),
+  placeId: z.string().nullable(),
+  offerId: z.string().nullable(),
+  orderId: z.string().nullable(),
+  orderStatus: z.enum(ORDER_STATUSES).nullable(),
+});
+
+/** Days of the plan, in date order; `today` marks the property's current day. */
+export const dayPlan = z.object({
+  checkIn: z.string(),
+  checkout: z.string(),
+  today: z.string(),
+  // A Stay has at most maxNights nights, so maxNights + 1 days.
+  days: z
+    .array(z.object({ date: z.string(), items: z.array(planItem) }))
+    .min(1)
+    .max(STAY_LIMITS.maxNights + 1),
+});
+
 /** A streamed component: its name and a payload valid for that name. */
 export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('follow-up-chips'), payload: followUpChips }),
@@ -130,6 +159,7 @@ export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('receipt-card'), payload: receiptCard }),
   z.object({ name: z.literal('property-info'), payload: propertyInfoCard }),
   z.object({ name: z.literal('host-message-sent'), payload: hostMessageSent }),
+  z.object({ name: z.literal('day-plan'), payload: dayPlan }),
 ]);
 
 /** The UI message part type of a confirmation card; its id is the paused tool call's id. */
@@ -242,3 +272,5 @@ export type ElicitationPayload = z.infer<typeof elicitationPayload>;
 export type HostMessageDraftPayload = z.infer<typeof hostMessageDraft>;
 export type HostMessageSentPayload = z.infer<typeof hostMessageSent>;
 export type InboxItem = z.infer<typeof inboxItem>;
+export type DayPlanPayload = z.infer<typeof dayPlan>;
+export type PlanItemPayload = z.infer<typeof planItem>;

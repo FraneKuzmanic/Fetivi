@@ -8,6 +8,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import '../i18n';
 import { InboxPart } from '../chat/render/InboxPart';
 import { TripTab } from '../my-trip/TripTab';
+import { SpaceProvider } from '../space';
 import { AlertOffer, PushProvider } from './AlertOffer';
 import { applicationServerKey } from './support';
 
@@ -180,19 +181,39 @@ describe('My trip offer', () => {
     browser({ ua: ANDROID });
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (url: string) => json(url === '/api/push' ? OPEN : { orders })),
+      vi.fn(async (url: string) =>
+        json(url === '/api/push' ? OPEN : url === '/api/plan' ? EMPTY_PLAN : { orders }),
+      ),
     );
   }
 
+  const EMPTY_PLAN = {
+    plan: { checkIn: '2026-10-22', checkout: '2026-10-23', today: '2026-10-22', days: [] },
+  };
+
+  /** My trip needs a router and a space since the plan section (Ask Fetivi) came. */
+  const trip = (
+    <MemoryRouter initialEntries={['/trip']}>
+      <SpaceProvider
+        initial={{
+          status: 'ready',
+          space: { language: 'en', closedAt: '2026-10-24T22:00:00Z', closed: false, unitSlug: 's' },
+        }}
+      >
+        <TripTab />
+      </SpaceProvider>
+    </MemoryRouter>
+  );
+
   it('shows while an Order is not final', async () => {
     withOrders([order('pending_provider')]);
-    await mount(<TripTab />);
+    await mount(trip);
     await vi.waitFor(() => expect(offerButton()).toBeDefined());
   });
 
   it('stays away when every Order is final', async () => {
     withOrders([order('cancelled')]);
-    await mount(<TripTab />);
+    await mount(trip);
     await vi.waitFor(() => expect(host.textContent).toContain('Kayak'));
     expect(offerButton()).toBeUndefined();
   });

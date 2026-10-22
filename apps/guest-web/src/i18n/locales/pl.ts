@@ -300,6 +300,16 @@ export const pl: Messages = {
     orders: 'Rezerwacje i zamówienia',
     noOrders:
       'Nic jeszcze nie zarezerwowano. Gdy znajdziesz wycieczkę, która ci się spodoba, zapytaj mnie na czacie, a zarezerwujemy ją razem.',
+    noPlan:
+      'Nic jeszcze nie zaplanowano. Napisz mi na czacie, co chcesz robić, a dodam to do twoich dni.',
+    today: 'Dziś',
+    anyTime: 'O dowolnej porze',
+    nothingPlanned: 'Nic jeszcze nie zaplanowano',
+    booked: 'Zarezerwowane',
+    ask: 'Zapytaj Fetivi o: {{title}}',
+    askShort: 'Zapytaj Fetivi',
+    planLabel: 'Plan dnia',
+    askText: 'Opowiedz mi więcej o „{{title}}” ({{day}}).',
   },
   guide: {
     sectionsLabel: 'Części przewodnika',

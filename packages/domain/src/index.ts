@@ -13,6 +13,7 @@ export * from './metrics';
 export * from './notifications';
 export * from './offers';
 export * from './orders';
+export * from './plan';
 export * from './projection';
 export * from './property';
 export * from './saved-places';

@@ -18,7 +18,7 @@ export interface ReceiptLabels {
 
 type Tone = 'good' | 'wait' | 'off';
 
-const ORDER_TONE: Record<OrderStatus, Tone> = {
+export const ORDER_TONE: Record<OrderStatus, Tone> = {
   awaiting_confirmation: 'wait',
   confirming: 'wait',
   pending_provider: 'wait',
@@ -42,7 +42,7 @@ const PAYMENT_TONE: Record<PaymentStatus, Tone> = {
 };
 
 /** A status as text with a small marker: the colour only repeats what the words say. */
-const Status = ({ tone, text }: { tone: Tone; text: string }) => (
+export const Status = ({ tone, text }: { tone: Tone; text: string }) => (
   <span className="fv-status">
     <span className="fv-status-dot" data-tone={tone} aria-hidden="true" />
     {text}

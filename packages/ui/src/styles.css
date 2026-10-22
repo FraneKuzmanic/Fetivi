@@ -889,3 +889,163 @@
   color: var(--gray-500);
   font-size: 0.875rem;
 }
+
+/* Day plan timeline */
+
+.fv-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.fv-plan-day {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fv-plan-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.fv-plan-day[data-today] .fv-plan-heading {
+  color: var(--blue-600);
+}
+
+.fv-plan-today {
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--sky-100);
+  color: var(--blue-700);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.fv-plan-empty {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 0.9375rem;
+}
+
+.fv-plan-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fv-plan-item {
+  display: grid;
+  grid-template-columns: 3.5rem 1rem minmax(0, 1fr);
+  column-gap: 0.5rem;
+}
+
+.fv-plan-time {
+  padding-top: 0.0625rem;
+  color: var(--gray-500);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.fv-plan-time time {
+  color: var(--navy-900);
+  font-weight: 600;
+}
+
+/* The rail runs down the dot column; the dot sits on the item's first line. */
+.fv-plan-dot {
+  position: relative;
+  justify-self: center;
+  width: 2px;
+  background: var(--sky-200);
+}
+
+.fv-plan-item:last-child .fv-plan-dot {
+  background: none;
+}
+
+.fv-plan-dot::before {
+  content: "";
+  position: absolute;
+  top: 0.3rem;
+  left: 50%;
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 2px solid var(--blue-600);
+  border-radius: 50%;
+  background: var(--white);
+  transform: translateX(-50%);
+}
+
+.fv-plan-item[data-kind="order"] .fv-plan-dot::before {
+  background: var(--blue-600);
+}
+
+.fv-plan-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
+  padding-bottom: 0.625rem;
+  overflow-wrap: anywhere;
+}
+
+.fv-plan-title {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.fv-plan-note {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.fv-plan-booked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.fv-plan-booked-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--blue-700);
+  font-weight: 600;
+}
+
+.fv-plan-ask {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--tap);
+  margin-left: -0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--blue-700);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.fv-plan-ask:hover {
+  background: var(--sky-100);
+}

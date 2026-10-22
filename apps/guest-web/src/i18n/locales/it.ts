@@ -302,6 +302,16 @@ export const it: Messages = {
     orders: 'Prenotazioni e ordini',
     noOrders:
       'Ancora niente di prenotato. Quando trovi un’escursione che ti piace, chiedimelo in Chat e la prenotiamo insieme.',
+    noPlan:
+      'Ancora niente in programma. Dimmi in Chat cosa ti piacerebbe fare e lo aggiungo alle tue giornate.',
+    today: 'Oggi',
+    anyTime: 'In qualsiasi momento',
+    nothingPlanned: 'Ancora niente in programma',
+    booked: 'Prenotato',
+    ask: 'Chiedi a Fetivi di {{title}}',
+    askShort: 'Chiedi a Fetivi',
+    planLabel: 'Programma del giorno',
+    askText: 'Dimmi di più su «{{title}}» di {{day}}.',
   },
   guide: {
     sectionsLabel: 'Sezioni della guida',

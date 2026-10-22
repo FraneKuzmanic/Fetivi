@@ -4,6 +4,7 @@ import type {
   AvailabilityPickerLabels,
   ChoiceCardLabels,
   ConfirmationCardLabels,
+  DayPlanLabels,
   HostDraftLabels,
   HostSentLabels,
   PlaceLabels,
@@ -150,6 +151,27 @@ export function receiptLabels(t: TFunction, language: string): ReceiptLabels {
       status === 'none' && mode === 'direct'
         ? t('order.payDirect')
         : t(PAYMENT_STATUS_KEYS[status]),
+  };
+}
+
+/** The day plan's strings; a day reads "Tuesday 15 July" in the interface language. */
+export function planLabels(t: TFunction, language: string): DayPlanLabels {
+  const day = new Intl.DateTimeFormat(language, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+  return {
+    day: (date) => day.format(new Date(`${date}T12:00:00Z`)),
+    today: t('trip.today'),
+    anyTime: t('trip.anyTime'),
+    nothingPlanned: t('trip.nothingPlanned'),
+    booked: t('trip.booked'),
+    orderStatus: (status) => t(ORDER_STATUS_KEYS[status]),
+    ask: (title) => t('trip.ask', { title }),
+    askShort: t('trip.askShort'),
+    plan: t('trip.planLabel'),
   };
 }
 

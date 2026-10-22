@@ -305,6 +305,16 @@ export const fr: Messages = {
     orders: 'Réservations et commandes',
     noOrders:
       'Rien de réservé pour l’instant. Quand une sortie vous plaît, demandez-moi dans le Chat et je la réserverai avec vous.',
+    noPlan:
+      'Rien de prévu pour l’instant. Dites-moi dans le Chat ce que vous aimeriez faire et je l’ajouterai à vos journées.',
+    today: 'Aujourd’hui',
+    anyTime: 'À tout moment',
+    nothingPlanned: 'Rien de prévu pour l’instant',
+    booked: 'Réservé',
+    ask: 'Demander à Fetivi à propos de {{title}}',
+    askShort: 'Demander à Fetivi',
+    planLabel: 'Programme du jour',
+    askText: 'Parlez-moi de « {{title}} » le {{day}}.',
   },
   guide: {
     sectionsLabel: 'Parties du guide',

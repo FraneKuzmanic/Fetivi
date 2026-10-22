@@ -1,9 +1,12 @@
 import { getAboutMe, updateAboutMe } from '@fetivi/domain';
 import { type GuestToolSpec, guestTool } from '../tool';
+import { getPlanSpec, updatePlanSpec } from './plan';
 import { aboutMeResult, getAboutMeInput, updateAboutMeInput } from './schemas';
 
-/** The `trip` server's tools, in `tools/list` order. */
+/** The `trip` server's tools, in `tools/list` order (architecture §4.4). */
 export const tripTools: readonly GuestToolSpec[] = [
+  getPlanSpec,
+  updatePlanSpec,
   guestTool({
     name: 'get_about_me',
     config: {

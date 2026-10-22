@@ -140,15 +140,18 @@ describe('protected resource metadata', () => {
 });
 
 describe('servers over HTTP', () => {
-  it('serves list_my_orders on services (no Offers here) and the About me tools on trip', async () => {
+  it('serves list_my_orders on services (no Offers here) and the plan and About me tools on trip', async () => {
     const { ctx } = await seed();
-    const expected = { services: ['list_my_orders'], trip: ['get_about_me', 'update_about_me'] };
+    const expected = {
+      services: ['list_my_orders'],
+      trip: ['get_plan', 'update_plan', 'get_about_me', 'update_about_me'],
+    };
     for (const server of ['services', 'trip'] as const) {
       const client = await connect(server, await signToken(t.keys, { server, ctx }));
       expect(client.getProtocolEra()).toBe('modern');
       const { tools } = await client.listTools();
       expect(tools.map((tool) => tool.name)).toEqual(expected[server]);
-      // update_about_me writes without a card, so nothing here pauses the model.
+      // update_plan and update_about_me write without a card, so nothing here pauses the model.
       for (const tool of tools) expect(tool._meta?.[GUEST_CONFIRMS_META_KEY]).toBeUndefined();
       await client.close();
     }

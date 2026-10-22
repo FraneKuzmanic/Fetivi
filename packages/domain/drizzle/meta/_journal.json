@@ -218,6 +218,13 @@
       "when": 1792695687954,
       "tag": "0030_space_email_verified_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792696590341,
+      "tag": "0031_plan_items",
+      "breakpoints": true
     }
   ]
 }

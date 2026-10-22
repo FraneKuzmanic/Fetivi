@@ -306,6 +306,16 @@ export const de: Messages = {
     orders: 'Reservierungen & Bestellungen',
     noOrders:
       'Noch nichts gebucht. Wenn Ihnen ein Ausflug gefällt, fragen Sie mich im Chat und ich buche ihn mit Ihnen.',
+    noPlan:
+      'Noch nichts geplant. Sagen Sie mir im Chat, was Sie gern unternehmen möchten, und ich trage es in Ihre Tage ein.',
+    today: 'Heute',
+    anyTime: 'Jederzeit',
+    nothingPlanned: 'Noch nichts geplant',
+    booked: 'Gebucht',
+    ask: 'Fetivi zu {{title}} fragen',
+    askShort: 'Fetivi fragen',
+    planLabel: 'Tagesplan',
+    askText: 'Erzählen Sie mir mehr über „{{title}}“ am {{day}}.',
   },
   guide: {
     sectionsLabel: 'Bereiche des Reiseführers',

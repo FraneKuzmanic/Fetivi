@@ -298,6 +298,16 @@ export const hr: Messages = {
     orders: 'Rezervacije i narudžbe',
     noOrders:
       'Još ništa nije rezervirano. Kad nađete izlet koji vam se sviđa, pitajte me u Chatu i rezervirat ću ga s vama.',
+    noPlan:
+      'Još ništa nije isplanirano. Recite mi u Chatu što biste voljeli raditi i dodat ću to u vaše dane.',
+    today: 'Danas',
+    anyTime: 'Bilo kada',
+    nothingPlanned: 'Još ništa nije isplanirano',
+    booked: 'Rezervirano',
+    ask: 'Pitajte Fetivi o: {{title}}',
+    askShort: 'Pitajte Fetivi',
+    planLabel: 'Plan dana',
+    askText: 'Recite mi više o „{{title}}” ({{day}}).',
   },
   guide: {
     sectionsLabel: 'Dijelovi vodiča',

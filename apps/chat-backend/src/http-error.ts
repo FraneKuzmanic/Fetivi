@@ -13,6 +13,7 @@ export type ErrorCode =
   | 'turn-in-progress'
   | 'nothing-to-answer'
   | 'orders-unavailable'
+  | 'plan-unavailable'
   | 'guide-unavailable'
   | 'saved-places-unavailable'
   | 'chat-unavailable'

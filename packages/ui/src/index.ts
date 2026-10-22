@@ -10,6 +10,7 @@ export {
   type ConfirmationCardLabels,
   type ContactField,
 } from './components/confirmation-card/ConfirmationCard';
+export { DayPlan, type DayPlanLabels } from './components/day-plan/DayPlan';
 export { HostDraftCard, type HostDraftLabels } from './components/host-draft-card/HostDraftCard';
 export {
   HostMessageSent,

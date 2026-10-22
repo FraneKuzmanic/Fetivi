@@ -1,8 +1,10 @@
 // @vitest-environment happy-dom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import '../../i18n';
+import { SpaceProvider } from '../../space';
 import { TripTab } from '../TripTab';
 
 const order = (id: string, status: string, paymentStatus = 'none') => ({
@@ -36,19 +38,47 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function stubOrders(...replies: (() => Response)[]) {
-  const fetch = vi.fn(async () => (replies.shift() ?? replies.at(-1) ?? (() => new Response()))());
-  vi.stubGlobal('fetch', fetch);
-  return fetch;
-}
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
+const EMPTY_PLAN = {
+  plan: { checkIn: '2026-10-22', checkout: '2026-10-23', today: '2026-10-22', days: [] },
+};
+
+/** Answers /api/orders with the replies in turn; the plan section's read gets an empty plan. */
+function stubOrders(...replies: (() => Response)[]) {
+  const orders = vi.fn(async () => (replies.shift() ?? replies.at(-1) ?? (() => new Response()))());
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) =>
+      String(input) === '/api/orders' ? orders() : json(EMPTY_PLAN),
+    ),
+  );
+  return orders;
+}
 
 async function mount() {
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
-  await act(async () => root?.render(<TripTab />));
+  await act(async () =>
+    root?.render(
+      <MemoryRouter initialEntries={['/trip']}>
+        <SpaceProvider
+          initial={{
+            status: 'ready',
+            space: {
+              language: 'en',
+              closedAt: '2026-10-24T22:00:00Z',
+              closed: false,
+              unitSlug: 's',
+            },
+          }}
+        >
+          <TripTab />
+        </SpaceProvider>
+      </MemoryRouter>,
+    ),
+  );
 }
 
 describe('My trip → Reservations & orders', () => {

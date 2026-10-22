@@ -1,6 +1,7 @@
 import {
   AvailabilityPicker,
   ChoiceCard,
+  DayPlan,
   FollowUpChips,
   HostMessageSent,
   PlaceCarousel,
@@ -21,6 +22,7 @@ import {
   pickedText,
   pickerLabels,
   placeLabels,
+  planLabels,
   receiptLabels,
 } from './labels';
 import { useSavedPlaces } from './SavedPlaces';
@@ -112,6 +114,16 @@ export function ComponentPart({
         </>
       );
     }
+    case 'day-plan':
+      // No Ask button: the guest is already in the chat. Empty days show only for a one-day read.
+      return (
+        <DayPlan
+          days={part.payload.days}
+          today={part.payload.today}
+          labels={planLabels(t, i18n.language)}
+          showEmptyDays={part.payload.days.length === 1}
+        />
+      );
     case 'property-info':
       return (
         <PropertyInfoCard
