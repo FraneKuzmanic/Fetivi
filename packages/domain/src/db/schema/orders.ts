@@ -208,6 +208,8 @@ export const paymentAttempts = pgTable(
     intentStatus: intentStatus('intent_status'),
     refundId: text('refund_id'),
     refundStatus: refundStatus('refund_status'),
+    /** What the refund returns, set before the first refund call; null until a refund is decided. */
+    refundAmountMinor: integer('refund_amount_minor'),
     /** Stripe event ids already applied; an event is processed once. */
     processedEventIds: text('processed_event_ids').array().notNull().default(sql`'{}'::text[]`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -220,6 +222,10 @@ export const paymentAttempts = pgTable(
     check(
       'payment_attempts_fee_check',
       sql`${t.applicationFeeMinor} >= 0 and ${t.applicationFeeMinor} <= ${t.amountMinor}`,
+    ),
+    check(
+      'payment_attempts_refund_amount_check',
+      sql`${t.refundAmountMinor} is null or (${t.refundAmountMinor} >= 0 and ${t.refundAmountMinor} <= ${t.amountMinor})`,
     ),
   ],
 );

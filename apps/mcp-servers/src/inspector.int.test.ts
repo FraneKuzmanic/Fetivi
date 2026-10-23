@@ -134,7 +134,7 @@ describe('MCP Inspector CLI against /stay', () => {
 describe('MCP Inspector CLI against /services', () => {
   const services = (...args: string[]) => inspector('services', servicesToken, ...args);
 
-  it('lists the four tools in order, with annotations', async () => {
+  it('lists the five tools in order, with annotations', async () => {
     const out = (await services('--method', 'tools/list')) as {
       tools: { name: string; annotations: { readOnlyHint: boolean } }[];
     };
@@ -143,11 +143,13 @@ describe('MCP Inspector CLI against /services', () => {
       'check_availability',
       'list_my_orders',
       'create_order',
+      'cancel_order',
     ]);
     expect(out.tools.map((tool) => tool.annotations.readOnlyHint)).toEqual([
       true,
       true,
       true,
+      false,
       false,
     ]);
   }, 60_000);

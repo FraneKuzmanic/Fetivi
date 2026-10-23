@@ -275,6 +275,22 @@ export const de: Messages = {
     sendLink: 'Link per E-Mail senden',
     linkSent: 'Gesendet. Schauen Sie in Ihr Postfach; der Link gilt 1 Stunde.',
   },
+  cancelOrder: {
+    heading: 'Diese Buchung stornieren?',
+    quantity: 'Anzahl',
+    refundPartial: 'Sie bekommen {{amount}} zurück ({{percent}} %)',
+    refundFull: 'Kostenlose Stornierung: Sie bekommen die vollen {{amount}} zurück',
+    refundNone: 'Nach diesen Bedingungen wird jetzt nichts erstattet.',
+    refundNotPaid: 'Es wurde noch nichts bezahlt, also gibt es nichts zu erstatten.',
+    refundDirect:
+      'Sie haben direkt beim Anbieter bezahlt, daher wird über Fetivi nichts erstattet.',
+    freeUntil: 'Kostenlos stornierbar bis {{when}}',
+    policy: 'Stornobedingungen',
+    confirm: 'Buchung stornieren',
+    keep: 'Behalten',
+    sending: 'Wird storniert…',
+    cardShown: 'Ihre Stornierung ist bereit zum Prüfen und Bestätigen.',
+  },
   order: {
     heading: 'Buchung bestätigen',
     offer: 'Was',

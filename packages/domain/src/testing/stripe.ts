@@ -70,6 +70,9 @@ export interface FakeRefund {
   paymentIntentId: string;
   status: RefundView['status'];
   refundApplicationFee: true;
+  amountMinor: number;
+  /** Stripe returns the application fee in proportion to the refunded amount. */
+  applicationFeeRefundedMinor: number;
 }
 
 export interface FakeCall {
@@ -182,6 +185,24 @@ export function fakePaymentGateway(
     paymentMethodTypes: [...s.paymentMethodTypes],
     clientReferenceId: s.clientReferenceId,
   });
+  /** What the intent's refunds return so far; failed and canceled refunds return nothing. */
+  const refundedOf = (intentId: string) =>
+    [...refunds.values()]
+      .filter(
+        (r) => r.paymentIntentId === intentId && r.status !== 'failed' && r.status !== 'canceled',
+      )
+      .reduce((sum, r) => sum + r.amountMinor, 0);
+  /** The `charge.refunded` object: `refunded` is true only once the whole charge is refunded. */
+  const chargeRefunded = (i: FakeIntent) => {
+    const amountRefunded = refundedOf(i.id);
+    return {
+      id: nextId('ch'),
+      object: 'charge',
+      payment_intent: i.id,
+      amount_refunded: amountRefunded,
+      refunded: amountRefunded === i.amountMinor,
+    };
+  };
   const intentView = (i: FakeIntent): PaymentIntentView => ({
     id: i.id,
     status: i.status,
@@ -297,21 +318,23 @@ export function fakePaymentGateway(
       run('refund', o.stripeAccount, o.idempotencyKey, p, () => {
         const i = intent(p.paymentIntentId, o.stripeAccount);
         if (i.status !== 'succeeded') throw new PaymentGatewayError('rejected', 'not captured');
+        if (p.amountMinor > i.amountMinor - refundedOf(i.id)) {
+          throw new PaymentGatewayError('rejected', 'amount exceeds the unrefunded charge');
+        }
         const r: FakeRefund = {
           id: nextId('re'),
           account: i.account,
           paymentIntentId: i.id,
           status: options.refundStatus ?? 'succeeded',
           refundApplicationFee: true,
+          amountMinor: p.amountMinor,
+          applicationFeeRefundedMinor: Math.floor(
+            ((i.applicationFeeAmount ?? 0) * p.amountMinor) / i.amountMinor,
+          ),
         };
         refunds.set(r.id, r);
         if (r.status === 'succeeded') {
-          push('charge.refunded', i.account, {
-            id: nextId('ch'),
-            object: 'charge',
-            payment_intent: i.id,
-            refunded: true,
-          });
+          push('charge.refunded', i.account, chargeRefunded(i));
         } else if (r.status === 'failed') {
           push('refund.failed', i.account, {
             id: r.id,
@@ -412,12 +435,8 @@ export function fakePaymentGateway(
       if (r?.status !== 'pending') return;
       r.status = status;
       if (status === 'succeeded') {
-        push('charge.refunded', r.account, {
-          id: nextId('ch'),
-          object: 'charge',
-          payment_intent: r.paymentIntentId,
-          refunded: true,
-        });
+        const i = intents.get(r.paymentIntentId);
+        if (i) push('charge.refunded', r.account, chargeRefunded(i));
       } else {
         push('refund.failed', r.account, {
           id: r.id,

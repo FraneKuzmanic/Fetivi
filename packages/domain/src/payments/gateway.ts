@@ -71,7 +71,10 @@ export interface PaymentGateway {
   ): Promise<PaymentIntentView>;
   cancelPaymentIntent(id: string, o: WriteOptions): Promise<PaymentIntentView>;
   retrievePaymentIntent(id: string, o: ReadOptions): Promise<PaymentIntentView>;
-  createRefund(p: { paymentIntentId: string }, o: WriteOptions): Promise<RefundView>;
+  createRefund(
+    p: { paymentIntentId: string; amountMinor: number },
+    o: WriteOptions,
+  ): Promise<RefundView>;
   retrieveRefund(id: string, o: ReadOptions): Promise<RefundView>;
   /** The account's sessions created at or after `createdAfter`, newest first, at most `limit`. */
   listCheckoutSessions(
@@ -263,7 +266,11 @@ export function createStripeGateway(config: StripeGatewayConfig): PaymentGateway
     createRefund: (p, o) =>
       call(async () => {
         const refund = await stripe.refunds.create(
-          { payment_intent: p.paymentIntentId, refund_application_fee: true },
+          {
+            payment_intent: p.paymentIntentId,
+            amount: p.amountMinor,
+            refund_application_fee: true,
+          },
           o,
         );
         return { id: refund.id, status: (refund.status ?? 'pending') as RefundView['status'] };

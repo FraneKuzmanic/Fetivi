@@ -1,0 +1,3 @@
+ALTER TYPE "public"."pending_action_kind" ADD VALUE 'cancel_order';--> statement-breakpoint
+ALTER TABLE "payment_attempts" ADD COLUMN "refund_amount_minor" integer;--> statement-breakpoint
+ALTER TABLE "payment_attempts" ADD CONSTRAINT "payment_attempts_refund_amount_check" CHECK ("payment_attempts"."refund_amount_minor" is null or ("payment_attempts"."refund_amount_minor" >= 0 and "payment_attempts"."refund_amount_minor" <= "payment_attempts"."amount_minor"));

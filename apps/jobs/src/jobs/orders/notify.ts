@@ -19,7 +19,7 @@ import type { JobDefinition } from '../../runner';
  * inbox, email and push; the on-request Provider email arrives with 36 and is only logged.
  */
 export function orderNotifyJob(
-  deps: NotifyDeps & GuestNotifyDeps,
+  deps: NotifyDeps & GuestNotifyDeps & { webOrigin?: string },
 ): JobDefinition<OrderNotifyJobData> {
   return {
     name: QUEUES.orderNotify,

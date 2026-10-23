@@ -4,6 +4,7 @@ import type { OrderStatus, PaymentStatus } from '@fetivi/domain/order-vocabulary
 import { DHMZ_URL, type WarningLevel } from '@fetivi/domain/weather-vocabulary';
 import type {
   AvailabilityPickerLabels,
+  CancelOrderLabels,
   ChoiceCardLabels,
   ConfirmationCardLabels,
   DayPlanLabels,
@@ -120,6 +121,28 @@ export function confirmationLabels(t: TFunction, language: string): Confirmation
     confirmOnline: t('order.confirmOnline'),
     cancel: t('order.cancel'),
     sending: t('order.sending'),
+  };
+}
+
+/** The cancel card's strings; amounts arrive formatted, times as the property's wall clock. */
+export function cancelOrderLabels(t: TFunction, language: string): CancelOrderLabels {
+  const f = orderFormat(t, language);
+  return {
+    heading: t('cancelOrder.heading'),
+    offer: t('order.offer'),
+    when: t('order.when'),
+    quantity: t('cancelOrder.quantity'),
+    dateTime: f.dateTime,
+    refundPartial: (amount, percent) => t('cancelOrder.refundPartial', { amount, percent }),
+    refundFull: (amount) => t('cancelOrder.refundFull', { amount }),
+    refundNone: t('cancelOrder.refundNone'),
+    refundNotPaid: t('cancelOrder.refundNotPaid'),
+    refundDirect: t('cancelOrder.refundDirect'),
+    freeUntil: (when) => t('cancelOrder.freeUntil', { when }),
+    policy: t('cancelOrder.policy'),
+    confirm: t('cancelOrder.confirm'),
+    keep: t('cancelOrder.keep'),
+    sending: t('cancelOrder.sending'),
   };
 }
 

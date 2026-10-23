@@ -3,7 +3,7 @@ import { and, eq, inArray, like, sql } from 'drizzle-orm';
 import fc from 'fast-check';
 import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { allotmentSlots, providers } from '../db/schema/offers';
+import { allotmentSlots, offers, providers } from '../db/schema/offers';
 import {
   inventoryHolds,
   orderEvents,
@@ -41,6 +41,7 @@ import {
   propose,
   runOrderTimer,
 } from './machine';
+import { orderStart, refundFor } from './refunds';
 import type { OrderTimerJobData } from './timers';
 import { requiredNotifications } from './transitions';
 import { isFinalOrderStatus } from './vocabulary';
@@ -52,7 +53,9 @@ import { isFinalOrderStatus } from './vocabulary';
 // after the call; a lost response throws after it), and webhooks arrive duplicated, reordered,
 // delayed, or never. S2's payment invariants P1-P7 are checked. Since 34 the cancel webhook can be
 // lost too, an authorization can lapse, a confirm job can die for good, and the reconciliation
-// job runs as a step and in every drain round: it is what closes those gaps.
+// job runs as a step and in every drain round: it is what closes those gaps. Since 35 a guest
+// cancel refunds what the pay-online Offer's rules give at that instant (the cutoff is an hour
+// in, so advances cross it), and P8-P9 check the refund amount, the fee share and one refund.
 // ORDER_PROPERTY_RUNS (default 25) sets the volume; ORDER_PROPERTY_SEED replays a failure.
 
 const RUNS = Number(process.env.ORDER_PROPERTY_RUNS ?? 25);
@@ -244,6 +247,24 @@ function shuffled<T>(items: T[], seed: number): T[] {
   return items;
 }
 
+/** What the guest's cancel refunds now: the policy amount of a capture, else nothing to pass. */
+async function policyRefund(d: OrderDeps, orderId: string): Promise<number | undefined> {
+  const [row] = await d.db
+    .select({ order: orders, proposal: orderProposals, attempt: paymentAttempts })
+    .from(orders)
+    .innerJoin(orderProposals, eq(orderProposals.id, orders.currentProposalId))
+    .innerJoin(paymentAttempts, eq(paymentAttempts.proposalId, orders.currentProposalId))
+    .where(eq(orders.id, orderId));
+  if (row?.order.paymentStatus !== 'captured') return undefined;
+  return refundFor({
+    amountMinor: row.attempt.amountMinor,
+    startsAt: orderStart(row.proposal, 'Europe/Zagreb'),
+    freeCancelHoursBefore: row.order.freeCancelHoursBefore,
+    refundPercentAfter: row.order.refundPercentAfter,
+    now: d.now(),
+  }).amountMinor;
+}
+
 type Mode = 'allotment' | 'on_request' | 'live' | 'online';
 
 /** One run's world: fresh Offers, a virtual clock and the Orders it created. */
@@ -365,12 +386,18 @@ class World {
         await this.run(a, (d) => op(d, { ...ref, trigger: 'adapter' }));
         return;
       }
-      case 'guestCancel':
+      case 'guestCancel': {
+        const ref = await this.proposalOf(a.order, false);
+        if (!ref) return;
+        await this.run(a, async (d) =>
+          cancel(d, { ...ref, trigger: 'guest', refundMinor: await policyRefund(d, ref.orderId) }),
+        );
+        return;
+      }
       case 'providerCantFulfil': {
         const ref = await this.proposalOf(a.order, false);
         if (!ref) return;
-        const trigger = a.kind === 'guestCancel' ? 'guest' : 'provider_link';
-        await this.run(a, (d) => cancel(d, { ...ref, trigger }));
+        await this.run(a, (d) => cancel(d, { ...ref, trigger: 'provider_link' }));
         return;
       }
       case 'adminExpire': {
@@ -811,15 +838,27 @@ class World {
     // P7: every Stripe event id is processed at most once.
     expect(new Set(attempt.processedEventIds).size).toBe(attempt.processedEventIds.length);
     // P2: money is captured only for a confirmed Order (a capture that lost a race to a cancel
-    // moves on to the refund in the same transaction).
-    if (order.paymentStatus === 'captured') {
+    // moves on to the refund in the same transaction), or a cancelled one whose policy refund
+    // was 0: that money is the Provider's.
+    const keptByPolicy = order.status === 'cancelled' && attempt.refundAmountMinor === 0;
+    if (order.paymentStatus === 'captured' && !keptByPolicy) {
       expect(['confirmed', 'completed'], `captured ${order.id}`).toContain(order.status);
     }
     if (!drained) return;
     const sessions = stripe.sessions.filter((x) => x.clientReferenceId === attempt.id);
     const session = sessions[0];
     const intent = stripe.intents.find((i) => i.id === session?.paymentIntentId);
-    const refund = stripe.refunds.find((r) => r.paymentIntentId === intent?.id);
+    const refunds = stripe.refunds.filter((r) => r.paymentIntentId === intent?.id);
+    const refund = refunds[0];
+    // P9: at most one Stripe refund per attempt.
+    expect(refunds.length, `refunds of ${attempt.id}`).toBeLessThanOrEqual(1);
+    if (refund && intent) {
+      // P8: Stripe refunded the amount decided on the attempt, with the fee in proportion.
+      expect(refund.amountMinor).toBe(attempt.refundAmountMinor);
+      expect(refund.applicationFeeRefundedMinor).toBe(
+        Math.floor(((intent.applicationFeeAmount ?? 0) * refund.amountMinor) / intent.amountMinor),
+      );
+    }
     // P4: Fetivi's attempt state equals Stripe's; every session belongs to an attempt.
     expect(sessions.length).toBeLessThanOrEqual(1);
     expect(attempt.sessionId ?? null).toBe(session?.id ?? null);
@@ -829,8 +868,8 @@ class World {
     expect(attempt.refundStatus ?? null).toBe(refund?.status ?? null);
     // P6: no session is left open.
     expect(session?.status).not.toBe('open');
-    if (isFinalOrderStatus(order.status) && order.status !== 'completed') {
-      // P3: terminal Orders hold no money.
+    if (isFinalOrderStatus(order.status) && order.status !== 'completed' && !keptByPolicy) {
+      // P3: terminal Orders hold no money, except what a 0 % policy leaves with the Provider.
       expect(['none', 'voided', 'refunded'], `payment of ${order.id}`).toContain(
         order.paymentStatus,
       );
@@ -849,7 +888,13 @@ type OrderRow = typeof orders.$inferSelect;
 type AttemptRow = typeof paymentAttempts.$inferSelect;
 type StripeState = ReturnType<World['gateway']['state']>;
 
-async function newWorld(capacity: number, options: { reconcile?: boolean } = {}): Promise<World> {
+interface WorldOptions {
+  reconcile?: boolean;
+  /** The pay-online Offer's percentage after the cutoff; unset keeps the seeded rules. */
+  refundPercentAfter?: number;
+}
+
+async function newWorld(capacity: number, options: WorldOptions = {}): Promise<World> {
   const allotment = await seedOrderableOffer(testDb.db, {
     hostId: unit.hostId,
     availabilityMode: 'allotment',
@@ -878,6 +923,13 @@ async function newWorld(capacity: number, options: { reconcile?: boolean } = {})
     capacity,
     startsAt: SLOT_AT,
   });
+  if (options.refundPercentAfter !== undefined) {
+    // The cutoff an hour after NOW: 68 h before the 69 h away start.
+    await testDb.db
+      .update(offers)
+      .set({ freeCancelHoursBefore: 68, refundPercentAfter: options.refundPercentAfter })
+      .where(eq(offers.id, online.offerId));
+  }
   return new World(
     [
       { ...allotment, mode: 'allotment' },
@@ -890,7 +942,7 @@ async function newWorld(capacity: number, options: { reconcile?: boolean } = {})
   );
 }
 
-async function play(capacity: number, actions: Action[], options: { reconcile?: boolean } = {}) {
+async function play(capacity: number, actions: Action[], options: WorldOptions = {}) {
   const world = await newWorld(capacity, options);
   for (const action of actions) {
     await world.step(action);
@@ -911,8 +963,9 @@ describe('Order machine property', () => {
         fc.asyncProperty(
           fc.integer({ min: 1, max: 4 }),
           fc.array(actionArb, { maxLength: 30, size: 'medium' }),
-          async (capacity, actions) => {
-            await play(capacity, actions);
+          fc.constantFrom(0, 40, 100),
+          async (capacity, actions, refundPercentAfter) => {
+            await play(capacity, actions, { refundPercentAfter });
           },
         ),
         { numRuns: RUNS, seed: SEED, verbose: true },

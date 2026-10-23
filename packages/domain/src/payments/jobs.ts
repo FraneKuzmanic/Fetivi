@@ -360,7 +360,11 @@ async function refund(deps: PaymentDeps, attemptId: string): Promise<PaymentJobO
   let status: string;
   try {
     const created = await deps.gateway.createRefund(
-      { paymentIntentId: attempt.paymentIntentId },
+      // The stored amount: a retry sends the same parameters under the same key.
+      {
+        paymentIntentId: attempt.paymentIntentId,
+        amountMinor: attempt.refundAmountMinor ?? attempt.amountMinor,
+      },
       keyed(attempt, 'refund'),
     );
     await deps.db

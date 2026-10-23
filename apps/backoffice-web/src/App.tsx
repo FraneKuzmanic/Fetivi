@@ -4,6 +4,8 @@ import { ApprovalsPage } from './admin/ApprovalsPage';
 import { DestinationPage, NewDestinationPage } from './admin/catalog/DestinationPage';
 import { DestinationsPage } from './admin/catalog/DestinationsPage';
 import { NewRecordPage, RecordPage } from './admin/catalog/RecordPage';
+import { OrderLookupPage } from './admin/orders/OrderLookupPage';
+import { OrderPage } from './admin/orders/OrderPage';
 import { NewOfferPage, OfferPage } from './admin/providers/OfferPage';
 import { NewProviderPage, ProviderPage } from './admin/providers/ProviderPage';
 import { ProvidersPage } from './admin/providers/ProvidersPage';
@@ -177,6 +179,22 @@ export function App() {
           element={
             <Page area="admin">
               <ReconciliationPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <Page area="admin">
+              <OrderLookupPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/orders/:id"
+          element={
+            <Page area="admin">
+              <OrderPage />
             </Page>
           }
         />

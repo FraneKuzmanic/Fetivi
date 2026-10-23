@@ -45,7 +45,9 @@ export type ErrorCode =
   | 'no-account'
   | 'payments-not-configured'
   | 'stripe-unavailable'
-  | 'stripe-rejected';
+  | 'stripe-rejected'
+  | 'not-cancellable'
+  | 'not-refundable';
 
 export class HttpError extends Error {
   override name = 'HttpError';

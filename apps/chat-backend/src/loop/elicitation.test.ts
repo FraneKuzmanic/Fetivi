@@ -1,4 +1,8 @@
-import { HOST_MESSAGE_DRAFT_META_KEY, ORDER_DRAFT_META_KEY } from '@fetivi/domain';
+import {
+  CANCEL_DRAFT_META_KEY,
+  HOST_MESSAGE_DRAFT_META_KEY,
+  ORDER_DRAFT_META_KEY,
+} from '@fetivi/domain';
 import type { Client } from '@modelcontextprotocol/client';
 import { describe, expect, it, vi } from 'vitest';
 import type { TurnClients } from '../mcp/clients';
@@ -85,6 +89,7 @@ describe('firstHalf', () => {
         requestState: 'sealed.state',
         draft: DRAFT,
         hostMessage: null,
+        cancelOrder: null,
       },
     });
     expect(callTool).toHaveBeenCalledWith({ name: 'create_order', arguments: call.input }, OPTIONS);
@@ -102,6 +107,51 @@ describe('firstHalf', () => {
     const { call } = fake(() => inputRequired({ [HOST_MESSAGE_DRAFT_META_KEY]: hostMessage }));
     const outcome = await firstHalf(call);
     expect(outcome).toMatchObject({ kind: 'ask', payload: { draft: null, hostMessage } });
+  });
+
+  it('carries a cancel draft with the refund the card shows', async () => {
+    const cancelOrder = {
+      pendingId: 'p-3',
+      orderId: '6f1c1d0e-8a0b-4c2e-9f5d-1a2b3c4d5e6f',
+      proposalId: '7f1c1d0e-8a0b-4c2e-9f5d-1a2b3c4d5e6f',
+      offerTitle: 'Blue Lagoon boat trip',
+      language: 'en',
+      date: '2026-10-22',
+      startsAtLocal: '2026-10-22T09:00',
+      quantity: 2,
+      paymentMode: 'online',
+      paymentStatus: 'captured',
+      priceMinor: 9000,
+      currency: 'EUR',
+      cancellationPolicy: 'Free cancellation up to 24 hours before, then 50 %.',
+      refundMinor: 4500,
+      refundPercent: 50,
+      freeUntil: '2026-10-21T07:00:00.000Z',
+      freeUntilLocal: '2026-10-21T09:00',
+    };
+    const { call } = fake(() => inputRequired({ [CANCEL_DRAFT_META_KEY]: cancelOrder }));
+    const outcome = await firstHalf(call);
+    expect(outcome).toMatchObject({
+      kind: 'ask',
+      payload: { draft: null, hostMessage: null, cancelOrder },
+    });
+  });
+
+  it('refuses a card carrying two drafts', async () => {
+    const { call } = fake(() =>
+      inputRequired({
+        [ORDER_DRAFT_META_KEY]: DRAFT,
+        [HOST_MESSAGE_DRAFT_META_KEY]: {
+          pendingId: 'p-2',
+          messageId: '6f1c1d0e-8a0b-4c2e-9f5d-1a2b3c4d5e6f',
+          text: 'Hi',
+          reason: 'problem',
+          urgency: 'normal',
+          language: 'en',
+        },
+      }),
+    );
+    expect((await firstHalf(call)).kind).toBe('error');
   });
 
   it('refuses a card with no draft at all', async () => {

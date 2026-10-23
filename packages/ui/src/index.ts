@@ -2,6 +2,10 @@ export {
   AvailabilityPicker,
   type AvailabilityPickerLabels,
 } from './components/availability-picker/AvailabilityPicker';
+export {
+  CancelOrderCard,
+  type CancelOrderLabels,
+} from './components/cancel-order-card/CancelOrderCard';
 export { FollowUpChips } from './components/chips/FollowUpChips';
 export { ChoiceCard, type ChoiceCardLabels } from './components/choice-card/ChoiceCard';
 export { radioMove } from './components/choice-card/radio';

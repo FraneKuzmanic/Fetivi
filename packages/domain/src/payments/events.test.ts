@@ -76,10 +76,20 @@ describe('parseStripeEvent', () => {
     }
   });
 
-  it('maps refunds by payment intent, a charge only once fully refunded', () => {
+  it('maps refunds by payment intent, a charge once any amount is refunded', () => {
     expect(
       parseStripeEvent(event('charge.refunded', { refunded: true, payment_intent: 'pi_1' })),
     ).toMatchObject({ kind: 'refunded', paymentIntentId: 'pi_1', attemptId: null });
+    expect(
+      parseStripeEvent(
+        event('charge.refunded', { refunded: false, amount_refunded: 500, payment_intent: 'pi_1' }),
+      ),
+    ).toMatchObject({ kind: 'refunded', paymentIntentId: 'pi_1' });
+    expect(
+      parseStripeEvent(
+        event('charge.refunded', { refunded: false, amount_refunded: 0, payment_intent: 'pi_1' }),
+      ),
+    ).toEqual({ kind: 'ignored' });
     expect(
       parseStripeEvent(event('charge.refunded', { refunded: false, payment_intent: 'pi_1' })),
     ).toEqual({ kind: 'ignored' });

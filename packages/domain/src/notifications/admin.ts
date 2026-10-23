@@ -11,10 +11,11 @@ import type { NotifyDeps, SendOutcome } from './provider/send';
  * Emails every admin about an Order, in English (the admin UI's language): a Provider tapped
  * Can't fulfil, or a pay-online Order's payment needs a human (the reason is the note of the
  * flagging OrderEvent the job names). Order facts only, no guest contact details. One delivery
- * per kind, and per flagging OrderEvent for a payment alert.
+ * per kind, and per flagging OrderEvent for a payment alert. With the back-office origin, the
+ * email links the admin Order page.
  */
 export async function sendAdminAlert(
-  deps: Pick<NotifyDeps, 'db' | 'mailer' | 'now'>,
+  deps: Pick<NotifyDeps, 'db' | 'mailer' | 'now'> & { webOrigin?: string },
   job: {
     orderId: string;
     proposalId: string;
@@ -41,6 +42,7 @@ export async function sendAdminAlert(
     .where(eq(orders.id, job.orderId));
   if (admins.length === 0 || !row) return 'skipped';
   const date = formatCivilDate(row.date, 'en');
+  const open = deps.webOrigin ? [`Open it: ${deps.webOrigin}/admin/orders/${job.orderId}`] : [];
   let subject: string;
   let text: string;
   if (job.kind === 'admin_payment_attention') {
@@ -59,6 +61,7 @@ export async function sendAdminAlert(
       `Quantity: ${row.quantity}`,
       '',
       "Check it in Stripe, on the Provider's connected account.",
+      ...open,
     ].join('\n');
   } else {
     subject = `Provider can't fulfil: ${row.offerTitle}, ${date}`;
@@ -71,6 +74,7 @@ export async function sendAdminAlert(
       `Order: ${job.orderId}`,
       '',
       'Contact the guest about an alternative.',
+      ...open,
     ].join('\n');
   }
   const key = orderJobKey(

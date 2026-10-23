@@ -6,10 +6,11 @@ import {
 } from '@modelcontextprotocol/server';
 import type { z } from 'zod';
 import { type StateCodec, stateCodec } from './request-state';
+import { answerCancelOrder, NO_CANCEL_ELICITATION, prepareCancelOrder } from './services/cancel';
 import { answerCreateOrder, NO_ELICITATION, prepareCreateOrder } from './services/create-order';
 import { clientCanElicitForm } from './services/elicitation';
-import type { createOrderInput } from './services/schemas';
-import { createOrderSpec } from './services/tools';
+import type { cancelOrderInput, createOrderInput } from './services/schemas';
+import { cancelOrderSpec, createOrderSpec } from './services/tools';
 import {
   answerSendHostMessage,
   NO_HOST_ELICITATION,
@@ -63,6 +64,14 @@ export const CONFIRM_TOOLS = {
       prepareCreateOrder(deps, identity, codec, args as z.infer<typeof createOrderInput>),
     answer: answerCreateOrder,
     noElicitation: NO_ELICITATION,
+  },
+  cancel_order: {
+    spec: cancelOrderSpec,
+    codec: (secret, spaceId) => stateCodec('cancel_order', secret, spaceId),
+    prepare: (deps, identity, codec, args) =>
+      prepareCancelOrder(deps, identity, codec, args as z.infer<typeof cancelOrderInput>),
+    answer: answerCancelOrder,
+    noElicitation: NO_CANCEL_ELICITATION,
   },
   send_host_message: {
     spec: sendHostMessageSpec,

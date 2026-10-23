@@ -369,6 +369,19 @@ button svg,
   font-size: 24px;
 }
 
+/* Seven admin items share a phone's width: a long label ends in an ellipsis, never overlaps. */
+.bottom-link {
+  min-width: 0;
+  padding: 0 2px;
+}
+
+.bottom-link > span:not(.nav-badge) {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .bottom-link[aria-current="page"] {
   color: var(--blue-600);
 }
@@ -2295,4 +2308,76 @@ html:has(.wizard-footer) {
 
 .digest-time .field {
   flex: 0 1 12rem;
+}
+
+/* --- Admin Order page (35) ------------------------------------------------------------------ */
+
+/* A destructive submit keeps the danger look, not the primary fill submits get. */
+button.danger[type="submit"] {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--white);
+}
+
+button.danger[type="submit"]:hover {
+  border-color: #912018;
+  background: #912018;
+  color: var(--white);
+}
+
+.order-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.order-facts > div {
+  display: grid;
+  gap: 2px 16px;
+}
+
+.order-facts dt {
+  color: var(--gray-500);
+  font-size: 14px;
+}
+
+.order-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 600px) {
+  .order-facts > div {
+    grid-template-columns: 11rem minmax(0, 1fr);
+  }
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.events-table {
+  width: 100%;
+  min-width: 46rem;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.events-table th {
+  padding: 8px 12px;
+  background: var(--gray-50);
+  color: var(--gray-500);
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.events-table td {
+  padding: 8px 12px;
+  border-top: 1px solid var(--gray-200);
+  vertical-align: top;
+}
+
+.events-table td:first-child {
+  white-space: nowrap;
 }

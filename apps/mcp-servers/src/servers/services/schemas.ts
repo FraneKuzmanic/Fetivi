@@ -44,6 +44,9 @@ export const createOrderInput = z.object({
     .optional()
     .describe('slotId from check_availability; required when the day has more than one start.'),
 });
+export const cancelOrderInput = z.object({
+  orderId: z.uuid().describe('An order id from list_my_orders.'),
+});
 
 const guestOffer = z.object({
   id: z.string(),
@@ -85,6 +88,12 @@ const orderSummary = z.object({
     .describe(
       'While set, the guest pays on a secure page via the Pay now button on the receipt, by this time; never paste a link.',
     ),
+  refundMinor: z
+    .number()
+    .nullable()
+    .describe(
+      'What was or will be refunded, in cents; null when nothing is refunded through Fetivi.',
+    ),
 });
 
 export const listOffersOutput = z.object({ offers: z.array(guestOffer) });
@@ -107,6 +116,10 @@ export const checkAvailabilityOutput = z.object({
 export const listMyOrdersOutput = z.object({ orders: z.array(orderSummary) });
 export const createOrderOutput = z.object({
   outcome: z.enum(['ordered', 'not_ordered']),
+  order: orderSummary.nullable(),
+});
+export const cancelOrderOutput = z.object({
+  outcome: z.enum(['cancelled', 'not_cancelled']),
   order: orderSummary.nullable(),
 });
 

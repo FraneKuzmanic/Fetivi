@@ -24,7 +24,12 @@ import { PAYMENT_LOCALES } from '../payments/vocabulary';
 import { allotmentAdapter, restoreSeats } from '../services/adapters/allotment';
 import { AdapterError } from '../services/adapters/interface';
 import { type CivilDate, endOfCivilDay, toLocalDateTime } from '../time';
-import { enqueueNotification, type OrderTimerJobData, scheduleTimer } from './timers';
+import {
+  enqueueAdapterCancel,
+  enqueueNotification,
+  type OrderTimerJobData,
+  scheduleTimer,
+} from './timers';
 import {
   actionTarget,
   nextPaymentStatus,
@@ -114,6 +119,11 @@ export interface ActionInput {
   /** The admin acting, for admin overrides. */
   actorId?: string;
   note?: string;
+  /**
+   * The refund of a captured Order, in minor units; default the full amount. Guest cancels pass
+   * the policy amount, admin overrides their own.
+   */
+  refundMinor?: number;
 }
 
 const TIMER_TRIGGERS: readonly OrderTrigger[] = [
@@ -258,19 +268,34 @@ export async function lockAttempt(
   return attempt;
 }
 
-/** Captured money must go back: Payment `captured → refund_pending`, and the refund job. */
+/**
+ * Captured money goes back: Payment `captured → refund_pending`, the amount stored on the attempt
+ * before the refund job runs (a retry sends the same amount), and the job. A refund of 0 writes
+ * only the amount: the money stays with the Provider under the policy, Payment stays `captured`.
+ */
 export async function requestRefundIn(
   tx: Tx,
   deps: OrderDeps,
   order: OrderRow,
   attempt: PaymentAttemptRow,
   meta: ChangeMeta,
+  amountMinor: number = attempt.amountMinor,
 ): Promise<TransitionOutcome> {
+  if (!Number.isInteger(amountMinor) || amountMinor < 0 || amountMinor > attempt.amountMinor) {
+    throw new OrderRuleError('invalid-input');
+  }
+  if (amountMinor === 0) {
+    await tx
+      .update(paymentAttempts)
+      .set({ refundAmountMinor: 0, updatedAt: deps.now() })
+      .where(eq(paymentAttempts.id, attempt.id));
+    return { outcome: 'unchanged', order };
+  }
   const result = await writePayment(tx, deps, order, attempt.proposalId, 'refund', meta);
   if (result.outcome === 'applied') {
     await tx
       .update(paymentAttempts)
-      .set({ refundStatus: 'pending', updatedAt: deps.now() })
+      .set({ refundStatus: 'pending', refundAmountMinor: amountMinor, updatedAt: deps.now() })
       .where(eq(paymentAttempts.id, attempt.id));
     await enqueuePaymentJob(tx, deps.queue, attempt, 'refund');
   }
@@ -278,22 +303,33 @@ export async function requestRefundIn(
 }
 
 /**
- * What a released pay-online Order does with its money: an authorization is voided, a capture
- * refunded in full (35 adds policy amounts), and a Checkout Session that may be open is expired.
+ * What a released pay-online Order does with its money: an authorization is voided in full, a
+ * Checkout Session that may be open is expired, and a capture is refunded by the cause of the
+ * release: `refundMinor` when the caller decided it (the guest's policy amount, an admin
+ * override), the full amount otherwise (Can't fulfil, an admin cancel, the payment paths).
  */
 async function afterRelease(
   tx: Tx,
   deps: OrderDeps,
   order: OrderRow,
   attempt: PaymentAttemptRow,
-  meta: ChangeMeta,
+  meta: ActionInput,
 ): Promise<OrderRow> {
   switch (order.paymentStatus) {
     case 'authorized':
       await enqueuePaymentJob(tx, deps.queue, attempt, 'void');
       return order;
     case 'captured':
-      return (await requestRefundIn(tx, deps, order, attempt, meta)).order;
+      return (
+        await requestRefundIn(
+          tx,
+          deps,
+          order,
+          attempt,
+          meta,
+          meta.refundMinor ?? attempt.amountMinor,
+        )
+      ).order;
     case 'none': {
       const mayBeOpen = attempt.sessionStatus === null || attempt.sessionStatus === 'open';
       if (attempt.createSentAt && mayBeOpen) {
@@ -425,6 +461,13 @@ export async function releaseIn(
   const attempt =
     result.order.paymentMode === 'online' ? await lockAttempt(tx, input.proposalId) : undefined;
   await releaseHold(tx, deps, input.proposalId);
+  if (action === 'cancel' && result.order.availabilityMode === 'live') {
+    // The engine's booking is cancelled by a job, outside this transaction.
+    await enqueueAdapterCancel(tx, deps.queue, {
+      orderId: order.id,
+      proposalId: input.proposalId,
+    });
+  }
   if (!attempt) return result;
   return { outcome: 'applied', order: await afterRelease(tx, deps, result.order, attempt, input) };
 }

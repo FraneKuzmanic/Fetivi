@@ -126,6 +126,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'check_availability',
       'list_my_orders',
       'create_order',
+      'cancel_order',
       'get_plan',
       'update_plan',
       'get_about_me',
@@ -148,6 +149,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'check_availability',
       'list_my_orders',
       'create_order',
+      'cancel_order',
       'get_plan',
       'update_plan',
       'get_about_me',
@@ -162,6 +164,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'send_host_message',
       'web_fallback_search',
       'list_my_orders',
+      'cancel_order',
       'get_plan',
       'update_plan',
       'get_about_me',
@@ -179,6 +182,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'check_availability',
       'list_my_orders',
       'create_order',
+      'cancel_order',
       'get_plan',
       'update_plan',
       'get_about_me',
@@ -196,6 +200,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'get_transport_notes',
       'web_fallback_search',
       'list_my_orders',
+      'cancel_order',
       'get_plan',
       'get_about_me',
     ],
@@ -435,6 +440,43 @@ describe('the pending record', () => {
         errorText: 'The confirmation expired; nothing was booked. Offer to try again.',
       });
       expect((await pendingRow(second.draft?.pendingId ?? ''))?.state).toBe('released');
+    },
+  );
+});
+
+describe('cancel_order', () => {
+  it.each(['mcp', 'inprocess'] as const)(
+    'is paused on its card and cancels on the tap (%s)',
+    async (transport) => {
+      const s = await seeded();
+      const tools = await open(transport, s.ctx);
+      const book = await pausedCall(tools, s.args, 'call-book');
+      const asked = card(await tools.firstHalf(book));
+      const ordered = await tools.answer({
+        ...book,
+        requestState: asked.requestState,
+        answer: { action: 'accept', content: CONTACT },
+      });
+      const orderId = (ordered as { output: { order: { id: string } } }).output.order.id;
+
+      const call = await pausedCall(tools, { orderId }, 'call-cancel', 'cancel_order');
+      const cancelCard = card(await tools.firstHalf(call));
+      expect(cancelCard).toMatchObject({
+        draft: null,
+        hostMessage: null,
+        cancelOrder: { orderId, paymentMode: 'direct', refundMinor: null },
+        requestedSchema: { type: 'object', properties: {} },
+      });
+      const done = await tools.answer({
+        ...call,
+        requestState: cancelCard.requestState,
+        answer: { action: 'accept', content: {} },
+      });
+      expect(done).toMatchObject({
+        kind: 'output',
+        output: { outcome: 'cancelled', order: { id: orderId, status: 'cancelled' } },
+      });
+      expect((await pendingRow(cancelCard.cancelOrder?.pendingId ?? ''))?.state).toBe('consumed');
     },
   );
 });

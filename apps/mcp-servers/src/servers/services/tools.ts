@@ -7,6 +7,8 @@ import {
 import { type GuestToolSpec, guestTool } from '../tool';
 import { offerScope, refusing } from './create-order';
 import {
+  cancelOrderInput,
+  cancelOrderOutput,
   checkAvailabilityInput,
   checkAvailabilityOutput,
   createOrderInput,
@@ -46,6 +48,29 @@ export const createOrderSpec: GuestToolSpec = guestTool({
     },
   },
   listed: scoped('orders:create'),
+  confirm: true,
+});
+
+/** cancel_order: its two halves live in cancel.ts, since the guest confirms between them. */
+export const cancelOrderSpec: GuestToolSpec = guestTool({
+  name: 'cancel_order',
+  config: {
+    title: 'Cancel order',
+    description:
+      "Cancel one of the guest's orders. The guest sees the cancellation policy and the refund on a card and confirms; nothing changes until they tap Cancel booking. Never promise a refund amount yourself, and never say it is cancelled without a `cancelled` outcome.",
+    scope: 'orders:manage',
+    inputSchema: cancelOrderInput,
+    outputSchema: cancelOrderOutput,
+    // It ends an Order and may move money, after the guest's tap. Cancelling a cancelled Order
+    // changes nothing more. It reaches the Provider (and its booking system for a live Offer).
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+  },
+  listed: scoped('orders:manage'),
   confirm: true,
 });
 
@@ -101,4 +126,5 @@ export const servicesTools: readonly GuestToolSpec[] = [
     },
   }),
   createOrderSpec,
+  cancelOrderSpec,
 ];

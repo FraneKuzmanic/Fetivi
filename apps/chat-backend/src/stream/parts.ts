@@ -52,6 +52,10 @@ const candidate = (toolName: string, value: unknown): unknown => {
       // Only a real Order gets a receipt; "not ordered" is told by the model's words.
       if (!isRecord(value) || value.outcome !== 'ordered') return null;
       return { name: 'receipt-card', payload: { order: value.order } };
+    case 'cancel_order':
+      // The cancelled Order's receipt shows the refund; "not cancelled" is the model's words.
+      if (!isRecord(value) || value.outcome !== 'cancelled') return null;
+      return { name: 'receipt-card', payload: { order: value.order } };
     case 'send_host_message':
       // Only a sent message gets its card; "not sent" is told by the model's words.
       if (!isRecord(value) || value.outcome !== 'sent') return null;

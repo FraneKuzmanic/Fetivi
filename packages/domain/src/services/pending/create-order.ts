@@ -100,6 +100,8 @@ export interface OrderSummary {
   createdAt: string;
   /** ISO instant the guest must pay by; set only while a pay-online checkout is open. */
   payBy: string | null;
+  /** What was or will be refunded, in cents; null when nothing is refunded through Fetivi. */
+  refundMinor: number | null;
 }
 
 const CIVIL_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -473,6 +475,7 @@ async function summaries(
     priceUnit: order.priceUnit,
     createdAt: order.createdAt.toISOString(),
     payBy: attempt && checkoutOpen(order, attempt, now) ? attempt.expiresAt.toISOString() : null,
+    refundMinor: attempt?.refundAmountMinor ?? null,
   }));
 }
 

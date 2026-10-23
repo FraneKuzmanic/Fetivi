@@ -12,6 +12,7 @@ import {
   isMcpAppPart,
   messageText,
 } from './chat-api';
+import { CancelOrderPart, isCancelOrderCard } from './render/CancelOrderPart';
 import { ComponentPart } from './render/ComponentPart';
 import { type CardAnswer, ConfirmationPart } from './render/ConfirmationPart';
 import { HostMessagePart, isHostMessageCard } from './render/HostMessagePart';
@@ -60,10 +61,13 @@ function cardsOf(message: UIMessage, busy: boolean): Card[] {
 export const asksToConfirm = (message: UIMessage | undefined) =>
   message !== undefined && cardsOf(message, false).length > 0;
 
-/** The announcement of an answer's open card: a host message or a booking. */
-function cardShownKey(message: UIMessage): 'hostMessage.cardShown' | 'order.cardShown' | null {
+/** The announcement of an answer's open card: a cancellation, a host message or a booking. */
+function cardShownKey(
+  message: UIMessage,
+): 'cancelOrder.cardShown' | 'hostMessage.cardShown' | 'order.cardShown' | null {
   const [card] = cardsOf(message, false);
   if (!card) return null;
+  if (isCancelOrderCard(card.card)) return 'cancelOrder.cardShown';
   return isHostMessageCard(card.card) ? 'hostMessage.cardShown' : 'order.cardShown';
 }
 
@@ -221,6 +225,16 @@ export function MessageList({
             if ('card' in segment) {
               // An open card acts only on the newest answer while the guest can reply.
               if (segment.state === 'open' && !latest) return null;
+              if (isCancelOrderCard(segment.card)) {
+                return (
+                  <CancelOrderPart
+                    key={segment.key}
+                    data={segment.card}
+                    state={segment.state}
+                    onAnswer={onAnswer}
+                  />
+                );
+              }
               if (isHostMessageCard(segment.card)) {
                 return (
                   <HostMessagePart

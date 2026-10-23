@@ -1,7 +1,11 @@
 import {
   allotmentSlots,
+  CANCEL_DRAFT_META_KEY,
+  createJobQueue,
+  createOrder,
   fromLocalDateTime,
   GUEST_CONFIRMS_META_KEY,
+  paymentAttempts,
   QUEUES,
   type SpaceContext,
 } from '@fetivi/domain';
@@ -87,13 +91,13 @@ async function resume(
   args: Record<string, unknown>,
   requestState: string,
   answer: Answer,
-  options: Parameters<typeof connect>[1] = {},
+  options: Parameters<typeof connect>[1] & { tool?: string } = {},
 ) {
   const client = await connect(await ctxOf(g), options);
   try {
     return await client.callTool(
       {
-        name: 'create_order',
+        name: options.tool ?? 'create_order',
         arguments: args,
         inputResponses: { confirm: answer },
         requestState,
@@ -231,13 +235,14 @@ describe('tools/list per situation', () => {
     return tools;
   };
 
-  it('in a destination: four tools in order, with honest annotations', async () => {
+  it('in a destination: five tools in order, with honest annotations', async () => {
     const tools = await names(guest);
     expect(tools.map((x) => x.name)).toEqual([
       'list_offers',
       'check_availability',
       'list_my_orders',
       'create_order',
+      'cancel_order',
     ]);
     for (const read of tools.slice(0, 3)) expect(read.annotations?.readOnlyHint).toBe(true);
     expect(tools[3]?.annotations).toEqual({
@@ -246,23 +251,30 @@ describe('tools/list per situation', () => {
       idempotentHint: false,
       openWorldHint: true,
     });
+    expect(tools[4]?.annotations).toEqual({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    });
     for (const tool of tools) expect(tool.outputSchema).toBeDefined();
-    // Only the guest-confirmed write carries the pause flag the chat backend reads.
+    // Only the guest-confirmed writes carry the pause flag the chat backend reads.
     expect(tools.map((x) => x._meta?.[GUEST_CONFIRMS_META_KEY] === true)).toEqual([
       false,
       false,
       false,
       true,
+      true,
     ]);
   });
 
-  it('outside a destination: four tools with own Offers, else only list_my_orders', async () => {
-    expect((await names(outsider)).map((x) => x.name)).toHaveLength(4);
-    expect((await names(lonely)).map((x) => x.name)).toEqual(['list_my_orders']);
+  it('outside a destination: five tools with own Offers, else only the order tools', async () => {
+    expect((await names(outsider)).map((x) => x.name)).toHaveLength(5);
+    expect((await names(lonely)).map((x) => x.name)).toEqual(['list_my_orders', 'cancel_order']);
   });
 
-  it('after checkout: only list_my_orders', async () => {
-    expect((await names(ended)).map((x) => x.name)).toEqual(['list_my_orders']);
+  it('after checkout: only list_my_orders and cancel_order', async () => {
+    expect((await names(ended)).map((x) => x.name)).toEqual(['list_my_orders', 'cancel_order']);
   });
 });
 
@@ -517,5 +529,200 @@ describe('create_order', () => {
     });
     expect(await refused(resumed)).toBe(true);
     expect(await ordersOf(offer.boat)).toHaveLength(ordersBefore);
+  });
+});
+
+describe('cancel_order', () => {
+  type CancelDraft = {
+    pendingId: string;
+    orderId: string;
+    cancellationPolicy: string;
+    refundMinor: number | null;
+    refundPercent: number | null;
+  };
+  const cancelArgs = (orderId: string) => ({ orderId });
+  const tap: Answer = { action: 'accept', content: {} };
+  const asCancel = { tool: 'cancel_order' };
+
+  /** A confirmed pay-direct boat Order of the guest, booked through create_order. */
+  async function booked(): Promise<string> {
+    const asked = await firstHalf(guest, boatArgs());
+    const done = await resume(guest, boatArgs(), asked.requestState, accept);
+    return (done.structuredContent as { order: { id: string } }).order.id;
+  }
+
+  /** Turns an Order into a captured pay-online one of 50.00 EUR, 50 % after the cutoff. */
+  async function captured(orderId: string, freeCancelHoursBefore = 24) {
+    const order = await orderById(orderId);
+    if (!order?.currentProposalId) throw new Error('no proposal');
+    await t.db.insert(paymentAttempts).values({
+      orderId,
+      proposalId: order.currentProposalId,
+      proposalVersion: 1,
+      stripeAccountId: 'acct_test',
+      amountMinor: 5000,
+      currency: 'EUR',
+      applicationFeeMinor: 500,
+      productName: 'Blue Lagoon boat trip',
+      locale: 'en',
+      expiresAt: new Date(clock.getTime() + 30 * 60_000),
+      paymentIntentId: `pi_${orderId}`,
+      intentStatus: 'succeeded',
+    });
+    await t.testDb.pool.query(
+      `update orders set payment_mode = 'online', payment_status = 'captured',
+         free_cancel_hours_before = $2, refund_percent_after = 50 where id = $1`,
+      [orderId, freeCancelHoursBefore],
+    );
+  }
+
+  async function asked(g: SeededGuestUnit, orderId: string) {
+    const result = (await call(g, 'cancel_order', cancelArgs(orderId))) as unknown as InputRequired;
+    expect(result.resultType).toBe('input_required');
+    const params = result.inputRequests.confirm?.params as {
+      message: string;
+      requestedSchema: { properties: Record<string, unknown> };
+      _meta: Record<string, CancelDraft>;
+    };
+    return { result, params, draft: params._meta[CANCEL_DRAFT_META_KEY] as CancelDraft };
+  }
+
+  const attemptOf = (orderId: string) =>
+    t.db.query.paymentAttempts.findFirst({ where: (a, { eq }) => eq(a.orderId, orderId) });
+  const cancelEvents = async (orderId: string) =>
+    (
+      await t.db.query.orderEvents.findMany({ where: (e, { eq }) => eq(e.orderId, orderId) })
+    ).filter((e) => e.toStatus === 'cancelled' && e.fromStatus !== 'cancelled');
+  const setOrder = (orderId: string, set: string) =>
+    t.testDb.pool.query(`update orders set ${set} where id = $1`, [orderId]);
+
+  it('shows the policy and the refund from the rules; the tap refunds that amount', async () => {
+    const id = await booked();
+    // A 720 h rule: the cutoff has passed, so the policy gives 50 %.
+    await captured(id, 720);
+    const { result, params, draft } = await asked(guest, id);
+    expect(params.requestedSchema.properties).toEqual({});
+    expect(draft).toMatchObject({ orderId: id, refundMinor: 2500, refundPercent: 50 });
+    expect(draft.cancellationPolicy.length).toBeGreaterThan(0);
+    expect(params.message).toContain('You get back 25.00 EUR (50 %)');
+    expect((await orderById(id))?.status).toBe('confirmed');
+
+    const done = await resume(guest, cancelArgs(id), result.requestState, tap, asCancel);
+    expect(done.structuredContent).toMatchObject({
+      outcome: 'cancelled',
+      order: { id, status: 'cancelled', paymentStatus: 'refund_pending', refundMinor: 2500 },
+    });
+    expect(await attemptOf(id)).toMatchObject({ refundStatus: 'pending', refundAmountMinor: 2500 });
+  });
+
+  it('a pay-direct Order cancels with no refund line', async () => {
+    const id = await booked();
+    const { result, params, draft } = await asked(guest, id);
+    expect(draft.refundMinor).toBeNull();
+    expect(params.message).toContain('paid directly to the provider');
+    const done = await resume(guest, cancelArgs(id), result.requestState, tap, asCancel);
+    expect(done.structuredContent).toMatchObject({
+      outcome: 'cancelled',
+      order: { status: 'cancelled', paymentStatus: 'none' },
+    });
+  });
+
+  it('decline releases the card; nothing is cancelled', async () => {
+    const id = await booked();
+    const { result } = await asked(guest, id);
+    const declined = await resume(
+      guest,
+      cancelArgs(id),
+      result.requestState,
+      { action: 'cancel' },
+      asCancel,
+    );
+    expect(declined.structuredContent).toEqual({ outcome: 'not_cancelled', order: null });
+    const later = await resume(guest, cancelArgs(id), result.requestState, tap, asCancel);
+    expect(later.isError).toBe(true);
+    expect((await orderById(id))?.status).toBe('confirmed');
+  });
+
+  it('a replayed tap gives the same outcome and one cancel event', async () => {
+    const id = await booked();
+    await captured(id);
+    const { result } = await asked(guest, id);
+    const first = await resume(guest, cancelArgs(id), result.requestState, tap, asCancel);
+    const second = await resume(guest, cancelArgs(id), result.requestState, tap, asCancel);
+    expect(second.structuredContent).toEqual(first.structuredContent);
+    expect(await cancelEvents(id)).toHaveLength(1);
+    // A new card for the cancelled Order is refused.
+    const again = await call(guest, 'cancel_order', cancelArgs(id));
+    expect(errorText(again)).toBe("This order can't be cancelled any more.");
+  });
+
+  it("another space's Order is not permitted", async () => {
+    const id = await booked();
+    const result = await call(neighbour, 'cancel_order', cancelArgs(id));
+    expect(result).toMatchObject({ isError: true, content: [{ text: 'not permitted' }] });
+  });
+
+  it('after checkout: a confirmed Order is refused, an unresolved one is cancelled', async () => {
+    const queue = createJobQueue(t.boss);
+    const date = plusDays(ended.stay.checkIn, 1);
+    const make = async () =>
+      (
+        await createOrder(
+          { db: t.db, queue, now: () => clock },
+          {
+            spaceId: ended.spaceId,
+            offerId: offer.sunset,
+            date,
+            quantity: 1,
+            contact: { email: 'guest@example.test' },
+          },
+        )
+      ).order;
+    const waiting = await make();
+    expect(waiting.status).toBe('pending_provider');
+    const settled = await make();
+    await setOrder(settled.id, "status = 'confirmed'");
+
+    const refusedCall = await call(ended, 'cancel_order', cancelArgs(settled.id));
+    expect(errorText(refusedCall)).toContain('After checkout');
+    const { result } = await asked(ended, waiting.id);
+    const out = await resume(ended, cancelArgs(waiting.id), result.requestState, tap, asCancel);
+    expect(out.structuredContent).toMatchObject({ outcome: 'cancelled' });
+  });
+
+  it('a refund that changed since the card re-asks with the new amount', async () => {
+    const id = await booked();
+    await captured(id);
+    const { result, draft } = await asked(guest, id);
+    expect(draft).toMatchObject({ refundMinor: 5000, refundPercent: 100 });
+    // The cutoff passes while the card is open.
+    await setOrder(id, 'free_cancel_hours_before = 720');
+    const again = (await resume(
+      guest,
+      cancelArgs(id),
+      result.requestState,
+      tap,
+      asCancel,
+    )) as unknown as InputRequired;
+    expect(again.resultType).toBe('input_required');
+    const params = again.inputRequests.confirm?.params as { _meta: Record<string, CancelDraft> };
+    const next = params._meta[CANCEL_DRAFT_META_KEY];
+    expect(next).toMatchObject({ refundMinor: 2500, refundPercent: 50 });
+    expect((await orderById(id))?.status).toBe('confirmed');
+    const done = await resume(guest, cancelArgs(id), again.requestState, tap, asCancel);
+    expect(done.structuredContent).toMatchObject({ order: { refundMinor: 2500 } });
+  });
+
+  it("one server verifies both tools' states; one tool's state never completes the other", async () => {
+    const id = await booked();
+    const order = await firstHalf(guest, boatArgs());
+    const crossed = await resume(guest, cancelArgs(id), order.requestState, tap, asCancel);
+    expect(crossed).toMatchObject({ isError: true, content: [{ text: 'not permitted' }] });
+    const { result } = await asked(guest, id);
+    const other = await resume(guest, boatArgs(), result.requestState, accept);
+    expect(other).toMatchObject({ isError: true, content: [{ text: 'not permitted' }] });
+    expect((await orderById(id))?.status).toBe('confirmed');
+    const done = await resume(guest, boatArgs(), order.requestState, accept);
+    expect((done.structuredContent as { outcome: string }).outcome).toBe('ordered');
   });
 });

@@ -23,6 +23,7 @@ import type {
   PriceUnit,
   ProviderLanguage,
 } from '@fetivi/domain/offer-vocabulary';
+import type { OrderStatus, OrderTrigger, PaymentStatus } from '@fetivi/domain/order-vocabulary';
 import type {
   FindingKind,
   FindingStatus,
@@ -486,6 +487,48 @@ export interface ReconciliationFinding {
   resolvedAt: string | null;
 }
 
+export interface AdminOrderEvent {
+  id: number;
+  at: string;
+  /** Null on creation. */
+  from: OrderStatus | null;
+  to: OrderStatus;
+  fromPayment: PaymentStatus | null;
+  toPayment: PaymentStatus;
+  trigger: OrderTrigger;
+  note: string | null;
+  /** The admin who acted, for admin actions. */
+  actorEmail: string | null;
+}
+
+/** One Order on the admin page, with what the admin may still do. */
+export interface AdminOrder {
+  id: string;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMode: PaymentMode;
+  availabilityMode: AvailabilityMode;
+  offerTitle: string;
+  providerName: string | null;
+  date: string;
+  startsAt: string | null;
+  quantity: number;
+  priceMinor: number | null;
+  currency: string;
+  cancellationPolicy: string;
+  freeCancelHoursBefore: number;
+  refundPercentAfter: number;
+  /** What the snapshotted rules would refund on a cancel now; null with nothing captured. */
+  policyRefundMinor: number | null;
+  /** The captured amount, when a cancel refunds money and an override applies. */
+  paidAmountMinor: number | null;
+  /** The refund decided on the attempt; null until one is. */
+  refundAmountMinor: number | null;
+  canCancel: boolean;
+  canRefund: boolean;
+  events: AdminOrderEvent[];
+}
+
 export interface AdminPropertyRow {
   id: string;
   name: string;
@@ -567,6 +610,14 @@ export const admin = {
   properties: (status: 'pending' | 'approved') =>
     api<{ properties: AdminPropertyRow[] }>(`/api/admin/properties?status=${status}`),
   approve: (id: string) => post(`/api/admin/properties/${id}/approve`),
+};
+
+export const adminOrders = {
+  get: (id: string) => api<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}`),
+  cancel: (id: string, body: { refundMinor?: number; note?: string }) =>
+    post<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}/cancel`, body),
+  refund: (id: string, body: { refundMinor: number; note?: string }) =>
+    post<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}/refund`, body),
 };
 
 export const reconciliation = {

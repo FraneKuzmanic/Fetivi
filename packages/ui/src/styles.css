@@ -642,6 +642,44 @@
   font-weight: 500;
 }
 
+/* Cancel card: the refund line leads, the policy text follows quietly */
+
+.fv-cancel-refund {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--blue-600);
+}
+
+.fv-cancel-amount {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.fv-cancel-policy h4 {
+  margin: 0 0 0.25rem;
+  color: var(--gray-500);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.fv-cancel-policy p {
+  margin: 0;
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.fv-cancel-yes {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-color: var(--danger);
+  background: var(--danger);
+}
+
 /* Receipt and status */
 
 .fv-receipt {

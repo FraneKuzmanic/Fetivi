@@ -60,6 +60,7 @@ const intent = z.object({
 
 const charge = z.object({
   refunded: z.boolean().nullish(),
+  amount_refunded: z.number().nullish(),
   payment_intent: z.union([z.string(), z.object({ id: z.string() })]).nullish(),
 });
 
@@ -129,7 +130,14 @@ export function parseStripeEvent(json: unknown): PaymentEvent | { kind: 'ignored
       const c = charge.safeParse(object);
       const paymentIntentId = c.success ? idOf(c.data.payment_intent) : null;
       if (!c.success || !paymentIntentId) return { kind: 'ignored' };
-      if (type === 'charge.refunded' && c.data.refunded !== true) return { kind: 'ignored' };
+      // A partial refund arrives with `refunded: false`. Fetivi issues one refund per attempt, so
+      // any refunded amount means that refund succeeded.
+      if (
+        type === 'charge.refunded' &&
+        !((c.data.amount_refunded ?? 0) > 0 || c.data.refunded === true)
+      ) {
+        return { kind: 'ignored' };
+      }
       return {
         ...base,
         kind: type === 'charge.refunded' ? 'refunded' : 'refund_failed',

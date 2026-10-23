@@ -155,6 +155,7 @@ const ORDER = {
   priceUnit: 'person',
   createdAt: '2026-10-21T10:00:00.000Z',
   payBy: null,
+  refundMinor: null,
 };
 
 describe('booking components', () => {
@@ -191,6 +192,15 @@ describe('booking components', () => {
       payload: { order: ORDER },
     });
     expect(componentFor('create_order', { outcome: 'not_ordered', order: null })).toBeNull();
+  });
+
+  it('shows the receipt of a cancelled Order, nothing for one kept', () => {
+    const cancelled = { ...ORDER, status: 'cancelled', refundMinor: 4500 };
+    expect(componentFor('cancel_order', { outcome: 'cancelled', order: cancelled })).toEqual({
+      name: 'receipt-card',
+      payload: { order: cancelled },
+    });
+    expect(componentFor('cancel_order', { outcome: 'not_cancelled', order: null })).toBeNull();
   });
 });
 

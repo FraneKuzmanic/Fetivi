@@ -8,6 +8,7 @@ import type { JobDefinition } from '../runner';
 import { type DailyTipsDeps, dailyTipsJob } from './daily-tips';
 import { guestNotifyJob, guestRemindersJob } from './guest-notify';
 import { hostDigestsJob, hostNotifyJob } from './host-notify';
+import { orderAdapterCancelJob } from './orders/adapter-cancel';
 import { orderNotifyJob } from './orders/notify';
 import { type OrderPaymentJobDeps, orderPaymentJob } from './orders/payment';
 import { orderTimerJob } from './orders/timer';
@@ -46,6 +47,7 @@ export function createJobs(
     orderTimerJob(deps) as JobDefinition,
     orderNotifyJob(deps) as JobDefinition,
     orderPaymentJob(deps) as JobDefinition,
+    orderAdapterCancelJob(deps) as JobDefinition,
     pollCalendarsJob(deps),
     pollCalendarJob(deps) as JobDefinition,
     stayNotifyJob(deps) as JobDefinition,

@@ -390,6 +390,7 @@ const ORDER: OrderSummaryPayload = {
   priceUnit: 'person',
   createdAt: '2026-10-21T10:00:00.000Z',
   payBy: null,
+  refundMinor: null,
 };
 
 const RECEIPT: ReceiptLabels = {
@@ -451,6 +452,20 @@ describe('ReceiptCard', () => {
     expect(host.querySelector('button')).toBeNull();
     mount(<ReceiptCard order={{ ...online, payBy: null }} labels={RECEIPT} onPay={onPay} />);
     expect(host.querySelector('button')).toBeNull();
+  });
+
+  it('shows the refund next to its status once one is decided', () => {
+    const refunded = {
+      ...ORDER,
+      status: 'cancelled' as const,
+      paymentMode: 'online' as const,
+      paymentStatus: 'refund_pending' as const,
+      refundMinor: 4500,
+    };
+    mount(<ReceiptCard order={refunded} labels={RECEIPT} />);
+    expect(host.textContent).toContain('refund_pending · 45 EUR');
+    mount(<ReceiptCard order={{ ...refunded, paymentStatus: 'captured' }} labels={RECEIPT} />);
+    expect(host.textContent).not.toContain('45 EUR');
   });
 
   it('shows a notice line', () => {

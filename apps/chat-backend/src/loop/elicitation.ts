@@ -1,4 +1,6 @@
 import {
+  CANCEL_DRAFT_META_KEY,
+  type CancelOrderDraft,
   CONFIRM_KEY,
   type CreateOrderDraft,
   HANDOFF_LIMITS,
@@ -9,6 +11,7 @@ import {
   type OrderSummary,
 } from '@fetivi/domain';
 import {
+  type CancelOrderDraftPayload,
   type ElicitationPayload,
   elicitationPayload,
   type HostMessageDraftPayload,
@@ -35,7 +38,8 @@ const _cardsMatch: [
   Same<OrderDraft, CreateOrderDraft & { pendingId: string }>,
   Same<OrderSummaryPayload, OrderSummary>,
   Same<HostMessageDraftPayload, HostMessageDraft & { pendingId: string }>,
-] = [true, true, true];
+  Same<CancelOrderDraftPayload, CancelOrderDraft & { pendingId: string }>,
+] = [true, true, true, true];
 void _cardsMatch;
 
 /**
@@ -106,6 +110,7 @@ export function toOutcome(
       requestState: result.requestState,
       draft: meta[ORDER_DRAFT_META_KEY] ?? null,
       hostMessage: meta[HOST_MESSAGE_DRAFT_META_KEY] ?? null,
+      cancelOrder: meta[CANCEL_DRAFT_META_KEY] ?? null,
     });
     return parsed.success
       ? { kind: 'ask', payload: parsed.data }

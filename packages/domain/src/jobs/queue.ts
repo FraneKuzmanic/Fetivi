@@ -10,6 +10,7 @@ export const QUEUES = {
   orderTimer: 'order-timer',
   orderNotify: 'order-notify',
   orderPayment: 'order-payment',
+  orderAdapterCancel: 'order-adapter-cancel',
   pollCalendars: 'poll-calendars',
   pollCalendar: 'poll-calendar',
   stayNotify: 'stay-notify',
@@ -42,6 +43,8 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   orderNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
   // Stripe calls under idempotency keys; a retry replays the same request.
   orderPayment: { retryLimit: 8, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
+  // A Provider system's cancel, idempotent per the adapter contract; retried like a payment call.
+  orderAdapterCancel: { retryLimit: 8, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
   // The cron fan-out; the next slot runs again anyway.
   pollCalendars: { retryLimit: 1, expireInSeconds: 120 },
   // One feed; a failed fetch is recorded on the feed, so retries cover crashes only.

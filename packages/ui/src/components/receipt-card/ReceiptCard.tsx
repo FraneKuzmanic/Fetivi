@@ -55,6 +55,9 @@ export const Status = ({ tone, text }: { tone: Tone; text: string }) => (
   </span>
 );
 
+/** The refund's amount is shown with its status once one is decided. */
+const REFUND_SHOWN: readonly PaymentStatus[] = ['refund_pending', 'refunded'];
+
 /** One Order, read-only: in chat after the guest's tap, and in My trip. */
 export function ReceiptCard({
   order,
@@ -88,6 +91,9 @@ export function ReceiptCard({
               tone={PAYMENT_TONE[order.paymentStatus]}
               text={labels.paymentStatus(order.paymentStatus, order.paymentMode)}
             />
+            {order.refundMinor !== null && REFUND_SHOWN.includes(order.paymentStatus) && (
+              <> · {labels.price(order.refundMinor, order.currency)}</>
+            )}
           </dd>
         </div>
         <div>

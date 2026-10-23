@@ -21,13 +21,23 @@ export interface OrderNotifyJobData {
   eventId?: number;
 }
 
-/** The operation part of an Order job's key: a timer, a notification or a payment job (33). */
+/** Ids only: the job reads the Order and its reference itself. */
+export interface OrderAdapterCancelJobData {
+  orderId: string;
+  proposalId: string;
+}
+
+/**
+ * The operation part of an Order job's key: a timer, a notification, a payment job (33) or the
+ * Provider system's cancel (35).
+ */
 export type OrderJobOperation =
   | TimerOperation
   | `${TimerOperation}:${string}`
   | `notify:${OrderNotification}`
   | `notify:${OrderNotification}:${number}`
-  | `payment:${string}`;
+  | `payment:${string}`
+  | 'adapter-cancel';
 
 export function orderJobKey(
   orderId: string,
@@ -60,6 +70,16 @@ export async function scheduleTimer(
     keySuffix === undefined ? data.operation : `${data.operation}:${keySuffix}`;
   const id = orderJobId(data.orderId, data.proposalId, operation);
   await queue.send(QUEUES.orderTimer, data, tx, { id, startAfter: at });
+}
+
+/** Enqueues the live engine's cancel inside `tx`, once per Order and proposal. */
+export async function enqueueAdapterCancel(
+  tx: Executor,
+  queue: JobQueue,
+  data: OrderAdapterCancelJobData,
+): Promise<void> {
+  const id = orderJobId(data.orderId, data.proposalId, 'adapter-cancel');
+  await queue.send(QUEUES.orderAdapterCancel, data, tx, { id });
 }
 
 /** Enqueues a notification inside `tx`, once per Order, proposal and kind (and `eventId`). */

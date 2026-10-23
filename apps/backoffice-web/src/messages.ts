@@ -47,6 +47,9 @@ const MESSAGES: Record<string, string> = {
   'payments-not-configured': 'Online payments are not set up on this server (no Stripe key).',
   'stripe-unavailable': 'Stripe did not answer. Please try again in a minute.',
   'stripe-rejected': 'Stripe refused the request. Check the Provider details and try again.',
+  'not-cancellable': 'This Order can no longer be cancelled. Reload the page to see its status.',
+  'not-refundable':
+    'This Order cannot be refunded here: it already has a refund, or nothing is captured. Further refunds are made in the Provider’s Stripe dashboard.',
 };
 
 export function messageFor(code: string): string {

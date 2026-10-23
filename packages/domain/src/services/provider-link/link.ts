@@ -140,7 +140,7 @@ export async function acknowledgeOrder(
 
 /**
  * Can't fulfil: a Provider cancellation of the terms the page showed. The machine cancels the
- * Order, returns the seat and alerts the admin. Refunds are ticket 35.
+ * Order, returns the seat, refunds a capture in full and alerts the admin.
  */
 export async function cannotFulfil(deps: OrderDeps, ref: ProposalRef): Promise<TransitionOutcome> {
   const [order] = await deps.db.select().from(orders).where(eq(orders.id, ref.orderId));

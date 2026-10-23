@@ -121,6 +121,8 @@ export const orderSummary = z.object({
   createdAt: z.string(),
   /** Defaults so receipts stored before pay-online (33) still parse. */
   payBy: z.string().nullable().default(null),
+  /** What was or will be refunded, in cents; null when nothing is refunded through Fetivi. */
+  refundMinor: z.number().int().nullable().default(null),
 });
 
 export const receiptCard = z.object({ order: orderSummary });
@@ -289,6 +291,27 @@ export const hostMessageDraft = z.object({
   language: z.enum(GUEST_LANGUAGES),
 });
 
+/** The stored cancel_order draft the cancel card shows: the policy and the refund it gives. */
+export const cancelOrderDraft = z.object({
+  pendingId: z.string().min(1),
+  orderId: z.string().min(1),
+  proposalId: z.string().min(1),
+  offerTitle: z.string(),
+  language: z.enum(GUEST_LANGUAGES),
+  date: z.string(),
+  startsAtLocal: z.string().nullable(),
+  quantity: z.number().int(),
+  paymentMode: z.enum(PAYMENT_MODES),
+  paymentStatus: z.enum(PAYMENT_STATUSES),
+  priceMinor: z.number().int().nullable(),
+  currency: z.string(),
+  cancellationPolicy: z.string(),
+  refundMinor: z.number().int().nullable(),
+  refundPercent: z.number().int().nullable(),
+  freeUntil: z.string().nullable(),
+  freeUntilLocal: z.string().nullable(),
+});
+
 /**
  * A paused write tool's confirmation: the server's form (message and schema), the stored draft
  * and the opaque `requestState`, which the backend sends back byte for byte.
@@ -317,11 +340,15 @@ export const elicitationPayload = z
       })
       .passthrough(),
     requestState: z.string().min(1),
-    /** create_order's draft. Exactly one of `draft` and `hostMessage` is set. */
+    /** create_order's draft. Exactly one of `draft`, `hostMessage` and `cancelOrder` is set. */
     draft: orderDraft.nullable().default(null),
     hostMessage: hostMessageDraft.nullable().default(null),
+    cancelOrder: cancelOrderDraft.nullable().default(null),
   })
-  .refine((p) => (p.draft === null) !== (p.hostMessage === null), 'Exactly one draft');
+  .refine(
+    (p) => [p.draft, p.hostMessage, p.cancelOrder].filter((d) => d !== null).length === 1,
+    'Exactly one draft',
+  );
 
 export { INBOX_PART_TYPE };
 
@@ -418,6 +445,7 @@ export type OrderSummaryPayload = z.infer<typeof orderSummary>;
 export type OrderDraft = z.infer<typeof orderDraft>;
 export type ElicitationPayload = z.infer<typeof elicitationPayload>;
 export type HostMessageDraftPayload = z.infer<typeof hostMessageDraft>;
+export type CancelOrderDraftPayload = z.infer<typeof cancelOrderDraft>;
 export type HostMessageSentPayload = z.infer<typeof hostMessageSent>;
 export type InboxItem = z.infer<typeof inboxItem>;
 export type DayPlanPayload = z.infer<typeof dayPlan>;

@@ -117,6 +117,7 @@ const ORDER: OrderSummaryPayload = {
   priceUnit: 'person',
   createdAt: '2026-10-21T10:00:00.000Z',
   payBy: null,
+  refundMinor: null,
 };
 
 const ELICITATION: ElicitationPayload = {
@@ -133,6 +134,7 @@ const ELICITATION: ElicitationPayload = {
     required: ['email', 'name'],
   },
   requestState: 'opaque.state',
+  cancelOrder: null,
   hostMessage: null,
   draft: {
     pendingId: 'p-1',
@@ -221,6 +223,41 @@ describe('elicitation', () => {
     ]) {
       expect(elicitationPayload.safeParse({ ...card, hostMessage: bad }).success).toBe(false);
     }
+  });
+
+  it('takes a cancel draft alone, with its refund', () => {
+    const cancelOrder = {
+      pendingId: 'p-3',
+      orderId: 'o-9',
+      proposalId: 'pr-9',
+      offerTitle: 'Blue Lagoon boat trip',
+      language: 'en',
+      date: '2026-10-22',
+      startsAtLocal: '2026-10-22T09:00',
+      quantity: 2,
+      paymentMode: 'online',
+      paymentStatus: 'captured',
+      priceMinor: 9000,
+      currency: 'EUR',
+      cancellationPolicy: 'Free up to 24 hours before, then 50 %.',
+      refundMinor: 4500,
+      refundPercent: 50,
+      freeUntil: null,
+      freeUntilLocal: null,
+    };
+    const card = {
+      ...ELICITATION,
+      toolName: 'cancel_order',
+      requestedSchema: { type: 'object', properties: {} },
+      draft: null,
+      cancelOrder,
+    };
+    expect(elicitationPayload.parse(card).cancelOrder).toEqual(cancelOrder);
+    expect(elicitationPayload.safeParse({ ...ELICITATION, cancelOrder }).success).toBe(false);
+    expect(
+      elicitationPayload.safeParse({ ...card, cancelOrder: { ...cancelOrder, refundMinor: 1.5 } })
+        .success,
+    ).toBe(false);
   });
 
   it('refuses a missing state, a non-object schema or a broken draft', () => {

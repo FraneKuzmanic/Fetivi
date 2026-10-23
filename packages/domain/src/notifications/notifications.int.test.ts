@@ -173,8 +173,20 @@ describe('the admin alert', () => {
     expect(mailer.sent.map((m) => m.to)).toEqual(['admin-a@example.test', 'admin-b@example.test']);
     expect(mailer.sent[0]?.text).toContain(job.orderId);
     expect(mailer.sent[0]?.text).not.toContain('Ana Horvat');
+    expect(mailer.sent[0]?.text).not.toContain('Open it:');
     expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('already_sent');
     expect(mailer.sent).toHaveLength(2);
+  });
+
+  it('links the admin Order page when the back-office origin is known', async () => {
+    const { job } = await confirmedOrder();
+    const mailer = createMemoryMailer();
+    const deps = { ...notifyDeps(mailer), webOrigin: 'https://host.example.test' };
+    const alert = { ...job, kind: 'admin_provider_cancelled' as const };
+    expect(await sendAdminAlert(deps, alert)).toBe('sent');
+    expect(mailer.sent[0]?.text).toContain(
+      `Open it: https://host.example.test/admin/orders/${job.orderId}`,
+    );
   });
 
   it('tells the admins why a payment needs a look, from the flagging event, once per flag', async () => {
