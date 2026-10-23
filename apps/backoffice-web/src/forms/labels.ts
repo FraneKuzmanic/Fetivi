@@ -78,7 +78,7 @@ export const CATEGORY_LABELS: Record<BlockCategory, string> = {
   house_rules_checkout: 'House rules and checkout',
   how_tos: 'How-tos',
   saved_places: 'Saved places',
-  host_picks: "Host's top picks / Neighbourhood tips",
+  host_picks: 'Neighbourhood tips',
   contacts_emergency: 'Contacts and emergency',
 };
 

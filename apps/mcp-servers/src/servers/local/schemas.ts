@@ -5,6 +5,7 @@ import {
   PLACE_CATEGORIES,
   type PlaceDetail,
   type PlaceSearch,
+  type PlaceSummary,
   SKY_CODES,
   STALENESS_STATUSES,
   TRANSPORT_MODES,
@@ -41,6 +42,7 @@ export const searchPlacesInput = z.object({
   limit: z.number().int().min(1).max(10).optional(),
 });
 export const getPlaceInput = z.object({ placeId: z.uuid() });
+export const listHostPicksInput = z.object({});
 export const searchEventsInput = z.object({
   query: searchText.optional(),
   from: civilDate.optional(),
@@ -92,6 +94,11 @@ const placeBase = {
   verifiedAt: z.string().nullable(),
   staleness,
   sources: z.array(source),
+  hostPick: z
+    .object({ note: z.string().nullable() })
+    .nullable()
+    .describe("The guest's host picked this place; quote the note as the host's own words."),
+  hostAdded: z.boolean().describe('Added by the host, not checked by Fetivi: say so.'),
 };
 
 const placeSummary = z.object({
@@ -179,6 +186,7 @@ export const searchPlacesOutput = z.object({
   results: z.array(placeSummary),
 });
 export const getPlaceOutput = z.object({ place: placeDetail });
+export const listHostPicksOutput = z.object({ results: z.array(placeSummary) });
 export const searchEventsOutput = z.object({
   window: z.object({ from: z.string(), to: z.string() }),
   results: z.array(eventSummary),
@@ -218,9 +226,10 @@ type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
 const _schemasMatch: [
   Same<z.infer<typeof searchPlacesOutput>, PlaceSearch>,
   Same<z.infer<typeof placeDetail>, PlaceDetail>,
+  Same<z.infer<typeof placeSummary>, PlaceSummary>,
   Same<z.infer<typeof searchEventsOutput>, EventSearch>,
   Same<z.infer<typeof transportNote>, TransportNote>,
   Same<z.infer<typeof getWeatherOutput>, WeatherToolResult>,
   Same<z.infer<typeof webFallbackOutput>, WebFallbackResult>,
-] = [true, true, true, true, true, true];
+] = [true, true, true, true, true, true, true];
 void _schemasMatch;

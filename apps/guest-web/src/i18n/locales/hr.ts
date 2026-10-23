@@ -152,6 +152,7 @@ export const hr: Messages = {
     lastChecked: 'Zadnja provjera: {{month}} · nazovite prije',
     unverified: 'Nazovite prije dolaska',
     hostPick: 'Preporuka domaćina',
+    hostAdded: 'Dodao domaćin',
     save: 'Spremi',
     saved: 'Spremljeno',
     saveError: 'Spremanje nije uspjelo. Pokušajte ponovno.',
@@ -452,6 +453,7 @@ export const hr: Messages = {
     savedEmpty:
       'Ovdje se pojavljuju mjesta koja spremite u chatu. Dodirnite Spremi na kartici mjesta.',
     picksEmpty: 'Omiljena mjesta vašeg domaćina uskoro će se pojaviti ovdje.',
+    tipsHeading: 'Savjeti za okolicu',
     amenities: 'U apartmanu',
     parking: 'Parkiranje',
   },

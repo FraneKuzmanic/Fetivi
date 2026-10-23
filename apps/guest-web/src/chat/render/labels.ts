@@ -38,6 +38,7 @@ export function placeLabels(t: TFunction, language: string): PlaceLabels {
       t('components.lastChecked', { month: month.format(new Date(verifiedAt)) }),
     unverified: t('components.unverified'),
     hostPick: t('components.hostPick'),
+    hostAdded: t('components.hostAdded'),
     save: t('components.save'),
     saved: t('components.saved'),
   };

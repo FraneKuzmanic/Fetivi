@@ -1,7 +1,14 @@
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { catalogRecords, type GuestProjection, seedTrogir, turnMetrics } from '@fetivi/domain';
-import { noopQueue, publishCatalog, seedGuestUnit } from '@fetivi/domain/testing';
+import {
+  catalogRecords,
+  createHostAddedPlace,
+  createHostPick,
+  type GuestProjection,
+  seedTrogir,
+  turnMetrics,
+} from '@fetivi/domain';
+import { noopQueue, publishCatalog, publishHostPlace, seedGuestUnit } from '@fetivi/domain/testing';
 import { MockLanguageModelV4 } from 'ai/test';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -115,8 +122,80 @@ describe('GET /api/guide/saved-places', () => {
   });
 });
 
+describe('GET /api/guide/host-picks', () => {
+  it('is empty outside a destination', async () => {
+    const seed = await seedGuestUnit(t.db, { now: t.clock.now(), location: null });
+    const { cookie } = await enterSpace(t, seed);
+    const response = await get(t.app, '/api/guide/host-picks', cookie);
+    expect([response.statusCode, response.json()]).toEqual([200, { places: [] }]);
+  });
+
+  it("returns this property's picks and added places as cards, in the order added", async () => {
+    const own = await createChatTestApp({ model });
+    try {
+      const { destinationId } = await seedTrogir(own.db, noopQueue, own.clock.now());
+      await publishCatalog(own.db, destinationId);
+      const [place] = await own.db
+        .select({ id: catalogRecords.id })
+        .from(catalogRecords)
+        .where(
+          and(eq(catalogRecords.destinationId, destinationId), eq(catalogRecords.kind, 'place')),
+        );
+      if (!place) throw new Error('no place');
+      const seed = await seedGuestUnit(own.db, { now: own.clock.now() });
+      const other = await seedGuestUnit(own.db, { now: own.clock.now() });
+      const pick = await createHostPick(
+        own.db,
+        noopQueue,
+        seed.propertyId,
+        { recordId: place.id, note: 'Go early' },
+        own.clock.now(),
+      );
+      await publishHostPlace(own.db, pick.id);
+      own.clock.advance(1000);
+      const added = await createHostAddedPlace(
+        own.db,
+        noopQueue,
+        seed.propertyId,
+        {
+          name: 'Bakery Lucija',
+          placeCategory: 'shop',
+          location: { lat: 43.517, lng: 16.252 },
+          address: null,
+          note: 'Burek from six',
+        },
+        own.clock.now(),
+      );
+      await publishHostPlace(own.db, added.id);
+
+      const { cookie } = await enterSpace(own, seed);
+      const response = await get(own.app, '/api/guide/host-picks', cookie);
+      expect(response.statusCode).toBe(200);
+      const cards = response.json().places as {
+        id: string;
+        title: string;
+        hostPick: { note: string | null } | null;
+        hostAdded: boolean;
+      }[];
+      expect(cards.map((c) => [c.id, c.hostPick, c.hostAdded])).toEqual([
+        [place.id, { note: '[en] Go early' }, false],
+        [added.id, { note: '[en] Burek from six' }, true],
+      ]);
+      expect(cards[1]?.title).toBe('[en] Bakery Lucija');
+
+      // Another property in the same destination sees none of them.
+      const { cookie: otherCookie } = await enterSpace(own, other);
+      expect((await get(own.app, '/api/guide/host-picks', otherCookie)).json()).toEqual({
+        places: [],
+      });
+    } finally {
+      await own.close();
+    }
+  });
+});
+
 describe('the Guide never calls the model', () => {
-  it('serves the unit, saved places and media with no model call or turn', async () => {
+  it('serves the unit, saved places, host picks and media with no model call or turn', async () => {
     const seed = await seedGuestUnit(t.db, { now: t.clock.now(), blocks: [HOW_TO] });
     const { cookie } = await enterSpace(t, seed);
     const mediaId = seed.extraBlocks[0]?.media[0] ?? '';
@@ -124,6 +203,7 @@ describe('the Guide never calls the model', () => {
 
     expect((await get(t.app, '/api/unit', cookie)).statusCode).toBe(200);
     expect((await get(t.app, '/api/guide/saved-places', cookie)).statusCode).toBe(200);
+    expect((await get(t.app, '/api/guide/host-picks', cookie)).statusCode).toBe(200);
     expect((await get(t.app, `/api/media/${mediaId}`, cookie)).statusCode).toBe(200);
     expect(model.doStreamCalls).toHaveLength(0);
     expect(await t.db.select().from(turnMetrics)).toEqual([]);

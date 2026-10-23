@@ -124,7 +124,7 @@ describe('web_fallback_search listing', () => {
       expect(ctx.phase).toBe(phase);
       const names = (await listTools(await tokenOf(ctx))).map((tool) => tool.name);
       expect(names.at(-1)).toBe('web_fallback_search');
-      if (ctx.insideDestination) expect(names).toHaveLength(6);
+      if (ctx.insideDestination) expect(names).toHaveLength(7);
       else expect(names).toEqual(['web_fallback_search']);
     }
     const outsideCtx = await contextAt(outside.spaceId, SUMMER);

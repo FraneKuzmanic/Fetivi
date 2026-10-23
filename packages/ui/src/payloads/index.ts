@@ -80,8 +80,10 @@ export const placeCard = z.object({
     .nullable(),
   verifiedAt: z.string().nullable(),
   staleness: z.object({ status: z.enum(STALENESS_STATUSES) }),
-  /** The host's pick badge (host picks arrive later); nothing sets it yet. */
-  hostPick: z.object({ note: z.string().nullable() }).optional(),
+  /** The host's pick badge and note (40); search output sends null when not picked. */
+  hostPick: z.object({ note: z.string().nullable() }).nullable().optional(),
+  /** Added by the host, not in the catalog: own badge, no Save. */
+  hostAdded: z.boolean().optional(),
 });
 
 /** Places from one search, in the search's order. */

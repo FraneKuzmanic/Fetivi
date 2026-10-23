@@ -50,7 +50,11 @@ export type ErrorCode =
   | 'not-cancellable'
   | 'not-refundable'
   | 'not-answerable'
-  | 'not-reviewable';
+  | 'not-reviewable'
+  | 'already-picked'
+  | 'no-destination'
+  | 'outside-destination'
+  | 'limit-reached';
 
 export class HttpError extends Error {
   override name = 'HttpError';

@@ -1,4 +1,4 @@
-import { BookmarkSimple, Star } from '@phosphor-icons/react';
+import { BookmarkSimple, HouseLine, Star } from '@phosphor-icons/react';
 import { useId } from 'react';
 import type { PlaceCardPayload } from '../../payloads';
 import { CategoryIllustration } from './CategoryIllustration';
@@ -20,6 +20,7 @@ export interface PlaceLabels {
   lastChecked: (verifiedAt: string) => string;
   unverified: string;
   hostPick: string;
+  hostAdded: string;
   save: string;
   saved: string;
 }
@@ -53,10 +54,14 @@ export function PlaceCard({
           ) : (
             <CategoryIllustration category={place.category} />
           )}
-          {place.hostPick && (
+          {(place.hostPick || place.hostAdded) && (
             <span className="fv-badge">
-              <Star aria-hidden="true" weight="fill" />
-              {labels.hostPick}
+              {place.hostAdded ? (
+                <HouseLine aria-hidden="true" weight="fill" />
+              ) : (
+                <Star aria-hidden="true" weight="fill" />
+              )}
+              {place.hostAdded ? labels.hostAdded : labels.hostPick}
             </span>
           )}
         </div>
@@ -76,13 +81,19 @@ export function PlaceCard({
             {place.title}
           </h3>
           <p className="fv-card-summary">{place.summary}</p>
+          {/* A host-added place's summary is already the host's note. */}
+          {place.hostPick?.note && !place.hostAdded && (
+            <p className="fv-card-host-note">
+              <q>{place.hostPick.note}</q>
+            </p>
+          )}
           {distance && <p className="fv-card-meta">{distance}</p>}
           {note && (
             <p className="fv-card-note">
               {note.kind === 'stale' ? labels.lastChecked(note.verifiedAt) : labels.unverified}
             </p>
           )}
-          {onToggleSave && (
+          {onToggleSave && !place.hostAdded && (
             <button
               type="button"
               className="fv-save"

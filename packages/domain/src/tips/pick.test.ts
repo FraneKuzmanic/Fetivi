@@ -23,6 +23,8 @@ const place = (id: string, over: Partial<PlaceSummary> = {}): PlaceSummary => ({
   staleness: { status: 'fresh', staleAt: null },
   sources: [],
   offerIds: [],
+  hostPick: null,
+  hostAdded: false,
   ...over,
 });
 

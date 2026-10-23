@@ -14,7 +14,7 @@ export const BLOCK_CATEGORIES = [
 export type BlockCategory = (typeof BLOCK_CATEGORIES)[number];
 
 export type HostBlockCategory = Exclude<BlockCategory, 'saved_places'>;
-/** host_picks holds the Neighbourhood tips block until catalog picks arrive. */
+/** host_picks: the Guide's Host's top picks section; hosts write the Neighbourhood tips block in it. */
 export const HOST_BLOCK_CATEGORIES = BLOCK_CATEGORIES.filter(
   (c): c is HostBlockCategory => c !== 'saved_places',
 );

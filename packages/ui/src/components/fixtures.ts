@@ -17,6 +17,7 @@ export const LABELS: PlaceLabels = {
   lastChecked: (iso) => `Last checked ${iso.slice(0, 7)} · call ahead`,
   unverified: 'Call ahead to check',
   hostPick: "Your host's pick",
+  hostAdded: 'Added by your host',
   save: 'Save',
   saved: 'Saved',
 };

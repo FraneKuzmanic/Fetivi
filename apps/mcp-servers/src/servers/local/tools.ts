@@ -4,6 +4,7 @@ import {
   type GuestIdentity,
   getAboutMe,
   getPlace,
+  listHostPicks,
   listTransportNotes,
   searchEvents,
   searchPlaces,
@@ -19,6 +20,8 @@ import {
   getPlaceOutput,
   getWeatherInput,
   getWeatherOutput,
+  listHostPicksInput,
+  listHostPicksOutput,
   searchEventsInput,
   searchEventsOutput,
   searchPlacesInput,
@@ -65,7 +68,7 @@ export const localTools: readonly GuestToolSpec[] = [
     config: {
       title: 'Search places',
       description:
-        "Find checked places and day trips in the guest's destination: beaches, sights, restaurants, cafés and bars, nature, activities, shops, nightlife, and day trips with travel time. Results are ranked best first, in season on the given day, with distance from the property, when each was last verified and its sources. Use a category when the guest names one. Places with offerIds can be arranged here: use list_offers / check_availability from services. Bookable places only go first among options that fit equally well.",
+        "Find checked places and day trips in the guest's destination: beaches, sights, restaurants, cafés and bars, nature, activities, shops, nightlife, and day trips with travel time. Results are ranked best first, in season on the given day, with distance from the property, when each was last verified and its sources. Use a category when the guest names one. Places with offerIds can be arranged here: use list_offers / check_availability from services. Bookable places only go first among options that fit equally well. Places the guest's host picked carry hostPick; hostAdded places are the host's own and unchecked.",
       scope: 'catalog:read',
       inputSchema: searchPlacesInput,
       outputSchema: searchPlacesOutput,
@@ -99,6 +102,22 @@ export const localTools: readonly GuestToolSpec[] = [
     listed,
     async handler({ placeId }, identity, { db, now }) {
       return { place: visible(await getPlace(db, catalogScope(identity), placeId, now())) };
+    },
+  }),
+  guestTool({
+    name: 'list_host_picks',
+    config: {
+      title: 'Host picks',
+      description:
+        "The places this guest's host recommends: catalog places the host picked, with the host's note, and places the host added that Fetivi has not checked yet. Use it when the guest asks what their host recommends.",
+      scope: 'catalog:read',
+      inputSchema: listHostPicksInput,
+      outputSchema: listHostPicksOutput,
+      annotations: readOnly,
+    },
+    listed,
+    async handler(_args, identity, { db, now }) {
+      return { results: visible(await listHostPicks(db, catalogScope(identity), now())) };
     },
   }),
   guestTool({

@@ -1,5 +1,5 @@
 import { LIMITS, PROPERTY_TYPES } from '@fetivi/domain/vocabulary';
-import { CaretRight, Plus, QrCode } from '@phosphor-icons/react';
+import { CaretRight, Plus, QrCode, Star } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { host, type PropertyDetail, type PropertyPatch } from '../api';
@@ -274,6 +274,19 @@ export function PropertyPage() {
             emptyText="No blocks yet. Start with how guests get in."
           />
         </Section>
+
+        <section className="panel">
+          <h2>Host picks and tips</h2>
+          <p className="muted">
+            Recommend places from Fetivi's catalog, add your own, and write Neighbourhood tips.
+          </p>
+          <div>
+            <Link className="button" to={`/properties/${id}/picks`}>
+              <Star aria-hidden="true" />
+              Open host picks
+            </Link>
+          </div>
+        </section>
 
         <UnitsPanel detail={detail} onCreated={(unitId) => navigate(`/units/${unitId}`)} />
 

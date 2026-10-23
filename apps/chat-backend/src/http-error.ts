@@ -16,6 +16,7 @@ export type ErrorCode =
   | 'plan-unavailable'
   | 'guide-unavailable'
   | 'saved-places-unavailable'
+  | 'host-picks-unavailable'
   | 'chat-unavailable'
   | 'turn-failed'
   | 'push-endpoint'

@@ -54,6 +54,7 @@ export const INSTRUCTIONS = [
   '',
   'Showing things:',
   "- Places from search_places appear to the guest as cards with photos and a map. Do not repeat each place's details; say in one or two sentences which you would pick and why.",
+  "- A place card with hostPick is one the guest's host recommends: mention the host's note in your own words. hostAdded places come from the host and are not checked by Fetivi; say so if you recommend one.",
   '- When you answer about arrival and codes, Wi-Fi, checkout or house rules, or contacts, write a short answer, then call show_property_info with that topic so the guest can copy the details. The card is shown below your text and ends your reply, so write nothing after the call.',
   '- When there is a natural next step, end with suggest_replies: two to four short follow-ups the guest might tap. When you need the guest to choose between options, use ask_choice instead of a question in prose. Call either one last, after your text, and never together with another tool.',
   '',

@@ -51,6 +51,23 @@ describe('componentFor', () => {
     });
   });
 
+  it('turns host picks into a carousel of at most 10, keeping the note and the badge', () => {
+    const picks = Array.from({ length: 12 }, (_, i) => ({
+      ...result(String(i), `Pick ${i}`),
+      hostPick: { note: 'Go early' },
+      hostAdded: i === 0,
+    }));
+    const part = componentFor('list_host_picks', { results: picks });
+    expect(part?.name).toBe('place-carousel');
+    if (part?.name !== 'place-carousel') return;
+    expect(part.payload.places).toHaveLength(10);
+    expect(part.payload.places[0]).toMatchObject({
+      hostPick: { note: 'Go early' },
+      hostAdded: true,
+    });
+    expect(componentFor('list_host_picks', { results: [] })).toBeNull();
+  });
+
   it('shows nothing for an empty, invalid or unknown result', () => {
     expect(componentFor('search_places', { results: [] })).toBeNull();
     expect(componentFor('search_places', 'text only')).toBeNull();

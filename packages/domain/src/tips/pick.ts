@@ -142,7 +142,13 @@ export async function gatherTipInput(
     searchPlaces(
       db,
       scope,
-      { date: space.tomorrow, rainyDay, countRecommendation: false, limit: CANDIDATES },
+      {
+        date: space.tomorrow,
+        rainyDay,
+        countRecommendation: false,
+        includeHostAdded: false,
+        limit: CANDIDATES,
+      },
       now,
     ).then((r) => r?.results ?? []);
 

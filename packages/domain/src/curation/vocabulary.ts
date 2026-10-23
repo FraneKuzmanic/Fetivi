@@ -87,6 +87,8 @@ export type CurationPayload =
       location: { lat: number; lng: number };
       address: string | null;
       note: string | null;
+      /** The host place this suggestion came from (40); approve links it to the new record. */
+      hostPlaceId?: string;
     }
   | { kind: 'host_provider_suggestion'; name: string; contact: string | null; note: string | null }
   | {

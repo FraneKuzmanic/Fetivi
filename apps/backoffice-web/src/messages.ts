@@ -54,6 +54,11 @@ const MESSAGES: Record<string, string> = {
   'not-answerable':
     'This Order is no longer waiting for the Provider, or its terms changed. Reload the page.',
   'not-reviewable': 'Someone already reviewed this item.',
+  'already-picked': 'Already one of your picks.',
+  'limit-reached': 'You can share up to 20 places.',
+  'outside-destination':
+    "That spot is outside your property's destination. Pick a place in the same area as your property.",
+  'no-destination': "Your property isn't inside a Fetivi destination yet.",
 };
 
 export function messageFor(code: string): string {

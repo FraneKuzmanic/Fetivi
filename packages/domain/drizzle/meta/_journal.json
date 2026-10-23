@@ -309,6 +309,13 @@
       "when": 1792788284984,
       "tag": "0043_curation_queue",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792791203333,
+      "tag": "0044_host_places",
+      "breakpoints": true
     }
   ]
 }

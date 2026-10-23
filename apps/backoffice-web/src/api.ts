@@ -677,6 +677,61 @@ export interface ProviderSuggestion {
   destinationId?: string | null;
 }
 
+/** The translation state of a host pick's note or a host-added place's name and note. */
+export interface HostPlaceTranslation {
+  status: TranslationStatus;
+  error: TranslationError | null;
+}
+
+/** A published catalog place a host picked for one property's guests (40). */
+export interface HostPickView {
+  id: string;
+  recordId: string;
+  title: string;
+  kind: 'place' | 'day_trip';
+  placeCategory: PlaceCategory | null;
+  note: string | null;
+  translation: HostPlaceTranslation;
+}
+
+/** A place a host added that is not in the catalog; only that property's guests see it (40). */
+export interface HostAddedView {
+  id: string;
+  name: string;
+  placeCategory: PlaceCategory;
+  location: LatLng;
+  address: string | null;
+  note: string;
+  /** The admin approved its suggestion: it is (or soon is) a catalog record. */
+  inCatalog: boolean;
+  translation: HostPlaceTranslation;
+}
+
+/** A property's picks and added places; destination is null outside every destination. */
+export interface HostPicks {
+  destination: { id: string; name: string } | null;
+  picks: HostPickView[];
+  added: HostAddedView[];
+}
+
+/** A published catalog place of the property's destination a host can pick. */
+export interface CatalogPlaceOption {
+  id: string;
+  title: string;
+  kind: 'place' | 'day_trip';
+  placeCategory: PlaceCategory | null;
+  address: string | null;
+  picked: boolean;
+}
+
+export interface HostAddedPlaceInput {
+  name: string;
+  placeCategory: PlaceCategory;
+  location: LatLng;
+  address: string | null;
+  note: string;
+}
+
 /** A Stripe connected account's state, for a Provider or a host. */
 export interface PaymentsStatus {
   stripeConnected: boolean;
@@ -926,6 +981,22 @@ export const host = {
     put<HostProvider>(`/api/host/providers/${id}/hidden`, { hidden }),
   suggestProvider: (body: ProviderSuggestion) =>
     post<{ id: string }>('/api/host/provider-suggestions', body),
+  picks: (propertyId: string) => api<HostPicks>(`/api/host/properties/${propertyId}/picks`),
+  catalogPlaces: (propertyId: string, q: string) =>
+    api<{ places: CatalogPlaceOption[] }>(
+      `/api/host/properties/${propertyId}/catalog-places${q ? `?q=${encodeURIComponent(q)}` : ''}`,
+    ),
+  createPick: (propertyId: string, body: { recordId: string; note: string | null }) =>
+    post<HostPicks>(`/api/host/properties/${propertyId}/picks`, body),
+  createAddedPlace: (propertyId: string, body: HostAddedPlaceInput) =>
+    post<HostPicks>(`/api/host/properties/${propertyId}/added-places`, body),
+  updateHostPlace: (
+    id: string,
+    body: Partial<Omit<HostAddedPlaceInput, 'note'>> & { note?: string | null },
+  ) => patch<HostPicks>(`/api/host/host-places/${id}`, body),
+  deleteHostPlace: (id: string) => remove(`/api/host/host-places/${id}`),
+  retryHostPlaceTranslation: (id: string) =>
+    post<HostPicks>(`/api/host/host-places/${id}/translations/retry`),
   payments: () => api<PaymentsStatus>('/api/host/payments'),
   paymentsLink: () =>
     post<{ url: string; expiresAt: string }>('/api/host/payments/stripe/onboarding-link'),

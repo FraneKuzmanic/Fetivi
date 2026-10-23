@@ -72,6 +72,13 @@ describe('place-carousel', () => {
       placeCarousel.safeParse({ places: [{ ...PLACE, hostPick: { note: null }, phone: '1' }] })
         .success,
     ).toBe(true);
+    expect(
+      placeCarousel.safeParse({ places: [{ ...PLACE, hostPick: null, hostAdded: false }] }).success,
+    ).toBe(true);
+    expect(
+      placeCarousel.safeParse({ places: [{ ...PLACE, hostPick: { note: 'Hi' }, hostAdded: true }] })
+        .success,
+    ).toBe(true);
   });
 
   it('refuses no places, a place without a title and an unknown staleness', () => {

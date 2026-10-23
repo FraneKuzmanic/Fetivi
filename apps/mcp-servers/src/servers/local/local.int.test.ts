@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import {
+  catalogRecords,
   createCatalogRecord,
+  createHostAddedPlace,
+  createHostPick,
   destinations,
   EMPTY_ABOUT_ME,
   replaceAboutMe,
@@ -14,6 +17,7 @@ import {
   fixedWeatherSource,
   noopQueue,
   publishCatalog,
+  publishHostPlace,
   sampleWeatherReport,
   seedGuestUnit,
   unavailableWeatherSource,
@@ -28,6 +32,7 @@ const SUMMER = new Date('2027-07-10T08:00:00Z');
 const CATALOG_TOOLS = [
   'search_places',
   'get_place',
+  'list_host_picks',
   'search_events',
   'get_weather',
   'get_transport_notes',
@@ -54,6 +59,9 @@ let tokenB: string;
 let tokenC: string;
 let bPropertyId: string;
 let lovrijenacId: string;
+let tokenD: string;
+let copacabanaId: string;
+let addedId: string;
 
 async function connect(token: string) {
   const client = new Client(
@@ -117,6 +125,39 @@ beforeAll(async () => {
   tokenB = await tokenFor(b.spaceId);
   tokenC = await tokenFor(c.spaceId);
   bPropertyId = b.propertyId;
+
+  // A's host picks Copacabana and adds a place; D is another property in Trogir.
+  const copacabana = (
+    await t.db.select({ id: catalogRecords.id, title: catalogRecords.title }).from(catalogRecords)
+  ).find((r) => r.title.startsWith('Copacabana'));
+  if (!copacabana) throw new Error('no Copacabana');
+  copacabanaId = copacabana.id;
+  const pick = await createHostPick(
+    t.db,
+    noopQueue,
+    a.propertyId,
+    { recordId: copacabanaId, note: 'Go before ten' },
+    SUMMER,
+  );
+  await publishHostPlace(t.db, pick.id);
+  const added = await createHostAddedPlace(
+    t.db,
+    noopQueue,
+    a.propertyId,
+    {
+      name: 'Bakery Lucija',
+      placeCategory: 'shop',
+      location: { lat: 43.517, lng: 16.252 },
+      address: null,
+      note: 'Burek from six',
+    },
+    // Added after the pick, so the order (created_at, id) is fixed.
+    new Date(SUMMER.getTime() + 60_000),
+  );
+  await publishHostPlace(t.db, added.id);
+  addedId = added.id;
+  const d = await seedGuestUnit(t.db, { now: SUMMER });
+  tokenD = await tokenFor(d.spaceId);
 });
 
 afterAll(async () => {
@@ -244,6 +285,51 @@ describe('local tools', () => {
       () => 'error',
     );
     expect(outcome).toBe('error');
+  });
+});
+
+describe('host picks', () => {
+  type Result = { id: string; hostPick: { note: string | null } | null; hostAdded: boolean };
+  const resultsOf = (r: Awaited<ReturnType<typeof call>>) =>
+    (r.structuredContent as { results: Result[] }).results;
+
+  it("lists A's pick with its note and A's added place", async () => {
+    const result = await call(tokenA, 'list_host_picks', {});
+    expect(result.isError).toBeFalsy();
+    expect(resultsOf(result).map((r) => [r.id, r.hostPick, r.hostAdded])).toEqual([
+      [copacabanaId, { note: '[it] Go before ten' }, false],
+      [addedId, { note: '[it] Burek from six' }, true],
+    ]);
+  });
+
+  it("never shows A's picks or added places to another property's guests", async () => {
+    expect(resultsOf(await call(tokenD, 'list_host_picks', {}))).toEqual([]);
+    const search = resultsOf(await call(tokenD, 'search_places', { limit: 10 }));
+    expect(search.map((r) => r.id)).not.toContain(addedId);
+    expect(search.find((r) => r.id === copacabanaId)?.hostPick).toBeNull();
+    const foreign = await call(tokenD, 'get_place', { placeId: addedId });
+    expect(foreign.isError).toBe(true);
+    expect(foreign.content).toEqual([{ type: 'text', text: 'not permitted' }]);
+  });
+
+  it('marks picks and added places in search_places and get_place', async () => {
+    const results = resultsOf(await call(tokenA, 'search_places', { limit: 10 }));
+    expect(results.find((r) => r.id === copacabanaId)).toMatchObject({
+      hostPick: { note: '[it] Go before ten' },
+      hostAdded: false,
+    });
+    expect(results.find((r) => r.id === addedId)).toMatchObject({ hostAdded: true });
+    const place = await call(tokenA, 'get_place', { placeId: addedId });
+    expect(place.isError).toBeFalsy();
+    expect((place.structuredContent as { place: Result }).place.hostAdded).toBe(true);
+  });
+
+  it('is not listed outside a destination', async () => {
+    for (const token of [tokenB, tokenC]) {
+      await expect(call(token, 'list_host_picks', {})).rejects.toThrow(
+        'Tool list_host_picks not found',
+      );
+    }
   });
 });
 

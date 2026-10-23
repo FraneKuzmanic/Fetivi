@@ -152,6 +152,7 @@ export const hu: Messages = {
     lastChecked: 'Utoljára ellenőrizve: {{month}} · előtte telefonálj',
     unverified: 'Előtte érdemes telefonálni',
     hostPick: 'A szállásadód ajánlja',
+    hostAdded: 'A házigazda tette hozzá',
     save: 'Mentés',
     saved: 'Mentve',
     saveError: 'Nem sikerült menteni. Próbáld újra.',
@@ -454,6 +455,7 @@ export const hu: Messages = {
     savedEmpty:
       'Itt jelennek meg a csevegésben mentett helyek. Koppintson a Mentés gombra egy helykártyán.',
     picksEmpty: 'A házigazda kedvenc helyei hamarosan itt jelennek meg.',
+    tipsHeading: 'Környékbeli tippek',
     amenities: 'Az apartmanban',
     parking: 'Parkolás',
   },

@@ -5,6 +5,7 @@ import type { Db } from '../db/client';
 import { accounts } from '../db/schema/accounts';
 import { blockMedia } from '../db/schema/block-media';
 import { catalogRecords, catalogTranslations, destinations } from '../db/schema/catalog';
+import { hostPlaces, hostPlaceTranslations } from '../db/schema/host-places';
 import { infoBlocks } from '../db/schema/info-blocks';
 import {
   allotmentSlots,
@@ -475,6 +476,32 @@ export async function seedOrderableOffer(
     .returning();
   if (!slot) throw new Error('no slot');
   return { offerId: offer.id, slotId: slot.id };
+}
+
+/**
+ * Test-only: publishes a host place in every guest language as if its translation job had run:
+ * `[<lang>] <name>` and `[<lang>] <note>` ('' on a pick's name or a missing note).
+ */
+export async function publishHostPlace(db: Db, hostPlaceId: string): Promise<void> {
+  const [row] = await db.select().from(hostPlaces).where(eq(hostPlaces.id, hostPlaceId));
+  if (!row) throw new Error('no host place');
+  await db
+    .insert(hostPlaceTranslations)
+    .values(
+      GUEST_LANGUAGES.map((l) => ({
+        hostPlaceId: row.id,
+        revision: row.revision,
+        language: l,
+        name: row.name === null ? '' : `[${l}] ${row.name}`,
+        note: row.note === null ? '' : `[${l}] ${row.note}`,
+        origin: l === 'en' ? ('source' as const) : ('machine' as const),
+      })),
+    )
+    .onConflictDoNothing();
+  await db
+    .update(hostPlaces)
+    .set({ publishedRevision: row.revision, translationStatus: 'published' })
+    .where(eq(hostPlaces.id, row.id));
 }
 
 /** Test-only: publishes an Offer in every guest language as if its translation job had run. */

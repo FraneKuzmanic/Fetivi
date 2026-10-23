@@ -110,7 +110,30 @@ describe('PlaceCarousel', () => {
 
   it("shows the host's pick badge only when set", () => {
     expect(render()).not.toContain('Your host&#x27;s pick');
+    expect(render([place({ hostPick: null })])).not.toContain('fv-badge');
     expect(render([place({ hostPick: { note: null } })])).toContain('Your host&#x27;s pick');
+    expect(render([place({ hostPick: { note: null } })])).not.toContain('fv-card-host-note');
+  });
+
+  it("shows the host's note in quotes", () => {
+    expect(render([place({ hostPick: { note: 'Ask for Ivo.' } })])).toContain(
+      '<p class="fv-card-host-note"><q>Ask for Ivo.</q></p>',
+    );
+  });
+
+  it('marks a host-added place with its own badge and no Save', () => {
+    const html = render([
+      place({
+        summary: 'My cousin runs it.',
+        hostPick: { note: 'My cousin runs it.' },
+        hostAdded: true,
+      }),
+    ]);
+    expect(html).toContain('Added by your host');
+    expect(html).not.toContain('Your host&#x27;s pick');
+    expect(html.split('My cousin runs it.')).toHaveLength(2);
+    expect(html).not.toContain('fv-card-host-note');
+    expect(html).not.toContain('fv-save');
   });
 
   it('has a Save toggle, kept after the Stay only for saved places', () => {

@@ -1154,6 +1154,16 @@ input {
   font-size: 1.125rem;
 }
 
+.guide-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.guide-tips > h2 {
+  font-size: 1.25rem;
+}
+
 .guide-note {
   color: var(--gray-500);
 }

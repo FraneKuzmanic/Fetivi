@@ -20,6 +20,7 @@ import { VerifyEmailPage } from './auth/VerifyEmailPage';
 import { InboxPage } from './host/inbox/InboxPage';
 import { PropertiesPage } from './host/PropertiesPage';
 import { NewPropertyPage, PropertyPage } from './host/PropertyPage';
+import { HostPicksPage } from './host/picks/HostPicksPage';
 import { ProvidersPage as HostProvidersPage } from './host/services/ProvidersPage';
 import { NewServicePage, ServicePage } from './host/services/ServicePage';
 import { ServicesPage } from './host/services/ServicesPage';
@@ -88,6 +89,14 @@ export function App() {
           element={
             <Page area="host">
               <PropertyPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/properties/:id/picks"
+          element={
+            <Page area="host">
+              <HostPicksPage />
             </Page>
           }
         />

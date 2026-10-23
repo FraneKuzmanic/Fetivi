@@ -21,11 +21,14 @@ export function BlockList({
   create,
   onChanged,
   emptyText,
+  category,
 }: {
   blocks: Block[];
   create: (input: BlockInput) => Promise<BlockResult>;
   onChanged: () => Promise<void>;
   emptyText: string;
+  /** The category a new block starts with. */
+  category?: HostBlockCategory;
 }) {
   const { busy, error, run } = useAction();
   const [editing, setEditing] = useState<string | 'new' | null>(null);
@@ -136,6 +139,7 @@ export function BlockList({
       {editing === 'new' ? (
         <BlockEditor
           heading="New block"
+          initial={category ? { category } : undefined}
           onSubmit={create}
           onDone={done}
           onCancel={() => setEditing(null)}

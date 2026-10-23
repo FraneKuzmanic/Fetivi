@@ -25,6 +25,7 @@ import { spaceEmailJob } from './space-email';
 import { translateBlockJob } from './translate-block';
 import { translateCatalogRecordJob } from './translate-catalog-record';
 import { type HandoffJobDeps, translateHandoffJob } from './translate-handoff';
+import { translateHostPlaceJob } from './translate-host-place';
 import { translateOfferJob } from './translate-offer';
 
 // Later tickets add retention.
@@ -45,6 +46,7 @@ export function createJobs(
     translateBlockJob(deps) as JobDefinition,
     translateCatalogRecordJob(deps) as JobDefinition,
     translateOfferJob(deps) as JobDefinition,
+    translateHostPlaceJob(deps) as JobDefinition,
     orderTimerJob(deps) as JobDefinition,
     orderNotifyJob(deps) as JobDefinition,
     orderPaymentJob(deps) as JobDefinition,

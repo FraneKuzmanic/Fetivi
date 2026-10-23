@@ -24,7 +24,8 @@
     "./tips-vocabulary": "./src/tips/vocabulary.ts",
     "./fallback-vocabulary": "./src/fallback/vocabulary.ts",
     "./payments-vocabulary": "./src/payments/vocabulary.ts",
-    "./curation-vocabulary": "./src/curation/vocabulary.ts"
+    "./curation-vocabulary": "./src/curation/vocabulary.ts",
+    "./host-picks-vocabulary": "./src/host-picks/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

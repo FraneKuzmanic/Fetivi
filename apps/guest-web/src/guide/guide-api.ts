@@ -9,5 +9,9 @@ export const getUnit = () => api<{ unit: GuestProjection }>('/api/unit').then((r
 export const getSavedPlaceCards = () =>
   api<{ places: PlaceCardPayload[] }>('/api/guide/saved-places').then((r) => r.places);
 
+/** The host's picks and added places as cards, in the order the host added them. */
+export const getHostPickCards = () =>
+  api<{ places: PlaceCardPayload[] }>('/api/guide/host-picks').then((r) => r.places);
+
 /** Where a block photo or video is fetched; the server checks it against the Space. */
 export const mediaUrl = (id: string) => `/api/media/${encodeURIComponent(id)}`;

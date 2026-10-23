@@ -309,6 +309,18 @@
   font-size: 0.8125rem;
 }
 
+.fv-card-host-note {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--gray-500);
+  font-size: 0.875rem;
+  font-style: italic;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
 .fv-save {
   display: inline-flex;
   align-items: center;

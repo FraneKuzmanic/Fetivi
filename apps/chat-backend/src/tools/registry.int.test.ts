@@ -118,6 +118,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'send_host_message',
       'search_places',
       'get_place',
+      'list_host_picks',
       'search_events',
       'get_weather',
       'get_transport_notes',
@@ -142,6 +143,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'send_host_message',
       'search_places',
       'get_place',
+      'list_host_picks',
       'search_events',
       'get_weather',
       'get_transport_notes',
@@ -199,6 +201,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
     [
       'search_places',
       'get_place',
+      'list_host_picks',
       'search_events',
       'get_weather',
       'get_transport_notes',

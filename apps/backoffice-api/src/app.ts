@@ -20,6 +20,7 @@ import { hostRoutes } from './host/routes';
 import { hostOfferRoutes } from './host-offers/routes';
 import { hostOrderRoutes } from './host-orders/routes';
 import { hostPaymentRoutes } from './host-payments/routes';
+import { hostPickRoutes } from './host-picks/routes';
 import { hostProviderRoutes } from './host-providers/routes';
 import { registerErrorHandler } from './http-error';
 import { inboxRoutes } from './inbox/routes';
@@ -88,6 +89,7 @@ export function buildApp(deps: AppDeps) {
   app.register(hostOfferRoutes, { db, queue, now });
   app.register(hostOrderRoutes, { db, queue, now });
   app.register(hostProviderRoutes, { db, now });
+  app.register(hostPickRoutes, { db, queue, now });
   app.register(hostPaymentRoutes, { db, now, webOrigin, gateway: deps.stripe?.gateway ?? null });
   app.register(hostNotificationRoutes, { db, now, vapidPublicKey: deps.vapidPublicKey ?? null });
   if (deps.resendWebhookSecret) {

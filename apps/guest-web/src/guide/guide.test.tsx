@@ -99,8 +99,8 @@ afterEach(() => {
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
 
-/** Answers the Guide's two reads and records every URL fetched. */
-function stubApi(u: GuestProjection, places: unknown[] = []) {
+/** Answers the Guide's reads and records every URL fetched. */
+function stubApi(u: GuestProjection, places: unknown[] = [], picks: unknown[] = []) {
   urls = [];
   vi.stubGlobal(
     'fetch',
@@ -109,6 +109,7 @@ function stubApi(u: GuestProjection, places: unknown[] = []) {
       urls.push(url);
       if (url === '/api/unit') return json({ unit: u });
       if (url === '/api/guide/saved-places') return json({ places });
+      if (url === '/api/guide/host-picks') return json({ places: picks });
       if (url === '/api/saved-places') return json({ placeIds: [] });
       return new Response(null, { status: 404 });
     }),
@@ -294,7 +295,53 @@ describe('Saved places and top picks', () => {
   it("shows the empty state for the host's picks", async () => {
     stubApi(unit(false));
     await mount('/guide/picks');
-    expect(host.textContent).toContain("Your host's favourite places will appear here soon.");
+    await vi.waitFor(() =>
+      expect(host.textContent).toContain("Your host's favourite places will appear here soon."),
+    );
+  });
+
+  const TIPS: GuestProjection['blocks'][number] = {
+    category: 'host_picks',
+    title: 'Bread',
+    body: 'The bakery opens at 6.',
+    media: [],
+  };
+
+  it("shows the host's picks with the badge and note, then the tips", async () => {
+    stubApi(
+      unit(false, [TIPS]),
+      [],
+      [
+        { ...place, hostPick: { note: 'Ask for the daily catch.' }, hostAdded: false },
+        { ...place, id: 'h1', title: 'Cove', hostPick: { note: 'Quiet early.' }, hostAdded: true },
+      ],
+    );
+    await mount('/guide/picks');
+    await vi.waitFor(() => expect(host.textContent).toContain('Konoba Mala'));
+    const cards = host.querySelectorAll('.fv-card');
+    expect(cards).toHaveLength(2);
+    expect(cards[0]?.querySelector('.fv-badge')?.textContent).toBe("Your host's pick");
+    expect(cards[0]?.querySelector('.fv-card-host-note')?.textContent).toBe(
+      'Ask for the daily catch.',
+    );
+    expect(cards[0]?.querySelector('.fv-save')).not.toBeNull();
+    expect(cards[1]?.querySelector('.fv-badge')?.textContent).toBe('Added by your host');
+    expect(cards[1]?.querySelector('.fv-save')).toBeNull();
+    const tips = host.querySelector('.guide-tips');
+    expect(tips?.querySelector('h2')?.textContent).toBe('Neighbourhood tips');
+    expect(tips?.textContent).toContain('The bakery opens at 6.');
+    expect(host.querySelector('.fv-carousel')?.compareDocumentPosition(tips as Node) ?? 0).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(host.textContent).not.toContain('appear here soon');
+  });
+
+  it('shows the tips alone when the host picked nothing', async () => {
+    stubApi(unit(false, [TIPS]));
+    await mount('/guide/picks');
+    await vi.waitFor(() => expect(host.textContent).toContain('Neighbourhood tips'));
+    expect(host.querySelector('.fv-carousel')).toBeNull();
+    expect(host.textContent).not.toContain('appear here soon');
   });
 });
 

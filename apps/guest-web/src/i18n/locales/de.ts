@@ -155,6 +155,7 @@ export const de: Messages = {
     lastChecked: 'Zuletzt geprüft {{month}} · vorher anrufen',
     unverified: 'Am besten vorher anrufen',
     hostPick: 'Tipp Ihres Gastgebers',
+    hostAdded: 'Von Ihrem Gastgeber hinzugefügt',
     save: 'Merken',
     saved: 'Gemerkt',
     saveError: 'Das wurde nicht gespeichert. Bitte versuchen Sie es erneut.',
@@ -464,6 +465,7 @@ export const de: Messages = {
     savedEmpty:
       'Hier erscheinen Orte, die Sie im Chat speichern. Tippen Sie auf einer Ortskarte auf Speichern.',
     picksEmpty: 'Die Lieblingsorte Ihres Gastgebers erscheinen bald hier.',
+    tipsHeading: 'Tipps für die Nachbarschaft',
     amenities: 'In der Wohnung',
     parking: 'Parken',
   },

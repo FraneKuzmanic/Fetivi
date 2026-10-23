@@ -9,18 +9,33 @@ import {
   catalogRecords,
   catalogSeasons,
   catalogTranslations,
-  destinations,
   type PlaceImageRow,
   placeImages,
 } from '../db/schema/catalog';
-import { properties, units } from '../db/schema/properties';
-import { stays } from '../db/schema/stays';
+import {
+  getHostAddedPlace,
+  hostAddedCandidates,
+  hostPicksFor,
+  toHostAddedSummary,
+  visiblePickIds,
+} from '../host-picks/guest';
 import { offerIdsByPlace } from '../offers/guest';
 import type { GuestLanguage } from '../property/vocabulary';
 import { type CivilDate, toLocalDateTime } from '../time';
 import { inSeason, monthDayOf, type OpenState, openStateAt } from './calendar';
 import { type AboutMeFit, rankPlaces } from './ranking';
 import { stalenessOf } from './staleness';
+import {
+  kmOf,
+  latLngOf,
+  loadOrigin,
+  type Origin,
+  originGeog,
+  seasonDate,
+  summaryOf,
+  TEXT_MATCH_MIN,
+  todayIn,
+} from './summary';
 import type {
   CatalogKind,
   ImageSource,
@@ -43,8 +58,7 @@ export interface CatalogScope {
   aboutMe: AboutMeFit | null;
 }
 
-/** The lowest `word_similarity` a record needs to match a guest's words; unrelated prose scores ~0.4. */
-export const TEXT_MATCH_MIN = 0.5;
+export { TEXT_MATCH_MIN } from './summary';
 
 export interface LatLng {
   lat: number;
@@ -88,6 +102,10 @@ export interface PlaceSummary {
   sources: CatalogSource[];
   /** In-scope Offers that can be arranged here; non-empty is the "arrange it here" marker. */
   offerIds: string[];
+  /** This property's host picked the place; its note in the guest's language. Null otherwise. */
+  hostPick: { note: string | null } | null;
+  /** A place the host added that is not in the catalog: unverified, not saveable. */
+  hostAdded: boolean;
 }
 
 export interface PlaceQuery {
@@ -105,6 +123,8 @@ export interface PlaceQuery {
    * the same search every 15 minutes. Default true.
    */
   countRecommendation?: boolean;
+  /** False: leave host-added places out (daily tips: they cannot be planned). Default true. */
+  includeHostAdded?: boolean;
 }
 
 export interface PlaceSearch {
@@ -162,47 +182,6 @@ export interface TransportNote {
   sources: CatalogSource[];
 }
 
-interface Origin {
-  location: { x: number; y: number } | null;
-  checkIn: CivilDate;
-  checkout: CivilDate;
-  zone: string;
-}
-
-/** The property's location, the Stay's dates and the destination's zone; null on a broken chain. */
-async function loadOrigin(db: Executor, scope: CatalogScope): Promise<Origin | null> {
-  const [row] = await db
-    .select({
-      location: properties.location,
-      propertyId: units.propertyId,
-      checkIn: stays.checkIn,
-      checkout: stays.checkout,
-      zone: destinations.timezone,
-    })
-    .from(stays)
-    .innerJoin(units, eq(units.id, stays.unitId))
-    .innerJoin(properties, eq(properties.id, units.propertyId))
-    .innerJoin(destinations, eq(destinations.id, scope.destinationId))
-    .where(eq(stays.id, scope.stayId));
-  if (!row || row.propertyId !== scope.propertyId) return null;
-  return { location: row.location, checkIn: row.checkIn, checkout: row.checkout, zone: row.zone };
-}
-
-const todayIn = (now: Date, zone: string): CivilDate =>
-  DateTime.fromJSDate(now, { zone }).toISODate() as CivilDate;
-
-/** The day a season check is for: the asked date, else today, but not before check-in. */
-function seasonDate(origin: Origin, now: Date, date?: CivilDate): CivilDate {
-  if (date) return date;
-  const today = todayIn(now, origin.zone);
-  return today > origin.checkIn ? today : origin.checkIn;
-}
-
-const originGeog = (o: Origin) =>
-  o.location
-    ? sql`ST_SetSRID(ST_MakePoint(${o.location.x}::float8, ${o.location.y}::float8), 4326)::geography`
-    : null;
-
 const distanceOf = (o: Origin) => {
   const g = originGeog(o);
   return g
@@ -239,12 +218,6 @@ const translationJoin = (scope: CatalogScope) =>
     eq(catalogTranslations.language, scope.language),
   );
 
-const latLngOf = (p: { x: number; y: number } | null): LatLng | null =>
-  p ? { lat: p.y, lng: p.x } : null;
-
-const kmOf = (m: unknown): number | null =>
-  m === null || m === undefined ? null : Math.round(Number(m) / 100) / 10;
-
 const sourcesOf = (fieldSources: Partial<Record<string, string>>): CatalogSource[] =>
   Object.entries(fieldSources).flatMap(([field, url]) => (url ? [{ field, url }] : []));
 
@@ -259,24 +232,6 @@ function stalenessFor(
 ): CatalogStaleness {
   const s = stalenessOf(r, now);
   return { status: s.status, staleAt: s.staleAt?.toISOString() ?? null };
-}
-
-/** The first non-empty paragraph without Markdown markers, at most 280 characters. */
-function summaryOf(markdown: string): string {
-  const paragraph =
-    markdown
-      .split(/\n\s*\n/)
-      .map((p) =>
-        p
-          .replace(/^\s*(?:[#>*-]+\s*)+/gm, '')
-          .replace(/\s+/g, ' ')
-          .trim(),
-      )
-      .find(Boolean) ?? '';
-  if (paragraph.length <= 280) return paragraph;
-  const cut = paragraph.slice(0, 279);
-  const space = cut.lastIndexOf(' ');
-  return `${(space > 0 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
 const imageOf = (i: PlaceImageRow): CatalogImage => ({
@@ -360,8 +315,9 @@ const placeColumns = (origin: Origin) => ({
 
 /**
  * Places and day trips in the guest's destination, in season on the asked day (default today,
- * or check-in before arrival), ranked best first. Counts a recommendation for every result.
- * Null when the token's Stay, unit and property do not belong together.
+ * or check-in before arrival), ranked best first, with this property's host-added places among
+ * them (40). Counts a recommendation for every catalog result. Null when the token's Stay, unit
+ * and property do not belong together.
  */
 export async function searchPlaces(
   db: Db,
@@ -407,6 +363,11 @@ export async function searchPlaces(
     { destinationId: scope.destinationId, propertyId: scope.propertyId, language: scope.language },
     rows.map((r) => r.id),
   );
+  const picks = await hostPicksFor(
+    db,
+    scope,
+    rows.map((r) => r.id),
+  );
   const candidates = rows.flatMap((r) => {
     if (!inSeason(byRecord(seasons, r.id), md)) return [];
     const open = q.openAt ? openStateAt(byRecord(hours, r.id), date, q.openAt) : null;
@@ -420,6 +381,8 @@ export async function searchPlaces(
       image: image ? imageOf(image) : null,
       open,
       offerIds: bookableHere,
+      hostPick: picks.get(r.id) ?? null,
+      hostAdded: false,
     };
     return [
       {
@@ -435,20 +398,35 @@ export async function searchPlaces(
     ];
   });
 
-  const results = rankPlaces(candidates, scope.aboutMe)
+  // Host-added places have no rainy-day flag, and daily tips leave them out (they cannot be planned).
+  const added =
+    q.rainyDay || q.includeHostAdded === false
+      ? []
+      : (await hostAddedCandidates(db, scope, origin, q)).map((r) => ({
+          summary: toHostAddedSummary(r, q.openAt !== undefined),
+          id: r.id,
+          category: r.placeCategory as PlaceCategory,
+          textScore: r.textScore === null ? null : Number(r.textScore),
+          staleness: 'never_verified' as const,
+          distanceM: r.distanceM === null ? null : Number(r.distanceM),
+          bookable: false,
+        }));
+
+  // The same rules for both: no boost for a host's pick or a host-added place.
+  const results = rankPlaces([...candidates, ...added], scope.aboutMe)
     .slice(0, q.limit ?? 5)
     .map((c) => c.summary);
   if (q.countRecommendation !== false) {
     await recordRecommendations(
       db,
-      results.map((r) => r.id),
+      results.filter((r) => !r.hostAdded).map((r) => r.id),
       todayIn(now, origin.zone),
     );
   }
   return { date, openAt: q.openAt ?? null, results };
 }
 
-/** One place or day trip in full; null when it is not visible to this guest. */
+/** One place or day trip, or a host-added place, in full; null when it is not visible to this guest. */
 export async function getPlace(
   db: Db,
   scope: CatalogScope,
@@ -468,8 +446,9 @@ export async function getPlace(
         inArray(catalogRecords.kind, ['place', 'day_trip']),
       ),
     );
-  if (!r) return null;
+  if (!r) return getHostAddedPlace(db, scope, origin, id);
   const { seasons, hours, images } = await rowsFor(db, [r.id]);
+  const picks = await hostPicksFor(db, scope, [r.id]);
   const mmdd = (m: number, d: number) =>
     `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   return {
@@ -491,7 +470,66 @@ export async function getPlace(
         validTo: h.validTo,
       })),
     inSeasonToday: inSeason(seasons, monthDayOf(seasonDate(origin, now))),
+    hostPick: picks.get(r.id) ?? null,
+    hostAdded: false,
   };
+}
+
+/**
+ * The places this property's host recommends (40): picks of visible records and visible
+ * host-added places, in the order the host added them. Seasons and hours do not filter them.
+ * Null when the token's Stay, unit and property do not belong together.
+ */
+export async function listHostPicks(
+  db: Db,
+  scope: CatalogScope,
+  now: Date,
+): Promise<PlaceSummary[] | null> {
+  const origin = await loadOrigin(db, scope);
+  if (!origin) return null;
+  const pickIds = await visiblePickIds(db, scope);
+  const ids = pickIds.map((p) => p.recordId);
+  const rows =
+    ids.length === 0
+      ? []
+      : await db
+          .select(placeColumns(origin))
+          .from(catalogRecords)
+          .innerJoin(catalogTranslations, translationJoin(scope))
+          .where(and(visibleIn(scope), inArray(catalogRecords.id, ids)));
+  const { images } = await rowsFor(db, ids);
+  const offerIds = await offerIdsByPlace(
+    db,
+    { destinationId: scope.destinationId, propertyId: scope.propertyId, language: scope.language },
+    ids,
+  );
+  const notes = await hostPicksFor(db, scope, ids);
+  const picked = pickIds.flatMap(({ recordId, createdAt }) => {
+    const r = rows.find((row) => row.id === recordId);
+    if (!r) return [];
+    const image = images.find((i) => i.recordId === r.id);
+    const summary: PlaceSummary = {
+      ...placeBaseOf(r, now),
+      summary: summaryOf(r.body),
+      image: image ? imageOf(image) : null,
+      open: null,
+      offerIds: offerIds.get(r.id) ?? [],
+      hostPick: notes.get(r.id) ?? { note: null },
+      hostAdded: false,
+    };
+    return [{ summary, createdAt, id: r.id }];
+  });
+  const added = (await hostAddedCandidates(db, scope, origin, {})).map((r) => ({
+    summary: toHostAddedSummary(r, false),
+    createdAt: r.createdAt,
+    id: r.id,
+  }));
+  return [...picked, ...added]
+    .sort(
+      (a, b) =>
+        a.createdAt.getTime() - b.createdAt.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    )
+    .map((p) => p.summary);
 }
 
 /**

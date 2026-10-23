@@ -11,6 +11,7 @@ import { useSpace } from '../space';
 import { BlockBody } from './BlockBody';
 import { UnitGate } from './GuideTab';
 import { mediaUrl } from './guide-api';
+import { HostPicksSection } from './HostPicksSection';
 import { propertyInfoLabels } from './labels';
 import { SavedPlacesSection } from './SavedPlacesSection';
 import { sectionBySlug } from './sections';
@@ -75,6 +76,14 @@ function SectionContent({ category, unit }: { category: BlockCategory; unit: Gue
   if (category === 'saved_places') {
     return <SavedPlacesSection closed={space.status === 'ready' && space.space.closed} />;
   }
+  if (category === 'host_picks') {
+    return (
+      <HostPicksSection
+        closed={space.status === 'ready' && space.space.closed}
+        tips={blocks.length > 0 ? <Blocks blocks={blocks} /> : null}
+      />
+    );
+  }
   const topic = TOPIC_OF[category];
   // The section's own blocks show their media below; the card shows only the typed facts.
   const card = topic ? { ...propertyInfo(unit, topic), media: [] } : null;
@@ -82,11 +91,7 @@ function SectionContent({ category, unit }: { category: BlockCategory; unit: Gue
   const essentials = category === 'wifi_essentials';
 
   if (!cardShows && blocks.length === 0 && !essentials) {
-    return (
-      <MascotSays>
-        {category === 'host_picks' ? t('guide.picksEmpty') : t('guide.nothingYet')}
-      </MascotSays>
-    );
+    return <MascotSays>{t('guide.nothingYet')}</MascotSays>;
   }
   return (
     <>

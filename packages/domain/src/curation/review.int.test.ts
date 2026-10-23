@@ -1,10 +1,22 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { searchPlaces } from '../catalog/search';
 import { createCatalogRecord, updateCatalogRecord } from '../catalog/store';
 import { accounts } from '../db/schema/accounts';
 import { catalogRecords } from '../db/schema/catalog';
 import { curationItems } from '../db/schema/curation';
-import { createTestDatabase, noopQueue, seedDestination, type TestDatabase } from '../testing';
+import { hostPlaces } from '../db/schema/host-places';
+import { createHostAddedPlace, deleteHostPlace } from '../host-picks/store';
+import {
+  createTestDatabase,
+  noopQueue,
+  publishCatalog,
+  publishHostPlace,
+  type SeededGuestUnit,
+  seedDestination,
+  seedGuestUnit,
+  type TestDatabase,
+} from '../testing';
 import {
   approveCurationItem,
   CurationRuleError,
@@ -345,5 +357,111 @@ describe('listCurationItems and countCurationItems', () => {
     } finally {
       await db.drop();
     }
+  });
+});
+
+describe('a host place suggestion from a host-added place (40)', () => {
+  let guest: SeededGuestUnit;
+  let other: SeededGuestUnit;
+  beforeAll(async () => {
+    guest = await seedGuestUnit(testDb.db, { now: NOW });
+    other = await seedGuestUnit(testDb.db, { now: NOW });
+  });
+
+  const addPlace = async (name: string, propertyId = guest.propertyId) => {
+    const row = await createHostAddedPlace(
+      testDb.db,
+      noopQueue,
+      propertyId,
+      {
+        name,
+        placeCategory: 'restaurant',
+        location: { lat: 43.52, lng: 16.26 },
+        address: null,
+        note: `${name} has the best fish.`,
+      },
+      NOW,
+    );
+    await publishHostPlace(testDb.db, row.id);
+    const [item] = await testDb.db
+      .select()
+      .from(curationItems)
+      .where(eq(curationItems.dedupeKey, `host-place:${row.id}`));
+    if (!item) throw new Error('no item');
+    return { hostPlaceId: row.id, itemId: item.id };
+  };
+  const linkOf = async (id: string) =>
+    (await testDb.db.select().from(hostPlaces).where(eq(hostPlaces.id, id)))[0]?.catalogRecordId;
+  const searchAs = (g: SeededGuestUnit, query: string, ids: string[]) =>
+    searchPlaces(
+      testDb.db,
+      {
+        destinationId,
+        propertyId: g.propertyId,
+        stayId: g.stayId,
+        language: 'de',
+        aboutMe: null,
+      },
+      { query, limit: 20 },
+      NOW,
+    ).then((r) =>
+      (r?.results ?? [])
+        .filter((p) => ids.includes(p.id))
+        .map((p) => ({ id: p.id, hostPick: p.hostPick, hostAdded: p.hostAdded })),
+    );
+
+  it('approve links the host place; once published, guests see the record as a pick, once', async () => {
+    const { hostPlaceId, itemId } = await addPlace('Konoba Linked');
+    const row = await approveCurationItem(deps, itemId, adminId, LATER);
+    const recordId = row.recordId as string;
+    expect(await linkOf(hostPlaceId)).toBe(recordId);
+
+    // Until the record publishes, the host-added card stays.
+    expect(await searchAs(guest, 'konoba linked', [hostPlaceId, recordId])).toEqual([
+      {
+        id: hostPlaceId,
+        hostPick: { note: '[de] Konoba Linked has the best fish.' },
+        hostAdded: true,
+      },
+    ]);
+    await publishCatalog(testDb.db, destinationId);
+    expect(await searchAs(guest, 'konoba linked', [hostPlaceId, recordId])).toEqual([
+      {
+        id: recordId,
+        hostPick: { note: '[de] Konoba Linked has the best fish.' },
+        hostAdded: false,
+      },
+    ]);
+    // Another property's guests see the record, without the pick.
+    expect(await searchAs(other, 'konoba linked', [hostPlaceId, recordId])).toEqual([
+      { id: recordId, hostPick: null, hostAdded: false },
+    ]);
+  });
+
+  it('edit links the host place too', async () => {
+    const { hostPlaceId, itemId } = await addPlace('Konoba Edited');
+    const { recordId } = await editCurationItem(deps, itemId, NOW);
+    expect(await linkOf(hostPlaceId)).toBe(recordId);
+  });
+
+  it('reject leaves the host place visible to its own guests only', async () => {
+    const { hostPlaceId, itemId } = await addPlace('Konoba Rejected');
+    await rejectCurationItem(testDb.db, itemId, adminId, LATER);
+    expect(await linkOf(hostPlaceId)).toBeNull();
+    expect(await searchAs(guest, 'konoba rejected', [hostPlaceId])).toEqual([
+      {
+        id: hostPlaceId,
+        hostPick: { note: '[de] Konoba Rejected has the best fish.' },
+        hostAdded: true,
+      },
+    ]);
+    expect(await searchAs(other, 'konoba rejected', [hostPlaceId])).toEqual([]);
+  });
+
+  it('approve still creates the record when the host deleted the place meanwhile', async () => {
+    const { hostPlaceId, itemId } = await addPlace('Konoba Gone');
+    await deleteHostPlace(testDb.db, guest.propertyId, hostPlaceId);
+    const row = await approveCurationItem(deps, itemId, adminId, LATER);
+    expect((await recordOf(row.recordId as string)).title).toBe('Konoba Gone');
   });
 });

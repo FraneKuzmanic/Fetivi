@@ -53,7 +53,7 @@ function cardOf(output: unknown): PlaceCardPayload | null {
 export const guideRoutes: FastifyPluginAsync<GuideRouteDeps> = async (app, deps) => {
   async function withTools<T>(
     request: FastifyRequest,
-    unavailable: 'guide-unavailable' | 'saved-places-unavailable',
+    unavailable: 'guide-unavailable' | 'saved-places-unavailable' | 'host-picks-unavailable',
     use: (tools: TurnTools, ctx: SpaceContext) => Promise<T>,
   ): Promise<T> {
     const now = deps.now();
@@ -104,4 +104,23 @@ export const guideRoutes: FastifyPluginAsync<GuideRouteDeps> = async (app, deps)
       return { places };
     });
   });
+
+  /** The host's picks and added places as cards, in the order the host added them. */
+  app.get('/api/guide/host-picks', { config: { access: 'space' } }, async (request) =>
+    withTools(request, 'host-picks-unavailable', async (tools) => {
+      const listHostPicks = (await tools.list()).find(
+        (l) => l.server === 'local' && l.tool.name === 'list_host_picks',
+      );
+      // Not listed outside a destination: there are no picks to show.
+      if (!listHostPicks) return { places: [] };
+      const output = await tools.call(listHostPicks, {});
+      const results = isRecord(output) && Array.isArray(output.results) ? output.results : [];
+      const places: PlaceCardPayload[] = [];
+      for (const result of results) {
+        const parsed = placeCard.safeParse(result);
+        if (parsed.success) places.push(parsed.data);
+      }
+      return { places };
+    }),
+  );
 };

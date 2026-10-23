@@ -777,6 +777,13 @@ button svg,
   align-self: stretch;
 }
 
+.pick-note {
+  display: flex;
+  flex: 1 1 100%;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .blocks > .block-editor {
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-sm);

@@ -11,6 +11,7 @@ import type { Db, Executor } from '../db/client';
 import { accounts } from '../db/schema/accounts';
 import { catalogRecords, destinations } from '../db/schema/catalog';
 import { type CurationItemRow, curationItems } from '../db/schema/curation';
+import { hostPlaces } from '../db/schema/host-places';
 import type { JobQueue } from '../jobs/queue';
 import {
   CURATED_TEXT_FIELDS,
@@ -207,7 +208,10 @@ async function applyChanges(
   );
 }
 
-/** Creates the catalog place a host suggested, unverified, in the item's destination. */
+/**
+ * Creates the catalog place a host suggested, unverified, in the item's destination, and links
+ * the host place it came from (40) to it.
+ */
 async function createFromSuggestion(
   { db, queue }: ReviewDeps,
   item: CurationItemRow,
@@ -232,6 +236,14 @@ async function createFromSuggestion(
     },
     now,
   );
+  if (payload.hostPlaceId) {
+    // The host place becomes a pick of the new record once it publishes (ADR 0018). A host
+    // place deleted meanwhile is a no-op; the record is still created.
+    await db
+      .update(hostPlaces)
+      .set({ catalogRecordId: record.id, updatedAt: now })
+      .where(and(eq(hostPlaces.id, payload.hostPlaceId), isNull(hostPlaces.catalogRecordId)));
+  }
   return record.id;
 }
 

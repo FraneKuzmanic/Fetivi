@@ -23,6 +23,12 @@ const candidate = (toolName: string, value: unknown): unknown => {
         payload: { places: results },
       };
     }
+    case 'list_host_picks': {
+      const results = isRecord(value) ? value.results : null;
+      if (!Array.isArray(results) || results.length === 0) return null;
+      // The carousel holds at most 10; the Guide shows them all.
+      return { name: 'place-carousel', payload: { places: results.slice(0, 10) } };
+    }
     case 'suggest_replies':
       return { name: 'follow-up-chips', payload: value };
     case 'ask_choice':

@@ -9,6 +9,7 @@ export * from './db/migrate';
 export * from './db/schema';
 export * from './fallback';
 export * from './handoff';
+export * from './host-picks';
 export * from './jobs';
 export * from './mail';
 export * from './media';

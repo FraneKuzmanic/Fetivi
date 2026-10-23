@@ -154,6 +154,7 @@ export const fr: Messages = {
     lastChecked: 'Vérifié pour la dernière fois en {{month}} · appelez avant',
     unverified: 'Appelez avant de venir',
     hostPick: 'Le choix de votre hôte',
+    hostAdded: 'Ajouté par votre hôte',
     save: 'Enregistrer',
     saved: 'Enregistré',
     saveError: "L'enregistrement a échoué. Réessayez.",
@@ -461,6 +462,7 @@ export const fr: Messages = {
     savedEmpty:
       'Les lieux enregistrés dans le chat apparaissent ici. Touchez Enregistrer sur une fiche.',
     picksEmpty: 'Les adresses préférées de votre hôte apparaîtront bientôt ici.',
+    tipsHeading: 'Conseils sur le quartier',
     amenities: "Dans l'appartement",
     parking: 'Stationnement',
   },
