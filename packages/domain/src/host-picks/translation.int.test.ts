@@ -14,7 +14,6 @@ import {
 import { type TranslationDeps, TranslationRuleError } from '../translation/job';
 import type { ModelResult, TranslationModel } from '../translation/model';
 import {
-  listHostPlaceTranslations,
   needsTranslation,
   retryHostPlaceTranslation,
   runHostPlaceTranslation,
@@ -195,9 +194,8 @@ describe('runHostPlaceTranslation', () => {
         { hostPlaceId: row.id, revision: 1 },
       ),
     ).toBe('published');
-    const view = await listHostPlaceTranslations(testDb.db, await rowOf(row.id));
-    expect(view.status).toBe('published');
-    expect(view.languages.every((l) => l.current !== null)).toBe(true);
+    expect((await rowOf(row.id)).translationStatus).toBe('published');
+    expect(await translationsOf(row.id, 1)).toHaveLength(7);
   });
 
   it('deletes older revisions when a newer one publishes', async () => {

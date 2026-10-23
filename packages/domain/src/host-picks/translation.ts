@@ -3,14 +3,7 @@ import type { Executor } from '../db/client';
 import { catalogRecords } from '../db/schema/catalog';
 import { type HostPlaceRow, hostPlaces, hostPlaceTranslations } from '../db/schema/host-places';
 import { type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
-import {
-  GUEST_LANGUAGES,
-  type GuestLanguage,
-  type SourceLanguage,
-  type TranslationError,
-  type TranslationOrigin,
-  type TranslationStatus,
-} from '../property/vocabulary';
+import { GUEST_LANGUAGES, type TranslationError } from '../property/vocabulary';
 import { collectTranslations } from '../translation/collect';
 import {
   type TranslationDeps,
@@ -209,56 +202,4 @@ export async function retryHostPlaceTranslation(
     if (!row) throw new TranslationRuleError('translation-not-failed');
     await enqueueHostPlaceTranslation(tx, deps.queue, row, { retry: true });
   });
-}
-
-export interface HostPlaceTranslationView {
-  hostPlaceId: string;
-  /** The current source revision. */
-  revision: number;
-  publishedRevision: number | null;
-  status: TranslationStatus;
-  error: TranslationError | null;
-  sourceLanguage: SourceLanguage | null;
-  /** One entry per guest language, in GUEST_LANGUAGES order, at `revision`. */
-  languages: {
-    language: GuestLanguage;
-    current: { name: string; note: string; origin: TranslationOrigin; updatedAt: string } | null;
-  }[];
-}
-
-export async function listHostPlaceTranslations(
-  db: Executor,
-  row: HostPlaceRow,
-): Promise<HostPlaceTranslationView> {
-  const rows = await db
-    .select()
-    .from(hostPlaceTranslations)
-    .where(
-      and(
-        eq(hostPlaceTranslations.hostPlaceId, row.id),
-        eq(hostPlaceTranslations.revision, row.revision),
-      ),
-    );
-  return {
-    hostPlaceId: row.id,
-    revision: row.revision,
-    publishedRevision: row.publishedRevision,
-    status: row.translationStatus,
-    error: row.translationError,
-    sourceLanguage: row.sourceLanguage,
-    languages: GUEST_LANGUAGES.map((language) => {
-      const current = rows.find((r) => r.language === language);
-      return {
-        language,
-        current: current
-          ? {
-              name: current.name,
-              note: current.note,
-              origin: current.origin,
-              updatedAt: current.updatedAt.toISOString(),
-            }
-          : null,
-      };
-    }),
-  };
 }

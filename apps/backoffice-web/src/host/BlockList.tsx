@@ -27,7 +27,7 @@ export function BlockList({
   create: (input: BlockInput) => Promise<BlockResult>;
   onChanged: () => Promise<void>;
   emptyText: string;
-  /** The category a new block starts with. */
+  /** Every block here is in this category: new ones are created in it and none can leave it. */
   category?: HostBlockCategory;
 }) {
   const { busy, error, run } = useAction();
@@ -55,6 +55,7 @@ export function BlockList({
               <BlockEditor
                 heading="Edit block"
                 initial={{ ...block, category: block.category as HostBlockCategory }}
+                categoryFixed={category !== undefined}
                 onSubmit={(input) => host.updateBlock(block.id, input)}
                 onDone={done}
                 onCancel={() => setEditing(null)}
@@ -63,12 +64,17 @@ export function BlockList({
           ) : (
             <li key={block.id} className="block-row">
               <div className="block-text">
-                <span className="eyebrow">
-                  {CATEGORY_LABELS[block.category]}
-                  {block.visibility === 'after_release'
-                    ? ` · ${VISIBILITY_LABELS.after_release}`
-                    : null}
-                </span>
+                {/* In a one-category list the section heading already names it. */}
+                {category === undefined ? (
+                  <span className="eyebrow">
+                    {CATEGORY_LABELS[block.category]}
+                    {block.visibility === 'after_release'
+                      ? ` · ${VISIBILITY_LABELS.after_release}`
+                      : null}
+                  </span>
+                ) : block.visibility === 'after_release' ? (
+                  <span className="eyebrow">{VISIBILITY_LABELS.after_release}</span>
+                ) : null}
                 <span className="block-title">
                   <strong>{block.title}</strong>
                   <TranslationChip status={block.translation.status} />
@@ -140,6 +146,7 @@ export function BlockList({
         <BlockEditor
           heading="New block"
           initial={category ? { category } : undefined}
+          categoryFixed={category !== undefined}
           onSubmit={create}
           onDone={done}
           onCancel={() => setEditing(null)}

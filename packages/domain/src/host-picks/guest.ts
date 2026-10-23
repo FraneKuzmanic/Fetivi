@@ -11,6 +11,7 @@ import {
 } from '../catalog/summary';
 import type { PlaceCategory } from '../catalog/vocabulary';
 import type { Executor } from '../db/client';
+import { catalogRecords } from '../db/schema/catalog';
 import { hostPlaces, hostPlaceTranslations } from '../db/schema/host-places';
 
 // The guest read side of host places (40). Only the guests of the host place's own property see
@@ -18,7 +19,11 @@ import { hostPlaces, hostPlaceTranslations } from '../db/schema/host-places';
 // destination and is shown until the catalog record its suggestion became is visible; from then
 // on it reads as a pick of that record.
 
-/** The picked records among `recordIds` for this property, each with its note in the guest's language. */
+/**
+ * The picked records among `recordIds` for this property, each with its note in the guest's
+ * language. A note that is the record's description (a host-added place approved as is, ADR
+ * 0018) is dropped, so the card does not say it twice.
+ */
 export async function hostPicksFor(
   db: Executor,
   scope: CatalogScope,
@@ -26,8 +31,13 @@ export async function hostPicksFor(
 ): Promise<Map<string, { note: string | null }>> {
   if (recordIds.length === 0) return new Map();
   const rows = await db
-    .select({ recordId: hostPlaces.catalogRecordId, note: hostPlaceTranslations.note })
+    .select({
+      recordId: hostPlaces.catalogRecordId,
+      note: hostPlaceTranslations.note,
+      repeats: sql<boolean>`${hostPlaces.note} = ${catalogRecords.description}`,
+    })
     .from(hostPlaces)
+    .innerJoin(catalogRecords, eq(catalogRecords.id, hostPlaces.catalogRecordId))
     .leftJoin(
       hostPlaceTranslations,
       and(
@@ -43,7 +53,9 @@ export async function hostPicksFor(
       ),
     );
   return new Map(
-    rows.flatMap((r) => (r.recordId ? [[r.recordId, { note: r.note || null }] as const] : [])),
+    rows.flatMap((r) =>
+      r.recordId ? [[r.recordId, { note: r.repeats ? null : r.note || null }] as const] : [],
+    ),
   );
 }
 

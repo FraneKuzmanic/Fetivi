@@ -264,6 +264,26 @@ describe('host picks page', () => {
     await vi.waitFor(() => expect(el.querySelector('form[aria-label="Add a place"]')).toBeNull());
   });
 
+  it('adds a tip in the Neighbourhood tips section only', async () => {
+    stubApi({
+      ...BASE,
+      'POST /api/host/properties/pr1/blocks': () => json({ block: TIPS, warnings: [] }, 201),
+    });
+    await mount();
+    const tips = el.querySelectorAll('section.panel')[2];
+    expect(tips?.querySelector('.eyebrow')).toBeNull();
+    await click('Add block');
+    expect(tips?.textContent).not.toContain('Guide section');
+    await setValue(field('Title'), 'Market');
+    await setValue(field('Text'), 'Fresh fish until 10.');
+    await submit(tips?.querySelector('form.block-editor') ?? null);
+    await vi.waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    expect(calls.find((c) => c.method === 'POST')?.body).toMatchObject({
+      category: 'host_picks',
+      title: 'Market',
+    });
+  });
+
   it('shows only the tips outside a destination', async () => {
     stubApi({
       ...BASE,

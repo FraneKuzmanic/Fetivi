@@ -425,12 +425,9 @@ describe('a host place suggestion from a host-added place (40)', () => {
       },
     ]);
     await publishCatalog(testDb.db, destinationId);
+    // The record's description is the note, so the pick does not repeat it.
     expect(await searchAs(guest, 'konoba linked', [hostPlaceId, recordId])).toEqual([
-      {
-        id: recordId,
-        hostPick: { note: '[de] Konoba Linked has the best fish.' },
-        hostAdded: false,
-      },
+      { id: recordId, hostPick: { note: null }, hostAdded: false },
     ]);
     // Another property's guests see the record, without the pick.
     expect(await searchAs(other, 'konoba linked', [hostPlaceId, recordId])).toEqual([

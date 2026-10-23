@@ -51,10 +51,13 @@ export function BlockEditor({
   onSubmit,
   onDone,
   onCancel,
+  categoryFixed = false,
 }: {
   initial?: Partial<Pick<Block, 'title' | 'body' | 'visibility' | 'revision'>> & {
     category?: HostBlockCategory;
   };
+  /** Hides the Guide section field: the block stays in `initial.category`. */
+  categoryFixed?: boolean;
   heading: string;
   onSubmit: (input: BlockInput) => Promise<BlockResult>;
   /** Called after a save; the warnings, if any, are shown by the caller. */
@@ -81,13 +84,15 @@ export function BlockEditor({
     <form className="block-editor" onSubmit={submit}>
       <h3>{heading}</h3>
       <div className="fields">
-        <SelectField
-          label="Guide section"
-          value={category}
-          options={HOST_BLOCK_CATEGORIES}
-          labels={CATEGORY_LABELS}
-          onChange={(v) => v && setCategory(v)}
-        />
+        {categoryFixed ? null : (
+          <SelectField
+            label="Guide section"
+            value={category}
+            options={HOST_BLOCK_CATEGORIES}
+            labels={CATEGORY_LABELS}
+            onChange={(v) => v && setCategory(v)}
+          />
+        )}
         <SelectField
           label="Visibility"
           hint="Arrival details can wait until the arrival release before check-in."

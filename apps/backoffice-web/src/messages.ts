@@ -1,3 +1,4 @@
+import { HOST_PLACE_LIMITS } from '@fetivi/domain/host-picks-vocabulary';
 import { ApiError } from './api';
 
 const MESSAGES: Record<string, string> = {
@@ -55,7 +56,7 @@ const MESSAGES: Record<string, string> = {
     'This Order is no longer waiting for the Provider, or its terms changed. Reload the page.',
   'not-reviewable': 'Someone already reviewed this item.',
   'already-picked': 'Already one of your picks.',
-  'limit-reached': 'You can share up to 20 places.',
+  'limit-reached': `You can share up to ${HOST_PLACE_LIMITS.perProperty} places.`,
   'outside-destination':
     "That spot is outside your property's destination. Pick a place in the same area as your property.",
   'no-destination': "Your property isn't inside a Fetivi destination yet.",

@@ -412,10 +412,9 @@ export async function updateHostPlace(
         throw new HostPlaceRuleError('not-found');
       }
       const { note, location, ...placeFields } = changes;
-      if (current.name === null && Object.values(placeFields).some((v) => v !== undefined)) {
-        throw new HostPlaceRuleError('invalid-input');
-      }
-      if (current.name === null && location !== undefined) {
+      const placeChanged =
+        location !== undefined || Object.values(placeFields).some((v) => v !== undefined);
+      if (current.name === null && placeChanged) {
         throw new HostPlaceRuleError('invalid-input');
       }
       if (location !== undefined) {

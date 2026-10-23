@@ -288,3 +288,32 @@ describe('a promoted host-added place', () => {
     expect(await getPlace(testDb.db, scopeOf(a), anteId, SUMMER)).toBeNull();
   });
 });
+
+describe('a pick whose note is its record description', () => {
+  it('drops the note, so a host-added place approved as is does not repeat itself', async () => {
+    const [record] = await testDb.db
+      .insert(catalogRecords)
+      .values({
+        destinationId,
+        kind: 'place',
+        title: 'Pekara Duje',
+        description: 'Fresh burek from 6 am.',
+        placeCategory: 'restaurant',
+        location: { x: SPOT.lng, y: SPOT.lat },
+      })
+      .returning();
+    if (!record) throw new Error('no record');
+    await publishCatalog(testDb.db, destinationId);
+    const pick = await createHostPick(
+      testDb.db,
+      noopQueue,
+      b.propertyId,
+      { recordId: record.id, note: 'Fresh burek from 6 am.' },
+      SUMMER,
+    );
+    await publishHostPlace(testDb.db, pick.id);
+    expect(await hostPicksFor(testDb.db, scopeOf(b), [record.id])).toEqual(
+      new Map([[record.id, { note: null }]]),
+    );
+  });
+});

@@ -26,3 +26,4 @@ The new record starts unpublished. Its translation job publishes it later, and a
 - One `host_places` table holds both picks and host-added places. A row created as a host-added place keeps its name, so the host page lists it under "Places you added", marked "In Fetivi's catalog".
 - A promoted row counts toward the 20-place limit, as before.
 - Deleting the record removes the host's note with it. The record holds the same place, so this is accepted.
+- A plain Approve makes the host's note the record's description. While the two source texts are equal, the guest read drops the pick's note, so the card does not show the same sentence twice. Once the host or the admin changes either text, the note shows again.
