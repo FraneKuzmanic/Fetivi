@@ -9,7 +9,12 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { FINDING_KINDS, FINDING_STATUSES, RECONCILE_TRIGGERS } from '../../payments/vocabulary';
+import {
+  FINDING_KINDS,
+  FINDING_STATUSES,
+  RECONCILE_TRIGGERS,
+  type ReconcileError,
+} from '../../payments/vocabulary';
 import { accounts } from './accounts';
 import { orders } from './orders';
 
@@ -30,8 +35,8 @@ export const reconciliationRuns = pgTable(
     checked: integer('checked').notNull().default(0),
     found: integer('found').notNull().default(0),
     resolved: integer('resolved').notNull().default(0),
-    /** A code only, such as `stripe-unavailable` or `stripe-not-configured`. */
-    error: text('error'),
+    /** Why only the holds were checked; null when Stripe was checked too. */
+    error: text('error').$type<ReconcileError>(),
   },
   (t) => [index('reconciliation_runs_started_idx').on(t.startedAt)],
 );

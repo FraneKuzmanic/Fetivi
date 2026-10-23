@@ -21,8 +21,10 @@ import { type PaymentGateway, PaymentGatewayError } from './gateway';
 import { checkoutParams, keyed, recordSession } from './jobs';
 import {
   type FindingKind,
+  type FindingStatus,
   RECONCILE_ATTEMPT_LIMIT,
   RECONCILE_ORPHAN_DAYS,
+  type ReconcileError,
   type ReconcileTrigger,
 } from './vocabulary';
 
@@ -46,8 +48,7 @@ export interface ReconcileSummary {
   found: number;
   resolved: number;
   needsAttention: number;
-  /** A code only: `stripe-not-configured` or `stripe-unavailable`. */
-  error: string | null;
+  error: ReconcileError | null;
 }
 
 export interface Finding {
@@ -60,7 +61,7 @@ export interface Finding {
   /** Ids and statuses only, never contact data. */
   detail: string;
   action?: string | null;
-  status: 'resolved' | 'needs_attention';
+  status: Exclude<FindingStatus, 'dismissed'>;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -213,7 +214,7 @@ export async function reconcileAttempt(
   const input = { attemptId: start.id, trigger: 'reconciliation' } as const;
   const feed = async (
     kind: FindingKind,
-    stripeRef: string,
+    stripeRef: string | null,
     detail: string,
     label: string,
     run: () => Promise<TransitionOutcome>,
@@ -244,11 +245,15 @@ export async function reconcileAttempt(
       await recordSession(deps, attempt, session, false);
       sessionId = session.id;
     } catch (error) {
-      // Stripe never accepted the create: there is no session.
-      if (error instanceof PaymentGatewayError && error.code === 'expires-at-invalid') {
-        return findings;
+      if (!(error instanceof PaymentGatewayError && error.code === 'expires-at-invalid')) {
+        throw error;
       }
-      throw error;
+      // Stripe never accepted the create, so no session exists and the checkout is over:
+      // recorded as expired, so the attempt is settled and not replayed on every run.
+      await feed('session_expired', null, 'create never accepted', 'session expired', () =>
+        sessionExpired(deps, input),
+      );
+      return findings;
     }
     attempt = (await reread(deps, attempt.id)) ?? attempt;
   }
@@ -304,6 +309,9 @@ export async function reconcileAttempt(
 }
 
 // --- Holds ---
+
+/** `2027-05-01 10:30 UTC`: short enough for a finding row. */
+const utcMinute = (date: Date) => `${date.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 
 const HOLD_ACTIONS: Partial<Record<HoldOutcome, string>> = {
   expired: 'expire: applied',
@@ -401,7 +409,7 @@ export async function runReconciliation(
     });
 
   const { gateway } = deps;
-  let error: string | null = gateway ? null : 'stripe-not-configured';
+  let error: ReconcileError | null = gateway ? null : 'stripe-not-configured';
   if (gateway) {
     const stripe = { ...deps, gateway };
     try {
@@ -425,23 +433,13 @@ export async function runReconciliation(
     const subject = `hold:${hold.id}`;
     const base = { subject, orderId: hold.orderId, holdId: hold.id };
     try {
-      const { outcome } = await reconcileHold(deps, hold.id);
+      const { outcome, orderStatus } = await reconcileHold(deps, hold.id);
       const action = HOLD_ACTIONS[outcome];
+      const detail = `Order ${orderStatus} · hold expired ${utcMinute(hold.expiresAt)}`;
       if (action) {
-        await record({
-          ...base,
-          kind: 'hold_expired',
-          detail: `hold expired ${hold.expiresAt.toISOString()}`,
-          action,
-          status: 'resolved',
-        });
+        await record({ ...base, kind: 'hold_expired', detail, action, status: 'resolved' });
       } else if (outcome === 'reported') {
-        await record({
-          ...base,
-          kind: 'hold_on_confirmed',
-          detail: `hold held past ${hold.expiresAt.toISOString()}`,
-          status: 'needs_attention',
-        });
+        await record({ ...base, kind: 'hold_on_active_order', detail, status: 'needs_attention' });
       }
     } catch (e) {
       await failed(subject, hold.orderId, e, { holdId: hold.id });

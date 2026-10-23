@@ -1,16 +1,12 @@
+import type { FindingKind, ReconcileError } from '@fetivi/domain/payments-vocabulary';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  type ReconciliationFinding,
-  type ReconciliationFindingKind,
-  type ReconciliationRun,
-  reconciliation,
-} from '../../api';
+import { type ReconciliationFinding, type ReconciliationRun, reconciliation } from '../../api';
 import { useAction } from '../../useAction';
 
 type Tab = 'needs_attention' | 'resolved';
 
-const KIND_LABELS: Record<ReconciliationFindingKind, string> = {
+const KIND_LABELS: Record<FindingKind, string> = {
   session_completed: 'Payment completed, webhook missed',
   session_expired: 'Checkout expired, webhook missed',
   intent_canceled: 'Card authorization lapsed',
@@ -18,15 +14,40 @@ const KIND_LABELS: Record<ReconciliationFindingKind, string> = {
   refund_succeeded: 'Refund completed, webhook missed',
   refund_failed: 'Refund failed at Stripe',
   hold_expired: 'Hold past expiry',
-  hold_on_confirmed: 'Hold still held on a confirmed Order',
+  hold_on_active_order: 'Hold past expiry on an active Order',
   orphan_session: 'Stripe checkout with no Order',
   check_failed: 'Check failed',
 };
 
-const RUN_ERRORS: Record<string, string> = {
+const RUN_ERRORS: Record<ReconcileError, string> = {
   'stripe-not-configured': 'Stripe is not configured, so only holds were checked',
   'stripe-unavailable': 'Stripe was unavailable, so only holds were checked',
 };
+
+/** The stored action is `<what was fed>: <machine outcome>`; the admin reads it in words. */
+const ACTIONS: Record<string, string> = {
+  authorize: 'Payment authorized',
+  'session expired': 'Checkout expiry recorded',
+  void: 'Authorization void recorded',
+  capture: 'Capture recorded',
+  refunded: 'Refund recorded',
+  'refund failed': 'Refund failure recorded',
+  expire: 'Order expired',
+  fail: 'Order failed, admin alerted',
+  release: 'Hold released',
+};
+
+const OUTCOMES: Record<string, string> = {
+  unchanged: 'already up to date',
+  stale: 'older proposal, nothing changed',
+  rejected: 'refused',
+};
+
+function actionText(action: string): string {
+  const [what = action, outcome = 'applied'] = action.split(': ');
+  const done = ACTIONS[what] ?? what;
+  return outcome === 'applied' ? done : `${done} (${OUTCOMES[outcome] ?? outcome})`;
+}
 
 /** How long after Run now the page reloads once; a run takes seconds. */
 const RELOAD_AFTER_MS = 5000;
@@ -34,14 +55,17 @@ const RELOAD_AFTER_MS = 5000;
 const time = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
-function lastRunLine(run: ReconciliationRun | undefined): string {
-  if (!run) return 'No run yet. The job runs every 5 minutes.';
+function runLine(run: ReconciliationRun): string {
   const at = time(run.startedAt);
-  if (!run.finishedAt) return `Last run ${at} did not finish.`;
+  if (!run.finishedAt) return `${at} did not finish.`;
   const open = run.found - run.resolved;
   const counts = `checked ${run.checked} · ${run.resolved} put right · ${open} need attention`;
-  const error = run.error ? ` · ${RUN_ERRORS[run.error] ?? run.error}` : '';
-  return `Last run ${at} · ${counts}${error}`;
+  const error = run.error ? ` · ${RUN_ERRORS[run.error]}` : '';
+  return `${at} · ${counts}${error}`;
+}
+
+function lastRunLine(run: ReconciliationRun | undefined): string {
+  return run ? `Last run ${runLine(run)}` : 'No run yet. The job runs every 5 minutes.';
 }
 
 export function ReconciliationPage() {
@@ -92,6 +116,16 @@ export function ReconciliationPage() {
       <p className="muted">
         {queued ? 'Run queued. It finishes within a minute.' : lastRunLine(runs[0])}
       </p>
+      {runs.length > 1 ? (
+        <details className="help">
+          <summary>Earlier runs</summary>
+          {runs.slice(1).map((r) => (
+            <p key={r.id} className="muted">
+              {runLine(r)}
+            </p>
+          ))}
+        </details>
+      ) : null}
       <div className="segmented" role="tablist" aria-label="Status">
         {(['needs_attention', 'resolved'] as const).map((t) => (
           <button
@@ -122,7 +156,7 @@ export function ReconciliationPage() {
                   {[
                     f.orderId ? `Order ${f.orderId.slice(0, 8)}` : null,
                     f.detail,
-                    f.action,
+                    f.action ? actionText(f.action) : null,
                     f.status === 'dismissed' ? 'marked resolved' : null,
                   ]
                     .filter(Boolean)

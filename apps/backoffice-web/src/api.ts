@@ -23,7 +23,13 @@ import type {
   PriceUnit,
   ProviderLanguage,
 } from '@fetivi/domain/offer-vocabulary';
-import type { ProviderCardStatus } from '@fetivi/domain/payments-vocabulary';
+import type {
+  FindingKind,
+  FindingStatus,
+  ProviderCardStatus,
+  ReconcileError,
+  ReconcileTrigger,
+} from '@fetivi/domain/payments-vocabulary';
 import type {
   Amenity,
   Bed,
@@ -456,33 +462,21 @@ export type ProposalConfirm = Omit<StayInput, 'checkIn' | 'checkout'>;
 
 export interface ReconciliationRun {
   id: string;
-  trigger: 'schedule' | 'admin';
+  trigger: ReconcileTrigger;
   startedAt: string;
   /** Null while running, or when the run did not finish. */
   finishedAt: string | null;
   checked: number;
   found: number;
   resolved: number;
-  /** `stripe-not-configured` or `stripe-unavailable`. */
-  error: string | null;
+  /** Why only the holds were checked. */
+  error: ReconcileError | null;
 }
-
-export type ReconciliationFindingKind =
-  | 'session_completed'
-  | 'session_expired'
-  | 'intent_canceled'
-  | 'intent_captured'
-  | 'refund_succeeded'
-  | 'refund_failed'
-  | 'hold_expired'
-  | 'hold_on_confirmed'
-  | 'orphan_session'
-  | 'check_failed';
 
 export interface ReconciliationFinding {
   id: string;
-  kind: ReconciliationFindingKind;
-  status: 'resolved' | 'needs_attention' | 'dismissed';
+  kind: FindingKind;
+  status: FindingStatus;
   orderId: string | null;
   stripeRef: string | null;
   detail: string;

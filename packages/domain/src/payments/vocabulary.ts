@@ -128,6 +128,10 @@ export const RECONCILE_ORPHAN_DAYS = 8;
 export const RECONCILE_TRIGGERS = ['schedule', 'admin'] as const;
 export type ReconcileTrigger = (typeof RECONCILE_TRIGGERS)[number];
 
+/** Why a run checked only the holds: Stripe is not configured, or it stopped answering. */
+export const RECONCILE_ERRORS = ['stripe-not-configured', 'stripe-unavailable'] as const;
+export type ReconcileError = (typeof RECONCILE_ERRORS)[number];
+
 /** What one reconciliation finding is about. */
 export const FINDING_KINDS = [
   /** A completion Fetivi missed. */
@@ -140,8 +144,11 @@ export const FINDING_KINDS = [
   'refund_failed',
   /** A held hold past expiry. */
   'hold_expired',
-  /** A held hold on a confirmed Order: never touched, reported. */
-  'hold_on_confirmed',
+  /**
+   * A held hold past expiry on an Order still in play (`confirmed`, `pending_provider`, or
+   * `confirming` with a Payment other than `none` or `authorized`): never touched, reported.
+   */
+  'hold_on_active_order',
   /** A Stripe session no attempt knows (after a restore). */
   'orphan_session',
   /** Stripe rejected the read or the machine refused: a human looks. */

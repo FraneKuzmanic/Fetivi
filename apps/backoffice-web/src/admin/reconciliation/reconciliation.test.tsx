@@ -16,6 +16,14 @@ const RUN: ReconciliationRun = {
   error: null,
 };
 
+const EARLIER: ReconciliationRun = {
+  ...RUN,
+  id: 'r0',
+  startedAt: '2026-10-23T09:55:00Z',
+  finishedAt: '2026-10-23T09:55:01Z',
+  error: 'stripe-unavailable',
+};
+
 const OPEN: ReconciliationFinding = {
   id: 'f-open',
   kind: 'orphan_session',
@@ -40,6 +48,13 @@ const RESOLVED: ReconciliationFinding = {
   firstSeenAt: '2026-10-23T10:00:00Z',
   lastSeenAt: '2026-10-23T10:00:00Z',
   resolvedAt: '2026-10-23T10:00:00Z',
+};
+
+const RACED: ReconciliationFinding = {
+  ...RESOLVED,
+  id: 'f-raced',
+  kind: 'hold_expired',
+  action: 'expire: unchanged',
 };
 
 let root: Root | null = null;
@@ -67,8 +82,10 @@ function stubApi() {
     calls.push({ url, method: init?.method ?? 'GET' });
     if (url.endsWith('/run')) return json({ queued: true }, 202);
     if (url.endsWith('/resolve')) return new Response(null, { status: 204 });
-    if (url.includes('status=resolved')) return json({ runs: [RUN], findings: [RESOLVED] });
-    return json({ runs: [RUN], findings: [OPEN] });
+    if (url.includes('status=resolved')) {
+      return json({ runs: [RUN, EARLIER], findings: [RESOLVED, RACED] });
+    }
+    return json({ runs: [RUN, EARLIER], findings: [OPEN] });
   });
 }
 
@@ -96,12 +113,20 @@ describe('ReconciliationPage', () => {
     await mount();
     expect(el.textContent).toContain('Stripe checkout with no Order');
     expect(el.textContent).toContain('checked 12 · 1 put right · 1 need attention');
+    expect(el.querySelector('details summary')?.textContent).toBe('Earlier runs');
+    expect(el.querySelector('details')?.textContent).toContain(
+      'Stripe was unavailable, so only holds were checked',
+    );
     expect(button('Mark resolved')).toBeDefined();
 
     await click('Resolved');
     expect(calls.at(-1)?.url).toBe('/api/admin/reconciliation?status=resolved');
     expect(el.textContent).toContain('Payment completed, webhook missed');
     expect(el.textContent).toContain('Order 0b3f1c2d');
+    // The stored action codes read as words.
+    expect(el.textContent).toContain('Payment authorized');
+    expect(el.textContent).toContain('Order expired (already up to date)');
+    expect(el.textContent).not.toContain(': applied');
     expect(button('Mark resolved')).toBeUndefined();
   });
 

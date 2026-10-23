@@ -108,7 +108,11 @@ describe('reconcileHold', () => {
     expect(await remaining(slotId)).toBe(0);
     clock = after(3);
     expect((await expiredHolds(testDb.db, clock, 1000)).map((h) => h.id)).toContain(hold.id);
-    expect(await reconcileHold(deps(), hold.id)).toEqual({ outcome: 'expired', orderId: order.id });
+    expect(await reconcileHold(deps(), hold.id)).toEqual({
+      outcome: 'expired',
+      orderId: order.id,
+      orderStatus: 'confirming',
+    });
     expect(await orderOf(order.id)).toMatchObject({ status: 'expired' });
     expect((await holdOf(hold.id))?.state).toBe('released');
     expect(await remaining(slotId)).toBe(2);

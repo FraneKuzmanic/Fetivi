@@ -203,7 +203,8 @@ describe('My trip → paying online', () => {
     await vi.waitFor(() => expect(host.textContent).toContain('Confirming'));
     expect(host.textContent).not.toContain('Pay now');
     await vi.waitFor(() => expect(host.textContent).toContain('Paid'), { timeout: 4000 });
-    expect(host.textContent).not.toContain("I'm confirming your booking");
+    // The wait ends in the effect after the render that shows Paid.
+    await vi.waitFor(() => expect(host.textContent).not.toContain("I'm confirming your booking"));
     expect(calls.filter((c) => c === 'GET /api/orders')).toHaveLength(2);
   });
 

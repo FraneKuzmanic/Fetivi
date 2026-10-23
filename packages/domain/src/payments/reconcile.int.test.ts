@@ -264,6 +264,67 @@ describe('runReconciliation: attempts', () => {
     expect(await orderOf(order.id)).toMatchObject({ paymentStatus: 'refunded' });
   });
 
+  it('records a refund that failed at Stripe while Fetivi still has it pending', async () => {
+    const { order, attempt, ref } = await placeOnline();
+    await pay(attempt.id);
+    await runJobs(attempt.id);
+    await cancel(deps(), { ...ref, trigger: 'admin' });
+    await runJobs(attempt.id, ['refund']);
+    const { refundId } = await attemptOf(attempt.id);
+    gateway.settleRefund(refundId as string, 'failed');
+    gateway.takeEvents();
+    const summary = await runReconciliation(rdeps(), { trigger: 'schedule' });
+    expect(await findingsFor(summary.runId, `attempt:${attempt.id}`)).toMatchObject([
+      {
+        kind: 'refund_failed',
+        status: 'resolved',
+        stripeRef: refundId,
+        detail: 'refund=failed',
+        action: 'refund failed: applied',
+      },
+    ]);
+    expect(await orderOf(order.id)).toMatchObject({ paymentStatus: 'failed' });
+    expect((await attemptOf(attempt.id)).refundStatus).toBe('failed');
+  });
+
+  it('settles a create Stripe never accepted once, instead of replaying it every run', async () => {
+    const { order, attempt } = await placeOnline();
+    // The open job marked the create sent and died before Stripe accepted it.
+    await testDb.db
+      .update(paymentAttempts)
+      .set({ createSentAt: NOW })
+      .where(eq(paymentAttempts.id, attempt.id));
+    clock = after(1);
+    const creates = () =>
+      gateway.calls.filter(
+        (c) =>
+          c.op === 'create_session' &&
+          (c.params as { clientReferenceId?: string }).clientReferenceId === attempt.id,
+      ).length;
+
+    const first = await runReconciliation(rdeps(), { trigger: 'schedule' });
+    expect(await findingsFor(first.runId, `attempt:${attempt.id}`)).toMatchObject([
+      {
+        kind: 'session_expired',
+        status: 'resolved',
+        stripeRef: null,
+        detail: 'create never accepted',
+        action: 'session expired: applied',
+      },
+    ]);
+    expect(await attemptOf(attempt.id)).toMatchObject({
+      sessionId: null,
+      sessionStatus: 'expired',
+    });
+    expect(await orderOf(order.id)).toMatchObject({ status: 'expired', paymentStatus: 'none' });
+    expect(creates()).toBe(1);
+
+    clock = after(6);
+    const second = await runReconciliation(rdeps(), { trigger: 'schedule' });
+    expect(await findingsFor(second.runId, `attempt:${attempt.id}`)).toEqual([]);
+    expect(creates()).toBe(1);
+  });
+
   it('records a rejected read as check_failed and carries on with the next attempt', async () => {
     const first = await placeOnline();
     await runJobs(first.attempt.id, ['open']);
@@ -348,12 +409,39 @@ describe('runReconciliation: holds and Stripe trouble', () => {
       .from(inventoryHolds)
       .where(eq(inventoryHolds.orderId, order.id));
     expect(await findingsFor(summary.runId, `hold:${hold?.id}`)).toMatchObject([
-      { kind: 'hold_expired', status: 'resolved', action: 'expire: applied' },
+      {
+        kind: 'hold_expired',
+        status: 'resolved',
+        action: 'expire: applied',
+        detail: `Order confirming · hold expired ${HOLD_UNTIL.toISOString().slice(0, 16).replace('T', ' ')} UTC`,
+      },
     ]);
     expect(await orderOf(order.id)).toMatchObject({ status: 'expired' });
     expect(
       (await findingsOf(summary.runId)).filter((f) => f.kind === 'orphan_session'),
     ).toHaveLength(0);
+  });
+
+  it('reports a held hold on a pending_provider Order as one on an active Order', async () => {
+    const { order } = await placeOrder('direct');
+    await testDb.db
+      .update(orders)
+      .set({ status: 'pending_provider' })
+      .where(eq(orders.id, order.id));
+    clock = after(3);
+    const summary = await runReconciliation(rdeps(null), { trigger: 'schedule' });
+    const [hold] = await testDb.db
+      .select()
+      .from(inventoryHolds)
+      .where(eq(inventoryHolds.orderId, order.id));
+    expect(await findingsFor(summary.runId, `hold:${hold?.id}`)).toMatchObject([
+      {
+        kind: 'hold_on_active_order',
+        status: 'needs_attention',
+        detail: expect.stringMatching(/^Order pending_provider · hold expired /),
+      },
+    ]);
+    expect(hold?.state).toBe('held');
   });
 
   it('runs the holds without Stripe configured', async () => {

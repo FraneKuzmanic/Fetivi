@@ -7,7 +7,7 @@ import {
 } from '../payments/vocabulary';
 import { type OrderDeps, OrderRuleError, releaseHold, releaseIn } from './machine';
 import { flagPaymentAttentionIn } from './payments';
-import { isFinalOrderStatus } from './vocabulary';
+import { isFinalOrderStatus, type OrderStatus } from './vocabulary';
 
 // Holds still `held` past their expiry, resolved by the reconciliation job (34): a lost or stale
 // hold timer, a dead confirm job or a restore can leave one behind.
@@ -34,13 +34,15 @@ export function expiredHolds(db: Executor, now: Date, limit: number): Promise<In
  *   confirm grace has passed, else `waiting`
  * - Order final or `awaiting_confirmation`, or the proposal is not current → the hold is
  *   released through the adapter release (`releaseHold`)
- * - Order `confirmed` or `pending_provider` → `reported`, never touched
+ * - any other Order (`confirmed`, `pending_provider`, `confirming` with another Payment) →
+ *   `reported`, never touched
  * A hold no longer held or not yet past the grace is `none`: its timer or a webhook won the race.
+ * `orderStatus` is the Order's status before any change.
  */
 export function reconcileHold(
   deps: OrderDeps,
   holdId: string,
-): Promise<{ outcome: HoldOutcome; orderId: string }> {
+): Promise<{ outcome: HoldOutcome; orderId: string; orderStatus: OrderStatus }> {
   return deps.db.transaction(async (tx) => {
     const [found] = await tx
       .select({ orderId: inventoryHolds.orderId })
@@ -49,8 +51,11 @@ export function reconcileHold(
     if (!found) throw new OrderRuleError('not-found');
     const { orderId } = found;
     // Lock order: the Order row first, then the hold (and, inside the machine, attempt and slot).
+    // Locked by hand, not with `withLockedOrder`: a hold of a superseded proposal is resolved
+    // too, where that helper answers `stale`.
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for('update');
     if (!order) throw new OrderRuleError('not-found');
+    const done = (outcome: HoldOutcome) => ({ outcome, orderId, orderStatus: order.status });
     const [hold] = await tx
       .select()
       .from(inventoryHolds)
@@ -61,30 +66,30 @@ export function reconcileHold(
       hold?.state !== 'held' ||
       hold.expiresAt.getTime() + minutes(RECONCILE_HOLD_GRACE_MINUTES) > now.getTime()
     ) {
-      return { outcome: 'none', orderId };
+      return done('none');
     }
     const current = order.currentProposalId === hold.proposalId;
     if (!current || isFinalOrderStatus(order.status) || order.status === 'awaiting_confirmation') {
       await releaseHold(tx, deps, hold.proposalId);
-      return { outcome: 'released', orderId };
+      return done('released');
     }
-    if (order.status !== 'confirming') return { outcome: 'reported', orderId };
+    if (order.status !== 'confirming') return done('reported');
     const ref = { orderId, proposalId: hold.proposalId, trigger: 'reconciliation' as const };
     if (order.paymentStatus === 'none') {
       const expired = await releaseIn(tx, deps, order, 'expire', ref);
-      return { outcome: expired.outcome === 'applied' ? 'expired' : 'none', orderId };
+      return done(expired.outcome === 'applied' ? 'expired' : 'none');
     }
-    if (order.paymentStatus !== 'authorized') return { outcome: 'reported', orderId };
+    if (order.paymentStatus !== 'authorized') return done('reported');
     // The confirm job has its retries before the Order is given up on.
     if (hold.expiresAt.getTime() + minutes(RECONCILE_CONFIRM_GRACE_MINUTES) > now.getTime()) {
-      return { outcome: 'waiting', orderId };
+      return done('waiting');
     }
     const failed = await releaseIn(tx, deps, order, 'fail', {
       ...ref,
       note: 'not confirmed before the hold expired',
     });
-    if (failed.outcome !== 'applied') return { outcome: 'none', orderId };
+    if (failed.outcome !== 'applied') return done('none');
     await flagPaymentAttentionIn(tx, deps, failed.order, hold.proposalId);
-    return { outcome: 'failed', orderId };
+    return done('failed');
   });
 }
