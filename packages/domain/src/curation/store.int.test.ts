@@ -1,8 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createCatalogRecord } from '../catalog/store';
 import { curationItems } from '../db/schema/curation';
 import {
   createTestDatabase,
+  noopQueue,
   type SeededGuestUnit,
   seedDestination,
   seedGuestUnit,
@@ -36,7 +38,7 @@ describe('enqueueCurationItem', () => {
     };
     const { id } = await enqueueCurationItem(
       testDb.db,
-      { kind: 'host_provider_suggestion', hostId: guest.hostId, destinationId, payload },
+      { hostId: guest.hostId, destinationId, payload },
       NOW,
     );
     const [row] = await testDb.db.select().from(curationItems).where(eq(curationItems.id, id));
@@ -53,13 +55,48 @@ describe('enqueueCurationItem', () => {
   it('allows an item without host or destination', async () => {
     const { id } = await enqueueCurationItem(
       testDb.db,
-      {
-        kind: 'host_provider_suggestion',
-        payload: { kind: 'host_provider_suggestion', name: 'X', contact: null, note: null },
-      },
+      { payload: { kind: 'host_provider_suggestion', name: 'X', contact: null, note: null } },
       NOW,
     );
     const [row] = await testDb.db.select().from(curationItems).where(eq(curationItems.id, id));
     expect(row).toMatchObject({ hostId: null, destinationId: null });
+  });
+
+  it('stores the record it is about', async () => {
+    const record = await createCatalogRecord(
+      testDb.db,
+      noopQueue,
+      { destinationId, kind: 'day_trip', title: 'Krka', description: 'Falls.', travelMinutes: 60 },
+      NOW,
+    );
+    const { id } = await enqueueCurationItem(
+      testDb.db,
+      {
+        destinationId,
+        recordId: record.id,
+        payload: { kind: 'guest_flagged', reason: 'wrong', count: 1 },
+      },
+      NOW,
+    );
+    const [row] = await testDb.db.select().from(curationItems).where(eq(curationItems.id, id));
+    expect(row).toMatchObject({ kind: 'guest_flagged', recordId: record.id, dedupeKey: null });
+  });
+
+  it('gives one item per dedupe key', async () => {
+    const payload = {
+      kind: 'host_provider_suggestion' as const,
+      name: 'Y',
+      contact: null,
+      note: null,
+    };
+    const first = await enqueueCurationItem(testDb.db, { dedupeKey: 'k:1', payload }, NOW);
+    const second = await enqueueCurationItem(testDb.db, { dedupeKey: 'k:1', payload }, NOW);
+    expect(first.created).toBe(true);
+    expect(second).toEqual({ id: first.id, created: false });
+    const rows = await testDb.db
+      .select()
+      .from(curationItems)
+      .where(eq(curationItems.dedupeKey, 'k:1'));
+    expect(rows).toHaveLength(1);
   });
 });

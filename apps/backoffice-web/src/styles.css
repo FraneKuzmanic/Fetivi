@@ -881,7 +881,8 @@ button svg,
   color: var(--gray-500);
 }
 
-.segmented button[aria-selected="true"] {
+.segmented button[aria-selected="true"],
+.segmented button[aria-pressed="true"] {
   background: var(--sky-100);
   color: var(--blue-600);
 }
@@ -976,6 +977,24 @@ button svg,
 .segmented.wrap {
   flex-wrap: wrap;
   max-width: 100%;
+}
+
+fieldset.segmented {
+  margin: 0;
+  min-width: 0;
+}
+
+/* On a phone the curation kind filter scrolls sideways instead of wrapping into a tall block. */
+@media (max-width: 699px) {
+  .segmented.kind-filter {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .segmented.kind-filter button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 }
 
 .segmented.wrap button {

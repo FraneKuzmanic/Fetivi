@@ -8,6 +8,12 @@ import type {
   TransportMode,
 } from '@fetivi/domain/catalog-vocabulary';
 import type {
+  CurationAction,
+  CurationKind,
+  CurationPayload,
+  CurationStatus,
+} from '@fetivi/domain/curation-vocabulary';
+import type {
   HandoffReason,
   HandoffTranslationState,
   HandoffUrgency,
@@ -732,6 +738,63 @@ export const reconciliation = {
     ),
   run: () => post<{ queued: true }>('/api/admin/reconciliation/run'),
   resolve: (id: string) => post(`/api/admin/reconciliation/findings/${id}/resolve`),
+};
+
+export type CurationTab = 'open' | 'needs_visit' | 'done';
+
+export interface CurationItem {
+  id: string;
+  kind: CurationKind;
+  status: CurationStatus;
+  payload: CurationPayload;
+  destination: { id: string; name: string } | null;
+  host: { id: string; email: string } | null;
+  record: {
+    id: string;
+    title: string;
+    kind: CatalogKind;
+    placeCategory: PlaceCategory | null;
+    verifiedAt: string | null;
+  } | null;
+  /** Empty once the item is approved or rejected. */
+  actions: CurationAction[];
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+export interface StalenessRecord {
+  id: string;
+  destinationId: string;
+  destinationName: string;
+  kind: CatalogKind;
+  placeCategory: PlaceCategory | null;
+  title: string;
+  verifiedAt: string | null;
+  staleness: Staleness;
+  /** In the last 90 days. */
+  recommendations: number;
+  score: number;
+}
+
+export const curation = {
+  list: (filter: { status: CurationTab; kind?: CurationKind; destinationId?: string }) => {
+    const query = new URLSearchParams({ status: filter.status });
+    if (filter.kind) query.set('kind', filter.kind);
+    if (filter.destinationId) query.set('destinationId', filter.destinationId);
+    return api<{ items: CurationItem[]; counts: Record<CurationKind, number> }>(
+      `/api/admin/curation?${query}`,
+    );
+  },
+  approve: (id: string) => post<CurationItem>(`/api/admin/curation/${id}/approve`),
+  edit: (id: string) => post<{ recordId: string }>(`/api/admin/curation/${id}/edit`),
+  reject: (id: string) => post(`/api/admin/curation/${id}/reject`),
+  needsVisit: (id: string) => post(`/api/admin/curation/${id}/needs-visit`),
+  staleness: (destinationId?: string) =>
+    api<{ records: StalenessRecord[] }>(
+      destinationId
+        ? `/api/admin/curation/staleness?${new URLSearchParams({ destinationId })}`
+        : '/api/admin/curation/staleness',
+    ),
 };
 
 export const host = {

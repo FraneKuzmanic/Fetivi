@@ -49,7 +49,8 @@ export type ErrorCode =
   | 'stripe-rejected'
   | 'not-cancellable'
   | 'not-refundable'
-  | 'not-answerable';
+  | 'not-answerable'
+  | 'not-reviewable';
 
 export class HttpError extends Error {
   override name = 'HttpError';

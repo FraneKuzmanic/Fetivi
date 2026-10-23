@@ -53,6 +53,7 @@ const MESSAGES: Record<string, string> = {
     'This Order cannot be refunded here: it already has a refund, or nothing is captured. Further refunds are made in the Provider’s Stripe dashboard.',
   'not-answerable':
     'This Order is no longer waiting for the Provider, or its terms changed. Reload the page.',
+  'not-reviewable': 'Someone already reviewed this item.',
 };
 
 export function messageFor(code: string): string {

@@ -73,13 +73,12 @@ export async function hostProviderRoutes(
     const item = await enqueueCurationItem(
       db,
       {
-        kind: 'host_provider_suggestion',
         hostId,
         destinationId,
         payload: { kind: 'host_provider_suggestion', ...suggestion },
       },
       now(),
     );
-    return reply.status(201).send(item);
+    return reply.status(201).send({ id: item.id });
   });
 }

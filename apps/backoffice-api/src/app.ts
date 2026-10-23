@@ -7,6 +7,7 @@ import type {
   PaymentGateway,
 } from '@fetivi/domain';
 import Fastify from 'fastify';
+import { curationRoutes } from './admin/curation';
 import { adminOrderRoutes } from './admin/orders';
 import { reconciliationRoutes } from './admin/reconciliation';
 import { adminRoutes } from './admin/routes';
@@ -75,6 +76,7 @@ export function buildApp(deps: AppDeps) {
   app.register(manualImportRoutes, { db, queue, now, model: deps.manualImportModel });
   app.register(adminRoutes, { db, now });
   app.register(reconciliationRoutes, { db, queue, now });
+  app.register(curationRoutes, { db, queue, now });
   app.register(adminOrderRoutes, { db, queue, now });
   app.register(catalogRoutes, { db, queue, now });
   app.register(providerRoutes, { db, queue, now });

@@ -4,6 +4,8 @@ import { ApprovalsPage } from './admin/ApprovalsPage';
 import { DestinationPage, NewDestinationPage } from './admin/catalog/DestinationPage';
 import { DestinationsPage } from './admin/catalog/DestinationsPage';
 import { NewRecordPage, RecordPage } from './admin/catalog/RecordPage';
+import { CurationPage } from './admin/curation/CurationPage';
+import { StalenessPage } from './admin/curation/StalenessPage';
 import { OrderLookupPage } from './admin/orders/OrderLookupPage';
 import { OrderPage } from './admin/orders/OrderPage';
 import { NewOfferPage, OfferPage } from './admin/providers/OfferPage';
@@ -206,6 +208,22 @@ export function App() {
           element={
             <Page area="admin">
               <ApprovalsPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/curation"
+          element={
+            <Page area="admin">
+              <CurationPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/curation/staleness"
+          element={
+            <Page area="admin">
+              <StalenessPage />
             </Page>
           }
         />

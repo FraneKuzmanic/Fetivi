@@ -70,6 +70,9 @@ When the admin last checked every field of a Catalog record; one date for the wh
 **Staleness budget**:
 How long after its Verification date a Catalog record stays trustworthy, set per Place category or kind. Events have none; they end.
 
+**Staleness queue**:
+The Catalog records past or within 14 days of their Staleness budget (never-verified ones count as past it), ranked by budget used × (1 + Recommendation count over 90 days), so the most out-of-date records guests see most come first. Events are left out.
+
 **Recommendation count**:
 How many times a place or day trip was returned by a guest's place search, counted per day in the Destination's time zone. It tells the admin which records to re-check first.
 
@@ -98,6 +101,9 @@ _Avoid_: ferry card (Fetivi has no ferry component of its own), booking widget
 
 **Curation gap**:
 A question the catalog could not answer, recorded as one `fallback_log` row per Web fallback call (topic, place, time, outcome; no guest wording). Admins use them to see what to curate next.
+
+**Fallback topic cluster**:
+The Curation gaps of one Destination and one ISO week whose topics share the same set of words ("kayak rental", "rental kayak"), grouped by a weekly job into one Curation item with counts and sample topics and places.
 
 ## Services
 
@@ -144,7 +150,7 @@ An approved Provider a host has hidden from their guests. Hiding is per host, ch
 _Avoid_: blocked Provider, opt-out (as a noun)
 
 **Curation item**:
-One entry on the admin curation queue (`curation_items`), such as a host's Provider suggestion (38). Ticket 39 builds the queue and the other kinds on it.
+One entry on the admin's single curation queue (`curation_items`). Six kinds: a draft, a refresh diff, a record flagged by guests, a host's place suggestion, a host's Provider suggestion and a Fallback topic cluster. An item is open, needs a visit (parked, still reviewable), approved or rejected; there are no assignees, so whoever acts first wins. Approving an item tied to a Catalog record applies what it proposes and stamps the record's Verification date.
 _Avoid_: suggestion (as the umbrella term), ticket
 
 **Category**:

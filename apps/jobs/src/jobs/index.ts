@@ -5,6 +5,7 @@ import type {
   TranslationJobDeps,
 } from '@fetivi/domain';
 import type { JobDefinition } from '../runner';
+import { clusterFallbacksJob } from './cluster-fallbacks';
 import { type DailyTipsDeps, dailyTipsJob } from './daily-tips';
 import { guestNotifyJob, guestRemindersJob } from './guest-notify';
 import { hostDigestsJob, hostNotifyJob } from './host-notify';
@@ -60,5 +61,6 @@ export function createJobs(
     safetyAlertsJob(deps),
     dailyTipsJob(deps),
     reconcileJob(deps) as JobDefinition,
+    clusterFallbacksJob(deps),
   ];
 }

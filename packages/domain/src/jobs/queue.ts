@@ -23,6 +23,7 @@ export const QUEUES = {
   safetyAlerts: 'safety-alerts',
   dailyTips: 'daily-tips',
   reconcile: 'reconcile',
+  clusterFallbacks: 'cluster-fallbacks',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -69,6 +70,8 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   dailyTips: { retryLimit: 1, expireInSeconds: 300 },
   // One run at a time; the next run repairs anything a failed one left.
   reconcile: { policy: 'singleton', retryLimit: 1, expireInSeconds: 600 },
+  // Weekly; the dedupe key makes a retry add nothing.
+  clusterFallbacks: { retryLimit: 2, retryDelay: 60, expireInSeconds: 300 },
 };
 
 /**

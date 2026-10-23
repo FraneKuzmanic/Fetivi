@@ -5,6 +5,7 @@ import {
   GearSix,
   Handshake,
   type Icon,
+  ListChecks,
   MapTrifold,
   Receipt,
   Scales,
@@ -39,6 +40,12 @@ function navItems(me: Me, unread: number): NavItem[] {
       { to: '/', label: 'Hosts', icon: UsersThree, prefixes: [] },
       { to: '/admin/approvals', label: 'Approvals', icon: SealCheck, prefixes: [] },
       { to: '/admin/catalog', label: 'Catalog', icon: MapTrifold, prefixes: ['/admin/catalog'] },
+      {
+        to: '/admin/curation',
+        label: 'Curation',
+        icon: ListChecks,
+        prefixes: ['/admin/curation'],
+      },
       {
         to: '/admin/providers',
         label: 'Providers',

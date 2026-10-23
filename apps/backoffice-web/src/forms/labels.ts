@@ -7,6 +7,11 @@ import type {
   TransportMode,
 } from '@fetivi/domain/catalog-vocabulary';
 import type {
+  CurationAction,
+  CurationKind,
+  CurationStatus,
+} from '@fetivi/domain/curation-vocabulary';
+import type {
   AdapterKind,
   AvailabilityMode,
   ContactFields,
@@ -294,4 +299,27 @@ export const PRICE_UNIT_LABELS: Record<PriceUnit, string> = {
 
 export const ADAPTER_KIND_LABELS: Record<AdapterKind, string> = {
   bokun: 'Bókun',
+};
+
+export const CURATION_KIND_LABELS: Record<CurationKind, string> = {
+  draft: 'Draft',
+  refresh_diff: 'Refresh diff',
+  guest_flagged: 'Flagged by guests',
+  host_place_suggestion: 'Host place suggestion',
+  host_provider_suggestion: 'Host Provider suggestion',
+  fallback_topic_cluster: 'Web fallback topic',
+};
+
+export const CURATION_ACTION_LABELS: Record<CurationAction, string> = {
+  approve: 'Approve',
+  edit: 'Edit',
+  reject: 'Reject',
+  needs_visit: 'Needs a visit',
+};
+
+export const CURATION_STATUS_LABELS: Record<CurationStatus, string> = {
+  open: 'Open',
+  needs_visit: 'Needs a visit',
+  approved: 'Approved',
+  rejected: 'Rejected',
 };

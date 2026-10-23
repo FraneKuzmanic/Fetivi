@@ -302,6 +302,13 @@
       "when": 1792782106559,
       "tag": "0042_host_own_services",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792788284984,
+      "tag": "0043_curation_queue",
+      "breakpoints": true
     }
   ]
 }
