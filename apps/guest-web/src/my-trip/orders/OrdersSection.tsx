@@ -115,7 +115,8 @@ export function OrdersSection() {
                 <ReceiptCard
                   order={order}
                   labels={receiptLabels(t, i18n.language)}
-                  onPay={(id) => void pay(id)}
+                  // While the return waits on this Order's payment, Pay now would invite paying twice.
+                  onPay={waiting && order.id === returned ? undefined : (id) => void pay(id)}
                   paying={paying === order.id}
                   notice={noticeFor(order)}
                 />

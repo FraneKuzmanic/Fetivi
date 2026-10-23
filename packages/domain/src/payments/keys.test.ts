@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applicationFee, assertCardOnly, stripeIdempotencyKey } from './keys';
+import { applicationFee, isCardOnly, stripeIdempotencyKey } from './keys';
 
 const orderId = '0b6f3c1e-2a4d-4e8f-9c1b-5d7e8f9a0b1c';
 
@@ -30,15 +30,15 @@ describe('applicationFee', () => {
   });
 });
 
-describe('assertCardOnly', () => {
+describe('isCardOnly', () => {
   it('accepts card, with or without Link', () => {
-    expect(assertCardOnly(['card'])).toBe(true);
-    expect(assertCardOnly(['card', 'link'])).toBe(true);
+    expect(isCardOnly(['card'])).toBe(true);
+    expect(isCardOnly(['card', 'link'])).toBe(true);
   });
 
   it('rejects a session without card or with any other method', () => {
-    expect(assertCardOnly(['link'])).toBe(false);
-    expect(assertCardOnly([])).toBe(false);
-    expect(assertCardOnly(['card', 'klarna'])).toBe(false);
+    expect(isCardOnly(['link'])).toBe(false);
+    expect(isCardOnly([])).toBe(false);
+    expect(isCardOnly(['card', 'klarna'])).toBe(false);
   });
 });

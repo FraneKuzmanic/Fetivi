@@ -24,7 +24,7 @@ export function orderNotifyJob(
   return {
     name: QUEUES.orderNotify,
     queue: QUEUE_OPTIONS.orderNotify,
-    async handler({ orderId, proposalId, kind }) {
+    async handler({ orderId, proposalId, kind, eventId }) {
       let outcome: SendOutcome | GuestDeliveryResult | 'logged';
       switch (kind) {
         case 'provider_confirmed':
@@ -32,7 +32,7 @@ export function orderNotifyJob(
           break;
         case 'admin_provider_cancelled':
         case 'admin_payment_attention':
-          outcome = await sendAdminAlert(deps, { orderId, proposalId, kind });
+          outcome = await sendAdminAlert(deps, { orderId, proposalId, kind, eventId });
           break;
         default:
           outcome = isOrderGuestKind(kind)

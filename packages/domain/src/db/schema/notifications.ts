@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   check,
   index,
   pgEnum,
@@ -18,7 +19,10 @@ import { spaces } from './spaces';
 
 export const orderNotification = pgEnum('order_notification', ORDER_NOTIFICATIONS);
 
-/** One sent notification per Order, proposal and kind; what makes a retried send a no-op. */
+/**
+ * One sent notification per Order, proposal and kind (and flagging OrderEvent, for a payment
+ * alert: 0 otherwise); what makes a retried send a no-op.
+ */
 export const orderNotificationDeliveries = pgTable(
   'order_notification_deliveries',
   {
@@ -29,9 +33,11 @@ export const orderNotificationDeliveries = pgTable(
       .notNull()
       .references(() => orderProposals.id, { onDelete: 'cascade' }),
     kind: orderNotification('kind').notNull(),
+    /** The OrderEvent that flagged an `admin_payment_attention`; 0 for every other kind. */
+    eventId: bigint('event_id', { mode: 'number' }).notNull().default(0),
     sentAt: timestamp('sent_at', { withTimezone: true }).notNull(),
   },
-  (t) => [primaryKey({ columns: [t.orderId, t.proposalId, t.kind] })],
+  (t) => [primaryKey({ columns: [t.orderId, t.proposalId, t.kind, t.eventId] })],
 );
 
 export type OrderNotificationDeliveryRow = typeof orderNotificationDeliveries.$inferSelect;

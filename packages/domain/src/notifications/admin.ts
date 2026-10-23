@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { accounts } from '../db/schema/accounts';
 import { offers, providers } from '../db/schema/offers';
 import { orderEvents, orderProposals, orders } from '../db/schema/orders';
@@ -10,8 +10,8 @@ import type { NotifyDeps, SendOutcome } from './provider/send';
 /**
  * Emails every admin about an Order, in English (the admin UI's language): a Provider tapped
  * Can't fulfil, or a pay-online Order's payment needs a human (the reason is the note of the
- * latest OrderEvent that has one). Order facts only, no guest contact details. One delivery for
- * the whole kind.
+ * flagging OrderEvent the job names). Order facts only, no guest contact details. One delivery
+ * per kind, and per flagging OrderEvent for a payment alert.
  */
 export async function sendAdminAlert(
   deps: Pick<NotifyDeps, 'db' | 'mailer' | 'now'>,
@@ -19,6 +19,7 @@ export async function sendAdminAlert(
     orderId: string;
     proposalId: string;
     kind: 'admin_provider_cancelled' | 'admin_payment_attention';
+    eventId?: number;
   },
 ): Promise<SendOutcome> {
   const admins = await deps.db
@@ -43,12 +44,13 @@ export async function sendAdminAlert(
   let subject: string;
   let text: string;
   if (job.kind === 'admin_payment_attention') {
-    const [flagged] = await deps.db
-      .select({ note: orderEvents.note })
-      .from(orderEvents)
-      .where(and(eq(orderEvents.orderId, job.orderId), isNotNull(orderEvents.note)))
-      .orderBy(desc(orderEvents.id))
-      .limit(1);
+    const [flagged] =
+      job.eventId === undefined
+        ? []
+        : await deps.db
+            .select({ note: orderEvents.note })
+            .from(orderEvents)
+            .where(and(eq(orderEvents.orderId, job.orderId), eq(orderEvents.id, job.eventId)));
     subject = `Payment needs a look: ${row.offerTitle}, ${date}`;
     text = [
       `Order ${job.orderId} (${row.offerTitle}, ${date}) needs a look: ${flagged?.note ?? 'the payment needs attention'}.`,
@@ -71,7 +73,11 @@ export async function sendAdminAlert(
       'Contact the guest about an alternative.',
     ].join('\n');
   }
-  const key = orderJobKey(job.orderId, job.proposalId, `notify:${job.kind}`);
+  const key = orderJobKey(
+    job.orderId,
+    job.proposalId,
+    job.eventId === undefined ? `notify:${job.kind}` : `notify:${job.kind}:${job.eventId}`,
+  );
   return deliverOnce(deps.db, job, deps.now(), async () => {
     for (const admin of admins) {
       await deps.mailer.send({

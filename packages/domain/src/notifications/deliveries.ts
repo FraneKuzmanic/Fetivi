@@ -6,6 +6,8 @@ export interface DeliveryKey {
   orderId: string;
   proposalId: string;
   kind: OrderNotification;
+  /** The flagging OrderEvent of an `admin_payment_attention`: one alert per flag. */
+  eventId?: number;
 }
 
 /**
@@ -24,7 +26,13 @@ export async function deliverOnce(
   return db.transaction(async (tx) => {
     const inserted = await tx
       .insert(orderNotificationDeliveries)
-      .values({ ...key, sentAt: now })
+      .values({
+        orderId: key.orderId,
+        proposalId: key.proposalId,
+        kind: key.kind,
+        eventId: key.eventId ?? 0,
+        sentAt: now,
+      })
       .onConflictDoNothing()
       .returning();
     if (inserted.length === 0) return 'already_sent';

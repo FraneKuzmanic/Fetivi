@@ -87,6 +87,7 @@ export type PaymentGatewayErrorCode =
   | 'idempotency-mismatch'
   | 'expires-at-invalid'
   | 'card-declined'
+  | 'charge-already-refunded'
   | 'unavailable'
   | 'rejected';
 
@@ -155,7 +156,11 @@ export function gatewayErrorOf(error: unknown): PaymentGatewayError {
   if (error instanceof Stripe.errors.StripeCardError) {
     return new PaymentGatewayError('card-declined', error.decline_code ?? code);
   }
-  if (code === 'checkout_session_not_open' || /is not open/i.test(message)) {
+  // Expiring a complete session carries no code, only this message (test mode, 2026-10-23).
+  if (
+    code === 'checkout_session_not_open' ||
+    /is not open|only checkout sessions with a status in \["open"\]/i.test(message)
+  ) {
     return new PaymentGatewayError('session-not-open', code);
   }
   if (code === 'payment_intent_unexpected_state') {
@@ -164,6 +169,9 @@ export function gatewayErrorOf(error: unknown): PaymentGatewayError {
     if (status === 'canceled') return new PaymentGatewayError('intent-canceled', code);
     if (/succeeded/i.test(message)) return new PaymentGatewayError('intent-already-captured', code);
     if (/canceled/i.test(message)) return new PaymentGatewayError('intent-canceled', code);
+  }
+  if (code === 'charge_already_refunded') {
+    return new PaymentGatewayError('charge-already-refunded', code);
   }
   if (error.param === 'expires_at') return new PaymentGatewayError('expires-at-invalid', code);
   return new PaymentGatewayError('rejected', code);

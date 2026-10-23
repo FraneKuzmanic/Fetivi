@@ -703,9 +703,11 @@ class World {
       }
     }
     for (const flag of flags) {
-      // Every flag explains itself on an OrderEvent note of that Order.
+      // Every flag names the OrderEvent of that Order whose note explains it.
       expect(modeOf.get(flag.data.orderId ?? '')).toBe('online');
-      expect(events.some((e) => e.orderId === flag.data.orderId && e.note)).toBe(true);
+      const named = events.find((e) => String(e.id) === String(flag.data.eventId));
+      expect(named?.orderId).toBe(flag.data.orderId);
+      expect(named?.note).toBeTruthy();
     }
     const flagged = flags.map((f) => f.data.orderId);
     for (const id of this.needsFlag) expect(flagged, `flag for ${id}`).toContain(id);

@@ -177,32 +177,40 @@ describe('the admin alert', () => {
     expect(mailer.sent).toHaveLength(2);
   });
 
-  it('tells the admins why a payment needs a look, from the latest event note', async () => {
+  it('tells the admins why a payment needs a look, from the flagging event, once per flag', async () => {
     const { job } = await confirmedOrder();
     const EVENT = {
+      orderId: job.orderId,
       trigger: 'payment_job',
       fromStatus: 'confirmed',
       toStatus: 'confirmed',
       toPaymentStatus: 'none',
       createdAt: NOW,
     } as const;
-    await testDb.db.insert(orderEvents).values([
-      { ...EVENT, orderId: job.orderId, note: 'older note' },
-      {
-        ...EVENT,
-        orderId: job.orderId,
-        trigger: 'payment_job',
-        note: 'authorization cancelled on a confirmed Order',
-        createdAt: NOW,
-      },
-    ]);
+    const [first, later] = await testDb.db
+      .insert(orderEvents)
+      .values([
+        { ...EVENT, note: 'capture failed (card_declined)' },
+        { ...EVENT, note: 'authorization cancelled on a confirmed Order' },
+      ])
+      .returning({ id: orderEvents.id });
+    // A later note (an admin's, say) never stands in for the reason.
+    await testDb.db.insert(orderEvents).values({ ...EVENT, trigger: 'admin', note: 'called' });
     const mailer = createMemoryMailer();
     const alert = { ...job, kind: 'admin_payment_attention' as const };
-    expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('sent');
+    expect(await sendAdminAlert(notifyDeps(mailer), { ...alert, eventId: first?.id })).toBe('sent');
     expect(mailer.sent[0]?.subject).toMatch(/^Payment needs a look: /);
     expect(mailer.sent[0]?.text).toContain(
-      `Order ${job.orderId} (Kayak tour, 4 May 2027) needs a look: authorization cancelled on a confirmed Order.`,
+      `Order ${job.orderId} (Kayak tour, 4 May 2027) needs a look: capture failed (card_declined).`,
     );
     expect(mailer.sent[0]?.text).not.toContain('ana@example.test');
+    expect(await sendAdminAlert(notifyDeps(mailer), { ...alert, eventId: first?.id })).toBe(
+      'already_sent',
+    );
+    // A second problem on the same proposal is its own alert.
+    expect(await sendAdminAlert(notifyDeps(mailer), { ...alert, eventId: later?.id })).toBe('sent');
+    expect(mailer.sent.at(-1)?.text).toContain(
+      'needs a look: authorization cancelled on a confirmed Order.',
+    );
   });
 });

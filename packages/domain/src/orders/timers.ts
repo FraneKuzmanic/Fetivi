@@ -17,6 +17,8 @@ export interface OrderNotifyJobData {
   orderId: string;
   proposalId: string;
   kind: OrderNotification;
+  /** The OrderEvent whose note says why, for `admin_payment_attention` (33). */
+  eventId?: number;
 }
 
 /** The operation part of an Order job's key: a timer, a notification or a payment job (33). */
@@ -24,6 +26,7 @@ export type OrderJobOperation =
   | TimerOperation
   | `${TimerOperation}:${string}`
   | `notify:${OrderNotification}`
+  | `notify:${OrderNotification}:${number}`
   | `payment:${string}`;
 
 export function orderJobKey(
@@ -59,12 +62,14 @@ export async function scheduleTimer(
   await queue.send(QUEUES.orderTimer, data, tx, { id, startAfter: at });
 }
 
-/** Enqueues a notification inside `tx`, once per Order, proposal and kind. */
+/** Enqueues a notification inside `tx`, once per Order, proposal and kind (and `eventId`). */
 export async function enqueueNotification(
   tx: Executor,
   queue: JobQueue,
   data: OrderNotifyJobData,
 ): Promise<void> {
-  const id = orderJobId(data.orderId, data.proposalId, `notify:${data.kind}`);
+  const operation: OrderJobOperation =
+    data.eventId === undefined ? `notify:${data.kind}` : `notify:${data.kind}:${data.eventId}`;
+  const id = orderJobId(data.orderId, data.proposalId, operation);
   await queue.send(QUEUES.orderNotify, data, tx, { id });
 }

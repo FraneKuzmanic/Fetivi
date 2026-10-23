@@ -16,7 +16,12 @@ import {
 // account, is ignored (and still answered 200, so Stripe stops retrying it). The transitions
 // record the event id on the attempt, so each event is applied once.
 
-type Base = { eventId: string; account: string | null };
+type Base = {
+  eventId: string;
+  account: string | null;
+  /** The event's `created`: for a completion, when the guest completed the Checkout. */
+  createdAt: Date | null;
+};
 
 /** The narrow view of the Stripe events Fetivi acts on. */
 export type PaymentEvent = Base &
@@ -37,6 +42,7 @@ const envelope = z.object({
   id: z.string(),
   type: z.string(),
   account: z.string().nullish(),
+  created: z.number().nullish(),
   data: z.object({ object: z.record(z.string(), z.unknown()) }),
 });
 
@@ -67,7 +73,12 @@ export function parseStripeEvent(json: unknown): PaymentEvent | { kind: 'ignored
   const parsed = envelope.safeParse(json);
   if (!parsed.success) return { kind: 'ignored' };
   const { id: eventId, type, data } = parsed.data;
-  const base: Base = { eventId, account: parsed.data.account ?? null };
+  const created = parsed.data.created;
+  const base: Base = {
+    eventId,
+    account: parsed.data.account ?? null,
+    createdAt: typeof created === 'number' ? new Date(created * 1000) : null,
+  };
   const object = data.object;
   switch (type) {
     case 'checkout.session.completed': {
@@ -171,6 +182,7 @@ export async function applyStripeEvent(
           ...input,
           paymentIntentId: event.paymentIntentId,
           sessionId: event.sessionId,
+          completedAt: event.createdAt,
         })
       ).outcome;
     case 'session_expired':

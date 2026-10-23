@@ -712,6 +712,11 @@ export async function expire(deps: OrderDeps, input: ActionInput): Promise<Trans
       if (hold?.state !== 'held' || hold.expiresAt > now) {
         return { outcome: 'stale', order };
       }
+      // The guest paid in time (`authorize` checked the completion against the hold), and the
+      // confirm job is queued: it confirms the Order, or a release voids the authorization.
+      if (order.status === 'confirming' && order.paymentStatus === 'authorized') {
+        return { outcome: 'stale', order };
+      }
     }
     return releaseIn(tx, deps, order, 'expire', input);
   });

@@ -260,6 +260,13 @@
       "when": 1792750689240,
       "tag": "0036_payment_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792757769949,
+      "tag": "0037_payment_alert_per_event",
+      "breakpoints": true
     }
   ]
 }

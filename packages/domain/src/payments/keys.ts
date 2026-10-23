@@ -18,7 +18,7 @@ export function applicationFee(amountMinor: number, commissionBp: number): numbe
 }
 
 /** Whether a created session offers cards (and Link, which cannot be excluded) only. */
-export function assertCardOnly(methods: readonly string[]): boolean {
+export function isCardOnly(methods: readonly string[]): boolean {
   const allowed: readonly string[] = CARD_METHODS;
   return methods.includes('card') && methods.every((m) => allowed.includes(m));
 }

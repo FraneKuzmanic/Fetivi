@@ -32,6 +32,8 @@ export interface FakeStripeEvent {
   id: string;
   type: string;
   account: string;
+  /** Unix seconds, from the fake's clock. */
+  created: number;
   data: { object: Record<string, unknown> };
 }
 
@@ -147,7 +149,8 @@ export function fakePaymentGateway(
   const nextId = (prefix: string) => `${prefix}_${instance}${String(++counter).padStart(6, '0')}`;
 
   const push = (type: string, account: string, object: Record<string, unknown>) => {
-    events.push({ id: nextId('evt'), type, account, data: { object } });
+    const created = Math.floor(now().getTime() / 1000);
+    events.push({ id: nextId('evt'), type, account, created, data: { object } });
   };
   const sessionObject = (s: FakeSession) => ({
     id: s.id,

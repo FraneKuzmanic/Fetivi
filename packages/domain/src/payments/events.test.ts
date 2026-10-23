@@ -3,10 +3,13 @@ import { parseStripeEvent } from './events';
 
 const ATTEMPT = '0c6f1d7e-3b1a-4f7e-9a51-2a3c4d5e6f70';
 
+const CREATED = 1_793_000_000;
+
 const event = (type: string, object: Record<string, unknown>, account = 'acct_1') => ({
   id: 'evt_1',
   type,
   account,
+  created: CREATED,
   data: { object },
 });
 
@@ -25,6 +28,8 @@ describe('parseStripeEvent', () => {
       kind: 'completed',
       eventId: 'evt_1',
       account: 'acct_1',
+      // When the guest completed: the cut-off against the hold (AC 6).
+      createdAt: new Date(CREATED * 1000),
       attemptId: ATTEMPT,
       paymentIntentId: 'pi_1',
       sessionId: 'cs_1',
@@ -62,6 +67,7 @@ describe('parseStripeEvent', () => {
         kind,
         eventId: 'evt_1',
         account: 'acct_1',
+        createdAt: new Date(CREATED * 1000),
         attemptId: ATTEMPT,
         paymentIntentId: 'pi_1',
         // An intent event names no session.

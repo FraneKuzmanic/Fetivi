@@ -28,7 +28,7 @@ import {
   PaymentGatewayError,
   type WriteOptions,
 } from './gateway';
-import { assertCardOnly, stripeIdempotencyKey } from './keys';
+import { isCardOnly, stripeIdempotencyKey } from './keys';
 import {
   CHECKOUT_HOLD_MINUTES,
   CHECKOUT_MIN_LEAD_SECONDS,
@@ -227,7 +227,7 @@ async function open(deps: PaymentDeps, attemptId: string): Promise<PaymentJobOut
     ).outcome;
   }
 
-  const cardOnly = assertCardOnly(session.paymentMethodTypes);
+  const cardOnly = isCardOnly(session.paymentMethodTypes);
   await recordSession(deps, attempt, session, cardOnly);
   if (!cardOnly) {
     // The machine's release enqueues `expire_session`, which closes the session at Stripe.
@@ -339,7 +339,8 @@ async function expireSession(deps: PaymentDeps, attemptId: string): Promise<Paym
     await deps.gateway.expireCheckoutSession(sessionId, keyed(attempt, 'expire_session'));
   } catch (error) {
     rethrowUnavailable(error);
-    if (error.code !== 'session-not-open') throw error;
+    // A rejection whose wording we don't know is checked against the session too.
+    if (error.code !== 'session-not-open' && error.code !== 'rejected') throw error;
     const session = await deps.gateway.retrieveCheckoutSession(sessionId, readOptions);
     if (session.status === 'complete' && session.paymentIntentId) {
       // The completion webhook was lost or is late: authorize, and the void follows (S2 path F).
@@ -369,7 +370,7 @@ async function refund(deps: PaymentDeps, attemptId: string): Promise<PaymentJobO
     status = created.status;
   } catch (error) {
     rethrowUnavailable(error);
-    if (error.detail === 'charge_already_refunded') {
+    if (error.code === 'charge-already-refunded') {
       return (await recordRefunded(deps, input)).outcome;
     }
     return (await recordRefundFailed(deps, input)).outcome;

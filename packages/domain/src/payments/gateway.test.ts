@@ -27,6 +27,15 @@ describe('gatewayErrorOf', () => {
     expect(code(invalid({ message: 'This Checkout Session is not open.' }))).toBe(
       'session-not-open',
     );
+    // What Stripe answers when expiring a session the guest already completed.
+    expect(
+      code(
+        invalid({
+          message:
+            'Only Checkout Sessions with a status in ["open"] can be expired. This Checkout Session has a status of `complete`.',
+        }),
+      ),
+    ).toBe('session-not-open');
     expect(code(invalid({ param: 'expires_at', message: 'too soon' }))).toBe('expires-at-invalid');
     expect(code(new Stripe.errors.StripeIdempotencyError({ type: 'idempotency_error' }))).toBe(
       'idempotency-mismatch',
@@ -34,6 +43,7 @@ describe('gatewayErrorOf', () => {
     expect(code(new Stripe.errors.StripeConnectionError({ type: 'api_error' }))).toBe(
       'unavailable',
     );
+    expect(code(invalid({ code: 'charge_already_refunded' }))).toBe('charge-already-refunded');
     expect(code(invalid({ code: 'resource_missing' }))).toBe('rejected');
     expect(code(new TypeError('fetch failed'))).toBe('unavailable');
     const own = new PaymentGatewayError('card-declined');

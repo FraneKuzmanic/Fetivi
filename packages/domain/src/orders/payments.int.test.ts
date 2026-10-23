@@ -24,6 +24,7 @@ import {
 import {
   authorize,
   failCheckout,
+  flagPaymentAttention,
   recordCaptured,
   recordRefunded,
   recordVoided,
@@ -344,6 +345,26 @@ describe('pay-online releases', () => {
     );
   });
 
+  it('alerts once per flag, each naming the OrderEvent that says why', async () => {
+    const { attempt, ref } = await placeOrder();
+    await authorize(deps(), {
+      attemptId: attempt.id,
+      paymentIntentId: 'pi_f',
+      trigger: 'payment_job',
+    });
+    await confirmHeldOrder(deps(), ref);
+    await flagPaymentAttention(deps(), { attemptId: attempt.id, reason: 'capture failed (x)' });
+    await recordVoided(deps(), { attemptId: attempt.id, trigger: 'payment_job' });
+    const { rows } = await testDb.db.execute<{ eventId: number }>(
+      sql`select (data->>'eventId')::bigint as "eventId" from pgboss.job where name = ${QUEUES.orderNotify} and data->>'orderId' = ${ref.orderId} and data->>'kind' = 'admin_payment_attention' order by created_on, id`,
+    );
+    const notes = new Map((await events(ref.orderId)).map((e) => [Number(e.id), e.note]));
+    expect(rows.map((r) => notes.get(Number(r.eventId)))).toEqual([
+      'capture failed (x)',
+      'authorization cancelled on a confirmed Order',
+    ]);
+  });
+
   it('expires with the hold, tells the guest the checkout closed and expires the session', async () => {
     const { order, attempt, slotId, ref } = await placeOrder();
     await testDb.db
@@ -398,16 +419,43 @@ describe('pay-online releases', () => {
     expect(voided.order).toMatchObject({ status: 'expired', paymentStatus: 'voided' });
   });
 
-  it('voids when the hold lapsed but its timer has not run yet', async () => {
-    const { attempt } = await placeOrder();
+  it('expires and voids a checkout completed after the hold lapsed, before its timer ran', async () => {
+    const { attempt, ref, slotId } = await placeOrder();
     clock = new Date(HOLD_UNTIL.getTime() + 1000);
     const late = await authorize(deps(), {
       attemptId: attempt.id,
       paymentIntentId: 'pi_lapse',
       trigger: 'payment_webhook',
+      completedAt: clock,
     });
-    expect(late.order).toMatchObject({ status: 'confirming', paymentStatus: 'authorized' });
+    expect(late.order).toMatchObject({ status: 'expired', paymentStatus: 'authorized' });
     expect(await paymentJobs(attempt.id)).toEqual(['open', 'void']);
+    expect(await notifyKinds(ref.orderId)).toContain('order_checkout_expired');
+    expect(await remaining(slotId)).toBe(2);
+    expect((await runOrderTimer(deps(), { ...ref, operation: 'hold_expiry' })).outcome).toBe(
+      'stale',
+    );
+  });
+
+  it('confirms a checkout completed in time whose webhook lands after the hold expiry', async () => {
+    const { attempt, ref } = await placeOrder();
+    clock = new Date(HOLD_UNTIL.getTime() + 2000);
+    const paid = await authorize(deps(), {
+      attemptId: attempt.id,
+      eventId: 'evt_in_time',
+      paymentIntentId: 'pi_in_time',
+      trigger: 'payment_webhook',
+      completedAt: new Date(HOLD_UNTIL.getTime() - 5000),
+    });
+    expect(paid.order).toMatchObject({ status: 'confirming', paymentStatus: 'authorized' });
+    expect(await paymentJobs(attempt.id)).toEqual(['open', 'confirm']);
+    // The hold timer leaves it to the confirm job, which still finds the hold.
+    expect((await runOrderTimer(deps(), { ...ref, operation: 'hold_expiry' })).outcome).toBe(
+      'stale',
+    );
+    const confirmed = await confirmHeldOrder(deps(), ref);
+    expect(confirmed.order).toMatchObject({ status: 'confirmed', paymentStatus: 'authorized' });
+    expect(await notifyKinds(ref.orderId)).not.toContain('order_checkout_expired');
   });
 
   it('fails the Order and flags the admin when the checkout cannot be offered', async () => {

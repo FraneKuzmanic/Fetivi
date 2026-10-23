@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import type { Tx } from '../db/client';
 import {
   inventoryHolds,
@@ -115,18 +115,31 @@ async function mirror(
   return updated;
 }
 
+/**
+ * Alerts the admin about the OrderEvent just written under this Order lock, whose note is the
+ * reason: one alert per flag, so a second problem on the same proposal is reported too.
+ */
 async function flagAdmin(tx: Tx, deps: OrderDeps, order: OrderRow, attempt: PaymentAttemptRow) {
+  const [flagged] = await tx
+    .select({ id: orderEvents.id })
+    .from(orderEvents)
+    .where(eq(orderEvents.orderId, order.id))
+    .orderBy(desc(orderEvents.id))
+    .limit(1);
   await enqueueNotification(tx, deps.queue, {
     orderId: order.id,
     proposalId: attempt.proposalId,
     kind: 'admin_payment_attention',
+    eventId: flagged?.id,
   });
 }
 
 /**
  * The guest completed the Checkout: the card is authorized. A `confirming` Order whose hold is
- * still held and ahead is confirmed next; any other Order (expired, failed, cancelled, or a
- * hold that already expired: a checkout completed too late) has the authorization voided.
+ * still held and was ahead when the guest completed is confirmed next (the hold timer leaves an
+ * authorized `confirming` Order to the confirm job). A `confirming` Order completed after its
+ * hold expired is expired here, which voids the authorization; any other Order (expired,
+ * failed, cancelled) has the authorization voided.
  */
 export function authorize(
   deps: OrderDeps,
@@ -134,6 +147,8 @@ export function authorize(
     paymentIntentId: string;
     /** From a session event: learns the session when the create's response was lost. */
     sessionId?: string | null;
+    /** When Stripe recorded the completion (the event's `created`); `deps.now()` when unknown. */
+    completedAt?: Date | null;
   },
 ): Promise<TransitionOutcome> {
   return withLockedAttempt(deps, input, async ({ tx, order, attempt, current }) => {
@@ -157,10 +172,21 @@ export function authorize(
       .select()
       .from(inventoryHolds)
       .where(eq(inventoryHolds.proposalId, attempt.proposalId));
-    const confirmable =
-      order.status === 'confirming' && hold?.state === 'held' && hold.expiresAt > deps.now();
-    await enqueuePaymentJob(tx, deps.queue, mirrored, confirmable ? 'confirm' : 'void');
-    return result;
+    if (result.order.status !== 'confirming') {
+      await enqueuePaymentJob(tx, deps.queue, mirrored, 'void');
+      return result;
+    }
+    const completedAt = input.completedAt ?? deps.now();
+    if (hold?.state === 'held' && hold.expiresAt > completedAt) {
+      await enqueuePaymentJob(tx, deps.queue, mirrored, 'confirm');
+      return result;
+    }
+    // Completed too late: the Order expires now, and its release voids the authorization.
+    return releaseIn(tx, deps, result.order, 'expire', {
+      orderId: order.id,
+      proposalId: attempt.proposalId,
+      trigger: input.trigger === 'payment_webhook' ? 'payment_webhook' : 'payment_job',
+    });
   });
 }
 

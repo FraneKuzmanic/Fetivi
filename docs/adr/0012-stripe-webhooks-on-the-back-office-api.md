@@ -9,7 +9,7 @@ Pay-online Orders need a public endpoint for Stripe's events (the source of paym
 ## Decision
 
 - Stripe's events arrive at `POST /webhooks/stripe` on the back-office API. The route is outside `/api/`, so it has no session and no Origin check. It is registered only when `STRIPE_WEBHOOK_SECRET` is set. It verifies the signature on the raw body, maps the event to a machine transition and makes no Stripe call. Each event id is processed once, because it is recorded on the payment attempt. Every verified event gets a 200, including one that is not ours.
-- Every Stripe write runs in the jobs process, as an `order-payment` job keyed `order:<id>:proposal:<id>:payment:<operation>`. The idempotency key has the form `order:<id>:proposal:<n>:<operation>:<expires_at>`, and every parameter comes from stored attempt columns, so a retry sends the identical request. `completeOrder` only enqueues the `open` job. The guest's Pay now button asks the chat backend for the stored Checkout URL.
+- Every Stripe write runs in the jobs process, as an `order-payment` job keyed `order:<id>:proposal:<id>:payment:<operation>`; the `open` job's key also ends in `:<expires_at unix>`, so a restamped attempt gets a fresh job. The idempotency key has the form `order:<id>:proposal:<n>:<operation>:<expires_at>`, and every parameter comes from stored attempt columns, so a retry sends the identical request. `completeOrder` only enqueues the `open` job. The guest's Pay now button asks the chat backend for the stored Checkout URL.
 - The back-office API also holds the key, for Provider onboarding (Accounts v2 and account links), which is an admin action.
 
 ## Consequences

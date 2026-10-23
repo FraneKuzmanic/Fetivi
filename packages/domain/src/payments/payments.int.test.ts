@@ -5,7 +5,7 @@ import { allotmentSlots, providers } from '../db/schema/offers';
 import { inventoryHolds, orderEvents, orders, paymentAttempts } from '../db/schema/orders';
 import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../jobs/queue';
 import type { GuestOfferScope } from '../offers/guest';
-import { cancel, createOrder, type OrderDeps, runOrderTimer } from '../orders/machine';
+import { cancel, createOrder, expire, type OrderDeps, runOrderTimer } from '../orders/machine';
 import { orderJobId } from '../orders/timers';
 import {
   availabilityFor,
@@ -396,6 +396,21 @@ describe('late and lost checkouts', () => {
     expect(w.gateway.state().intents[0]?.status).toBe('canceled');
   });
 
+  it('reads the session when Stripe rejects the expire in words it gives no code for', async () => {
+    const w = world();
+    const { order, attempt, ref } = await placeOrder();
+    await runJobs(w.pdeps, attempt.id, ['open']);
+    w.gateway.pay((await attemptOf(attempt.id)).sessionId as string);
+    w.gateway.takeEvents(); // the completion webhook is lost
+    await expire(deps(), { ...ref, trigger: 'admin' });
+    w.gateway.failNext('expire_session', 'rejected');
+    expect(await runJobs(w.pdeps, attempt.id)).toEqual([
+      { operation: 'expire_session', outcome: 'applied' },
+      { operation: 'void', outcome: 'applied' },
+    ]);
+    expect(await orderOf(order.id)).toMatchObject({ status: 'expired', paymentStatus: 'voided' });
+  });
+
   it('voids a late checkout whose webhook came first', async () => {
     const w = world();
     const { order, attempt, ref } = await placeOrder();
@@ -500,10 +515,23 @@ describe('releases', () => {
     expect((await orderOf(order.id)).paymentStatus).toBe('failed');
     expect(await notifyKinds(order.id)).toContain('admin_payment_attention');
   });
+
+  it('records a refund Stripe says was already made as refunded', async () => {
+    const w = world();
+    const { order, attempt, ref } = await authorized(w);
+    await runJobs(w.pdeps, attempt.id);
+    await cancel(deps(), { ...ref, trigger: 'provider_link' });
+    w.gateway.failNext('refund', 'charge-already-refunded');
+    expect(await runJobs(w.pdeps, attempt.id)).toEqual([
+      { operation: 'refund', outcome: 'applied' },
+    ]);
+    expect((await orderOf(order.id)).paymentStatus).toBe('refunded');
+    expect(await notifyKinds(order.id)).not.toContain('admin_payment_attention');
+  });
 });
 
 describe('booking a pay-online Offer in chat', () => {
-  it('is bookable only for an onboarded Provider’s allotment Offer', async () => {
+  it('is bookable only for an onboarded Providerâ€™s allotment Offer', async () => {
     const pending = await onlineOffer({ card: 'pending' });
     const ctx = { spaceId: guest.spaceId, offerScope: scope() };
     await expect(
