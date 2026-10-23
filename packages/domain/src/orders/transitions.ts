@@ -27,9 +27,12 @@ const TABLE: Partial<Record<OrderStatus, Partial<Record<OrderAction, Edge>>>> = 
   },
   confirming: {
     confirm: { triggers: ['adapter', 'admin'], to: 'confirmed' },
-    fail: { triggers: ['adapter', 'admin', 'payment_job'], to: 'failed' },
+    fail: {
+      triggers: ['adapter', 'admin', 'payment_job', 'payment_webhook', 'reconciliation'],
+      to: 'failed',
+    },
     expire: {
-      triggers: ['hold_timer', 'admin', 'payment_webhook', 'payment_job'],
+      triggers: ['hold_timer', 'admin', 'payment_webhook', 'payment_job', 'reconciliation'],
       to: 'expired',
     },
   },
@@ -98,23 +101,33 @@ type PaymentEdge = { triggers: readonly OrderTrigger[]; to: PaymentStatus };
 
 const PAYMENT_TABLE: Partial<Record<PaymentStatus, Partial<Record<PaymentAction, PaymentEdge>>>> = {
   none: {
-    authorize: { triggers: ['payment_webhook', 'payment_job', 'admin'], to: 'authorized' },
+    authorize: {
+      triggers: ['payment_webhook', 'payment_job', 'admin', 'reconciliation'],
+      to: 'authorized',
+    },
   },
   authorized: {
-    capture: { triggers: ['payment_job', 'payment_webhook'], to: 'captured' },
-    void: { triggers: ['payment_job', 'payment_webhook'], to: 'voided' },
+    capture: { triggers: ['payment_job', 'payment_webhook', 'reconciliation'], to: 'captured' },
+    void: { triggers: ['payment_job', 'payment_webhook', 'reconciliation'], to: 'voided' },
   },
   // A refund is requested by whatever released a captured Order (a cancel by the guest, the
   // Provider or the admin), or by a capture that lost a race against a release.
   captured: {
     refund: {
-      triggers: ['payment_job', 'payment_webhook', 'admin', 'provider_link', 'guest'],
+      triggers: [
+        'payment_job',
+        'payment_webhook',
+        'admin',
+        'provider_link',
+        'guest',
+        'reconciliation',
+      ],
       to: 'refund_pending',
     },
   },
   refund_pending: {
-    refunded: { triggers: ['payment_job', 'payment_webhook'], to: 'refunded' },
-    refund_failed: { triggers: ['payment_job', 'payment_webhook'], to: 'failed' },
+    refunded: { triggers: ['payment_job', 'payment_webhook', 'reconciliation'], to: 'refunded' },
+    refund_failed: { triggers: ['payment_job', 'payment_webhook', 'reconciliation'], to: 'failed' },
   },
 };
 

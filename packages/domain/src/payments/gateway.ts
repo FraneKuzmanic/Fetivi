@@ -54,6 +54,12 @@ export type RefundView = {
   status: 'pending' | 'succeeded' | 'failed' | 'requires_action' | 'canceled';
 };
 
+/** A listed session, with what tells reconciliation whether an attempt is behind it (34). */
+export interface ListedCheckoutSessionView extends CheckoutSessionView {
+  metadataAttemptId: string | null;
+  createdAt: Date;
+}
+
 export interface PaymentGateway {
   createCheckoutSession(p: CheckoutParams, o: WriteOptions): Promise<CheckoutSessionView>;
   retrieveCheckoutSession(id: string, o: ReadOptions): Promise<CheckoutSessionView>;
@@ -66,6 +72,11 @@ export interface PaymentGateway {
   cancelPaymentIntent(id: string, o: WriteOptions): Promise<PaymentIntentView>;
   retrievePaymentIntent(id: string, o: ReadOptions): Promise<PaymentIntentView>;
   createRefund(p: { paymentIntentId: string }, o: WriteOptions): Promise<RefundView>;
+  retrieveRefund(id: string, o: ReadOptions): Promise<RefundView>;
+  /** The account's sessions created at or after `createdAfter`, newest first, at most `limit`. */
+  listCheckoutSessions(
+    o: ReadOptions & { createdAfter: Date; limit: number },
+  ): Promise<ListedCheckoutSessionView[]>;
   createConnectedAccount(
     p: { providerId: string; email: string; displayName: string },
     o: { idempotencyKey: string },
@@ -256,6 +267,22 @@ export function createStripeGateway(config: StripeGatewayConfig): PaymentGateway
           o,
         );
         return { id: refund.id, status: (refund.status ?? 'pending') as RefundView['status'] };
+      }),
+    retrieveRefund: (id, o) =>
+      call(async () => {
+        const refund = await stripe.refunds.retrieve(id, {}, o);
+        return { id: refund.id, status: (refund.status ?? 'pending') as RefundView['status'] };
+      }),
+    listCheckoutSessions: ({ createdAfter, limit, ...o }) =>
+      call(async () => {
+        const sessions = await stripe.checkout.sessions
+          .list({ created: { gte: unix(createdAfter) }, limit: 100 }, o)
+          .autoPagingToArray({ limit });
+        return sessions.map((s) => ({
+          ...sessionView(s),
+          metadataAttemptId: s.metadata?.fetivi_attempt_id ?? null,
+          createdAt: new Date(s.created * 1000),
+        }));
       }),
     createConnectedAccount: (p, o) =>
       call(async () => {

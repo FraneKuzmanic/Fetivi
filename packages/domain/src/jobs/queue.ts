@@ -21,6 +21,7 @@ export const QUEUES = {
   spaceEmail: 'space-email',
   safetyAlerts: 'safety-alerts',
   dailyTips: 'daily-tips',
+  reconcile: 'reconcile',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -63,6 +64,8 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   // The cron fan-out; the next slot runs again anyway. Up to three searches per due space need
   // more headroom than 120 s at worst.
   dailyTips: { retryLimit: 1, expireInSeconds: 300 },
+  // One run at a time; the next run repairs anything a failed one left.
+  reconcile: { policy: 'singleton', retryLimit: 1, expireInSeconds: 600 },
 };
 
 /**

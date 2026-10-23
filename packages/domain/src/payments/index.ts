@@ -5,4 +5,5 @@ export * from './gateway';
 export * from './jobs';
 export * from './keys';
 export * from './onboarding';
+export * from './reconcile';
 export * from './vocabulary';

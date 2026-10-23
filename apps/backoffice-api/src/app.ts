@@ -7,6 +7,7 @@ import type {
   PaymentGateway,
 } from '@fetivi/domain';
 import Fastify from 'fastify';
+import { reconciliationRoutes } from './admin/reconciliation';
 import { adminRoutes } from './admin/routes';
 import { registerAuth } from './auth/plugin';
 import { authRoutes } from './auth/routes';
@@ -68,6 +69,7 @@ export function buildApp(deps: AppDeps) {
   app.register(mediaRoutes, { db, queue, now, media: deps.media });
   app.register(manualImportRoutes, { db, queue, now, model: deps.manualImportModel });
   app.register(adminRoutes, { db, now });
+  app.register(reconciliationRoutes, { db, queue, now });
   app.register(catalogRoutes, { db, queue, now });
   app.register(providerRoutes, { db, queue, now });
   app.register(onboardingRoutes, { db, now, webOrigin, gateway: deps.stripe?.gateway ?? null });

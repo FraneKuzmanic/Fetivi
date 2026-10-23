@@ -23,6 +23,7 @@ How to run pay-online end to end against a Stripe sandbox, with webhooks forward
 4. **Refund.** Confirm and pay an Order, then use the Provider's **Can't fulfil** on the order page. It must end *Refunded*, with the application fee refunded too.
 5. **Late checkout.** Stop `stripe listen`, pay an open Checkout, then expire the Order from the admin (the release the hold timer also makes). Expiring the Order first and paying after does not work: the release expires the session at once. The `expire_session` job must find the session complete and void the authorization, and the receipt shows *Expired · Payment released*. Start `stripe listen` again and resend the completion: it must be `unchanged`.
 6. **Replay.** Run `stripe events resend evt_… --account acct_…` for a `checkout.session.completed`. No new `OrderEvent` may appear.
+7. **Lost completion recovered by reconciliation.** Stop `stripe listen` and pay an open Checkout. Within the 30-minute hold, press **Run now** on Admin → Reconciliation (or wait for the 5-minute run). The Order must turn *Confirmed · Paid*, its OrderEvent `authorized` must have trigger `reconciliation`, and a "Payment completed, webhook missed" finding must appear under Resolved.
 
 ## Results, 2026-10-23
 

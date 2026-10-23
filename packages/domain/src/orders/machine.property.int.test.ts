@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, like, sql } from 'drizzle-orm';
 import fc from 'fast-check';
 import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -11,11 +11,13 @@ import {
   orders,
   paymentAttempts,
 } from '../db/schema/orders';
+import { reconciliationFindings } from '../db/schema/reconciliation';
 import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../jobs/queue';
 import type { OrderPaymentJobData } from '../payments/enqueue';
 import { applyStripeEvent, parseStripeEvent } from '../payments/events';
 import { PaymentGatewayError } from '../payments/gateway';
 import { type PaymentDeps, runPaymentJob } from '../payments/jobs';
+import { runReconciliation } from '../payments/reconcile';
 import { CHECKOUT_HOLD_MINUTES, type PaymentOperation } from '../payments/vocabulary';
 import { createTestDatabase, type TestDatabase } from '../testing';
 import {
@@ -48,7 +50,9 @@ import { isFinalOrderStatus } from './vocabulary';
 // and after draining every timer. Since 33 a pay-online Offer joins the three pay-direct ones,
 // with a fake Stripe: the guest pays, payment jobs call Stripe (a crash rolls back the write
 // after the call; a lost response throws after it), and webhooks arrive duplicated, reordered,
-// delayed, or (the checkout completion only) never. S2's payment invariants P1-P7 are checked.
+// delayed, or never. S2's payment invariants P1-P7 are checked. Since 34 the cancel webhook can be
+// lost too, an authorization can lapse, a confirm job can die for good, and the reconciliation
+// job runs as a step and in every drain round: it is what closes those gaps.
 // ORDER_PROPERTY_RUNS (default 25) sets the volume; ORDER_PROPERTY_SEED replays a failure.
 
 const RUNS = Number(process.env.ORDER_PROPERTY_RUNS ?? 25);
@@ -106,9 +110,12 @@ type Step =
   | { kind: 'guestConfirm'; order: number; staleCard: boolean }
   | { kind: 'advance'; minutes: number; shuffle: number }
   | { kind: 'guestPay'; order: number; late: boolean }
-  | { kind: 'deliverWebhooks'; shuffle: number; dropCompletion: boolean }
+  | { kind: 'deliverWebhooks'; shuffle: number; dropCompletion: boolean; dropCancel: boolean }
   | { kind: 'runPaymentJobs'; shuffle: number; lostResponse: boolean; rounds: number }
-  | { kind: 'stripeExpire' };
+  | { kind: 'stripeExpire' }
+  | { kind: 'lapse'; order: number }
+  | { kind: 'killConfirmJob' }
+  | { kind: 'reconcile' };
 type Action = Step & { crash: boolean; duplicate: boolean };
 
 // Few Orders per run, so actions pile up on the same Order and reach its later proposals.
@@ -179,8 +186,10 @@ const stepArb: fc.Arbitrary<Step> = fc.oneof(
     arbitrary: fc.record({
       kind: fc.constant('deliverWebhooks' as const),
       shuffle: fc.nat(),
-      // Only the completion can be lost in 33: the expire_session job closes that gap.
+      // A lost completion is closed by reconciliation (or the expire_session job), a lost cancel
+      // by reconciliation only (34).
       dropCompletion: fc.nat(4).map((n) => n === 0),
+      dropCancel: fc.nat(4).map((n) => n === 0),
     }),
   },
   {
@@ -194,6 +203,11 @@ const stepArb: fc.Arbitrary<Step> = fc.oneof(
     }),
   },
   fc.record({ kind: fc.constant('stripeExpire' as const) }),
+  // Stripe cancels an authorization it held too long.
+  { weight: 2, arbitrary: fc.record({ kind: fc.constant('lapse' as const), order: orderIdx }) },
+  // pg-boss ran out of retries on every queued confirm job.
+  fc.record({ kind: fc.constant('killConfirmJob' as const) }),
+  { weight: 3, arbitrary: fc.record({ kind: fc.constant('reconcile' as const) }) },
 );
 const actionArb: fc.Arbitrary<Action> = fc
   // One step in five crashes before commit, one in four is delivered twice.
@@ -207,6 +221,7 @@ const COMPLETION_EVENTS = [
   'checkout.session.completed',
   'payment_intent.amount_capturable_updated',
 ];
+const CANCEL_EVENT = 'payment_intent.canceled';
 /** The Stripe call each payment operation makes, for a lost response. */
 const STRIPE_OP: Record<PaymentOperation, FakeStripeOp | null> = {
   open: 'create_session',
@@ -249,6 +264,8 @@ class World {
   constructor(
     readonly offers: { offerId: string; slotId?: string; mode: Mode }[],
     readonly capacity: number,
+    /** Off for the control run and for the scenarios that test what 33 did without it. */
+    readonly reconcile = true,
   ) {
     this.deps = { db: testDb.db, queue, now: () => this.t };
     // P1: Stripe captures only for the proposal confirmed at that instant.
@@ -422,7 +439,68 @@ class World {
       case 'stripeExpire':
         this.gateway.expireDue(this.t);
         return;
+      case 'lapse':
+        await this.lapse(a.order);
+        return;
+      case 'killConfirmJob':
+        await this.killConfirmJobs();
+        return;
+      case 'reconcile':
+        if (this.reconcile) await this.run(a, (d) => this.reconcileOnce(d));
+        return;
     }
+  }
+
+  async attemptIds() {
+    const ids = this.orders.filter((o) => o.online).map((o) => o.id);
+    if (ids.length === 0) return [];
+    const rows = await testDb.db
+      .select({ id: paymentAttempts.id })
+      .from(paymentAttempts)
+      .where(inArray(paymentAttempts.orderId, ids));
+    return rows.map((r) => r.id);
+  }
+
+  /** Stripe lapses an Order's uncaptured authorization (7 days in real life). */
+  async lapse(index: number) {
+    const online = this.orders.filter((o) => o.online);
+    const order = online.length ? online[index % online.length] : undefined;
+    if (!order) return;
+    const [attempt] = await testDb.db
+      .select()
+      .from(paymentAttempts)
+      .where(eq(paymentAttempts.orderId, order.id));
+    const session = this.gateway.state().sessions.find((x) => x.clientReferenceId === attempt?.id);
+    if (session?.paymentIntentId) this.gateway.lapse(session.paymentIntentId);
+  }
+
+  /** Every queued confirm job of this world fails for good, as when pg-boss exhausts retries. */
+  async killConfirmJobs() {
+    const ids = await this.attemptIds();
+    if (ids.length === 0) return;
+    await testDb.db.execute(
+      sql`update pgboss.job set state = 'failed' where name = ${QUEUES.orderPayment}
+          and state = 'created' and data->>'operation' = 'confirm'
+          and data->>'attemptId' in ${sql`(${sql.join(
+            ids.map((id) => sql`${id}`),
+            sql`, `,
+          )})`}`,
+    );
+  }
+
+  /** One reconciliation run; returns how many findings it put right through the machine. */
+  async reconcileOnce(d: OrderDeps) {
+    const { runId } = await runReconciliation(this.paymentDeps(d), { trigger: 'schedule' });
+    const applied = await d.db
+      .select({ id: reconciliationFindings.id })
+      .from(reconciliationFindings)
+      .where(
+        and(
+          eq(reconciliationFindings.runId, runId),
+          like(reconciliationFindings.action, '%: applied'),
+        ),
+      );
+    return applied.length;
   }
 
   /**
@@ -455,7 +533,10 @@ class World {
     const batch = shuffled([...this.inbox], a.shuffle);
     let delivered = 0;
     for (const event of batch) {
-      if (a.dropCompletion && COMPLETION_EVENTS.includes(event.type)) {
+      const dropped =
+        (a.dropCompletion && COMPLETION_EVENTS.includes(event.type)) ||
+        (a.dropCancel && event.type === CANCEL_EVENT);
+      if (dropped) {
         this.inbox = this.inbox.filter((e) => e !== event);
         continue;
       }
@@ -469,17 +550,12 @@ class World {
 
   /** Plays the worker for order-payment: every queued job, shuffled; a failed one stays queued. */
   async runPaymentJobs(a: Action & { kind: 'runPaymentJobs' }) {
-    const ids = this.orders.filter((o) => o.online).map((o) => o.id);
-    if (ids.length === 0) return 0;
-    const attempts = await testDb.db
-      .select({ id: paymentAttempts.id })
-      .from(paymentAttempts)
-      .where(inArray(paymentAttempts.orderId, ids));
+    const attempts = await this.attemptIds();
     if (attempts.length === 0) return 0;
     const { rows } = await testDb.db.execute<{ id: string; data: OrderPaymentJobData }>(
       sql`select id, data from pgboss.job where name = ${QUEUES.orderPayment} and state = 'created'
           and data->>'attemptId' in ${sql`(${sql.join(
-            attempts.map((x) => sql`${x.id}`),
+            attempts.map((id) => sql`${id}`),
             sql`, `,
           )})`}`,
     );
@@ -546,8 +622,8 @@ class World {
 
   /**
    * Lets the workers settle what is in flight at the current time, then advances far past every
-   * deadline and runs timers, payment jobs and webhooks, each delivered twice and none lost,
-   * until nothing is left.
+   * deadline and runs timers, payment jobs, webhooks and reconciliation, each delivered twice and
+   * none lost, until nothing is left.
    */
   async drain() {
     for (let i = 0; i < 10; i++) {
@@ -575,8 +651,10 @@ class World {
       kind: 'deliverWebhooks',
       ...twice,
       dropCompletion: false,
+      dropCancel: false,
     });
-    return timers + jobs + events + this.inbox.length;
+    const reconciled = this.reconcile ? await this.reconcileOnce(this.deps) : 0;
+    return timers + jobs + events + reconciled + this.inbox.length;
   }
 
   async check({ drained = false } = {}) {
@@ -771,7 +849,7 @@ type OrderRow = typeof orders.$inferSelect;
 type AttemptRow = typeof paymentAttempts.$inferSelect;
 type StripeState = ReturnType<World['gateway']['state']>;
 
-async function newWorld(capacity: number): Promise<World> {
+async function newWorld(capacity: number, options: { reconcile?: boolean } = {}): Promise<World> {
   const allotment = await seedOrderableOffer(testDb.db, {
     hostId: unit.hostId,
     availabilityMode: 'allotment',
@@ -808,11 +886,12 @@ async function newWorld(capacity: number): Promise<World> {
       { ...online, mode: 'online' },
     ],
     capacity,
+    options.reconcile,
   );
 }
 
-async function play(capacity: number, actions: Action[]) {
-  const world = await newWorld(capacity);
+async function play(capacity: number, actions: Action[], options: { reconcile?: boolean } = {}) {
+  const world = await newWorld(capacity, options);
   for (const action of actions) {
     await world.step(action);
     await world.check();
@@ -894,11 +973,15 @@ const hooks = (extra: Partial<Action & { kind: 'deliverWebhooks' }> = {}): Actio
   kind: 'deliverWebhooks',
   shuffle: 0,
   dropCompletion: false,
+  dropCancel: false,
   ...plain,
   ...extra,
 });
 const pay = (late = false): Action => ({ kind: 'guestPay', order: 0, late, ...plain });
 const wait = (minutes: number): Action => ({ kind: 'advance', minutes, shuffle: 0, ...plain });
+const reconcile: Action = { kind: 'reconcile', ...plain };
+const killConfirmJob: Action = { kind: 'killConfirmJob', ...plain };
+const lapse: Action = { kind: 'lapse', order: 0, ...plain };
 
 async function steps(world: World, actions: Action[]) {
   for (const action of actions) {
@@ -1055,12 +1138,117 @@ describe('Order machine property (pay-online, S2 mutants)', () => {
   });
 
   it('a lost completion webhook is closed by the expire_session job', async () => {
-    const world = await newWorld(2);
+    // Without reconciliation, which would find the completion first (34).
+    const world = await newWorld(2, { reconcile: false });
     await steps(world, [buy, jobs(), pay(), hooks({ dropCompletion: true })]);
     expect((await stateOf(world)).order?.paymentStatus).toBe('none');
     await finish(world);
     const { order } = await stateOf(world);
     expect([order?.status, order?.paymentStatus]).toEqual(['expired', 'voided']);
     expect(callsOf(world, 'retrieve_session').length).toBeGreaterThan(0);
+  });
+});
+
+// Reconciliation (34): what a lost webhook, a lapse or a dead job leaves behind is read back from
+// Stripe and the holds, and fed through the machine.
+const LAPSE: Action[] = [
+  buy,
+  jobs(),
+  pay(),
+  hooks(),
+  killConfirmJob,
+  lapse,
+  hooks({ dropCancel: true }),
+  reconcile,
+];
+
+async function flagsOf(orderId: string) {
+  const { rows } = await testDb.db.execute<{ kind: string }>(
+    sql`select data->>'kind' as kind from pgboss.job where name = ${QUEUES.orderNotify}
+        and data->>'orderId' = ${orderId} and data->>'kind' = 'admin_payment_attention'`,
+  );
+  return rows.length;
+}
+
+describe('Order machine property (reconciliation)', () => {
+  it('a lost completion webhook is closed by reconciliation while the hold is live', async () => {
+    const world = await newWorld(2);
+    await steps(world, [
+      buy,
+      jobs(),
+      pay(),
+      hooks({ dropCompletion: true }),
+      reconcile,
+      jobs(),
+      jobs(),
+    ]);
+    const { order } = await stateOf(world);
+    expect([order?.status, order?.paymentStatus]).toEqual(['confirmed', 'captured']);
+    expect(callsOf(world, 'expire_session')).toHaveLength(0);
+    await finish(world);
+  });
+
+  it('a lapse while confirming with the cancel webhook lost is reconciled', async () => {
+    const world = await newWorld(2);
+    await steps(world, LAPSE);
+    const { order, attempt } = await stateOf(world);
+    expect([order?.status, order?.paymentStatus]).toEqual(['failed', 'voided']);
+    expect(attempt?.intentStatus).toBe('canceled');
+    const [hold] = await testDb.db
+      .select()
+      .from(inventoryHolds)
+      .where(eq(inventoryHolds.orderId, order?.id ?? ''));
+    expect(hold?.state).toBe('released');
+    expect(await flagsOf(order?.id ?? '')).toBe(1);
+    await finish(world);
+  });
+
+  it('a dead confirm job without a lapse: after the confirm grace the Order fails and is voided', async () => {
+    const world = await newWorld(2);
+    await steps(world, [buy, jobs(), pay(), hooks(), killConfirmJob]);
+    expect((await stateOf(world)).order?.status).toBe('confirming');
+    await finish(world);
+    const { order } = await stateOf(world);
+    expect([order?.status, order?.paymentStatus]).toEqual(['failed', 'voided']);
+    expect(await flagsOf(order?.id ?? '')).toBe(1);
+  });
+
+  it('a pay-direct confirming Order whose hold timer was lost is expired by reconciliation', async () => {
+    const world = await newWorld(2);
+    await steps(world, [{ ...buy, offer: 0 }]);
+    const id = world.orders[0]?.id ?? '';
+    await testDb.db.execute(
+      sql`delete from pgboss.job where name = ${QUEUES.orderTimer} and data->>'orderId' = ${id}`,
+    );
+    await steps(world, [wait(31)]);
+    expect((await stateOf(world)).order?.status).toBe('confirming');
+    await steps(world, [wait(2), reconcile]);
+    expect((await stateOf(world)).order?.status).toBe('expired');
+    await finish(world);
+  });
+
+  it('a cancel delivered before the completion fails the Order instead of confirming it', async () => {
+    // Found by the 500-run: the lapse's cancel reached Fetivi before the completion, and the
+    // completion then authorized an intent Stripe had already cancelled.
+    const world = await newWorld(1);
+    await steps(world, [
+      { ...buy, quantity: 1 },
+      jobs({ lostResponse: true }),
+      { ...pay(true), crash: true },
+      lapse,
+      hooks({ shuffle: 1312972234, duplicate: true }),
+    ]);
+    const { order } = await stateOf(world);
+    expect([order?.status, order?.paymentStatus]).toEqual(['failed', 'voided']);
+    expect(await flagsOf(order?.id ?? '')).toBe(1);
+    await finish(world);
+  });
+
+  it('control: without reconciliation the lapse scenario fails', async () => {
+    // P4 (Fetivi still mirrors requires_capture) or invariant 7 (a held hold past expiry).
+    await expect(play(2, LAPSE, { reconcile: false })).rejects.toMatchObject({
+      name: 'AssertionError',
+    });
+    await expect(play(2, LAPSE)).resolves.toBeDefined();
   });
 });

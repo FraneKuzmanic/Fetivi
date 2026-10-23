@@ -44,7 +44,8 @@ export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
  * The explicit causes of a transition (architecture §4.3), recorded on every OrderEvent.
  * `payment_webhook` is a verified Stripe event; `payment_job` is the outcome of a Stripe call the
  * order-payment job made (33). `window_timer` is never recorded: a missed response window alerts
- * the admin and changes no status.
+ * the admin and changes no status. `reconciliation` is what the reconciliation job (34) found by
+ * reading Stripe or a hold past expiry.
  */
 export const ORDER_TRIGGERS = [
   'guest',
@@ -57,6 +58,7 @@ export const ORDER_TRIGGERS = [
   'admin',
   'payment_webhook',
   'payment_job',
+  'reconciliation',
 ] as const;
 export type OrderTrigger = (typeof ORDER_TRIGGERS)[number];
 

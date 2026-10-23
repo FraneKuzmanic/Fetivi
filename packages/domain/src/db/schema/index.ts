@@ -17,6 +17,7 @@ export * from './orders';
 export * from './pending-actions';
 export * from './plan';
 export * from './properties';
+export * from './reconciliation';
 export * from './saved-places';
 export * from './sessions';
 export * from './spaces';

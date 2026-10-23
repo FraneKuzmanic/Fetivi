@@ -345,6 +345,46 @@ describe('pay-online releases', () => {
     );
   });
 
+  it('fails a confirming Order whose authorization was cancelled, and releases its hold', async () => {
+    const { attempt, ref, slotId } = await placeOrder();
+    await authorize(deps(), {
+      attemptId: attempt.id,
+      paymentIntentId: 'pi_vc',
+      trigger: 'payment_job',
+    });
+    expect(await remaining(slotId)).toBe(0);
+    const voided = await recordVoided(deps(), {
+      attemptId: attempt.id,
+      eventId: 'evt_lapse',
+      trigger: 'payment_webhook',
+    });
+    expect(voided).toMatchObject({
+      outcome: 'applied',
+      order: { status: 'failed', paymentStatus: 'voided' },
+    });
+    const [hold] = await testDb.db
+      .select()
+      .from(inventoryHolds)
+      .where(eq(inventoryHolds.proposalId, ref.proposalId));
+    expect(hold?.state).toBe('released');
+    expect(await remaining(slotId)).toBe(2);
+    expect((await notifyKinds(ref.orderId)).sort()).toEqual([
+      'admin_payment_attention',
+      'order_failed',
+    ]);
+    expect((await events(ref.orderId)).slice(-2)).toMatchObject([
+      { fromPaymentStatus: 'authorized', toPaymentStatus: 'voided', toStatus: 'confirming' },
+      {
+        fromStatus: 'confirming',
+        toStatus: 'failed',
+        trigger: 'payment_webhook',
+        note: 'authorization cancelled before confirmation',
+      },
+    ]);
+    // Only the confirm job was queued: the intent is already cancelled, nothing to void.
+    expect(await paymentJobs(attempt.id)).toEqual(['open', 'confirm']);
+  });
+
   it('alerts once per flag, each naming the OrderEvent that says why', async () => {
     const { attempt, ref } = await placeOrder();
     await authorize(deps(), {

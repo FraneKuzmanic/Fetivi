@@ -6,6 +6,7 @@ import {
   Handshake,
   type Icon,
   MapTrifold,
+  Scales,
   SealCheck,
   SignOut,
   Tray,
@@ -42,6 +43,7 @@ function navItems(me: Me, unread: number): NavItem[] {
         icon: Handshake,
         prefixes: ['/admin/providers', '/admin/offers'],
       },
+      { to: '/admin/reconciliation', label: 'Reconciliation', icon: Scales, prefixes: [] },
       { to: '/admin/audit', label: 'Audit', icon: ClipboardText, prefixes: [] },
     ];
   }

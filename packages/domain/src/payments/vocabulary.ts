@@ -105,3 +105,50 @@ export const PAYMENT_LOCALES = {
  */
 export const PROVIDER_CARD_STATUSES = ['active', 'pending', 'restricted', 'unsupported'] as const;
 export type ProviderCardStatus = (typeof PROVIDER_CARD_STATUSES)[number];
+
+/** The reconciliation job's cron (UTC): every 5 minutes, well inside the 30-minute checkout (34). */
+export const RECONCILE_CRON = '*/5 * * * *';
+
+/** An unpaid hold this long past `expires_at` is the reconciliation job's, not its timer's. */
+export const RECONCILE_HOLD_GRACE_MINUTES = 2;
+
+/**
+ * An authorized `confirming` Order gets this long past its hold for the confirm job (8 retries
+ * with backoff) before reconciliation fails it.
+ */
+export const RECONCILE_CONFIRM_GRACE_MINUTES = 30;
+
+/** Attempts checked per run, oldest `updated_at` first. */
+export const RECONCILE_ATTEMPT_LIMIT = 500;
+
+/** How far back orphan sessions are listed: Stripe's 7-day authorization plus a day. */
+export const RECONCILE_ORPHAN_DAYS = 8;
+
+/** What started a reconciliation run: the cron, or the admin's Run now. */
+export const RECONCILE_TRIGGERS = ['schedule', 'admin'] as const;
+export type ReconcileTrigger = (typeof RECONCILE_TRIGGERS)[number];
+
+/** What one reconciliation finding is about. */
+export const FINDING_KINDS = [
+  /** A completion Fetivi missed. */
+  'session_completed',
+  'session_expired',
+  /** A lapse or a cancel Fetivi missed. */
+  'intent_canceled',
+  'intent_captured',
+  'refund_succeeded',
+  'refund_failed',
+  /** A held hold past expiry. */
+  'hold_expired',
+  /** A held hold on a confirmed Order: never touched, reported. */
+  'hold_on_confirmed',
+  /** A Stripe session no attempt knows (after a restore). */
+  'orphan_session',
+  /** Stripe rejected the read or the machine refused: a human looks. */
+  'check_failed',
+] as const;
+export type FindingKind = (typeof FINDING_KINDS)[number];
+
+/** `dismissed` is a finding the admin marked resolved. */
+export const FINDING_STATUSES = ['resolved', 'needs_attention', 'dismissed'] as const;
+export type FindingStatus = (typeof FINDING_STATUSES)[number];

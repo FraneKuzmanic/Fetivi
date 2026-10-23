@@ -7,6 +7,7 @@ import { randomBytes } from 'node:crypto';
 import type {
   CheckoutParams,
   CheckoutSessionView,
+  ListedCheckoutSessionView,
   PaymentGateway,
   PaymentGatewayErrorCode,
   PaymentIntentView,
@@ -23,6 +24,8 @@ export type FakeStripeOp =
   | 'cancel'
   | 'retrieve_intent'
   | 'refund'
+  | 'retrieve_refund'
+  | 'list_sessions'
   | 'create_account'
   | 'account_link'
   | 'account_status';
@@ -48,6 +51,8 @@ export interface FakeSession {
   paymentMethodTypes: string[];
   metadata: Record<string, string>;
   amountMinor: number;
+  /** From the fake's clock at create. */
+  createdAt: Date;
 }
 
 export interface FakeIntent {
@@ -99,6 +104,8 @@ export interface FakeStripeControls {
   expireDue(now: Date): void;
   /** The authorization lapses (Stripe cancels the intent). */
   lapse(intentId: string): void;
+  /** A pending refund settles at Stripe (its webhook is queued like Stripe's). */
+  settleRefund(refundId: string, status: 'succeeded' | 'failed'): void;
   /** Pending webhook events, oldest first. */
   readonly events: FakeStripeEvent[];
   /** Removes and returns the pending events. */
@@ -240,6 +247,7 @@ export function fakePaymentGateway(
           paymentMethodTypes: [...(options.methods ?? ['card', 'link'])],
           metadata: { ...p.metadata },
           amountMinor: p.amountMinor,
+          createdAt: now(),
         };
         sessions.set(id, s);
         return sessionView(s);
@@ -314,6 +322,28 @@ export function fakePaymentGateway(
         }
         return { id: r.id, status: r.status };
       }),
+    retrieveRefund: (id, o) =>
+      run('retrieve_refund', o.stripeAccount, null, { id }, () => {
+        const r = refunds.get(id);
+        if (!r || r.account !== o.stripeAccount) {
+          throw new PaymentGatewayError('rejected', 'no refund');
+        }
+        return { id: r.id, status: r.status };
+      }),
+    listCheckoutSessions: ({ createdAfter, limit, stripeAccount }) =>
+      run('list_sessions', stripeAccount, null, { createdAfter, limit }, () =>
+        [...sessions.values()]
+          .filter((s) => s.account === stripeAccount && s.createdAt >= createdAfter)
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+          .slice(0, limit)
+          .map(
+            (s): ListedCheckoutSessionView => ({
+              ...sessionView(s),
+              metadataAttemptId: s.metadata.fetivi_attempt_id ?? null,
+              createdAt: s.createdAt,
+            }),
+          ),
+      ),
     createConnectedAccount: (p, o) =>
       run('create_account', null, o.idempotencyKey, p, () => {
         const id = nextId('acct');
@@ -376,6 +406,26 @@ export function fakePaymentGateway(
       if (i?.status !== 'requires_capture') return;
       i.status = 'canceled';
       push('payment_intent.canceled', i.account, intentObject(i));
+    },
+    settleRefund(refundId, status) {
+      const r = refunds.get(refundId);
+      if (r?.status !== 'pending') return;
+      r.status = status;
+      if (status === 'succeeded') {
+        push('charge.refunded', r.account, {
+          id: nextId('ch'),
+          object: 'charge',
+          payment_intent: r.paymentIntentId,
+          refunded: true,
+        });
+      } else {
+        push('refund.failed', r.account, {
+          id: r.id,
+          object: 'refund',
+          payment_intent: r.paymentIntentId,
+          status: 'failed',
+        });
+      }
     },
     events,
     takeEvents: () => events.splice(0, events.length),

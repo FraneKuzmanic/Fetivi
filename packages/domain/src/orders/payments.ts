@@ -32,7 +32,7 @@ export interface PaymentTransitionInput {
   attemptId: string;
   /** The Stripe event id when the change came by webhook; a repeat of it is `unchanged`. */
   eventId?: string;
-  trigger: 'payment_webhook' | 'payment_job' | 'admin';
+  trigger: 'payment_webhook' | 'payment_job' | 'admin' | 'reconciliation';
 }
 
 type Mirror = {
@@ -119,7 +119,12 @@ async function mirror(
  * Alerts the admin about the OrderEvent just written under this Order lock, whose note is the
  * reason: one alert per flag, so a second problem on the same proposal is reported too.
  */
-async function flagAdmin(tx: Tx, deps: OrderDeps, order: OrderRow, attempt: PaymentAttemptRow) {
+export async function flagPaymentAttentionIn(
+  tx: Tx,
+  deps: OrderDeps,
+  order: OrderRow,
+  proposalId: string,
+) {
   const [flagged] = await tx
     .select({ id: orderEvents.id })
     .from(orderEvents)
@@ -128,7 +133,7 @@ async function flagAdmin(tx: Tx, deps: OrderDeps, order: OrderRow, attempt: Paym
     .limit(1);
   await enqueueNotification(tx, deps.queue, {
     orderId: order.id,
-    proposalId: attempt.proposalId,
+    proposalId,
     kind: 'admin_payment_attention',
     eventId: flagged?.id,
   });
@@ -168,6 +173,10 @@ export function authorize(
     if (ALREADY.authorize.includes(order.paymentStatus)) return { outcome: 'unchanged', order };
     const result = await writePayment(tx, deps, order, attempt.proposalId, 'authorize', input);
     if (result.outcome !== 'applied') return result;
+    // The cancel arrived first (a lapse, webhooks reordered): the authorization is already gone.
+    if (mirrored.intentStatus === 'canceled') {
+      return voidIn(tx, deps, result.order, attempt, input);
+    }
     const [hold] = await tx
       .select()
       .from(inventoryHolds)
@@ -185,7 +194,7 @@ export function authorize(
     return releaseIn(tx, deps, result.order, 'expire', {
       orderId: order.id,
       proposalId: attempt.proposalId,
-      trigger: input.trigger === 'payment_webhook' ? 'payment_webhook' : 'payment_job',
+      trigger: input.trigger,
     });
   });
 }
@@ -221,7 +230,8 @@ export function recordCaptured(
 
 /**
  * The authorization was cancelled. On a confirmed Order that is money the Provider will not get,
- * so the admin is flagged (the lapse path is closed by 34).
+ * so the admin is flagged. On a `confirming` Order the authorization can no longer confirm it:
+ * the Order fails, its hold is released and the admin is flagged (34).
  */
 export function recordVoided(
   deps: OrderDeps,
@@ -231,14 +241,39 @@ export function recordVoided(
     await mirror(tx, deps, attempt, { intentStatus: 'canceled' });
     if (!current) return { outcome: 'stale', order };
     if (ALREADY.void.includes(order.paymentStatus)) return { outcome: 'unchanged', order };
-    const confirmed = order.status === 'confirmed';
-    const meta: ChangeMeta = confirmed
-      ? { ...input, note: 'authorization cancelled on a confirmed Order' }
-      : input;
-    const result = await writePayment(tx, deps, order, attempt.proposalId, 'void', meta);
-    if (result.outcome === 'applied' && confirmed) await flagAdmin(tx, deps, order, attempt);
-    return result;
+    return voidIn(tx, deps, order, attempt, input);
   });
+}
+
+/** `recordVoided`'s write under the locks, shared with an `authorize` that meets a cancelled intent. */
+async function voidIn(
+  tx: Tx,
+  deps: OrderDeps,
+  order: OrderRow,
+  attempt: PaymentAttemptRow,
+  input: PaymentTransitionInput,
+): Promise<TransitionOutcome> {
+  const confirmed = order.status === 'confirmed';
+  const meta: ChangeMeta = confirmed
+    ? { ...input, note: 'authorization cancelled on a confirmed Order' }
+    : input;
+  const result = await writePayment(tx, deps, order, attempt.proposalId, 'void', meta);
+  if (result.outcome !== 'applied') return result;
+  if (confirmed) {
+    await flagPaymentAttentionIn(tx, deps, order, attempt.proposalId);
+    return result;
+  }
+  if (result.order.status !== 'confirming') return result;
+  const failed = await releaseIn(tx, deps, result.order, 'fail', {
+    orderId: order.id,
+    proposalId: attempt.proposalId,
+    trigger: input.trigger,
+    note: 'authorization cancelled before confirmation',
+  });
+  if (failed.outcome === 'applied') {
+    await flagPaymentAttentionIn(tx, deps, failed.order, attempt.proposalId);
+  }
+  return failed;
 }
 
 /** Captured money goes back in full: Payment `captured → refund_pending` and the refund job. */
@@ -280,7 +315,8 @@ export function recordRefundFailed(
       ...input,
       note: 'refund failed',
     });
-    if (result.outcome === 'applied') await flagAdmin(tx, deps, order, attempt);
+    if (result.outcome === 'applied')
+      await flagPaymentAttentionIn(tx, deps, order, attempt.proposalId);
     return result;
   });
 }
@@ -308,7 +344,7 @@ export function sessionExpired(
     return releaseIn(tx, deps, order, 'expire', {
       orderId: order.id,
       proposalId: attempt.proposalId,
-      trigger: input.trigger === 'payment_webhook' ? 'payment_webhook' : 'payment_job',
+      trigger: input.trigger,
     });
   });
 }
@@ -332,7 +368,8 @@ export function failCheckout(
         trigger: 'payment_job',
         note: input.reason,
       });
-      if (result.outcome === 'applied') await flagAdmin(tx, deps, order, attempt);
+      if (result.outcome === 'applied')
+        await flagPaymentAttentionIn(tx, deps, order, attempt.proposalId);
       return result;
     },
   );
@@ -361,7 +398,7 @@ export function flagPaymentAttention(
         note: input.reason,
         createdAt: deps.now(),
       });
-      await flagAdmin(tx, deps, order, attempt);
+      await flagPaymentAttentionIn(tx, deps, order, attempt.proposalId);
       return { outcome: 'applied', order };
     },
   );

@@ -454,6 +454,44 @@ export interface StayProposals {
 
 export type ProposalConfirm = Omit<StayInput, 'checkIn' | 'checkout'>;
 
+export interface ReconciliationRun {
+  id: string;
+  trigger: 'schedule' | 'admin';
+  startedAt: string;
+  /** Null while running, or when the run did not finish. */
+  finishedAt: string | null;
+  checked: number;
+  found: number;
+  resolved: number;
+  /** `stripe-not-configured` or `stripe-unavailable`. */
+  error: string | null;
+}
+
+export type ReconciliationFindingKind =
+  | 'session_completed'
+  | 'session_expired'
+  | 'intent_canceled'
+  | 'intent_captured'
+  | 'refund_succeeded'
+  | 'refund_failed'
+  | 'hold_expired'
+  | 'hold_on_confirmed'
+  | 'orphan_session'
+  | 'check_failed';
+
+export interface ReconciliationFinding {
+  id: string;
+  kind: ReconciliationFindingKind;
+  status: 'resolved' | 'needs_attention' | 'dismissed';
+  orderId: string | null;
+  stripeRef: string | null;
+  detail: string;
+  action: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  resolvedAt: string | null;
+}
+
 export interface AdminPropertyRow {
   id: string;
   name: string;
@@ -535,6 +573,15 @@ export const admin = {
   properties: (status: 'pending' | 'approved') =>
     api<{ properties: AdminPropertyRow[] }>(`/api/admin/properties?status=${status}`),
   approve: (id: string) => post(`/api/admin/properties/${id}/approve`),
+};
+
+export const reconciliation = {
+  list: (status: 'needs_attention' | 'resolved') =>
+    api<{ runs: ReconciliationRun[]; findings: ReconciliationFinding[] }>(
+      `/api/admin/reconciliation?status=${status}`,
+    ),
+  run: () => post<{ queued: true }>('/api/admin/reconciliation/run'),
+  resolve: (id: string) => post(`/api/admin/reconciliation/findings/${id}/resolve`),
 };
 
 export const host = {

@@ -7,6 +7,7 @@ import { NewRecordPage, RecordPage } from './admin/catalog/RecordPage';
 import { NewOfferPage, OfferPage } from './admin/providers/OfferPage';
 import { NewProviderPage, ProviderPage } from './admin/providers/ProviderPage';
 import { ProvidersPage } from './admin/providers/ProvidersPage';
+import { ReconciliationPage } from './admin/reconciliation/ReconciliationPage';
 import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 import { LoginPage } from './auth/LoginPage';
 import { ResetPasswordPage } from './auth/ResetPasswordPage';
@@ -168,6 +169,14 @@ export function App() {
           element={
             <Page area="admin">
               <ApprovalsPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/reconciliation"
+          element={
+            <Page area="admin">
+              <ReconciliationPage />
             </Page>
           }
         />

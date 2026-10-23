@@ -34,10 +34,13 @@ confirming confirm admin * -> confirmed
 confirming fail adapter * -> failed
 confirming fail admin * -> failed
 confirming fail payment_job * -> failed
+confirming fail payment_webhook * -> failed
+confirming fail reconciliation * -> failed
 confirming expire hold_timer * -> expired
 confirming expire admin * -> expired
 confirming expire payment_webhook * -> expired
 confirming expire payment_job * -> expired
+confirming expire reconciliation * -> expired
 pending_provider confirm provider_link * -> confirmed
 pending_provider confirm admin * -> confirmed
 pending_provider decline provider_link * -> declined
@@ -99,6 +102,19 @@ describe('nextStatus', () => {
       'confirming',
     );
   });
+
+  it('lets reconciliation expire or fail a confirming Order, and never confirm or cancel one', () => {
+    expect(nextStatus('confirming', 'fail', 'reconciliation', 'allotment')).toBe('failed');
+    expect(nextStatus('confirming', 'fail', 'payment_webhook', 'allotment')).toBe('failed');
+    expect(nextStatus('confirming', 'expire', 'reconciliation', 'allotment')).toBe('expired');
+    for (const mode of AVAILABILITY_MODES) {
+      expect(nextStatus('confirming', 'confirm', 'reconciliation', mode)).toBeNull();
+      expect(
+        nextStatus('awaiting_confirmation', 'guest_confirm', 'reconciliation', mode),
+      ).toBeNull();
+      expect(nextStatus('confirmed', 'cancel', 'reconciliation', mode)).toBeNull();
+    }
+  });
 });
 
 describe('actionTarget', () => {
@@ -124,19 +140,25 @@ const EXPECTED_PAYMENT = `
 none authorize payment_webhook -> authorized
 none authorize payment_job -> authorized
 none authorize admin -> authorized
+none authorize reconciliation -> authorized
 authorized capture payment_job -> captured
 authorized capture payment_webhook -> captured
+authorized capture reconciliation -> captured
 authorized void payment_job -> voided
 authorized void payment_webhook -> voided
+authorized void reconciliation -> voided
 captured refund payment_job -> refund_pending
 captured refund payment_webhook -> refund_pending
 captured refund admin -> refund_pending
 captured refund provider_link -> refund_pending
 captured refund guest -> refund_pending
+captured refund reconciliation -> refund_pending
 refund_pending refunded payment_job -> refunded
 refund_pending refunded payment_webhook -> refunded
+refund_pending refunded reconciliation -> refunded
 refund_pending refund_failed payment_job -> failed
 refund_pending refund_failed payment_webhook -> failed
+refund_pending refund_failed reconciliation -> failed
 `;
 
 const expectedPayment = new Map(
@@ -166,6 +188,12 @@ describe('nextPaymentStatus', () => {
     expect(nextPaymentStatus('voided', 'capture', 'payment_webhook')).toBeNull();
     expect(nextPaymentStatus('refunded', 'refund', 'admin')).toBeNull();
     expect(nextPaymentStatus('authorized', 'capture', 'guest')).toBeNull();
+  });
+
+  it('lets reconciliation feed every payment event a webhook can', () => {
+    expect(nextPaymentStatus('authorized', 'void', 'reconciliation')).toBe('voided');
+    expect(nextPaymentStatus('none', 'authorize', 'reconciliation')).toBe('authorized');
+    expect(nextPaymentStatus('captured', 'refund', 'reconciliation')).toBe('refund_pending');
   });
 });
 

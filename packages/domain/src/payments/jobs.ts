@@ -71,13 +71,13 @@ async function load(deps: OrderDeps, attemptId: string) {
   return { ...row, current: row.order.currentProposalId === row.attempt.proposalId };
 }
 
-const keyed = (attempt: PaymentAttemptRow, op: StripeKeyOperation): WriteOptions => ({
+export const keyed = (attempt: PaymentAttemptRow, op: StripeKeyOperation): WriteOptions => ({
   stripeAccount: attempt.stripeAccountId,
   idempotencyKey: stripeIdempotencyKey(attempt, op),
 });
 
 /** The create parameters, all from stored columns: a replay sends the identical request. */
-function checkoutParams(attempt: PaymentAttemptRow, guestOrigin: string): CheckoutParams {
+export function checkoutParams(attempt: PaymentAttemptRow, guestOrigin: string): CheckoutParams {
   return {
     clientReferenceId: attempt.id,
     expiresAt: attempt.expiresAt,
@@ -158,7 +158,7 @@ async function restampIn(tx: Tx, deps: OrderDeps, attempt: PaymentAttemptRow): P
 }
 
 /** Records the created session's id (and its URL when it may be offered), where not yet set. */
-async function recordSession(
+export async function recordSession(
   deps: OrderDeps,
   attempt: PaymentAttemptRow,
   session: CheckoutSessionView,

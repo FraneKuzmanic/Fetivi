@@ -119,6 +119,10 @@ Where an Order's money is: none (paid to the provider directly, or not yet autho
 One Stripe Checkout Session and its payment intent for one proposal of a pay-online Order. Its `expires_at` is stored before Stripe is called and is also when the inventory hold expires.
 _Avoid_: Payment, charge, transaction
 
+**Reconciliation finding**:
+One disagreement between Fetivi and Stripe or a hold, found by the reconciliation job: what it was, and what was done about it.
+_Avoid_: Discrepancy, mismatch
+
 **Offer**:
 A service a Provider or host makes available to guests, with its category, availability mode, payment mode and cancellation policy.
 _Avoid_: Product, listing, upsell
