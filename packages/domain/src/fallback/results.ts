@@ -42,8 +42,11 @@ function plainText(s: string, max: number): string {
   return plain.length > max ? `${plain.slice(0, max - 1).trimEnd()}…` : plain;
 }
 
+/** The allowlist rule: `host` is `base` or a subdomain of it. */
+export const hostUnder = (host: string, base: string) => host === base || host.endsWith(`.${base}`);
+
 function siteOf(host: string, sites: readonly FallbackSite[]): FallbackSite | undefined {
-  return sites.find((s) => host === s.host || host.endsWith(`.${s.host}`));
+  return sites.find((s) => hostUnder(host, s.host));
 }
 
 /**

@@ -25,10 +25,6 @@ export {
   type PropertyInfoLabels,
 } from './components/property-info-card/PropertyInfoCard';
 export { ReceiptCard, type ReceiptLabels } from './components/receipt-card/ReceiptCard';
-export {
-  SourceChip,
-  WebResults,
-  type WebResultsLabels,
-} from './components/source-chips/WebResults';
+export { WebResults, type WebResultsLabels } from './components/source-chips/WebResults';
 export { WeatherCard, type WeatherLabels } from './components/weather-card/WeatherCard';
 export { Wordmark } from './Wordmark';

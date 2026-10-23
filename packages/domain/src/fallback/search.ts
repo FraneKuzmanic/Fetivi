@@ -35,7 +35,7 @@ export async function webFallbackSearch(
   webSearch: WebSearch,
   now: Date,
 ): Promise<WebFallbackResult> {
-  const where = {
+  const logBase = {
     destinationId: scope.destinationId,
     propertyId: scope.propertyId,
     createdAt: now,
@@ -45,11 +45,11 @@ export async function webFallbackSearch(
     query = checkFallbackQuery(input, await privateValuesOf(db, scope));
   } catch (error) {
     if (error instanceof FallbackQueryError) {
-      await recordFallback(db, { ...where, outcome: 'rejected', topic: null, place: null });
+      await recordFallback(db, { ...logBase, outcome: 'rejected', topic: null, place: null });
     }
     throw error;
   }
-  const logged = { ...where, topic: query.topic, place: query.place };
+  const logged = { ...logBase, topic: query.topic, place: query.place };
   const { q, sites } = buildBraveQuery(
     query.topic,
     query.place,

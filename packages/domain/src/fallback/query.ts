@@ -21,7 +21,9 @@ export function normalize(s: string): string {
   return s.normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-const ALLOWED = /^[\p{L}\p{M}\p{N} '&.-]+$/u;
+// Digits are ASCII only: the digit checks below see `0-9`, so any other numeral (Arabic-Indic,
+// fullwidth) would carry a PIN past them.
+const ALLOWED = /^[\p{L}\p{M}0-9 '&.-]+$/u;
 const OPERATOR_WORDS = new Set(['OR', 'AND', 'NOT']);
 const DOMAIN_LIKE =
   /(^|[^\p{L}\p{N}-])[\p{L}\p{N}-]+\.(hr|com|net|org|eu|de|it|at|info|io)($|[^\p{L}\p{N}])/u;
@@ -32,12 +34,18 @@ const joinDigitRuns = (s: string) => s.replace(/(\d)[\s.-]+(?=\d)/g, '$1');
 const digitsOnly = (s: string) => s.replace(/\D/g, '');
 
 /**
- * A value matches anywhere, even inside a longer word, except a short one of plain letters (a
- * first name, an About me code like "food"): that matches as a whole word only, so the contact
- * name "Ana" does not block "banana boat".
+ * The space's values a query must never carry, normalized and 3+ characters. A secret (a code,
+ * a password, a contact detail) matches anywhere, even inside a longer word. A word (a name, a
+ * Wi-Fi network, an About me code) does too, except a short one of plain letters: that matches
+ * as a whole word only, so the contact name "Ana" does not block "banana boat".
  */
-function containsValue(query: string, value: string): boolean {
-  const short = value.length < 6 && /^[\p{L}\p{M} ]+$/u.test(value);
+export interface PrivateValues {
+  secrets: readonly string[];
+  words: readonly string[];
+}
+
+function containsValue(query: string, value: string, wholeWordIfShort: boolean): boolean {
+  const short = wholeWordIfShort && value.length < 6 && /^[\p{L}\p{M} ]+$/u.test(value);
   if (!short) return query.includes(value);
   let from = query.indexOf(value);
   while (from !== -1) {
@@ -65,13 +73,10 @@ function checkLength(part: string, maxChars: number, maxWords: number) {
   if (words(part).length > maxWords) throw new FallbackQueryError('length');
 }
 
-/**
- * Validates and normalizes a web fallback query, or throws `FallbackQueryError`. `privateValues`
- * are the space's values (normalized, 3+ chars) the query must never carry.
- */
+/** Validates and normalizes a web fallback query, or throws `FallbackQueryError`. */
 export function checkFallbackQuery(
   input: FallbackQueryInput,
-  privateValues: readonly string[],
+  privateValues: PrivateValues,
 ): FallbackQuery {
   const keywords = input.keywords.trim();
   const place = input.place.trim();
@@ -91,9 +96,13 @@ export function checkFallbackQuery(
   }
 
   const queryDigits = digitsOnly(query);
-  for (const value of privateValues) {
+  const values = [
+    ...privateValues.secrets.map((value) => ({ value, wholeWordIfShort: false })),
+    ...privateValues.words.map((value) => ({ value, wholeWordIfShort: true })),
+  ];
+  for (const { value, wholeWordIfShort } of values) {
     if (value.length < 3) continue;
-    if (containsValue(query, value)) throw new FallbackQueryError('private');
+    if (containsValue(query, value, wholeWordIfShort)) throw new FallbackQueryError('private');
     const valueDigits = digitsOnly(value);
     if (valueDigits.length >= 3 && queryDigits.includes(valueDigits)) {
       throw new FallbackQueryError('private');

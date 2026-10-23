@@ -1,4 +1,4 @@
-import { createBraveSearch, FALLBACK_SITES } from '@fetivi/domain';
+import { createBraveSearch, FALLBACK_SITES, hostUnder } from '@fetivi/domain';
 import { seedGuestUnit } from '@fetivi/domain/testing';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -49,9 +49,7 @@ describe.skipIf(!live)('live web_fallback_search (Brave)', () => {
       for (const r of results) {
         const host = new URL(r.url).hostname;
         expect(r.url.startsWith('https://')).toBe(true);
-        expect(FALLBACK_SITES.some((s) => host === s.host || host.endsWith(`.${s.host}`))).toBe(
-          true,
-        );
+        expect(FALLBACK_SITES.some((s) => hostUnder(host, s.host))).toBe(true);
       }
     } finally {
       await client.close();

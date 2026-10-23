@@ -1,6 +1,5 @@
 import {
   type EventSearch,
-  FALLBACK_LIMITS,
   FALLBACK_SOURCE_KINDS,
   IMAGE_SOURCES,
   PLACE_CATEGORIES,
@@ -57,20 +56,14 @@ export const getWeatherInput = z.object({
     .describe('The day the guest asks about; default today at the property. Up to 8 days ahead.'),
 });
 export const webFallbackInput = z.object({
+  // No length limits here: a call refused by the schema would never reach the domain check that
+  // logs it. checkFallbackQuery enforces them.
   keywords: z
     .string()
-    .trim()
-    .min(FALLBACK_LIMITS.minChars)
-    .max(FALLBACK_LIMITS.keywordsMaxChars)
     .describe(
       '2-8 topic keywords in any language, e.g. "kayak rental". Never names, codes, numbers, contact or booking details, or anything about the guests.',
     ),
-  place: z
-    .string()
-    .trim()
-    .min(FALLBACK_LIMITS.minChars)
-    .max(FALLBACK_LIMITS.placeMaxChars)
-    .describe('The town or place name, e.g. "Trogir".'),
+  place: z.string().describe('The town or place name, e.g. "Trogir".'),
 });
 
 const latLng = z.object({ lat: z.number(), lng: z.number() });

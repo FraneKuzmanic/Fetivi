@@ -27,7 +27,7 @@ const KIND_ICONS: Record<FallbackSourceKind, Icon> = {
 };
 
 /** Where a web result comes from: the site and what kind of source it is. */
-export function SourceChip({
+function SourceChip({
   host,
   kind,
   labels,

@@ -7,6 +7,10 @@ import { webFallbackInput, webFallbackOutput } from './schemas';
  * outside a destination, also after checkout). It writes a fallback_log row per call, but the
  * guest-visible state does not change, hence readOnlyHint.
  */
+/** What the model is told when the query breaks the payload contract. */
+export const REPHRASE =
+  'Search only with topic keywords and a place name: no names, numbers, codes, contact or booking details, and nothing about the guests. Rephrase and try once more, or say you have no checked suggestion.';
+
 export const webFallbackTool = guestTool({
   name: 'web_fallback_search',
   config: {
@@ -29,9 +33,7 @@ export const webFallbackTool = guestTool({
       return await webFallbackSearch(db, identity, args, webSearch, now());
     } catch (error) {
       if (error instanceof FallbackQueryError) {
-        throw new GuestToolError(
-          'Search only with topic keywords and a place name: no names, numbers, codes, contact or booking details, and nothing about the guests. Rephrase and try once more, or say you have no checked suggestion.',
-        );
+        throw new GuestToolError(REPHRASE);
       }
       if (error instanceof WebSearchUnavailableError) {
         throw new GuestToolError('Web search is not available right now.');

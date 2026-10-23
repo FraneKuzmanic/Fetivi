@@ -13,7 +13,6 @@ export {
 } from '../property/manual-import/sample-manual';
 export { createTestDatabase, type TestDatabase } from './database';
 export {
-  fixedWebSearch,
   type RecordedBraveFetchOptions,
   recordedBraveFetch,
   unavailableWebSearch,

@@ -79,7 +79,7 @@ afterAll(async () => {
 
 describe('privateValuesOf', () => {
   it("holds the space's private values, normalized", async () => {
-    const values = await privateValuesOf(testDb.db, scope);
+    const { secrets, words } = await privateValuesOf(testDb.db, scope);
     for (const value of [
       guest.pin,
       guest.secrets.doorCode,
@@ -87,16 +87,16 @@ describe('privateValuesOf', () => {
       guest.secrets.lockboxCode,
       guest.secrets.buildingDoorCode,
       guest.secrets.hostPhone,
-      guest.private.bookerName,
       guest.private.reservationNumber,
       EMAIL,
-      'gluten_free',
-      'gluten free',
     ]) {
-      expect(values).toContain(normalize(value));
+      expect(secrets).toContain(normalize(value));
+    }
+    for (const value of [guest.private.bookerName, 'gluten_free', 'gluten free']) {
+      expect(words).toContain(normalize(value));
     }
     // The booker's name word by word, too.
-    expect(values).toContain('booker');
+    expect(words).toContain('booker');
   });
 });
 

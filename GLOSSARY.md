@@ -88,6 +88,13 @@ _Avoid_: route, connection
 An item in a ferry operator's own news feed (Jadrolinija's RSS), in Croatian, that may name lines and days. Untrusted input: only its title and link reach the guest, quoted and attributed.
 _Avoid_: notice (a Notice is Fetivi's inbox message)
 
+**Web fallback**:
+A search of allowlisted sites (tourist boards, ferry operators, DHMZ, venues' own sites) through Brave, used when curated search has no answer and as the only local source outside a destination. The query is topic keywords plus a place, never private data. Results are unchecked links with a source chip, never recommendations and never bookable.
+_Avoid_: web search (for the whole feature)
+
+**Curation gap**:
+A question the catalog could not answer, recorded as one `fallback_log` row per Web fallback call (topic, place, time, outcome; no guest wording). Admins use them to see what to curate next.
+
 ## Services
 
 **Order**:

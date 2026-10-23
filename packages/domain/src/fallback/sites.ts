@@ -1,9 +1,8 @@
 import { and, eq, isNotNull } from 'drizzle-orm';
 import type { Executor } from '../db/client';
 import { catalogRecords } from '../db/schema/catalog';
+import { hostUnder } from './results';
 import { FALLBACK_SITES, type FallbackSite, VENUE_HOST_DENYLIST } from './vocabulary';
-
-const under = (host: string, base: string) => host === base || host.endsWith(`.${base}`);
 
 /**
  * Venues' own sites from catalog website URLs: https hosts without `www.`, minus shared platforms
@@ -26,8 +25,8 @@ export function venueSites(
     if (url.protocol !== 'https:') continue;
     const host = url.hostname.toLowerCase().replace(/^www\./, '');
     if (!host.includes('.')) continue;
-    if (VENUE_HOST_DENYLIST.some((denied) => under(host, denied))) continue;
-    if ([...taken].some((t) => under(host, t))) continue;
+    if (VENUE_HOST_DENYLIST.some((denied) => hostUnder(host, denied))) continue;
+    if ([...taken].some((t) => hostUnder(host, t))) continue;
     hosts.add(host);
   }
   return [...hosts].sort().map((host) => ({ host, kind: 'venue' }));

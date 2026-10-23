@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { FallbackQueryError, type FallbackQueryReason } from './errors';
-import { buildBraveQuery, checkFallbackQuery } from './query';
+import { buildBraveQuery, checkFallbackQuery, type PrivateValues } from './query';
 import { FALLBACK_LIMITS, FALLBACK_SITES, type FallbackSite } from './vocabulary';
 
-function reasonOf(keywords: string, place = 'Trogir', values: string[] = []) {
+const NONE: PrivateValues = { secrets: [], words: [] };
+
+function reasonOf(keywords: string, place = 'Trogir', values: Partial<PrivateValues> = {}) {
   try {
-    checkFallbackQuery({ keywords, place }, values);
+    checkFallbackQuery({ keywords, place }, { ...NONE, ...values });
   } catch (error) {
     if (error instanceof FallbackQueryError) return error.reason;
     throw error;
@@ -15,7 +17,7 @@ function reasonOf(keywords: string, place = 'Trogir', values: string[] = []) {
 
 describe('checkFallbackQuery', () => {
   it('accepts topic keywords and a place, normalized', () => {
-    expect(checkFallbackQuery({ keywords: ' Kayak   Rental ', place: 'Trogir' }, [])).toEqual({
+    expect(checkFallbackQuery({ keywords: ' Kayak   Rental ', place: 'Trogir' }, NONE)).toEqual({
       topic: 'kayak rental',
       place: 'trogir',
     });
@@ -30,6 +32,8 @@ describe('checkFallbackQuery', () => {
     ['door 12-34', 'digits'],
     ['call 091 234 5678', 'digits'],
     ['code 12.34', 'digits'],
+    ['pin ٤٨٢١', 'shape'],
+    ['pin ４８２１', 'shape'],
     ['a@b.hr', 'shape'],
     ['visittrogir.hr', 'contact'],
     ['www.example', 'contact'],
@@ -51,27 +55,31 @@ describe('checkFallbackQuery', () => {
   });
 
   it('rejects a private value case-insensitively, also inside a longer word', () => {
-    expect(reasonOf('W-AB12-4', 'Trogir', ['w-ab12-4'])).toBe('private');
-    expect(reasonOf('xw-ab12-4x', 'Trogir', ['w-ab12-4'])).toBe('private');
+    expect(reasonOf('W-AB12-4', 'Trogir', { secrets: ['w-ab12-4'] })).toBe('private');
+    expect(reasonOf('xw-ab12-4x', 'Trogir', { secrets: ['w-ab12-4'] })).toBe('private');
+  });
+
+  it('rejects a short plain-letter secret inside a longer word', () => {
+    expect(reasonOf('sunnybeach bar', 'Trogir', { secrets: ['sunny'] })).toBe('private');
   });
 
   it("rejects a private value's digits however they are spaced", () => {
-    expect(reasonOf('bus 1 2 3', 'Trogir', ['door 123'])).toBe('private');
+    expect(reasonOf('bus 1 2 3', 'Trogir', { secrets: ['door 123'] })).toBe('private');
   });
 
   it('rejects a booker name word inside the query', () => {
-    expect(reasonOf('horvat family beach', 'Trogir', ['horvat'])).toBe('private');
+    expect(reasonOf('horvat family beach', 'Trogir', { words: ['horvat'] })).toBe('private');
   });
 
   it('matches a short plain-letter value as a whole word only', () => {
-    expect(reasonOf('banana boat', 'Trogir', ['ana'])).toBeNull();
-    expect(reasonOf('seafood', 'Trogir', ['food'])).toBeNull();
-    expect(reasonOf('ana tours', 'Trogir', ['ana'])).toBe('private');
-    expect(reasonOf('sunnydaybar', 'Trogir', ['sunnyday'])).toBe('private');
+    expect(reasonOf('banana boat', 'Trogir', { words: ['ana'] })).toBeNull();
+    expect(reasonOf('seafood', 'Trogir', { words: ['food'] })).toBeNull();
+    expect(reasonOf('ana tours', 'Trogir', { words: ['ana'] })).toBe('private');
+    expect(reasonOf('sunnydaybar', 'Trogir', { words: ['sunnyday'] })).toBe('private');
   });
 
   it('rejects saved About me values in word and code form', () => {
-    const values = ['gluten_free', 'gluten free'];
+    const values = { words: ['gluten_free', 'gluten free'] };
     expect(reasonOf('gluten free bakery', 'Trogir', values)).toBe('private');
     expect(reasonOf('gluten_free', 'Trogir', values)).toBe('shape');
     expect(reasonOf('bakery', 'Trogir', values)).toBeNull();
