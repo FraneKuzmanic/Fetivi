@@ -12,6 +12,7 @@ import type {
   CurationKind,
   CurationPayload,
   CurationStatus,
+  CurationTab,
 } from '@fetivi/domain/curation-vocabulary';
 import type {
   HandoffReason,
@@ -740,8 +741,6 @@ export const reconciliation = {
   resolve: (id: string) => post(`/api/admin/reconciliation/findings/${id}/resolve`),
 };
 
-export type CurationTab = 'open' | 'needs_visit' | 'done';
-
 export interface CurationItem {
   id: string;
   kind: CurationKind;
@@ -771,7 +770,7 @@ export interface StalenessRecord {
   title: string;
   verifiedAt: string | null;
   staleness: Staleness;
-  /** In the last 90 days. */
+  /** In the last RECOMMENDATION_WINDOW_DAYS days. */
   recommendations: number;
   score: number;
 }

@@ -26,16 +26,6 @@ export const CURATION_LIMITS = {
 export const CURATION_ACTIONS = ['approve', 'edit', 'reject', 'needs_visit'] as const;
 export type CurationAction = (typeof CURATION_ACTIONS)[number];
 
-/** Edit exists only where there is a record to edit. */
-export const CURATION_KIND_ACTIONS: Record<CurationKind, readonly CurationAction[]> = {
-  draft: CURATION_ACTIONS,
-  refresh_diff: CURATION_ACTIONS,
-  guest_flagged: CURATION_ACTIONS,
-  host_place_suggestion: CURATION_ACTIONS,
-  host_provider_suggestion: ['approve', 'reject', 'needs_visit'],
-  fallback_topic_cluster: ['approve', 'reject', 'needs_visit'],
-};
-
 /** Kinds tied to a catalog record; approving one stamps the record's verified_at. */
 export const KINDS_WITH_RECORD = [
   'draft',
@@ -44,11 +34,29 @@ export const KINDS_WITH_RECORD = [
   'host_place_suggestion',
 ] as const satisfies readonly CurationKind[];
 
+export const isRecordKind = (kind: CurationKind): boolean =>
+  (KINDS_WITH_RECORD as readonly CurationKind[]).includes(kind);
+
+/** Edit exists only where there is a record to edit. */
+export const CURATION_KIND_ACTIONS = Object.fromEntries(
+  CURATION_KINDS.map((kind): [CurationKind, readonly CurationAction[]] => [
+    kind,
+    isRecordKind(kind) ? CURATION_ACTIONS : CURATION_ACTIONS.filter((a) => a !== 'edit'),
+  ]),
+) as Record<CurationKind, readonly CurationAction[]>;
+
 /** Approved and rejected are final; an item that needs a visit stays reviewable. */
 export const REVIEWABLE_STATUSES = [
   'open',
   'needs_visit',
 ] as const satisfies readonly CurationStatus[];
+
+export const isReviewable = (status: CurationStatus): boolean =>
+  (REVIEWABLE_STATUSES as readonly CurationStatus[]).includes(status);
+
+/** The admin's status filter; `done` is approved or rejected. */
+export const CURATION_TABS = ['open', 'needs_visit', 'done'] as const;
+export type CurationTab = (typeof CURATION_TABS)[number];
 
 /** The record fields a draft or refresh diff may propose. */
 export const CURATED_TEXT_FIELDS = [

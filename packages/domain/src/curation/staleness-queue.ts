@@ -1,6 +1,6 @@
 import { and, eq, gte, ne, sql } from 'drizzle-orm';
-import { type Staleness, stalenessKeyOf, stalenessOf } from '../catalog/staleness';
-import { type CatalogKind, type PlaceCategory, STALENESS_BUDGET_DAYS } from '../catalog/vocabulary';
+import { budgetUsed, type Staleness, stalenessOf } from '../catalog/staleness';
+import type { CatalogKind, PlaceCategory } from '../catalog/vocabulary';
 import type { Executor } from '../db/client';
 import { catalogRecommendations, catalogRecords, destinations } from '../db/schema/catalog';
 import {
@@ -28,7 +28,7 @@ export interface StalenessQueueRecord {
 
 /**
  * Records past or within STALENESS_NEAR_DAYS of their staleness budget (never-verified ones
- * count as past it), the most out of date and most recommended first (39 AC 3). Events expire
+ * count as past it), ranked by budget used × (1 + recommendations) (39 AC 3). Events expire
  * rather than go stale and are left out.
  */
 export async function listStalenessQueue(
@@ -71,13 +71,9 @@ export async function listStalenessQueue(
 
   const queue: (StalenessQueueRecord & { used: number })[] = [];
   for (const { createdAt, ...row } of rows) {
-    const days = STALENESS_BUDGET_DAYS[stalenessKeyOf(row)];
-    if (days === null) continue;
-    const budgetMs = days * DAY_MS;
-    const used =
-      row.verifiedAt === null
-        ? Math.max(1, (now.getTime() - createdAt.getTime()) / budgetMs)
-        : (now.getTime() - row.verifiedAt.getTime()) / budgetMs;
+    const budget = budgetUsed({ ...row, createdAt }, now);
+    if (budget === null) continue;
+    const { used, days } = budget;
     if (row.verifiedAt !== null && used < 1 - STALENESS_NEAR_DAYS / days) continue;
     queue.push({
       ...row,

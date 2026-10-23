@@ -3,17 +3,18 @@ import {
   CatalogRuleError,
   CURATION_KIND_ACTIONS,
   CURATION_KINDS,
+  CURATION_TABS,
   type CurationListItem,
   CurationRuleError,
   countCurationItems,
   type Db,
   editCurationItem,
   getCurationItem,
+  isReviewable,
   type JobQueue,
   listCurationItems,
   listStalenessQueue,
   markNeedsVisit,
-  REVIEWABLE_STATUSES,
   rejectCurationItem,
 } from '@fetivi/domain';
 import type { FastifyInstance } from 'fastify';
@@ -29,7 +30,7 @@ export interface CurationDeps {
 
 const IdParams = z.object({ id: z.uuid() });
 const ListQuery = z.object({
-  status: z.enum(['open', 'needs_visit', 'done']).default('open'),
+  status: z.enum(CURATION_TABS).default('open'),
   kind: z.enum(CURATION_KINDS).optional(),
   destinationId: z.uuid().optional(),
 });
@@ -38,7 +39,6 @@ const StalenessQuery = z.object({ destinationId: z.uuid().optional() });
 const iso = (date: Date | null) => date?.toISOString() ?? null;
 
 function itemOut(item: CurationListItem) {
-  const reviewable = (REVIEWABLE_STATUSES as readonly string[]).includes(item.status);
   return {
     id: item.id,
     kind: item.kind,
@@ -47,7 +47,7 @@ function itemOut(item: CurationListItem) {
     destination: item.destination,
     host: item.host,
     record: item.record && { ...item.record, verifiedAt: iso(item.record.verifiedAt) },
-    actions: reviewable ? CURATION_KIND_ACTIONS[item.kind] : [],
+    actions: isReviewable(item.status) ? CURATION_KIND_ACTIONS[item.kind] : [],
     createdAt: item.createdAt.toISOString(),
     reviewedAt: iso(item.reviewedAt),
   };

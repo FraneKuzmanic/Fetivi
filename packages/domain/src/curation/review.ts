@@ -1,7 +1,12 @@
 import { and, asc, count, desc, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { createCatalogRecord, markVerified, updateCatalogRecord } from '../catalog/store';
-import { PLACE_CATEGORIES, type PlaceCategory, type SourceField } from '../catalog/vocabulary';
+import {
+  PLACE_CATEGORIES,
+  type PlaceCategory,
+  SOURCE_FIELDS,
+  type SourceField,
+} from '../catalog/vocabulary';
 import type { Db, Executor } from '../db/client';
 import { accounts } from '../db/schema/accounts';
 import { catalogRecords, destinations } from '../db/schema/catalog';
@@ -16,7 +21,9 @@ import {
   type CurationKind,
   type CurationPayload,
   type CurationStatus,
-  KINDS_WITH_RECORD,
+  type CurationTab,
+  isRecordKind,
+  isReviewable,
   REVIEWABLE_STATUSES,
 } from './vocabulary';
 
@@ -32,8 +39,7 @@ export class CurationRuleError extends Error {
 }
 
 export interface CurationFilter {
-  /** `done` is approved or rejected. */
-  status: 'open' | 'needs_visit' | 'done';
+  status: CurationTab;
   kind?: CurationKind;
   destinationId?: string;
 }
@@ -61,7 +67,7 @@ export interface ReviewDeps {
   queue: JobQueue;
 }
 
-function statusWhere(status: CurationFilter['status']): SQL {
+function statusWhere(status: CurationTab): SQL {
   return status === 'done'
     ? inArray(curationItems.status, ['approved', 'rejected'])
     : eq(curationItems.status, status);
@@ -159,7 +165,7 @@ export async function countCurationItems(
 async function loadReviewable(db: Executor, id: string): Promise<CurationItemRow> {
   const [item] = await db.select().from(curationItems).where(eq(curationItems.id, id));
   if (!item) throw new CurationRuleError('not-found');
-  if (!(REVIEWABLE_STATUSES as readonly string[]).includes(item.status)) {
+  if (!isReviewable(item.status)) {
     throw new CurationRuleError('not-reviewable');
   }
   return item;
@@ -173,7 +179,7 @@ async function applyChanges(
   now: Date,
 ): Promise<void> {
   const [record] = await db
-    .select({ fieldSources: catalogRecords.fieldSources })
+    .select({ kind: catalogRecords.kind, fieldSources: catalogRecords.fieldSources })
     .from(catalogRecords)
     .where(eq(catalogRecords.id, recordId));
   if (!record) throw new CurationRuleError('not-found');
@@ -182,16 +188,20 @@ async function applyChanges(
     const value = changes[f];
     if (value !== undefined) fields[f] = value;
   }
+  // Only source URLs for fields this record's kind has.
+  const allowed: readonly string[] = SOURCE_FIELDS[record.kind];
+  const sources = Object.fromEntries(
+    Object.entries(changes.fieldSources ?? {}).filter(
+      ([field, url]) => allowed.includes(field) && typeof url === 'string',
+    ),
+  ) as Partial<Record<SourceField, string>>;
   await updateCatalogRecord(
     db,
     queue,
     recordId,
     {
       ...fields,
-      fieldSources: {
-        ...record.fieldSources,
-        ...(changes.fieldSources as Partial<Record<SourceField, string>> | undefined),
-      },
+      fieldSources: { ...record.fieldSources, ...sources },
     },
     now,
   );
@@ -241,7 +251,9 @@ async function applyOnce(
 ): Promise<{ recordId: string | null; applied: boolean }> {
   const payload = item.payload as CurationPayload;
   if (item.appliedAt !== null) return { recordId: item.recordId, applied: false };
-  if ((payload.kind === 'draft' || payload.kind === 'refresh_diff') && item.recordId) {
+  if (payload.kind === 'draft' || payload.kind === 'refresh_diff') {
+    // A proposal with no record to write it into would be approved with no effect.
+    if (item.recordId === null) throw new CurationRuleError('invalid-input');
     await applyChanges(deps, item.recordId, payload.changes, now);
     return { recordId: item.recordId, applied: true };
   }
@@ -250,9 +262,6 @@ async function applyOnce(
   }
   return { recordId: item.recordId, applied: false };
 }
-
-const isRecordKind = (kind: CurationKind) =>
-  (KINDS_WITH_RECORD as readonly CurationKind[]).includes(kind);
 
 /** Approves an item; on a record-bound kind it applies the proposal and verifies the record. */
 export async function approveCurationItem(

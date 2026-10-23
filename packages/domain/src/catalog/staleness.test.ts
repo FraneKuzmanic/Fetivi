@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { isPastBudget, type StalenessInput, stalenessKeyOf, stalenessOf } from './staleness';
+import {
+  budgetUsed,
+  isPastBudget,
+  type StalenessInput,
+  stalenessKeyOf,
+  stalenessOf,
+} from './staleness';
 import { CATALOG_KINDS, PLACE_CATEGORIES, STALENESS_BUDGET_DAYS } from './vocabulary';
 
 const NOW = new Date('2027-06-01T12:00:00Z');
@@ -81,5 +87,19 @@ describe('budgets', () => {
 
   it('refuses a place without a category', () => {
     expect(() => stalenessKeyOf({ kind: 'place', placeCategory: null })).toThrow();
+  });
+});
+
+describe('budgetUsed', () => {
+  it('is the share of the budget since verified_at', () => {
+    const r = { ...place('restaurant', daysAgo(45)), createdAt: daysAgo(400) };
+    expect(budgetUsed(r, NOW)).toEqual({ used: 0.5, days: 90 });
+  });
+
+  it('counts a never-verified record from created_at, and at least as stale', () => {
+    expect(budgetUsed({ ...place('restaurant', null), createdAt: daysAgo(180) }, NOW)?.used).toBe(
+      2,
+    );
+    expect(budgetUsed({ ...place('restaurant', null), createdAt: daysAgo(1) }, NOW)?.used).toBe(1);
   });
 });

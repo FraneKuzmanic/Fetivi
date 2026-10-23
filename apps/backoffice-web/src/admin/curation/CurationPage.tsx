@@ -3,17 +3,11 @@ import {
   CURATION_KINDS,
   type CurationAction,
   type CurationKind,
+  type CurationTab,
 } from '@fetivi/domain/curation-vocabulary';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import {
-  ApiError,
-  type CurationItem,
-  type CurationTab,
-  catalog,
-  curation,
-  type Destination,
-} from '../../api';
+import { ApiError, type CurationItem, catalog, curation, type Destination } from '../../api';
 import {
   CURATION_ACTION_LABELS,
   CURATION_KIND_LABELS,
@@ -37,8 +31,6 @@ const KIND_TONE: Record<CurationKind, string> = {
   host_provider_suggestion: 'wait',
   fallback_topic_cluster: 'neutral',
 };
-
-const FLAG_REASONS = { outdated: 'outdated', wrong: 'wrong' } as const;
 
 const date = (iso: string) => new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' });
 
@@ -78,7 +70,7 @@ function detail(item: CurationItem): string | null {
       return p.kind === 'draft' ? `Proposes ${names}` : `Changed: ${names}`;
     }
     case 'guest_flagged':
-      return `${p.count} ${p.count === 1 ? 'guest' : 'guests'} flagged it as ${FLAG_REASONS[p.reason]}`;
+      return `${p.count} ${p.count === 1 ? 'guest' : 'guests'} flagged it as ${p.reason}`;
     case 'fallback_topic_cluster':
       return [
         p.topics.length > 1 ? `Asked as ${p.topics.join(', ')}` : null,

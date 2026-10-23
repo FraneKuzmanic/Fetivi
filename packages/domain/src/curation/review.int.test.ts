@@ -202,6 +202,29 @@ describe('approveCurationItem', () => {
     }
   });
 
+  it('refuses a draft or refresh diff with no record to apply it to', async () => {
+    const orphan = await enqueue(draft('Nowhere'));
+    await rejects(approveCurationItem(deps, orphan, adminId, LATER), 'invalid-input');
+    await rejects(editCurationItem(deps, orphan, NOW), 'invalid-input');
+    expect(await itemOf(orphan)).toMatchObject({ status: 'open', appliedAt: null });
+  });
+
+  it("drops source URLs for fields the record's kind does not have", async () => {
+    const recordId = await place('Sources');
+    const id = await enqueue(
+      {
+        kind: 'draft',
+        changes: {
+          phone: '+385 21 000 000',
+          fieldSources: { phone: 'https://example.test/p', venueName: 'https://example.test/v' },
+        },
+      },
+      { recordId },
+    );
+    await approveCurationItem(deps, id, adminId, LATER);
+    expect((await recordOf(recordId)).fieldSources).toEqual({ phone: 'https://example.test/p' });
+  });
+
   it('refuses a second review and an unknown id', async () => {
     const recordId = await place();
     const id = await enqueue({ kind: 'guest_flagged', reason: 'wrong', count: 1 }, { recordId });

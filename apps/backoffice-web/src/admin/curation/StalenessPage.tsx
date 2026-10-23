@@ -1,3 +1,7 @@
+import {
+  RECOMMENDATION_WINDOW_DAYS,
+  STALENESS_NEAR_DAYS,
+} from '@fetivi/domain/curation-vocabulary';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { catalog, curation, type Destination, type StalenessRecord } from '../../api';
@@ -10,8 +14,8 @@ const kindLabel = (r: StalenessRecord) =>
 
 const recommended = (n: number) =>
   n === 0
-    ? 'Not recommended in the last 90 days'
-    : `Recommended ${n} ${n === 1 ? 'time' : 'times'} in 90 days`;
+    ? `Not recommended in the last ${RECOMMENDATION_WINDOW_DAYS} days`
+    : `Recommended ${n} ${n === 1 ? 'time' : 'times'} in ${RECOMMENDATION_WINDOW_DAYS} days`;
 
 /** /admin/curation/staleness: the records most likely to mislead guests, worst first. */
 export function StalenessPage() {
@@ -47,7 +51,10 @@ export function StalenessPage() {
       <div className="page-head">
         <h1>Staleness queue</h1>
       </div>
-      <p className="muted">Past or within 14 days of their budget, most recommended first.</p>
+      <p className="muted">
+        Past or within {STALENESS_NEAR_DAYS} days of their budget. The most overdue and most
+        recommended come first.
+      </p>
       <div className="filters">
         <label className="field inline-field">
           <span className="field-label">Destination</span>

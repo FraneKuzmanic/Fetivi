@@ -44,3 +44,22 @@ export function isPastBudget(r: StalenessInput, now: Date): boolean {
   const { status } = stalenessOf(r, now);
   return status === 'stale' || status === 'never_verified';
 }
+
+/**
+ * The share of its staleness budget a record has used (1 = stale), and the budget in days; null
+ * if its budget never runs out. A record never verified counts from created_at and is at least
+ * at 1.
+ */
+export function budgetUsed(
+  r: Pick<StalenessInput, 'kind' | 'placeCategory' | 'verifiedAt'> & { createdAt: Date },
+  now: Date,
+): { used: number; days: number } | null {
+  const days = STALENESS_BUDGET_DAYS[stalenessKeyOf(r)];
+  if (days === null) return null;
+  const budgetMs = days * DAY_MS;
+  const used =
+    r.verifiedAt === null
+      ? Math.max(1, (now.getTime() - r.createdAt.getTime()) / budgetMs)
+      : (now.getTime() - r.verifiedAt.getTime()) / budgetMs;
+  return { used, days };
+}

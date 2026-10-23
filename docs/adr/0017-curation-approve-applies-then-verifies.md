@@ -24,3 +24,4 @@ A draft or refresh diff proposes field values for a Catalog record, and a host's
 - Two admins approving at the same moment can both write the same values. That is harmless: equal text bumps no revision, and only one status update succeeds.
 - If a concurrent Edit wins on a host place suggestion, the loser's new record stays as an unverified orphan. This is accepted as a rare edge case.
 - `applied_at` stays null on an approve that wrote nothing (a guest flag, a Provider suggestion or a cluster).
+- A draft or refresh diff must carry a `recordId`. Without one, Approve and Edit return `invalid-input` and the item stays open, so a proposal is never closed unwritten. A source URL in `changes.fieldSources` is kept only for a field the record's kind has.
