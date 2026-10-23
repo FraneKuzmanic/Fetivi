@@ -326,8 +326,9 @@ describe('create rules', () => {
       paymentMode: 'online',
     });
     await expect(createOrder(deps(), input({ offerId }))).rejects.toBeInstanceOf(OrderRuleError);
+    // A host's own pay-online Offer needs the host's Stripe account (38).
     await expect(createOrder(deps(), input({ offerId }))).rejects.toMatchObject({
-      code: 'payment-mode-unsupported',
+      code: 'payments-not-ready',
     });
   });
 

@@ -22,6 +22,7 @@ const MESSAGES: Record<string, string> = {
   'provider-has-offers': "Delete this Provider's Offers first.",
   'offer-has-slots': 'Delete the allotment slots first.',
   'seats-taken': 'Some seats are already taken.',
+  'offer-has-orders': 'This service has orders. Turn it off instead.',
   'unit-not-live':
     'Stays can be registered once the unit is live: approved by Fetivi and the setup minimum done.',
   'stay-ended': 'This Stay has ended and can no longer be changed.',

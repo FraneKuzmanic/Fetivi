@@ -600,6 +600,82 @@ export interface HostPushSubscription {
   keys: { p256dh: string; auth: string };
 }
 
+/** A one-tap answer on an Order of the host's own service: the Provider link's actions (38). */
+export type OrderAction =
+  | 'acknowledge'
+  | 'cannot_fulfil'
+  | 'accept'
+  | 'decline'
+  | 'suggest_time'
+  | 'accept_with_price';
+
+/** An Order as the Provider link shows it; the host sees the same for their own services. */
+export interface HostOrderView {
+  orderId: string;
+  proposalId: string;
+  offerTitle: string;
+  /** 'YYYY-MM-DD'. */
+  date: string;
+  /** 'HH:mm' in the Offer's zone; null without a start time. */
+  startTime: string | null;
+  quantity: number;
+  priceUnit: PriceUnit;
+  /** Only what the Offer shares; empty once the Order is final. */
+  guest: { name?: string; phone?: string };
+  status: OrderStatus;
+  final: boolean;
+  acknowledgedAt: string | null;
+  actions: OrderAction[];
+  /** The proposal's total; null for a request before it is priced. */
+  priceMinor: number | null;
+  currency: string;
+  /** 'YYYY-MM-DDTHH:mm' when the answer is due; null otherwise. */
+  respondBy: string | null;
+  stayFrom: string;
+  stayTo: string;
+  /** New terms must carry a price. */
+  needsPrice: boolean;
+}
+
+export interface HostOrder extends HostOrderView {
+  offerId: string;
+  createdAt: string;
+  /** Something is asked of the host. */
+  waiting: boolean;
+}
+
+export interface HostOrderActionBody {
+  action: OrderAction;
+  proposalId: string;
+  date?: string;
+  time?: string;
+  priceMinor?: number;
+}
+
+/** An approved Provider near the host's properties, and whether the host hides it (38). */
+export interface HostProvider {
+  id: string;
+  name: string;
+  offerCount: number;
+  destinations: string[];
+  hidden: boolean;
+}
+
+export interface ProviderSuggestion {
+  name: string;
+  contact?: string | null;
+  note?: string | null;
+  destinationId?: string | null;
+}
+
+/** A Stripe connected account's state, for a Provider or a host. */
+export interface PaymentsStatus {
+  stripeConnected: boolean;
+  /** Stripe's card capability, as last read; null until onboarding starts. */
+  stripeCardPayments: ProviderCardStatus | null;
+  stripeCheckedAt: string | null;
+}
+
 const post = <T = void>(path: string, body?: unknown) => api<T>(path, { method: 'POST', body });
 const patch = <T>(path: string, body: unknown) => api<T>(path, { method: 'PATCH', body });
 const put = <T>(path: string, body: unknown) => api<T>(path, { method: 'PUT', body });
@@ -750,7 +826,46 @@ export const host = {
   dismissProposal: (id: string) => post(`/api/host/stay-proposals/${id}/dismiss`),
   approveBookingLinks: (propertyId: string) =>
     post(`/api/host/properties/${propertyId}/booking-links-approved`),
-  inbox: () => api<{ messages: HostMessage[]; unread: number }>('/api/host/inbox'),
+  inbox: () =>
+    api<{ messages: HostMessage[]; unread: number; orders: HostOrder[]; ordersWaiting: number }>(
+      '/api/host/inbox',
+    ),
+  order: (id: string) => api<{ order: HostOrderView }>(`/api/host/orders/${id}`),
+  orderAction: (id: string, body: HostOrderActionBody) =>
+    post<{ outcome: 'applied' | 'unchanged' | 'stale' | 'rejected'; order: HostOrderView }>(
+      `/api/host/orders/${id}/actions`,
+      body,
+    ),
+  offers: () => api<{ offers: OfferSummary[] }>('/api/host/offers'),
+  createOffer: (body: HostOfferInput) => post<Offer>('/api/host/offers', body),
+  offer: (id: string) => api<Offer>(`/api/host/offers/${id}`),
+  updateOffer: (id: string, body: HostOfferPatch) => patch<Offer>(`/api/host/offers/${id}`, body),
+  deleteOffer: (id: string) => remove(`/api/host/offers/${id}`),
+  slots: (offerId: string, past = false) =>
+    api<{ timezone: string; slots: AllotmentSlot[] }>(
+      `/api/host/offers/${offerId}/slots${past ? '?past=true' : ''}`,
+    ),
+  bulkSlots: (offerId: string, body: SlotsBulkInput) =>
+    post<{ created: number; skipped: number }>(`/api/host/offers/${offerId}/slots/bulk`, body),
+  setSlotCapacity: (slotId: string, capacity: number) =>
+    patch<AllotmentSlot>(`/api/host/allotment-slots/${slotId}`, { capacity }),
+  deleteSlot: (slotId: string) => remove(`/api/host/allotment-slots/${slotId}`),
+  offerTranslations: (id: string) =>
+    api<OfferTranslationsView>(`/api/host/offers/${id}/translations`),
+  retryOfferTranslation: (id: string) =>
+    post<{ view: OfferTranslationsView }>(`/api/host/offers/${id}/translations/retry`),
+  providers: () =>
+    api<{ providers: HostProvider[]; destinations: { id: string; name: string }[] }>(
+      '/api/host/providers',
+    ),
+  setProviderHidden: (id: string, hidden: boolean) =>
+    put<HostProvider>(`/api/host/providers/${id}/hidden`, { hidden }),
+  suggestProvider: (body: ProviderSuggestion) =>
+    post<{ id: string }>('/api/host/provider-suggestions', body),
+  payments: () => api<PaymentsStatus>('/api/host/payments'),
+  paymentsLink: () =>
+    post<{ url: string; expiresAt: string }>('/api/host/payments/stripe/onboarding-link'),
+  paymentsRefresh: () => post<PaymentsStatus>('/api/host/payments/stripe/refresh'),
   readMessage: (id: string) => post(`/api/host/inbox/${id}/read`),
   replyMessage: (id: string, text: string) =>
     post<{ message: HostMessage }>(`/api/host/inbox/${id}/reply`, { text }),
@@ -1087,6 +1202,27 @@ export type OfferInput = Partial<OfferFields> &
 /** Any subset of the Offer's own fields; never its destination or owner. */
 export type OfferPatch = Partial<OfferFields>;
 
+/** A host's own service (38): no place or live mode, and no destination. */
+export type HostOfferFields = Omit<
+  OfferFields,
+  'placeId' | 'adapterKind' | 'externalProductRef' | 'availabilityMode'
+> & { availabilityMode: Exclude<AvailabilityMode, 'live'> };
+
+export type HostOfferInput = Partial<HostOfferFields> &
+  Pick<
+    HostOfferFields,
+    | 'title'
+    | 'description'
+    | 'cancellationPolicy'
+    | 'category'
+    | 'orderKind'
+    | 'availabilityMode'
+    | 'paymentMode'
+    | 'priceMinor'
+  >;
+
+export type HostOfferPatch = Partial<HostOfferFields>;
+
 export interface AllotmentSlot {
   id: string;
   /** Local 'YYYY-MM-DDTHH:mm' in the Offer's zone. */
@@ -1120,6 +1256,23 @@ export interface OfferTranslationsView {
       updatedAt: string;
     } | null;
   }[];
+}
+
+/** What the slots panel calls: the admin's or the host's Offer routes. */
+export interface SlotsClient {
+  slots: (offerId: string, past?: boolean) => Promise<{ timezone: string; slots: AllotmentSlot[] }>;
+  bulkSlots: (
+    offerId: string,
+    body: SlotsBulkInput,
+  ) => Promise<{ created: number; skipped: number }>;
+  setSlotCapacity: (slotId: string, capacity: number) => Promise<AllotmentSlot>;
+  deleteSlot: (slotId: string) => Promise<void>;
+}
+
+/** What the Offer translations panel calls. */
+export interface OfferTranslationsClient {
+  translations: (id: string) => Promise<OfferTranslationsView>;
+  retryTranslation: (id: string) => Promise<{ view: OfferTranslationsView }>;
 }
 
 const providerPath = (id: string) => `/api/admin/providers/${id}`;

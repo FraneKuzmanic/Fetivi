@@ -97,6 +97,7 @@ describe('order-notify job', () => {
       guestLinkSecret: 'jobs-test-guest-link-secret-long-enough',
       now: () => NOW,
       providerLink: { secret: 'jobs-test-secret-that-is-long-enough-00', baseUrl: 'http://x.test' },
+      webOrigin: 'http://admin.test',
     });
     const ref = { orderId: order.id, proposalId };
     await job.handler({ ...ref, kind: 'provider_confirmed' });
@@ -148,6 +149,7 @@ describe('order-notify job', () => {
       guestLinkSecret: 'jobs-test-guest-link-secret-long-enough',
       now: () => NOW,
       providerLink: { secret: 'jobs-test-secret-that-is-long-enough-00', baseUrl: 'http://x.test' },
+      webOrigin: 'http://admin.test',
     });
     await job.handler({ ...ref, kind: 'provider_request' });
     await job.handler({ ...ref, kind: 'provider_request' });

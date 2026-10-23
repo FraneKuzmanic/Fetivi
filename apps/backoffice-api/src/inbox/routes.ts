@@ -2,8 +2,10 @@ import {
   type Db,
   getHostInboxMessage,
   HandoffRuleError,
+  hostOrdersWaiting,
   type JobQueue,
   listHostInbox,
+  listHostOrders,
   markHandoffRead,
   replyToHandoff,
   unreadCount,
@@ -53,11 +55,14 @@ export async function inboxRoutes(app: FastifyInstance, deps: InboxDeps): Promis
 
   app.get('/api/host/inbox', host, async (request) => {
     const hostId = hostIdOf(request);
-    const [messages, unread] = await Promise.all([
+    // Orders on the host's own services sit beside the messages (38); `unread` stays messages.
+    const [messages, unread, orders, ordersWaiting] = await Promise.all([
       listHostInbox(db, hostId),
       unreadCount(db, hostId),
+      listHostOrders(db, hostId, deps.now()),
+      hostOrdersWaiting(db, hostId),
     ]);
-    return { messages, unread };
+    return { messages, unread, orders, ordersWaiting };
   });
 
   app.post('/api/host/inbox/:id/read', host, async (request, reply) => {

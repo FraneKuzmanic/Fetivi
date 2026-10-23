@@ -60,6 +60,15 @@ export interface ListedCheckoutSessionView extends CheckoutSessionView {
   createdAt: Date;
 }
 
+/** Who a connected account is for; only its Stripe metadata differs (38). */
+export interface ConnectedAccountOwner {
+  kind: 'provider' | 'host';
+  id: string;
+}
+
+export const connectedAccountMetadata = (owner: ConnectedAccountOwner): Record<string, string> =>
+  owner.kind === 'provider' ? { fetivi_provider_id: owner.id } : { fetivi_host_id: owner.id };
+
 export interface PaymentGateway {
   createCheckoutSession(p: CheckoutParams, o: WriteOptions): Promise<CheckoutSessionView>;
   retrieveCheckoutSession(id: string, o: ReadOptions): Promise<CheckoutSessionView>;
@@ -81,7 +90,7 @@ export interface PaymentGateway {
     o: ReadOptions & { createdAfter: Date; limit: number },
   ): Promise<ListedCheckoutSessionView[]>;
   createConnectedAccount(
-    p: { providerId: string; email: string; displayName: string },
+    p: { owner: ConnectedAccountOwner; email: string; displayName: string },
     o: { idempotencyKey: string },
   ): Promise<{ id: string }>;
   createAccountLink(p: {
@@ -254,7 +263,8 @@ export function createStripeGateway(config: StripeGatewayConfig): PaymentGateway
         intentView(
           await stripe.paymentIntents.capture(
             id,
-            { application_fee_amount: p.applicationFeeAmount },
+            // Host Offers carry no Fetivi fee (38): omitted rather than sent as 0.
+            p.applicationFeeAmount > 0 ? { application_fee_amount: p.applicationFeeAmount } : {},
             o,
           ),
         ),
@@ -305,7 +315,7 @@ export function createStripeGateway(config: StripeGatewayConfig): PaymentGateway
             configuration: {
               merchant: { capabilities: { card_payments: { requested: true } } },
             },
-            metadata: { fetivi_provider_id: p.providerId },
+            metadata: connectedAccountMetadata(p.owner),
           },
           { idempotencyKey: o.idempotencyKey },
         );

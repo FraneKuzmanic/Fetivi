@@ -1,29 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { type HostMessage, host } from '../../api';
+import { type HostMessage, type HostOrder, host } from '../../api';
 import { useAction } from '../../useAction';
 import { dateRange } from '../stays/format';
 import { messageState, preview, receivedAt, STATE_CHIPS } from './format';
 import { InboxMessage } from './InboxMessage';
 import { inboxChanged, onPushMessage } from './inbox-events';
+import { OrdersSection } from './OrdersSection';
 
 /** New messages and reply deliveries show up without a reload; a push on this phone also reloads. */
 const POLL_MS = 15_000;
 
 /**
  * The Handoff inbox (PRD §6.6): the messages guests chose to send, translated into the host's
- * language, unread urgent ones first. Opening one marks it Read for the guest.
+ * language, unread urgent ones first. Opening one marks it Read for the guest. Orders on the
+ * host's own services come first, with their one-tap answers (38).
  */
 export function InboxPage() {
   const { error, run } = useAction();
   const [messages, setMessages] = useState<HostMessage[] | null>(null);
+  const [orders, setOrders] = useState<HostOrder[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const opened = useRef(new Set<string>());
   const [params, setParams] = useSearchParams();
   const linked = params.get('message');
 
   const load = useCallback(async () => {
-    const { messages: list } = await host.inbox();
+    const { messages: list, orders: own } = await host.inbox();
+    setOrders(own);
     const now = new Date().toISOString();
     // An admin acting as the host does not set Read on the server: what this page opened stays read.
     setMessages(
@@ -82,6 +86,10 @@ export function InboxPage() {
       </div>
       {error ? <p role="alert">{error}</p> : null}
       {messages === null && !error ? <p className="muted">Loading…</p> : null}
+      {orders.length > 0 ? <OrdersSection orders={orders} onChanged={load} /> : null}
+      {orders.length > 0 && messages ? (
+        <h2 className="inbox-messages-title">Guest messages</h2>
+      ) : null}
       {messages?.length === 0 ? (
         <p className="muted">
           No guest messages yet. Guests can message you from the chat; you'll see them here.

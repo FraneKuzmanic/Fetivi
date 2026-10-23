@@ -299,7 +299,13 @@ export function ProviderPage() {
           <small>Paused Providers' Offers are hidden from guests.</small>
         </Section>
 
-        <OnlinePaymentsPanel provider={provider} onChange={setProvider} />
+        <OnlinePaymentsPanel
+          subject="provider"
+          status={provider}
+          onLink={() => providers.stripeOnboardingLink(provider.id)}
+          onRefresh={() => providers.stripeRefresh(provider.id)}
+          onChange={setProvider}
+        />
 
         <section className="panel danger-zone">
           <h2>Delete provider</h2>

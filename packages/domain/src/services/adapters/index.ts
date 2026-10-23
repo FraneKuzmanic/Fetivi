@@ -62,8 +62,9 @@ export async function handleInboundCancellation(
   event: InboundCancellation,
   trigger: 'provider_link' | 'admin',
   note?: string,
+  actorId?: string,
 ): Promise<TransitionOutcome | null> {
   const ref = await adapter.resolveInboundCancellation({ db: deps.db, now: deps.now }, event);
   if (!ref) return null;
-  return cancel(deps, { ...ref, trigger, note });
+  return cancel(deps, { ...ref, trigger, note, actorId });
 }

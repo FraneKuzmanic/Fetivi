@@ -3,7 +3,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { Provider } from '../../api';
+import { type Provider, providers } from '../../api';
 import { OnlinePaymentsPanel } from './OnlinePaymentsPanel';
 
 const PROVIDER: Provider = {
@@ -69,7 +69,13 @@ async function mount(provider: Provider, path = '/admin/providers/p1') {
   await act(async () => {
     root?.render(
       <MemoryRouter initialEntries={[path]}>
-        <OnlinePaymentsPanel provider={provider} onChange={(p) => changed.push(p)} />
+        <OnlinePaymentsPanel
+          subject="provider"
+          status={provider}
+          onLink={() => providers.stripeOnboardingLink(provider.id)}
+          onRefresh={() => providers.stripeRefresh(provider.id)}
+          onChange={(p) => changed.push(p)}
+        />
       </MemoryRouter>,
     );
   });

@@ -3,7 +3,8 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { HostMessage } from '../../api';
+import { App } from '../../App';
+import type { HostMessage, HostOrder, Me } from '../../api';
 import { InboxPage } from './InboxPage';
 
 const URGENT: HostMessage = {
@@ -43,6 +44,11 @@ const READ: HostMessage = {
   },
 };
 
+const HOST: Me = {
+  account: { id: 'a1', email: 'host@example.test', role: 'host', language: 'en' },
+  actingAs: null,
+};
+
 let root: Root | null = null;
 let host: HTMLElement;
 let calls: { url: string; method: string; body: unknown }[] = [];
@@ -52,6 +58,8 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  orders = [];
+  ordersWaiting = 0;
   act(() => root?.unmount());
   root = null;
   document.body.innerHTML = '';
@@ -61,13 +69,43 @@ afterEach(() => {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
+const ASKED: HostOrder = {
+  orderId: 'o1',
+  proposalId: 'p1',
+  offerTitle: 'Airport transfer',
+  date: '2026-10-26',
+  startTime: '14:30',
+  quantity: 3,
+  priceUnit: 'group',
+  guest: { name: 'Ana Horvat', phone: '+385 91 000 0000' },
+  status: 'pending_provider',
+  final: false,
+  acknowledgedAt: null,
+  actions: ['accept', 'suggest_time', 'decline'],
+  priceMinor: 13500,
+  currency: 'EUR',
+  respondBy: '2026-10-25T12:00',
+  stayFrom: '2026-10-24',
+  stayTo: '2026-10-30',
+  needsPrice: false,
+  offerId: 'f1',
+  createdAt: '2026-10-25T08:00:00.000Z',
+  waiting: true,
+};
+
+let orders: HostOrder[] = [];
+let ordersWaiting = 0;
+let action: () => Response = () => json({ error: 'not-found' }, 404);
+
 function stubApi(messages: HostMessage[], reply?: () => Response) {
   calls = [];
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
     calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
-    if (url === '/api/host/inbox') return json({ messages, unread: 1 });
+    if (url === '/api/auth/me') return json(HOST);
+    if (url === '/api/host/inbox') return json({ messages, unread: 1, orders, ordersWaiting });
+    if (url.endsWith('/actions')) return action();
     if (url.endsWith('/read')) return new Response(null, { status: 204 });
     if (url.endsWith('/reply') && reply) return reply();
     return json({ error: 'not-found' }, 404);
@@ -232,5 +270,70 @@ describe('host inbox', () => {
     await mount();
     await vi.waitFor(() => expect(host.textContent).toContain('No guest messages yet.'));
     expect(host.querySelector('.mascot, img')).toBeNull();
+  });
+
+  it('shows a waiting own-service Order with its answers, and posts Accept', async () => {
+    orders = [ASKED];
+    stubApi([]);
+    action = () =>
+      json({ outcome: 'applied', order: { ...ASKED, status: 'confirmed', actions: [] } });
+    await mount();
+    const card = () => host.querySelector('.order-card');
+    await vi.waitFor(() => expect(card()).not.toBeNull());
+    expect(host.textContent).toContain('Orders for your services');
+    expect(card()?.textContent).toContain('Airport transfer');
+    expect(card()?.textContent).toContain('Mon 26 Oct · 14:30 · 3 groups · €135.00');
+    expect(card()?.textContent).toContain('Ana Horvat · +385 91 000 0000');
+    expect(card()?.textContent).toContain('Answer by Sun 25 Oct, 12:00');
+    const buttons = [...(card()?.querySelectorAll('button') ?? [])].map((b) => b.textContent);
+    expect(buttons).toEqual(['Accept', 'Suggest another time', 'Decline']);
+    await act(async () =>
+      [...(card()?.querySelectorAll('button') ?? [])]
+        .find((b) => b.textContent === 'Accept')
+        ?.click(),
+    );
+    await vi.waitFor(() =>
+      expect(card()?.textContent).toContain('Accepted. The guest has been told.'),
+    );
+    expect(calls.find((c) => c.url === '/api/host/orders/o1/actions')?.body).toEqual({
+      action: 'accept',
+      proposalId: 'p1',
+    });
+  });
+
+  it('says the Order changed when the answer is stale', async () => {
+    orders = [ASKED];
+    stubApi([]);
+    action = () => json({ outcome: 'stale', order: ASKED });
+    await mount();
+    await vi.waitFor(() => expect(host.querySelector('.order-card')).not.toBeNull());
+    await act(async () =>
+      [...host.querySelectorAll('.order-card button')]
+        .find((b) => b.textContent === 'Decline')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true })),
+    );
+    await vi.waitFor(() =>
+      expect(host.querySelector('.order-card')?.textContent).toContain(
+        'This order changed — refreshed.',
+      ),
+    );
+  });
+
+  it('counts waiting Orders in the nav badge with unread messages', async () => {
+    orders = [ASKED];
+    ordersWaiting = 2;
+    stubApi([URGENT]);
+    host = document.createElement('div');
+    document.body.append(host);
+    root = createRoot(host);
+    await act(async () =>
+      root?.render(
+        <MemoryRouter initialEntries={['/inbox']}>
+          <App />
+        </MemoryRouter>,
+      ),
+    );
+    await vi.waitFor(() => expect(host.querySelector('.nav-badge')?.textContent).toBe('3'));
+    expect(host.querySelector('.nav-badge')?.getAttribute('aria-label')).toBe('3 waiting');
   });
 });

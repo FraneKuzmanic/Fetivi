@@ -24,9 +24,9 @@ import {
   PRICE_UNITS,
   PROVIDER_LANGUAGES,
 } from '../../offers/vocabulary';
-import { PROVIDER_CARD_STATUSES } from '../../payments/vocabulary';
 import { accounts } from './accounts';
 import { catalogRecords, destinations } from './catalog';
+import { providerCardStatus } from './enums';
 import { sourceLanguage, translationError, translationStatus } from './info-blocks';
 import { guestLanguage, translationOrigin } from './translations';
 
@@ -38,7 +38,7 @@ export const contactFields = pgEnum('contact_fields', CONTACT_FIELDS);
 export const priceUnit = pgEnum('price_unit', PRICE_UNITS);
 export const adapterKind = pgEnum('adapter_kind', ADAPTER_KINDS);
 export const providerLanguage = pgEnum('provider_language', PROVIDER_LANGUAGES);
-export const providerCardStatus = pgEnum('provider_card_status', PROVIDER_CARD_STATUSES);
+export { providerCardStatus };
 
 /** A local business the admin has a deal with. It gets each Order by email and has no login. */
 export const providers = pgTable(
@@ -204,6 +204,24 @@ export const allotmentSlots = pgTable(
       sql`${t.capacity} between 1 and 999 and ${t.remaining} between 0 and ${t.capacity}`,
     ),
   ],
+);
+
+/**
+ * An approved Provider a host has hidden from their guests (38). Per host, across all of their
+ * properties; existing Orders are untouched.
+ */
+export const hostHiddenProviders = pgTable(
+  'host_hidden_providers',
+  {
+    hostId: uuid('host_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    providerId: uuid('provider_id')
+      .notNull()
+      .references(() => providers.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.hostId, t.providerId] })],
 );
 
 export type ProviderRow = typeof providers.$inferSelect;

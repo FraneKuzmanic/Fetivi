@@ -13,7 +13,7 @@ import type { PaymentMode, PriceUnit } from '../../offers/vocabulary';
 import { createOrder, getOrder, type OrderDeps, OrderRuleError } from '../../orders/machine';
 import type { OrderStatus, PaymentStatus } from '../../orders/vocabulary';
 import { checkoutOpen } from '../../payments/checkout';
-import { providerAcceptsCards } from '../../payments/onboarding';
+import { merchantAcceptsCards } from '../../payments/merchant';
 import { CHECKOUT_HOLD_MINUTES } from '../../payments/vocabulary';
 import type { GuestLanguage } from '../../property/vocabulary';
 import { optInSpaceEmail } from '../../spaces/email';
@@ -149,9 +149,9 @@ async function startsOf(
     throw new ServiceRuleError('date-past');
   }
   if (!isQuantity(input.quantity)) throw new ServiceRuleError('invalid-input');
-  // Pay-online needs a Provider's allotment or on-request Offer and an onboarded Provider; live
-  // is 37.
-  if (offer.paymentMode === 'online' && !(await providerAcceptsCards(deps.db, offer.id))) {
+  // Pay-online needs an allotment or on-request Offer whose merchant (the Provider, or the host
+  // for an own service, 38) is onboarded; live is 37.
+  if (offer.paymentMode === 'online' && !(await merchantAcceptsCards(deps.db, offer.id))) {
     throw new ServiceRuleError('not-bookable-in-chat');
   }
   let adapter: ReturnType<typeof adapterFor>;
@@ -162,10 +162,6 @@ async function startsOf(
       throw new ServiceRuleError('not-bookable-in-chat');
     }
     throw error;
-  }
-  // A host's on-request Orders reach the host inbox (38).
-  if (offer.owner === 'host' && offer.availabilityMode === 'on_request') {
-    throw new ServiceRuleError('not-bookable-in-chat');
   }
   const all = await adapter.checkAvailability(
     { db: deps.db, now: deps.now },

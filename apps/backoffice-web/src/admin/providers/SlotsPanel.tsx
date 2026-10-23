@@ -1,7 +1,7 @@
 import { OFFER_LIMITS } from '@fetivi/domain/offer-vocabulary';
 import { Plus, Trash } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
-import { type AllotmentSlot, providers } from '../../api';
+import type { AllotmentSlot, SlotsClient } from '../../api';
 import { CheckboxField, NumberField, TimeField } from '../../forms/fields';
 import { WEEKDAY_LABELS } from '../../forms/labels';
 import { useAction } from '../../useAction';
@@ -25,8 +25,19 @@ interface BulkDraft {
   capacity: number | null;
 }
 
-/** Allotment slots of an Offer: bulk creation from a weekly schedule, then per-slot edits. */
-export function SlotsPanel({ offerId, timezone }: { offerId: string; timezone: string }) {
+/**
+ * Allotment slots of an Offer: bulk creation from a weekly schedule, then per-slot edits. The
+ * client is the admin's Offer routes or the host's own-service routes (38).
+ */
+export function SlotsPanel({
+  offerId,
+  timezone,
+  client,
+}: {
+  offerId: string;
+  timezone: string;
+  client: SlotsClient;
+}) {
   const { busy, error, run } = useAction();
   const [past, setPast] = useState(false);
   const [slots, setSlots] = useState<AllotmentSlot[] | null>(null);
@@ -40,8 +51,8 @@ export function SlotsPanel({ offerId, timezone }: { offerId: string; timezone: s
   });
 
   const reload = useCallback(
-    async () => setSlots((await providers.slots(offerId, past)).slots),
-    [offerId, past],
+    async () => setSlots((await client.slots(offerId, past)).slots),
+    [offerId, past, client],
   );
 
   useEffect(() => {
@@ -52,7 +63,7 @@ export function SlotsPanel({ offerId, timezone }: { offerId: string; timezone: s
     event.preventDefault();
     setResult(null);
     void run(async () => {
-      const { created, skipped } = await providers.bulkSlots(offerId, {
+      const { created, skipped } = await client.bulkSlots(offerId, {
         from: draft.from ?? '',
         to: draft.to ?? '',
         weekdays: draft.weekdays,
@@ -184,7 +195,7 @@ export function SlotsPanel({ offerId, timezone }: { offerId: string; timezone: s
             <span />
           </li>
           {slots.map((slot) => (
-            <SlotRow key={slot.id} slot={slot} onChanged={reload} />
+            <SlotRow key={slot.id} slot={slot} client={client} onChanged={reload} />
           ))}
         </ul>
       ) : null}
@@ -193,7 +204,15 @@ export function SlotsPanel({ offerId, timezone }: { offerId: string; timezone: s
   );
 }
 
-function SlotRow({ slot, onChanged }: { slot: AllotmentSlot; onChanged: () => Promise<void> }) {
+function SlotRow({
+  slot,
+  client,
+  onChanged,
+}: {
+  slot: AllotmentSlot;
+  client: SlotsClient;
+  onChanged: () => Promise<void>;
+}) {
   const { busy, error, run } = useAction();
   const [capacity, setCapacity] = useState<number | null>(slot.capacity);
   const start = startLine(slot.startsAt);
@@ -206,7 +225,7 @@ function SlotRow({ slot, onChanged }: { slot: AllotmentSlot; onChanged: () => Pr
         onSubmit={(event) => {
           event.preventDefault();
           void run(async () => {
-            await providers.setSlotCapacity(slot.id, capacity ?? 0);
+            await client.setSlotCapacity(slot.id, capacity ?? 0);
             await onChanged();
           });
         }}
@@ -237,7 +256,7 @@ function SlotRow({ slot, onChanged }: { slot: AllotmentSlot; onChanged: () => Pr
         onClick={() => {
           if (!window.confirm(`Delete the slot on ${start}?`)) return;
           void run(async () => {
-            await providers.deleteSlot(slot.id);
+            await client.deleteSlot(slot.id);
             await onChanged();
           });
         }}

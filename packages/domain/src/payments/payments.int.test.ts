@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { accounts } from '../db/schema/accounts';
 import { allotmentSlots, providers } from '../db/schema/offers';
 import { inventoryHolds, orderEvents, orders, paymentAttempts } from '../db/schema/orders';
 import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../jobs/queue';
@@ -30,7 +31,13 @@ import { checkoutFor } from './checkout';
 import type { OrderPaymentJobData } from './enqueue';
 import { applyStripeEvent, parseStripeEvent } from './events';
 import { type PaymentDeps, type PaymentJobResult, runPaymentJob } from './jobs';
-import { OnboardingRuleError, providerOnboardingLink, refreshProviderPayments } from './onboarding';
+import {
+  hostOnboardingLink,
+  OnboardingRuleError,
+  providerOnboardingLink,
+  refreshHostPayments,
+  refreshProviderPayments,
+} from './onboarding';
 import { CHECKOUT_HOLD_MINUTES, type PaymentOperation } from './vocabulary';
 
 // The external half of pay-online (33): the payment job against a fake Stripe that behaves like
@@ -630,5 +637,108 @@ describe('Provider onboarding', () => {
     await expect(
       refreshProviderPayments({ db: testDb.db, gateway, now: () => clock }, provider.id),
     ).rejects.toEqual(new OnboardingRuleError('no-account'));
+  });
+});
+
+describe("a host's own pay-online Offer (38)", () => {
+  it('is refused until the host account is active, then charged on it with no fee', async () => {
+    clock = NOW;
+    const w = world();
+    const host = await seedGuestUnit(testDb.db, { now: NOW });
+    const hostScope = {
+      spaceId: host.spaceId,
+      offerScope: { ...scope(), propertyId: host.propertyId },
+    };
+    const offer = await seedOrderableOffer(testDb.db, {
+      hostId: host.hostId,
+      availabilityMode: 'allotment',
+      paymentMode: 'online',
+      priceMinor: 2500,
+      capacity: 2,
+      startsAt: SLOT_AT,
+      contactFields: 'name',
+    });
+    await publishOffer(testDb.db, offer.offerId);
+    const slotId = offer.slotId as string;
+    const book = { offerId: offer.offerId, date: DAY, quantity: 2, slotId };
+    await expect(prepareOrder(deps(), hostScope, book)).rejects.toEqual(
+      new ServiceRuleError('not-bookable-in-chat'),
+    );
+
+    const hostAccount = `acct_host_${host.hostId.slice(0, 8)}`;
+    await testDb.db
+      .update(accounts)
+      .set({ stripeAccountId: hostAccount, stripeCardPayments: 'active' })
+      .where(eq(accounts.id, host.hostId));
+    const { pendingId } = await prepareOrder(deps(), hostScope, book);
+    const { order } = await completeOrder(deps(), {
+      pendingId,
+      ...hostScope,
+      contact: { email: 'guest@example.test', name: 'Ana' },
+    });
+    expect((await orderOf(order.id)).commissionBp).toBe(0);
+    const [attempt] = await testDb.db
+      .select()
+      .from(paymentAttempts)
+      .where(eq(paymentAttempts.orderId, order.id));
+    if (!attempt) throw new Error('no attempt');
+    expect(attempt).toMatchObject({ stripeAccountId: hostAccount, applicationFeeMinor: 0 });
+
+    await runJobs(w.pdeps, attempt.id);
+    const opened = await attemptOf(attempt.id);
+    expect(w.gateway.calls.find((c) => c.op === 'create_session')).toMatchObject({
+      account: hostAccount,
+    });
+    w.gateway.pay(opened.sessionId as string);
+    await deliver(w.gateway);
+    await runJobs(w.pdeps, attempt.id);
+    expect(w.gateway.calls.find((c) => c.op === 'capture')).toMatchObject({
+      account: hostAccount,
+      params: { applicationFeeAmount: 0 },
+    });
+    expect(await orderOf(order.id)).toMatchObject({
+      status: 'confirmed',
+      paymentStatus: 'captured',
+    });
+  });
+});
+
+describe('host onboarding (38)', () => {
+  it('creates one host account with host metadata, reuses it, and stores the card status', async () => {
+    const { gateway } = world();
+    const host = await seedGuestUnit(testDb.db, { now: NOW });
+    const onboarding = { db: testDb.db, gateway, now: () => clock };
+    const urls = { returnUrl: 'http://admin.test/r', refreshUrl: 'http://admin.test/f' };
+
+    await hostOnboardingLink(onboarding, host.hostId, urls);
+    await hostOnboardingLink(onboarding, host.hostId, urls);
+    const creates = gateway.calls.filter((c) => c.op === 'create_account');
+    expect(creates).toMatchObject([{ idempotencyKey: `host:${host.hostId}:account` }]);
+    const [created] = gateway.state().accounts;
+    expect(created?.metadata).toEqual({ fetivi_host_id: host.hostId });
+    const [stored] = await testDb.db.select().from(accounts).where(eq(accounts.id, host.hostId));
+    expect(stored?.stripeAccountId).toBe(created?.id);
+
+    gateway.setCardStatus(created?.id as string, 'active');
+    expect(await refreshHostPayments(onboarding, host.hostId)).toBe('active');
+    const [refreshed] = await testDb.db.select().from(accounts).where(eq(accounts.id, host.hostId));
+    expect(refreshed).toMatchObject({ stripeCardPayments: 'active', stripeCheckedAt: clock });
+  });
+
+  it('refuses an account that is not a host, and a refresh before the account exists', async () => {
+    const { gateway } = world();
+    const onboarding = { db: testDb.db, gateway, now: () => clock };
+    const [admin] = await testDb.db
+      .insert(accounts)
+      .values({ email: `admin-${NOW.getTime()}@example.test`, passwordHash: 'x', role: 'admin' })
+      .returning();
+    const urls = { returnUrl: 'http://admin.test/r', refreshUrl: 'http://admin.test/f' };
+    await expect(hostOnboardingLink(onboarding, admin?.id as string, urls)).rejects.toEqual(
+      new OnboardingRuleError('not-found'),
+    );
+    const host = await seedGuestUnit(testDb.db, { now: NOW });
+    await expect(refreshHostPayments(onboarding, host.hostId)).rejects.toEqual(
+      new OnboardingRuleError('no-account'),
+    );
   });
 });

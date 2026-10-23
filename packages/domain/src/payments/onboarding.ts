@@ -1,6 +1,8 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { Executor } from '../db/client';
-import { offers, providers } from '../db/schema/offers';
+import { accounts } from '../db/schema/accounts';
+import { providers } from '../db/schema/offers';
+import { properties } from '../db/schema/properties';
 import type { PaymentGateway } from './gateway';
 import type { ProviderCardStatus } from './vocabulary';
 
@@ -50,7 +52,11 @@ export async function providerOnboardingLink(
   let accountId = provider.stripeAccountId;
   if (!accountId) {
     const created = await deps.gateway.createConnectedAccount(
-      { providerId: provider.id, email: provider.email, displayName: provider.name },
+      {
+        owner: { kind: 'provider', id: provider.id },
+        email: provider.email,
+        displayName: provider.name,
+      },
       { idempotencyKey: `provider:${provider.id}:account` },
     );
     await deps.db
@@ -77,28 +83,71 @@ export async function refreshProviderPayments(
   return status;
 }
 
-/**
- * Whether a pay-online Offer can be booked in chat now: an allotment or on-request Offer of a
- * Provider whose stored card status is `active`, with a price (a request-kind Offer gets its
- * price from the Provider). Live (37) and host Offers (38) cannot yet.
- */
-export async function providerAcceptsCards(db: Executor, offerId: string): Promise<boolean> {
+// A host's own connected account (38), for own services paid online: the same onboarding, with
+// the host as merchant of record and the columns on `accounts`.
+
+async function hostRow(db: Executor, hostId: string) {
   const [row] = await db
     .select({
-      availabilityMode: offers.availabilityMode,
-      priceMinor: offers.priceMinor,
-      orderKind: offers.orderKind,
-      stripeAccountId: providers.stripeAccountId,
-      cardStatus: providers.stripeCardPayments,
+      id: accounts.id,
+      email: accounts.email,
+      role: accounts.role,
+      stripeAccountId: accounts.stripeAccountId,
     })
-    .from(offers)
-    .innerJoin(providers, eq(providers.id, offers.providerId))
-    .where(eq(offers.id, offerId));
-  return (
-    row !== undefined &&
-    (row.availabilityMode === 'allotment' || row.availabilityMode === 'on_request') &&
-    (!!row.priceMinor || row.orderKind === 'request') &&
-    !!row.stripeAccountId &&
-    row.cardStatus === 'active'
-  );
+    .from(accounts)
+    .where(eq(accounts.id, hostId));
+  if (row?.role !== 'host') throw new OnboardingRuleError('not-found');
+  return row;
+}
+
+/** The host's oldest property name, else the account email: what Stripe shows as the merchant. */
+async function hostDisplayName(db: Executor, host: { id: string; email: string }) {
+  const [property] = await db
+    .select({ name: properties.name })
+    .from(properties)
+    .where(eq(properties.hostId, host.id))
+    .orderBy(asc(properties.createdAt), asc(properties.id))
+    .limit(1);
+  return property?.name ?? host.email;
+}
+
+/** `providerOnboardingLink` for a host's own account (key `host:<id>:account`). */
+export async function hostOnboardingLink(
+  deps: OnboardingDeps,
+  hostId: string,
+  urls: { returnUrl: string; refreshUrl: string },
+): Promise<{ url: string; expiresAt: Date }> {
+  const host = await hostRow(deps.db, hostId);
+  let accountId = host.stripeAccountId;
+  if (!accountId) {
+    const created = await deps.gateway.createConnectedAccount(
+      {
+        owner: { kind: 'host', id: host.id },
+        email: host.email,
+        displayName: await hostDisplayName(deps.db, host),
+      },
+      { idempotencyKey: `host:${host.id}:account` },
+    );
+    await deps.db
+      .update(accounts)
+      .set({ stripeAccountId: created.id, updatedAt: deps.now() })
+      .where(and(eq(accounts.id, host.id), isNull(accounts.stripeAccountId)));
+    accountId = (await hostRow(deps.db, hostId)).stripeAccountId ?? created.id;
+  }
+  return deps.gateway.createAccountLink({ accountId, ...urls });
+}
+
+/** Reads the host account's card capability from Stripe and stores it on the account. */
+export async function refreshHostPayments(
+  deps: OnboardingDeps,
+  hostId: string,
+): Promise<ProviderCardStatus> {
+  const host = await hostRow(deps.db, hostId);
+  if (!host.stripeAccountId) throw new OnboardingRuleError('no-account');
+  const status = await deps.gateway.retrieveCardPaymentsStatus(host.stripeAccountId);
+  await deps.db
+    .update(accounts)
+    .set({ stripeCardPayments: status, stripeCheckedAt: deps.now(), updatedAt: deps.now() })
+    .where(eq(accounts.id, host.id));
+  return status;
 }

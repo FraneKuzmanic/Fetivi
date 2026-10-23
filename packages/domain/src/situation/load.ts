@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import { findDestinationAt } from '../catalog/destination';
 import type { Executor } from '../db/client';
 import { offers } from '../db/schema/offers';
@@ -46,11 +46,18 @@ export async function loadSituation(
   const destination = row.location
     ? await findDestinationAt(db, { lat: row.location.y, lng: row.location.x })
     : null;
-  // Own Offers are host-level (offers.host_id), not property-level.
+  // Own Offers are host-level (offers.host_id), not property-level. Published too: the write
+  // tools appear only when the guest could see an own Offer (AC 4, 38).
   const [own] = await db
     .select({ id: offers.id })
     .from(offers)
-    .where(and(eq(offers.hostId, row.hostId), eq(offers.active, true)))
+    .where(
+      and(
+        eq(offers.hostId, row.hostId),
+        eq(offers.active, true),
+        isNotNull(offers.publishedRevision),
+      ),
+    )
     .limit(1);
 
   const destinationId = destination?.id ?? null;

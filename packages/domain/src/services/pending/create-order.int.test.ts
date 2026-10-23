@@ -182,7 +182,7 @@ describe('prepareOrder', () => {
     );
   });
 
-  it("refuses a host's on-request, live, pay-online and invisible Offers", async () => {
+  it('takes a host’s on-request Offer and refuses live, unready pay-online and invisible Offers', async () => {
     const provider = await seedProvider(testDb.db);
     const of = async (o: Partial<Parameters<typeof seedOrderableOffer>[1]>) => {
       const { offerId } = await seedOrderableOffer(testDb.db, {
@@ -194,7 +194,7 @@ describe('prepareOrder', () => {
       await publishOffer(testDb.db, offerId);
       return codeOf(prepareOrder(deps(), ctx(), { offerId, date: DAY, quantity: 1 }));
     };
-    // A Provider's on-request Offer is bookable (36); a host's goes to the host inbox (38).
+    // On request is bookable for a Provider (36) and for the host's own Offer (38).
     expect(await of({})).toBe('ok');
     const hosts = await seedOrderableOffer(testDb.db, {
       hostId: guest.hostId,
@@ -203,7 +203,7 @@ describe('prepareOrder', () => {
     await publishOffer(testDb.db, hosts.offerId);
     expect(
       await codeOf(prepareOrder(deps(), ctx(), { offerId: hosts.offerId, date: DAY, quantity: 1 })),
-    ).toBe('not-bookable-in-chat');
+    ).toBe('ok');
     expect(await of({ availabilityMode: 'live' })).toBe('not-bookable-in-chat');
     expect(
       await of({ availabilityMode: 'allotment', startsAt: AT_09, paymentMode: 'online' }),

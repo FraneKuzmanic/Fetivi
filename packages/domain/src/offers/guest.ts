@@ -1,8 +1,7 @@
-import { and, asc, eq, inArray, isNotNull, or, type SQL, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, type SQL } from 'drizzle-orm';
 import type { Executor } from '../db/client';
 import { offers, offerTranslations, providers } from '../db/schema/offers';
-import { properties } from '../db/schema/properties';
-import type { GuestLanguage } from '../property/vocabulary';
+import { type GuestOfferScope, visibleOfferCondition } from './visibility';
 import type {
   AvailabilityMode,
   ContactFields,
@@ -12,16 +11,9 @@ import type {
   PriceUnit,
 } from './vocabulary';
 
-// The guest read side of Offers (authorization matrix, architecture §4.3): inside a destination,
-// the destination's Provider Offers plus the host's own; outside one, only the host's own.
-// Visibility never looks at commission.
+// The guest read side of Offers; who sees what is `visibleOfferCondition` (visibility.ts).
 
-/** Who is asking: the token's destination (null outside one), property and language. */
-export interface GuestOfferScope {
-  destinationId: string | null;
-  propertyId: string;
-  language: GuestLanguage;
-}
+export type { GuestOfferScope };
 
 export interface GuestOffer {
   id: string;
@@ -43,27 +35,6 @@ export interface GuestOffer {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Published, active Offers this guest may see; `providers` must be left-joined. */
-function guestOfferCondition(scope: GuestOfferScope): SQL | undefined {
-  const ownHost = eq(
-    offers.hostId,
-    sql`(select ${properties.hostId} from ${properties} where ${properties.id} = ${scope.propertyId})`,
-  );
-  const destination =
-    scope.destinationId === null
-      ? undefined
-      : and(
-          isNotNull(offers.providerId),
-          eq(offers.destinationId, scope.destinationId),
-          eq(providers.active, true),
-        );
-  return and(
-    eq(offers.active, true),
-    isNotNull(offers.publishedRevision),
-    destination ? or(ownHost, destination) : ownHost,
-  );
-}
 
 const translationJoin = (scope: GuestOfferScope) =>
   and(
@@ -95,7 +66,7 @@ function selectGuestOffers(db: Executor, scope: GuestOfferScope, extra: (SQL | u
     .from(offers)
     .leftJoin(providers, eq(providers.id, offers.providerId))
     .innerJoin(offerTranslations, translationJoin(scope))
-    .where(and(guestOfferCondition(scope), ...extra));
+    .where(and(visibleOfferCondition(scope), ...extra));
 }
 
 function guestOfferOf({
@@ -142,7 +113,7 @@ export async function offerIdsByPlace(
     .select({ id: offers.id, placeId: offers.placeId })
     .from(offers)
     .leftJoin(providers, eq(providers.id, offers.providerId))
-    .where(and(guestOfferCondition(scope), inArray(offers.placeId, placeIds)))
+    .where(and(visibleOfferCondition(scope), inArray(offers.placeId, placeIds)))
     .orderBy(asc(offers.id));
   for (const r of rows) {
     if (!r.placeId) continue;

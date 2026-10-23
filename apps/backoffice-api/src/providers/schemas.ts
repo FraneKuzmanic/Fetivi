@@ -48,8 +48,8 @@ export const ProviderPatch = z.strictObject(providerFields).partial();
 
 const hhmm = z.string().regex(HHMM);
 
-/** Offer fields without defaults; the create adds them. */
-const offerFields = {
+/** Offer fields without defaults; the create adds them. Host Offers (38) reuse them. */
+export const offerFields = {
   placeId: z.uuid().nullable(),
   title: line(LIMITS.title),
   description: markdown,
@@ -74,41 +74,55 @@ const offerFields = {
   active: z.boolean(),
 };
 
+/** The Offer fields with the create's defaults, without the owner and destination. */
+export const offerCreateFields = {
+  ...offerFields,
+  placeId: offerFields.placeId.default(null),
+  currency: offerFields.currency.default(OFFER_DEFAULTS.currency),
+  priceUnit: offerFields.priceUnit.default(OFFER_DEFAULTS.priceUnit),
+  freeCancelHoursBefore: offerFields.freeCancelHoursBefore.default(
+    OFFER_DEFAULTS.freeCancelHoursBefore,
+  ),
+  refundPercentAfter: offerFields.refundPercentAfter.default(OFFER_DEFAULTS.refundPercentAfter),
+  responseWindowMinutes: offerFields.responseWindowMinutes.default(
+    OFFER_DEFAULTS.responseWindowMinutes,
+  ),
+  responseHoursFrom: hhmm.default(OFFER_DEFAULTS.responseHoursFrom),
+  responseHoursTo: hhmm.default(OFFER_DEFAULTS.responseHoursTo),
+  contactFields: offerFields.contactFields.default(OFFER_DEFAULTS.contactFields),
+  adapterKind: offerFields.adapterKind.default(null),
+  externalProductRef: offerFields.externalProductRef.default(null),
+  active: offerFields.active.default(true),
+};
+
+interface OfferCombination {
+  priceMinor: number | null;
+  orderKind: string;
+  availabilityMode: string;
+  responseHoursFrom: string;
+  responseHoursTo: string;
+  responseWindowMinutes: number;
+}
+
+/** The CHECKs every Offer create meets, whoever owns it. */
+export function checkOfferCombination(o: OfferCombination, fail: (message: string) => void) {
+  if (o.priceMinor === null && o.orderKind !== 'request') fail('price required');
+  if (o.orderKind === 'request' && o.availabilityMode !== 'on_request') {
+    fail('requests are on request');
+  }
+  if (o.responseHoursFrom >= o.responseHoursTo) fail('hours from must be before to');
+  if (o.responseWindowMinutes > maxResponseWindowMinutes(o.responseHoursFrom, o.responseHoursTo)) {
+    fail('response window must end under 4 days');
+  }
+}
+
 export const OfferCreate = z
-  .strictObject({
-    ...offerFields,
-    destinationId: z.uuid(),
-    placeId: offerFields.placeId.default(null),
-    currency: offerFields.currency.default(OFFER_DEFAULTS.currency),
-    priceUnit: offerFields.priceUnit.default(OFFER_DEFAULTS.priceUnit),
-    freeCancelHoursBefore: offerFields.freeCancelHoursBefore.default(
-      OFFER_DEFAULTS.freeCancelHoursBefore,
-    ),
-    refundPercentAfter: offerFields.refundPercentAfter.default(OFFER_DEFAULTS.refundPercentAfter),
-    responseWindowMinutes: offerFields.responseWindowMinutes.default(
-      OFFER_DEFAULTS.responseWindowMinutes,
-    ),
-    responseHoursFrom: hhmm.default(OFFER_DEFAULTS.responseHoursFrom),
-    responseHoursTo: hhmm.default(OFFER_DEFAULTS.responseHoursTo),
-    contactFields: offerFields.contactFields.default(OFFER_DEFAULTS.contactFields),
-    adapterKind: offerFields.adapterKind.default(null),
-    externalProductRef: offerFields.externalProductRef.default(null),
-    active: offerFields.active.default(true),
-  })
+  .strictObject({ ...offerCreateFields, destinationId: z.uuid() })
   .superRefine((o, ctx) => {
     const fail = (message: string) => ctx.addIssue({ code: 'custom', message });
-    if (o.priceMinor === null && o.orderKind !== 'request') fail('price required');
-    if (o.orderKind === 'request' && o.availabilityMode !== 'on_request') {
-      fail('requests are on request');
-    }
+    checkOfferCombination(o, fail);
     if ((o.availabilityMode === 'live') !== (o.adapterKind !== null)) fail('live needs an adapter');
     if (o.availabilityMode === 'live' && o.externalProductRef === null) fail('live needs a ref');
-    if (o.responseHoursFrom >= o.responseHoursTo) fail('hours from must be before to');
-    if (
-      o.responseWindowMinutes > maxResponseWindowMinutes(o.responseHoursFrom, o.responseHoursTo)
-    ) {
-      fail('response window must end under 4 days');
-    }
   });
 
 export const OfferPatch = z.strictObject(offerFields).partial();

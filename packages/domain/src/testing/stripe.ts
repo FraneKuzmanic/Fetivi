@@ -13,7 +13,7 @@ import type {
   PaymentIntentView,
   RefundView,
 } from '../payments/gateway';
-import { PaymentGatewayError } from '../payments/gateway';
+import { connectedAccountMetadata, PaymentGatewayError } from '../payments/gateway';
 import type { ProviderCardStatus } from '../payments/vocabulary';
 
 export type FakeStripeOp =
@@ -373,7 +373,7 @@ export function fakePaymentGateway(
         accounts.set(id, {
           id,
           cardStatus: 'pending',
-          metadata: { fetivi_provider_id: p.providerId },
+          metadata: connectedAccountMetadata(p.owner),
         });
         return { id };
       }),

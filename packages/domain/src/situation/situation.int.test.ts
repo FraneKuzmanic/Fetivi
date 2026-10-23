@@ -25,7 +25,7 @@ afterAll(async () => {
   await testDb?.drop();
 });
 
-async function addOwnOffer(hostId: string, active: boolean) {
+async function addOwnOffer(hostId: string, active: boolean, published = true) {
   await testDb.db.insert(offers).values({
     hostId,
     title: 'Boat',
@@ -37,6 +37,7 @@ async function addOwnOffer(hostId: string, active: boolean) {
     paymentMode: 'direct',
     priceMinor: 5000,
     active,
+    publishedRevision: published ? 1 : null,
   });
 }
 
@@ -71,6 +72,12 @@ describe('loadSituation', () => {
     const active = await seedGuestUnit(testDb.db, { now: NOW });
     await addOwnOffer(active.hostId, true);
     expect((await loadSituation(testDb.db, active.spaceId, NOW))?.hostHasOwnOffers).toBe(true);
+  });
+
+  it('ignores an active own Offer that is not yet published (AC 4, 38)', async () => {
+    const draft = await seedGuestUnit(testDb.db, { now: NOW });
+    await addOwnOffer(draft.hostId, true, false);
+    expect((await loadSituation(testDb.db, draft.spaceId, NOW))?.hostHasOwnOffers).toBe(false);
   });
 
   it('is ended after checkout day', async () => {

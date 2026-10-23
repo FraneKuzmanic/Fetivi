@@ -20,7 +20,7 @@ import type { JobDefinition } from '../../runner';
  * admins the alerts.
  */
 export function orderNotifyJob(
-  deps: NotifyDeps & GuestNotifyDeps & { webOrigin?: string },
+  deps: NotifyDeps & GuestNotifyDeps,
 ): JobDefinition<OrderNotifyJobData> {
   return {
     name: QUEUES.orderNotify,

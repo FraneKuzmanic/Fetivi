@@ -53,7 +53,8 @@ async function logInFrom(start: string, state?: unknown) {
       me = HOST;
       return json(HOST);
     }
-    if (url === '/api/host/inbox') return json({ messages: [], unread: 0 });
+    if (url === '/api/host/inbox')
+      return json({ messages: [], unread: 0, orders: [], ordersWaiting: 0 });
     return json({ error: 'not-found' }, 404);
   });
   el = document.createElement('div');

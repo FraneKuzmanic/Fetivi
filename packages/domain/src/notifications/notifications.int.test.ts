@@ -37,7 +37,10 @@ const notifyDeps = (mailer: Mailer): NotifyDeps => ({
   mailer,
   now: () => NOW,
   providerLink: { secret: 'notify-test-secret-that-is-long-enough-0', baseUrl: BASE_URL },
+  webOrigin: 'https://admin.fetivi.test',
 });
+/** Without the back-office origin: admin alerts then carry no link. */
+const alertDeps = (mailer: Mailer) => ({ db: testDb.db, mailer, now: () => NOW });
 
 beforeAll(async () => {
   testDb = await createTestDatabase();
@@ -130,13 +133,57 @@ describe('the Provider email', () => {
     expect(mailer.sent).toHaveLength(1);
   });
 
-  it("is skipped for a host's own Offer", async () => {
+  it("goes to the host for a host's own Offer, pointing to the inbox, once (38)", async () => {
     const { job } = await confirmedOrder({ host: true });
+    const [host] = await testDb.db.select().from(accounts).where(eq(accounts.id, unit.hostId));
     const mailer = createMemoryMailer();
-    expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('skipped');
-    expect(mailer.sent).toHaveLength(0);
+    expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('sent');
+    expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('already_sent');
+    expect(mailer.sent).toHaveLength(1);
+    const [mail] = mailer.sent;
+    expect(mail?.to).toBe(host?.email);
+    expect(mail?.subject).toBe('New order: Kayak tour');
+    expect(mail?.text).toContain('https://admin.fetivi.test/inbox');
+    expect(mail?.text).toContain('Guest: Ana Horvat');
+    expect(mail?.text).not.toContain('ana@example.test');
+    expect(mail?.text).not.toContain('/api/provider-link/');
+    expect(mail?.idempotencyKey).toBe(
+      `order:${job.orderId}:proposal:${job.proposalId}:notify:provider_confirmed`,
+    );
+    // No per-order link for a host: they answer in the back office.
     const [order] = await testDb.db.select().from(orders).where(eq(orders.id, job.orderId));
     expect(order?.providerLinkTokenHash).toBeNull();
+  });
+
+  it('asks the host about an own on-request Order, and skips a stale proposal (38)', async () => {
+    const { offerId } = await seedOrderableOffer(testDb.db, {
+      hostId: unit.hostId,
+      availabilityMode: 'on_request',
+      title: 'Airport transfer',
+    });
+    const { order } = await createOrder(orderDeps(), {
+      spaceId: unit.spaceId,
+      offerId,
+      date: DAY,
+      quantity: 1,
+      contact: { email: 'ana@example.test', name: 'Ana Horvat' },
+    });
+    const job = {
+      orderId: order.id,
+      proposalId: order.currentProposalId as string,
+      kind: 'provider_request' as const,
+    };
+    const mailer = createMemoryMailer();
+    expect(
+      await sendProviderNotification(notifyDeps(mailer), {
+        ...job,
+        proposalId: '00000000-0000-4000-8000-000000000000',
+      }),
+    ).toBe('skipped');
+    expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('sent');
+    expect(mailer.sent).toHaveLength(1);
+    expect(mailer.sent[0]?.subject).toBe('New request: Airport transfer');
+    expect(mailer.sent[0]?.text).toMatch(/Please answer by .* in your Fetivi inbox\./);
   });
 
   it('is skipped, with no link issued, once the Order is no longer confirmed', async () => {
@@ -159,7 +206,7 @@ describe('the admin alert', () => {
     const { job } = await confirmedOrder();
     const mailer = createMemoryMailer();
     const alert = { ...job, kind: 'admin_provider_cancelled' as const };
-    expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('skipped');
+    expect(await sendAdminAlert(alertDeps(mailer), alert)).toBe('skipped');
   });
 
   it('reaches every admin once, without guest details', async () => {
@@ -170,12 +217,12 @@ describe('the admin alert', () => {
     const { job } = await confirmedOrder();
     const mailer = createMemoryMailer();
     const alert = { ...job, kind: 'admin_provider_cancelled' as const };
-    expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('sent');
+    expect(await sendAdminAlert(alertDeps(mailer), alert)).toBe('sent');
     expect(mailer.sent.map((m) => m.to)).toEqual(['admin-a@example.test', 'admin-b@example.test']);
     expect(mailer.sent[0]?.text).toContain(job.orderId);
     expect(mailer.sent[0]?.text).not.toContain('Ana Horvat');
     expect(mailer.sent[0]?.text).not.toContain('Open it:');
-    expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('already_sent');
+    expect(await sendAdminAlert(alertDeps(mailer), alert)).toBe('already_sent');
     expect(mailer.sent).toHaveLength(2);
   });
 
@@ -211,17 +258,17 @@ describe('the admin alert', () => {
     await testDb.db.insert(orderEvents).values({ ...EVENT, trigger: 'admin', note: 'called' });
     const mailer = createMemoryMailer();
     const alert = { ...job, kind: 'admin_payment_attention' as const };
-    expect(await sendAdminAlert(notifyDeps(mailer), { ...alert, eventId: first?.id })).toBe('sent');
+    expect(await sendAdminAlert(alertDeps(mailer), { ...alert, eventId: first?.id })).toBe('sent');
     expect(mailer.sent[0]?.subject).toMatch(/^Payment needs a look: /);
     expect(mailer.sent[0]?.text).toContain(
       `Order ${job.orderId} (Kayak tour, 4 May 2027) needs a look: capture failed (card_declined).`,
     );
     expect(mailer.sent[0]?.text).not.toContain('ana@example.test');
-    expect(await sendAdminAlert(notifyDeps(mailer), { ...alert, eventId: first?.id })).toBe(
+    expect(await sendAdminAlert(alertDeps(mailer), { ...alert, eventId: first?.id })).toBe(
       'already_sent',
     );
     // A second problem on the same proposal is its own alert.
-    expect(await sendAdminAlert(notifyDeps(mailer), { ...alert, eventId: later?.id })).toBe('sent');
+    expect(await sendAdminAlert(alertDeps(mailer), { ...alert, eventId: later?.id })).toBe('sent');
     expect(mailer.sent.at(-1)?.text).toContain(
       'needs a look: authorization cancelled on a confirmed Order.',
     );
@@ -299,7 +346,7 @@ describe('the missed-window alert', () => {
     const { ref, provider } = await pendingOrder();
     const mailer = createMemoryMailer();
     const alert = { ...ref, kind: 'admin_window_missed' as const };
-    expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('sent');
+    expect(await sendAdminAlert(alertDeps(mailer), alert)).toBe('sent');
     const [mail] = mailer.sent;
     expect(mail?.subject).toBe("Provider hasn't answered: Kayak tour, 4 May 2027");
     expect(mail?.text).toContain('The answer was due 1 May 2027 12:30.');
@@ -314,7 +361,7 @@ describe('the missed-window alert', () => {
     await confirm(orderDeps(), { ...ref, trigger: 'admin' });
     const mailer = createMemoryMailer();
     const alert = { ...ref, kind: 'admin_window_missed' as const };
-    expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('skipped');
+    expect(await sendAdminAlert(alertDeps(mailer), alert)).toBe('skipped');
     expect(mailer.sent).toHaveLength(0);
   });
 });

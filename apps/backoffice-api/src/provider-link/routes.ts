@@ -19,7 +19,6 @@ import {
 } from '@fetivi/domain';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { HHMM } from '../properties/schemas';
 import {
   FLASHES,
   type Flash,
@@ -31,6 +30,7 @@ import {
   renderProviderPage,
   type TermsForm,
 } from './page';
+import { checkNewTerms } from './terms';
 
 // The Provider's per-order page: public, no login, the token is the only key. GET never writes
 // (mail scanners prefetch links); actions are plain form posts answered by a 303 back to the page.
@@ -68,7 +68,6 @@ const Body = z.object({
   price: z.string().max(16).optional(),
 });
 
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
 // Major units with up to two decimals; a comma is the Croatian decimal mark.
 const PRICE = /^(\d{1,7})(?:[.,](\d{1,2}))?$/;
 
@@ -86,16 +85,13 @@ function termsOf(
   form: TermsForm,
   priceOnly: boolean,
 ): ProposedTerms | FormError {
-  const date = priceOnly ? view.date : form.date;
-  if (!DATE.test(date) || date < view.stayFrom || date > view.stayTo) return 'date';
-  const time = priceOnly ? (view.startTime ?? '') : form.time;
-  if (time !== '' && !HHMM.test(time)) return 'time';
-  let priceMinor: number | undefined;
-  if (form.price.trim() !== '' || view.needsPrice || priceOnly) {
-    priceMinor = parsePrice(form.price);
-    if (priceMinor === undefined) return 'price';
-  }
-  return { date, ...(time ? { time } : {}), ...(priceMinor !== undefined ? { priceMinor } : {}) };
+  const typed = form.price.trim() !== '';
+  const priceMinor = typed ? parsePrice(form.price) : undefined;
+  const terms = checkNewTerms(view, { date: form.date, time: form.time, priceMinor }, priceOnly);
+  if (typeof terms === 'string') return terms;
+  // A typed price that is not a price is wrong even where none is required.
+  if (typed && priceMinor === undefined) return 'price';
+  return terms;
 }
 
 /** The token travels in the URL, so the page is never cached, indexed, framed or referred. */

@@ -135,6 +135,18 @@ _Avoid_: Product, listing, upsell
 A local business the admin has a deal with and whose Offers guests can order. A host offering their own services is not a Provider.
 _Avoid_: Partner, supplier, vendor
 
+**Own service**:
+An Offer a host makes available only to their own guests. Its Orders reach the host's inbox, where the host answers as the Provider would, and Fetivi takes no commission on it.
+_Avoid_: host Provider, host Offer (in interface copy)
+
+**Hidden Provider**:
+An approved Provider a host has hidden from their guests. Hiding is per host, changes only what guests see from then on, and never touches existing Orders.
+_Avoid_: blocked Provider, opt-out (as a noun)
+
+**Curation item**:
+One entry on the admin curation queue (`curation_items`), such as a host's Provider suggestion (38). Ticket 39 builds the queue and the other kinds on it.
+_Avoid_: suggestion (as the umbrella term), ticket
+
 **Category**:
 The catalog classification of an Offer, such as tour, dining experience or transfer. Independent of Order kind.
 

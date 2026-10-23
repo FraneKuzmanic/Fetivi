@@ -58,7 +58,7 @@ const OFFER_ERROR_STATUS: Record<OfferRuleError['code'], number> = {
 };
 
 /** Turns Offer rule and time errors into HTTP errors. */
-async function withOfferErrors<T>(run: () => Promise<T>): Promise<T> {
+export async function withOfferErrors<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
   } catch (error) {

@@ -16,6 +16,10 @@ import { calendarRoutes } from './calendars/routes';
 import { catalogRoutes } from './catalog/routes';
 import { hostNotificationRoutes } from './host/notifications';
 import { hostRoutes } from './host/routes';
+import { hostOfferRoutes } from './host-offers/routes';
+import { hostOrderRoutes } from './host-orders/routes';
+import { hostPaymentRoutes } from './host-payments/routes';
+import { hostProviderRoutes } from './host-providers/routes';
 import { registerErrorHandler } from './http-error';
 import { inboxRoutes } from './inbox/routes';
 import { manualImportRoutes } from './manual-import/routes';
@@ -79,6 +83,10 @@ export function buildApp(deps: AppDeps) {
   app.register(stayRoutes, { db, now, guestOrigin });
   app.register(calendarRoutes, { db, queue, now, guestOrigin });
   app.register(inboxRoutes, { db, queue, now });
+  app.register(hostOfferRoutes, { db, queue, now });
+  app.register(hostOrderRoutes, { db, queue, now });
+  app.register(hostProviderRoutes, { db, now });
+  app.register(hostPaymentRoutes, { db, now, webOrigin, gateway: deps.stripe?.gateway ?? null });
   app.register(hostNotificationRoutes, { db, now, vapidPublicKey: deps.vapidPublicKey ?? null });
   if (deps.resendWebhookSecret) {
     app.register(resendWebhookRoutes, { db, now, secret: deps.resendWebhookSecret });

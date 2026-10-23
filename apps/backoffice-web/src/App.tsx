@@ -18,6 +18,9 @@ import { VerifyEmailPage } from './auth/VerifyEmailPage';
 import { InboxPage } from './host/inbox/InboxPage';
 import { PropertiesPage } from './host/PropertiesPage';
 import { NewPropertyPage, PropertyPage } from './host/PropertyPage';
+import { ProvidersPage as HostProvidersPage } from './host/services/ProvidersPage';
+import { NewServicePage, ServicePage } from './host/services/ServicePage';
+import { ServicesPage } from './host/services/ServicesPage';
 import { NotificationsPage } from './host/settings/notifications/NotificationsPage';
 import { NewStayPage } from './host/stays/NewStayPage';
 import { ConfirmProposalPage } from './host/stays/proposed/ConfirmProposalPage';
@@ -123,6 +126,38 @@ export function App() {
           element={
             <Page area="host">
               <StaysPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/services"
+          element={
+            <Page area="host">
+              <ServicesPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/services/new"
+          element={
+            <Page area="host">
+              <NewServicePage />
+            </Page>
+          }
+        />
+        <Route
+          path="/services/providers"
+          element={
+            <Page area="host">
+              <HostProvidersPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/services/:id"
+          element={
+            <Page area="host">
+              <ServicePage />
             </Page>
           }
         />

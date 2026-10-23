@@ -1,5 +1,5 @@
 import { index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { guestLanguage } from './enums';
+import { guestLanguage, providerCardStatus } from './enums';
 
 export const accountRole = pgEnum('account_role', ['host', 'admin']);
 
@@ -13,6 +13,13 @@ export const accounts = pgTable('accounts', {
   suspendedAt: timestamp('suspended_at', { withTimezone: true }),
   /** The back-office language this person reads the setup wizard in (ticket 20). */
   uiLanguage: guestLanguage('ui_language').notNull().default('en'),
+  /**
+   * A host's own Stripe connected account (38), for own services paid online; the host is
+   * merchant of record. Mirrors the `providers` columns.
+   */
+  stripeAccountId: text('stripe_account_id').unique(),
+  stripeCardPayments: providerCardStatus('stripe_card_payments'),
+  stripeCheckedAt: timestamp('stripe_checked_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

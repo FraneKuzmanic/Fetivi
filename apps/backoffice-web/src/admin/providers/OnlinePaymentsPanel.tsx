@@ -2,29 +2,50 @@ import type { ProviderCardStatus } from '@fetivi/domain/payments-vocabulary';
 import { ArrowSquareOut } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { type Provider, providers } from '../../api';
+import type { PaymentsStatus } from '../../api';
 import { CopyButton } from '../../host/stays/StayPage';
 import { useAction } from '../../useAction';
 
 type Status = ProviderCardStatus | 'none';
+type Subject = 'provider' | 'host';
 
-const STATUS: Record<Status, { chip: string; tone: string; text: string }> = {
-  none: { chip: 'Not set up', tone: 'neutral', text: 'Offers paid online need a Stripe account.' },
+const STATUS: Record<Status, { chip: string; tone: string; text: Record<Subject, string> }> = {
+  none: {
+    chip: 'Not set up',
+    tone: 'neutral',
+    text: {
+      provider: 'Offers paid online need a Stripe account.',
+      host: 'Connect your own Stripe account to take card payments. Until then, guests pay you directly.',
+    },
+  },
   pending: {
     chip: 'Onboarding',
     tone: 'wait',
-    text: 'Waiting for the Provider to finish Stripe onboarding.',
+    text: {
+      provider: 'Waiting for the Provider to finish Stripe onboarding.',
+      host: 'Waiting for you to finish Stripe onboarding.',
+    },
   },
-  active: { chip: 'Active', tone: 'ok', text: 'Can take card payments.' },
+  active: {
+    chip: 'Active',
+    tone: 'ok',
+    text: { provider: 'Can take card payments.', host: 'Your services can take card payments.' },
+  },
   restricted: {
     chip: 'Restricted',
     tone: 'fail',
-    text: 'Stripe needs more information from the Provider.',
+    text: {
+      provider: 'Stripe needs more information from the Provider.',
+      host: 'Stripe needs more information from you. Continue onboarding to see what.',
+    },
   },
   unsupported: {
     chip: 'Unsupported',
     tone: 'fail',
-    text: "Stripe can't take card payments for this account.",
+    text: {
+      provider: "Stripe can't take card payments for this account.",
+      host: "Stripe can't take card payments for this account.",
+    },
   },
 };
 
@@ -32,22 +53,29 @@ const when = (iso: string) =>
   new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 
 /**
- * Stripe Connect onboarding for one Provider: the card capability status, a fresh onboarding link
- * to send the Provider (the Provider is the merchant of record) and a Refresh. Returning from
- * Stripe (`?stripe=return|refresh`) refreshes once.
+ * Stripe Connect onboarding for one merchant of record: the card capability status, a fresh
+ * onboarding link and a Refresh. For a Provider the admin copies the link to send on; a host
+ * (38) is sent straight to Stripe. Returning from Stripe (`?stripe=return|refresh`) refreshes once.
  */
-export function OnlinePaymentsPanel({
-  provider,
+export function OnlinePaymentsPanel<T extends PaymentsStatus>({
+  title = 'Online payments',
+  subject,
+  status: current,
+  onLink,
+  onRefresh,
   onChange,
 }: {
-  provider: Provider;
-  onChange: (provider: Provider) => void;
+  title?: string;
+  subject: Subject;
+  status: T;
+  onLink: () => Promise<{ url: string; expiresAt: string }>;
+  onRefresh: () => Promise<T>;
+  onChange: (status: T) => void;
 }) {
   const { busy, error, run } = useAction();
   const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(null);
   const [params, setParams] = useSearchParams();
   const returned = useRef(false);
-  const { id } = provider;
 
   useEffect(() => {
     if (returned.current || !params.get('stripe')) return;
@@ -59,19 +87,20 @@ export function OnlinePaymentsPanel({
       },
       { replace: true },
     );
-    void run(async () => onChange(await providers.stripeRefresh(id)));
-  }, [params, setParams, run, onChange, id]);
+    void run(async () => onChange(await onRefresh()));
+  }, [params, setParams, run, onChange, onRefresh]);
 
-  const status = STATUS[provider.stripeCardPayments ?? 'none'];
+  const status = STATUS[current.stripeCardPayments ?? 'none'];
+  const active = current.stripeCardPayments === 'active';
 
   return (
     <section className="panel" aria-labelledby="online-payments">
-      <h2 id="online-payments">Online payments</h2>
+      <h2 id="online-payments">{title}</h2>
       <p>
-        <span className={`chip ${status.tone}`}>{status.chip}</span> {status.text}
+        <span className={`chip ${status.tone}`}>{status.chip}</span> {status.text[subject]}
       </p>
-      {provider.stripeCheckedAt ? (
-        <small className="muted">Last checked {when(provider.stripeCheckedAt)}</small>
+      {current.stripeCheckedAt ? (
+        <small className="muted">Last checked {when(current.stripeCheckedAt)}</small>
       ) : null}
 
       {link ? (
@@ -96,18 +125,29 @@ export function OnlinePaymentsPanel({
       <div className="actions">
         <button
           type="button"
-          className={provider.stripeCardPayments === 'active' ? undefined : 'primary'}
+          className={active ? undefined : 'primary'}
           disabled={busy}
-          onClick={() => void run(async () => setLink(await providers.stripeOnboardingLink(id)))}
+          onClick={() =>
+            void run(async () => {
+              const fresh = await onLink();
+              // The host fills in their own details, so the link opens in place.
+              if (subject === 'host') window.location.assign(fresh.url);
+              else setLink(fresh);
+            })
+          }
         >
-          Create onboarding link
+          {subject === 'provider'
+            ? 'Create onboarding link'
+            : current.stripeConnected
+              ? 'Continue on Stripe'
+              : 'Set up card payments'}
         </button>
         {/* A created link means the account exists, even before this page reloads. */}
-        {provider.stripeConnected || link ? (
+        {current.stripeConnected || link ? (
           <button
             type="button"
             disabled={busy}
-            onClick={() => void run(async () => onChange(await providers.stripeRefresh(id)))}
+            onClick={() => void run(async () => onChange(await onRefresh()))}
           >
             Refresh status
           </button>

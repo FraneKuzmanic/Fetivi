@@ -240,6 +240,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
           secret: 'booking-test-secret-that-is-long-enough',
           baseUrl: 'http://x.test',
         },
+        webOrigin: 'http://admin.test',
       },
       notify?.data as { orderId: string; proposalId: string; kind: 'provider_confirmed' },
     );

@@ -4,6 +4,7 @@ export * from './events';
 export * from './gateway';
 export * from './jobs';
 export * from './keys';
+export * from './merchant';
 export * from './onboarding';
 export * from './reconcile';
 export * from './vocabulary';

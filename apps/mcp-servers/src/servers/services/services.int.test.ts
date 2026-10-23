@@ -32,6 +32,8 @@ let guest: SeededGuestUnit;
 let neighbour: SeededGuestUnit;
 let outsider: SeededGuestUnit;
 let lonely: SeededGuestUnit;
+/** Outside a destination, with only an unpublished own Offer. */
+let drafted: SeededGuestUnit;
 let ended: SeededGuestUnit;
 let day: string;
 let day2: string;
@@ -155,6 +157,7 @@ beforeAll(async () => {
   neighbour = await seedGuestUnit(db, { now: clock });
   outsider = await seedGuestUnit(db, { now: clock, location: null });
   lonely = await seedGuestUnit(db, { now: clock, location: null });
+  drafted = await seedGuestUnit(db, { now: clock, location: null });
   ended = await seedGuestUnit(db, { now: new Date(clock.getTime() - 40 * 86_400_000) });
   day = plusDays(guest.stay.checkIn, 1);
   day2 = plusDays(guest.stay.checkIn, 2);
@@ -223,6 +226,12 @@ beforeAll(async () => {
     })
   ).offerId;
   for (const id of Object.values(offer)) await publishOffer(db, id);
+  // Active but never published: guests can't see it, so it unlocks no write tools (38).
+  await seedOrderableOffer(db, {
+    hostId: drafted.hostId,
+    availabilityMode: 'on_request',
+    title: 'Drafted kayak',
+  });
 });
 
 afterAll(async () => {
@@ -274,13 +283,15 @@ describe('tools/list per situation', () => {
     ]);
   });
 
-  it('outside a destination: six tools with own Offers, else only the order tools', async () => {
+  it('outside a destination: six tools with published own Offers, else only the order tools', async () => {
     expect((await names(outsider)).map((x) => x.name)).toHaveLength(6);
-    expect((await names(lonely)).map((x) => x.name)).toEqual([
-      'list_my_orders',
-      'cancel_order',
-      'respond_to_order_update',
-    ]);
+    for (const g of [lonely, drafted]) {
+      expect((await names(g)).map((x) => x.name)).toEqual([
+        'list_my_orders',
+        'cancel_order',
+        'respond_to_order_update',
+      ]);
+    }
   });
 
   it('after checkout: only list_my_orders, cancel_order and respond_to_order_update', async () => {

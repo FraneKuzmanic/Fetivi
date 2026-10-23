@@ -39,10 +39,12 @@ export async function issueProviderLink(
   return token;
 }
 
-/** The Order a link token opens, with what its page shows; undefined for any unknown token. */
-export async function findOrderByLinkToken(db: Executor, token: string) {
-  if (!PROVIDER_LINK_TOKEN.test(token)) return undefined;
-  const [row] = await db
+/**
+ * The Order with what the Provider's page shows, before its `where`: the link token's (here) or
+ * the host's own Offer's (host-orders.ts, 38) feed the same view.
+ */
+export function providerOrderQuery(db: Executor) {
+  return db
     .select({
       order: orders,
       proposal: orderProposals,
@@ -64,8 +66,15 @@ export async function findOrderByLinkToken(db: Executor, token: string) {
     .leftJoin(destinations, eq(destinations.id, offers.destinationId))
     .innerJoin(stays, eq(stays.id, orders.stayId))
     .innerJoin(units, eq(units.id, stays.unitId))
-    .innerJoin(properties, eq(properties.id, units.propertyId))
-    .where(eq(orders.providerLinkTokenHash, hashToken(token)));
+    .innerJoin(properties, eq(properties.id, units.propertyId));
+}
+
+/** The Order a link token opens, with what its page shows; undefined for any unknown token. */
+export async function findOrderByLinkToken(db: Executor, token: string) {
+  if (!PROVIDER_LINK_TOKEN.test(token)) return undefined;
+  const [row] = await providerOrderQuery(db).where(
+    eq(orders.providerLinkTokenHash, hashToken(token)),
+  );
   return row;
 }
 
@@ -179,7 +188,11 @@ export async function acknowledgeOrder(
  * Can't fulfil: a Provider cancellation of the terms the page showed. The machine cancels the
  * Order, returns the seat, refunds a capture in full and alerts the admin.
  */
-export async function cannotFulfil(deps: OrderDeps, ref: ProposalRef): Promise<TransitionOutcome> {
+export async function cannotFulfil(
+  deps: OrderDeps,
+  ref: ProposalRef,
+  actorId?: string,
+): Promise<TransitionOutcome> {
   const [order] = await deps.db.select().from(orders).where(eq(orders.id, ref.orderId));
   if (!order) throw new OrderRuleError('not-found');
   if (order.currentProposalId !== ref.proposalId) return { outcome: 'stale', order };
@@ -193,21 +206,31 @@ export async function cannotFulfil(deps: OrderDeps, ref: ProposalRef): Promise<T
     { reference: ref.orderId, proposalId: ref.proposalId },
     'provider_link',
     'provider cannot fulfil',
+    actorId,
   );
   if (!result) throw new OrderRuleError('not-found');
   return result;
 }
 
-const LINK = { trigger: 'provider_link' } as const;
+/** The per-order link's answers; a host answering their own Offer's Order passes their account (38). */
+const linkMeta = (actorId?: string) => ({ trigger: 'provider_link' as const, actorId });
 
 /** Accept on the per-order link: confirms an on-request Order on the terms the page showed. */
-export function acceptOrder(deps: OrderDeps, ref: ProposalRef): Promise<TransitionOutcome> {
-  return providerAccept(deps, ref, LINK);
+export function acceptOrder(
+  deps: OrderDeps,
+  ref: ProposalRef,
+  actorId?: string,
+): Promise<TransitionOutcome> {
+  return providerAccept(deps, ref, linkMeta(actorId));
 }
 
 /** Decline on the per-order link. */
-export function declineOrder(deps: OrderDeps, ref: ProposalRef): Promise<TransitionOutcome> {
-  return providerDecline(deps, ref, LINK);
+export function declineOrder(
+  deps: OrderDeps,
+  ref: ProposalRef,
+  actorId?: string,
+): Promise<TransitionOutcome> {
+  return providerDecline(deps, ref, linkMeta(actorId));
 }
 
 /** Suggest another time or Accept with price on the per-order link: new terms for the guest. */
@@ -215,6 +238,7 @@ export function proposeOrder(
   deps: OrderDeps,
   ref: ProposalRef,
   terms: ProposedTerms,
+  actorId?: string,
 ): Promise<TransitionOutcome> {
-  return providerPropose(deps, ref, terms, LINK);
+  return providerPropose(deps, ref, terms, linkMeta(actorId));
 }

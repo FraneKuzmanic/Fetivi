@@ -22,7 +22,7 @@ export interface OnboardingRouteDeps {
 const IdParams = z.object({ id: z.uuid() });
 
 /** Turns onboarding and Stripe errors into HTTP errors. */
-async function withPaymentErrors<T>(run: () => Promise<T>): Promise<T> {
+export async function withPaymentErrors<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
   } catch (error) {

@@ -1497,6 +1497,75 @@ button svg,
   }
 }
 
+/* --- Host's own services and Providers (38) ------------------------------------------------- */
+
+.host-provider-row {
+  display: grid;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 14px 16px;
+}
+
+.host-provider-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+@media (min-width: 700px) {
+  .host-provider-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.inbox-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inbox-orders h2,
+.inbox-messages-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.inbox-messages-title {
+  margin-top: 8px;
+}
+
+.order-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+}
+
+.order-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.order-card p {
+  margin: 0;
+}
+
+.order-card-due {
+  font-weight: 500;
+}
+
+.order-card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--gray-200);
+}
+
 /* --- Calendars and proposed Stays (22) ------------------------------------------------------- */
 
 .feed-row {

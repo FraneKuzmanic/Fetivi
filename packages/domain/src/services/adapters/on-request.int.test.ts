@@ -21,7 +21,7 @@ import {
   seedProvider,
   type TestDatabase,
 } from '../../testing';
-import { completeOrder, prepareOrder, ServiceRuleError } from '../pending/create-order';
+import { completeOrder, prepareOrder } from '../pending/create-order';
 
 // On request end to end (36): the guest's tap through `prepareOrder`/`completeOrder`, the
 // Provider's window and its alert, and the pay-first path of a priced pay-online Offer.
@@ -165,11 +165,10 @@ describe('a pay-direct on-request Order', () => {
     clock = NOW;
   });
 
-  it("refuses a host's on-request Offer in chat", async () => {
-    const offerId = await onRequest({ host: true });
-    await expect(prepareOrder(deps(), ctx(), { offerId, date: DAY, quantity: 1 })).rejects.toEqual(
-      new ServiceRuleError('not-bookable-in-chat'),
-    );
+  it("takes a host's own on-request Offer to the host, with no commission (38)", async () => {
+    const { order } = await book(await onRequest({ host: true }));
+    expect(order).toMatchObject({ status: 'pending_provider', commissionBp: 0 });
+    expect(await notifyKinds(order.id)).toEqual(['provider_request']);
   });
 });
 

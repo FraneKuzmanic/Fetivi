@@ -21,6 +21,7 @@ export type ErrorCode =
   | 'translation-not-failed'
   | 'destination-not-empty'
   | 'provider-has-offers'
+  | 'offer-has-orders'
   | 'offer-has-slots'
   | 'seats-taken'
   | 'unit-not-live'

@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { Executor, Tx } from '../db/client';
-import { allotmentSlots, offers, providers } from '../db/schema/offers';
+import { allotmentSlots, offers } from '../db/schema/offers';
 import {
   inventoryHolds,
   type OrderProposalRow,
@@ -21,6 +21,7 @@ import { lockOfferRow } from '../offers/translation';
 import { OFFER_LIMITS } from '../offers/vocabulary';
 import { enqueuePaymentJob } from '../payments/enqueue';
 import { applicationFee } from '../payments/keys';
+import { merchantOf } from '../payments/merchant';
 import { PAYMENT_LOCALES } from '../payments/vocabulary';
 import { allotmentAdapter, restoreSeats } from '../services/adapters/allotment';
 import { AdapterError } from '../services/adapters/interface';
@@ -543,11 +544,12 @@ async function openAttemptIn(
 ) {
   if (proposal.priceMinor === null) throw new OrderRuleError('invalid-input');
   const [offer] = await tx
-    .select({ title: offers.title, stripeAccountId: providers.stripeAccountId })
+    .select({ title: offers.title })
     .from(offers)
-    .innerJoin(providers, eq(providers.id, offers.providerId))
     .where(eq(offers.id, order.offerId));
-  if (!offer?.stripeAccountId) throw new OrderRuleError('payments-not-ready');
+  // The Provider's account, or the host's for an own service (38).
+  const merchant = await merchantOf(tx, order.offerId);
+  if (!offer || !merchant?.stripeAccountId) throw new OrderRuleError('payments-not-ready');
   const { language } = await stayOfOrder(tx, order);
   const now = deps.now();
   const [attempt] = await tx
@@ -556,7 +558,7 @@ async function openAttemptIn(
       orderId: order.id,
       proposalId: proposal.id,
       proposalVersion: proposal.version,
-      stripeAccountId: offer.stripeAccountId,
+      stripeAccountId: merchant.stripeAccountId,
       amountMinor: proposal.priceMinor,
       currency: proposal.currency,
       applicationFeeMinor: applicationFee(proposal.priceMinor, order.commissionBp),
@@ -599,9 +601,9 @@ export async function createOrder(
     if (!offer) throw new OrderRuleError('not-found');
     if (!offer.active) throw new OrderRuleError('offer-inactive');
     const online = offer.paymentMode === 'online';
-    // Pay-online is a Provider's allotment or on-request Offer: live (37) and host Offers (38)
-    // are not yet.
-    if (online && (offer.availabilityMode === 'live' || !offer.providerId)) {
+    // Pay-online is an allotment or on-request Offer, a Provider's or the host's own (38); live
+    // (37) is not yet.
+    if (online && offer.availabilityMode === 'live') {
       throw new OrderRuleError('payment-mode-unsupported');
     }
     if (offer.availabilityMode === 'allotment' && !input.slotId) {
@@ -610,19 +612,11 @@ export async function createOrder(
     const slot = input.slotId
       ? await assertSlot(tx, input.slotId, offer.id, input.date, stayAndZone.zone)
       : undefined;
-    const [provider] = offer.providerId
-      ? await tx
-          .select({
-            commissionBp: providers.commissionBp,
-            stripeAccountId: providers.stripeAccountId,
-            stripeCardPayments: providers.stripeCardPayments,
-          })
-          .from(providers)
-          .where(eq(providers.id, offer.providerId))
-      : [];
-    const commissionBp = provider?.commissionBp ?? 0;
-    const stripeAccountId = online ? provider?.stripeAccountId : null;
-    if (online && (!stripeAccountId || provider?.stripeCardPayments !== 'active')) {
+    // A host's own Offer has no Fetivi commission (38).
+    const merchant = await merchantOf(tx, offer.id);
+    const commissionBp = merchant?.commissionBp ?? 0;
+    const stripeAccountId = online ? merchant?.stripeAccountId : null;
+    if (online && (!stripeAccountId || merchant?.cardStatus !== 'active')) {
       throw new OrderRuleError('payments-not-ready');
     }
     const priceMinor =

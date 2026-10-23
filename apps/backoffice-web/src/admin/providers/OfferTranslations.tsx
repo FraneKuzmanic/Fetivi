@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { type Offer, type OfferTranslationsView, providers } from '../../api';
+import type { Offer, OfferTranslationsClient, OfferTranslationsView } from '../../api';
 import {
   LANGUAGE_LABELS,
   TRANSLATION_ERROR_LABELS,
@@ -31,9 +31,12 @@ function guestsLine(view: OfferTranslationsView): string | null {
 /** The seven guest languages of an Offer, read-only; the admin corrects by editing the source. */
 export function OfferTranslations({
   offer,
+  client,
   onChanged,
 }: {
   offer: Offer;
+  /** The admin's Offer routes or the host's own-service routes (38). */
+  client: OfferTranslationsClient;
   onChanged: () => Promise<void>;
 }) {
   const { busy, error, run } = useAction();
@@ -42,9 +45,9 @@ export function OfferTranslations({
   const load = useCallback(
     () =>
       run(async () => {
-        setView(await providers.translations(offer.id));
+        setView(await client.translations(offer.id));
       }),
-    [offer.id, run],
+    [offer.id, run, client],
   );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: these are the reload triggers.
@@ -70,7 +73,7 @@ export function OfferTranslations({
             disabled={busy}
             onClick={() =>
               void run(async () => {
-                setView((await providers.retryTranslation(offer.id)).view);
+                setView((await client.retryTranslation(offer.id)).view);
                 await onChanged();
               })
             }

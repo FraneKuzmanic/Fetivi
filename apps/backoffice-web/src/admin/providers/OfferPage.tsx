@@ -660,12 +660,12 @@ export function OfferPage() {
         </Section>
 
         <Section title="Translations">
-          <OfferTranslations offer={offer} onChanged={reload} />
+          <OfferTranslations offer={offer} client={providers} onChanged={reload} />
         </Section>
 
         {offer.availabilityMode === 'allotment' ? (
           <Section title="Allotment slots">
-            <SlotsPanel offerId={offer.id} timezone={offer.timezone} />
+            <SlotsPanel offerId={offer.id} timezone={offer.timezone} client={providers} />
           </Section>
         ) : null}
 

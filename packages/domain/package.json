@@ -23,7 +23,8 @@
     "./alerts-vocabulary": "./src/alerts/vocabulary.ts",
     "./tips-vocabulary": "./src/tips/vocabulary.ts",
     "./fallback-vocabulary": "./src/fallback/vocabulary.ts",
-    "./payments-vocabulary": "./src/payments/vocabulary.ts"
+    "./payments-vocabulary": "./src/payments/vocabulary.ts",
+    "./curation-vocabulary": "./src/curation/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

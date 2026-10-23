@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { catalogRecords } from '../db/schema/catalog';
-import { offers, providers } from '../db/schema/offers';
+import { hostHiddenProviders, offers, providers } from '../db/schema/offers';
 import {
   createTestDatabase,
   publishOffer,
@@ -135,5 +135,37 @@ describe('offerIdsByPlace', () => {
       0,
     );
     expect((await offerIdsByPlace(testDb.db, scope(), [])).size).toBe(0);
+  });
+});
+
+describe('a Provider hidden by the host (38)', () => {
+  it('is gone for this host’s guests in list, get and the place boost, and stays for others', async () => {
+    const db = testDb.db;
+    const hidden = await seedProvider(db);
+    const base = { availabilityMode: 'on_request' as const, orderKind: 'booking' as const };
+    const hiddenOffer = await offer('Hidden boat', {
+      ...base,
+      providerId: hidden.id,
+      destinationId: destA,
+      placeId,
+    });
+    await db.insert(hostHiddenProviders).values({ hostId: guest.hostId, providerId: hidden.id });
+
+    const mine = await listGuestOffers(db, scope());
+    expect(titles(mine)).toEqual(['A boat', 'Own bike']);
+    expect(await getGuestOffer(db, scope(), hiddenOffer)).toBeNull();
+    expect((await offerIdsByPlace(db, scope(), [placeId])).get(placeId)).toEqual([ids['A boat']]);
+
+    const other = scope({ propertyId: otherHost.propertyId });
+    expect(titles(await listGuestOffers(db, other))).toEqual([
+      'A boat',
+      'Hidden boat',
+      'Other host bike',
+    ]);
+    expect((await getGuestOffer(db, other, hiddenOffer))?.id).toBe(hiddenOffer);
+    expect((await offerIdsByPlace(db, other, [placeId])).get(placeId)?.sort()).toEqual(
+      [ids['A boat'] ?? '', hiddenOffer].sort(),
+    );
+    expect(titles(await listGuestOffers(db, scope({ destinationId: null })))).toEqual(['Own bike']);
   });
 });
