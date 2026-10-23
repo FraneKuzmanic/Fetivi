@@ -4,6 +4,7 @@ import {
   INBOX_PART_TYPE,
   type InboxItem,
   inboxItem,
+  MCP_APP_PART_TYPE,
 } from '@fetivi/ui/payloads';
 import { DefaultChatTransport, isToolUIPart, type UIMessage } from 'ai';
 import { api } from '../api';
@@ -57,6 +58,12 @@ export const isComponentPart = (
   part: UIMessage['parts'][number],
 ): part is { type: typeof COMPONENT_PART_TYPE; id?: string; data: unknown } =>
   part.type === COMPONENT_PART_TYPE;
+
+/** An external server's widget (an MCP App), validated again before it renders. */
+export const isMcpAppPart = (
+  part: UIMessage['parts'][number],
+): part is { type: typeof MCP_APP_PART_TYPE; id?: string; data: unknown } =>
+  part.type === MCP_APP_PART_TYPE;
 
 /** An Order confirmation card's part; its id is the paused tool call's id. */
 export const isElicitationPart = (

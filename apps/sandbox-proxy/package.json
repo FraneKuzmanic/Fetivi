@@ -1,0 +1,10 @@
+{
+  "name": "@fetivi/sandbox-proxy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx --watch src/index.ts",
+    "start": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx src/index.ts"
+  }
+}

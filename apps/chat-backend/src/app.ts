@@ -11,7 +11,9 @@ import { tipsUnsubscribeRoutes } from './email/unsubscribe';
 import { guideRoutes } from './guide/routes';
 import { registerErrorHandler } from './http-error';
 import { inboxRoutes } from './inbox/routes';
+import type { Ferryhopper } from './mcp/external/ferryhopper';
 import { createToolCatalog } from './mcp/tools';
+import { mcpAppRoutes } from './mcp-apps/routes';
 import { mediaRoutes } from './media/routes';
 import { orderRoutes } from './orders/routes';
 import { planRoutes } from './plan/routes';
@@ -49,6 +51,8 @@ export interface AppDeps {
     tools?: ToolBinding;
     /** The turn's weather summary; one source per process, shared with V0's get_weather. */
     weather: WeatherSource;
+    /** Ferryhopper, the external ferry server (V1 only); absent when disabled. */
+    ferryhopper?: Ferryhopper;
   };
 }
 
@@ -68,7 +72,12 @@ export function buildApp(deps: AppDeps) {
   // One binding, and so one tool-definition cache, per app.
   const tools =
     deps.chat.tools ??
-    mcpBinding({ tokens: deps.tokens, mcpFetch: deps.chat.mcpFetch, catalog: createToolCatalog() });
+    mcpBinding({
+      tokens: deps.tokens,
+      mcpFetch: deps.chat.mcpFetch,
+      catalog: createToolCatalog(),
+      ...(deps.chat.ferryhopper ? { ferryhopper: deps.chat.ferryhopper } : {}),
+    });
   app.register(orderRoutes, { db, now, tools });
   app.register(planRoutes, { db, now, tools });
   app.register(inboxRoutes, { db, now });
@@ -78,6 +87,7 @@ export function buildApp(deps: AppDeps) {
   app.register(pushRoutes, { db, now, publicKey: deps.push?.publicKey ?? null });
   app.register(guideRoutes, { db, now, tools });
   app.register(mediaRoutes, { db, now, media: deps.media });
+  app.register(mcpAppRoutes, { ferryhopper: deps.chat.ferryhopper ?? null });
   app.register(chatRoutes, {
     db,
     now,

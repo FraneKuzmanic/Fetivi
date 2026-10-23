@@ -48,6 +48,11 @@ const schema = z
       .string()
       .optional()
       .transform((s) => s || undefined),
+    /** Ferryhopper's public MCP server (V1 only); empty disables ferries and their widgets. */
+    FERRYHOPPER_MCP_URL: z
+      .string()
+      .default('https://mcp.ferryhopper.com/mcp')
+      .transform((s) => s || undefined),
   })
   .refine((c) => c.NODE_ENV !== 'production' || Boolean(c.GUEST_TOKEN_PRIVATE_KEY), {
     message: 'GUEST_TOKEN_PRIVATE_KEY is required in production',

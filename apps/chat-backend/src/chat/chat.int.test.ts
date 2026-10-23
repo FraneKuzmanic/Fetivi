@@ -23,6 +23,9 @@ import { MockLanguageModelV4 } from 'ai/test';
 import { eq } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import { afterAll, describe, expect, it } from 'vitest';
+import { createFerryhopper } from '../mcp/external/ferryhopper';
+import { FERRYHOPPER_PINNED_TOOLS } from '../mcp/external/pin';
+import { recordedFerryhopperFetch } from '../mcp/external/testing';
 import {
   type ChatTestApp,
   createChatTestApp,
@@ -722,5 +725,83 @@ describe.each(['mcp', 'inprocess'] as const)('Property info card (%s)', (transpo
       fields: [{ key: 'wifiNetwork', action: 'copy' }],
     });
     expect(JSON.stringify(card)).not.toContain(seed.secrets.wifiPassword);
+  });
+});
+
+describe('Ferryhopper in the turn', () => {
+  const PICKER = 'ui://widgets/ferry-trips-picker.html';
+  const SEARCH = {
+    legs: [
+      { departureLocation: 'Split', arrivalLocation: 'Stari Grad', departureDate: '2026-11-02' },
+    ],
+  };
+  const quiet = { info: () => {}, warn: () => {} };
+
+  async function setupFerry(model: MockLanguageModelV4, fetch = recordedFerryhopperFetch()) {
+    const ferryhopper = createFerryhopper({ url: 'https://mcp.test/mcp', fetch, log: quiet });
+    const t = await createChatTestApp({ model, ferryhopper });
+    apps.push(t);
+    const seed = await seedGuestUnit(t.db, {
+      now: t.clock.now(),
+      checkInInDays: 2,
+      releaseDaysBefore: 1,
+    });
+    const { cookie, space } = await enterSpace(t, seed);
+    return { t, cookie, space, fetch };
+  }
+
+  const toolNames = (model: MockLanguageModelV4) =>
+    (model.doStreamCalls[0]?.tools ?? []).map((tool) => tool.name);
+
+  it('streams and stores the widget part after a Ferryhopper search', async () => {
+    const model = mockModel([
+      callStep('search_ferry_trips', SEARCH),
+      textStep('Ferryhopper shows four sailings.'),
+    ]);
+    const { t, cookie, space } = await setupFerry(model);
+
+    const response = await send(t, cookie, 'Ferry from Split to Hvar on 2 November?');
+    expect(response.statusCode).toBe(200);
+    const names = toolNames(model);
+    for (const name of FERRYHOPPER_PINNED_TOOLS) expect(names).toContain(name);
+    expect(names).not.toContain('search_trips');
+
+    const chunks = readStream(response);
+    const output = chunks.findIndex(
+      (c) => c.type === 'tool-output-available' && c.toolCallId === 'call-search_ferry_trips',
+    );
+    expect(output).toBeGreaterThan(-1);
+    expect(chunks[output + 1]).toMatchObject({
+      type: 'data-mcp-app',
+      id: 'call-search_ferry_trips',
+      data: {
+        server: 'ferryhopper',
+        toolName: 'search_ferry_trips',
+        resourceUri: PICKER,
+        input: SEARCH,
+      },
+    });
+
+    const { rows } = await stored(t, space.space.id);
+    expect(rows.at(-1)?.parts.some((p) => p.type === 'data-mcp-app')).toBe(true);
+    const history = (await get(t.app, '/api/chat', cookie)).json() as {
+      messages: { parts: { type: string; data?: { resourceUri?: string } }[] }[];
+    };
+    const app = history.messages.at(-1)?.parts.find((p) => p.type === 'data-mcp-app');
+    expect(app?.data?.resourceUri).toBe(PICKER);
+  });
+
+  it('runs the turn without ferry tools while Ferryhopper is down', async () => {
+    const model = mockModel([textStep('Hello.')]);
+    const { t, cookie } = await setupFerry(model, recordedFerryhopperFetch({ down: true }));
+
+    const response = await send(t, cookie, 'Hi');
+    expect(response.statusCode).toBe(200);
+    expect(readStream(response).find((c) => c.type === 'text-delta')).toMatchObject({
+      delta: 'Hello.',
+    });
+    const names = toolNames(model);
+    expect(names.length).toBeGreaterThan(0);
+    for (const name of FERRYHOPPER_PINNED_TOOLS) expect(names).not.toContain(name);
   });
 });

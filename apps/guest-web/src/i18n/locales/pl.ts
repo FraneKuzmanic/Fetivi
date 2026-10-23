@@ -335,6 +335,12 @@ export const pl: Messages = {
     planLabel: 'Plan dnia',
     askText: 'Opowiedz mi więcej o „{{title}}” ({{day}}).',
   },
+  mcpApps: {
+    frameTitle: 'Wyniki promów z Ferryhopper',
+    from: 'Z Ferryhopper',
+    unavailable:
+      'Nie udało się tu wczytać wyników z Ferryhopper. Odpowiedź Fetiviego powyżej nadal zawiera szczegóły.',
+  },
   webResults: {
     heading: 'Z internetu',
     notChecked: 'Niesprawdzone przez Fetivi. Zanim wyruszysz, sprawdź na stronie.',

@@ -72,14 +72,17 @@ describe('componentFor', () => {
   });
 });
 
-async function run(chunks: UIMessageChunk[]): Promise<UIMessageChunk[]> {
+async function run(
+  chunks: UIMessageChunk[],
+  appPart?: (toolCallId: string) => unknown,
+): Promise<UIMessageChunk[]> {
   const out: UIMessageChunk[] = [];
   const stream = new ReadableStream<UIMessageChunk>({
     start(controller) {
       for (const c of chunks) controller.enqueue(c);
       controller.close();
     },
-  }).pipeThrough(withComponentParts());
+  }).pipeThrough(withComponentParts(appPart));
   for await (const c of stream) out.push(c);
   return out;
 }
@@ -325,5 +328,47 @@ describe('web results component', () => {
     expect(
       componentFor('web_fallback_search', { results: [{ ...result, url: 'javascript:alert(1)' }] }),
     ).toBeNull();
+  });
+});
+
+describe('MCP App parts', () => {
+  const app = {
+    server: 'ferryhopper',
+    toolName: 'search_ferry_trips',
+    resourceUri: 'ui://widgets/ferry-trips-picker.html',
+    pinHash: 'abc',
+    input: { legs: [] },
+    result: { content: [{ type: 'text', text: 'trips' }], structuredContent: { legs: [] } },
+  };
+  const ferryCall: UIMessageChunk[] = [
+    { type: 'tool-input-available', toolCallId: 'f', toolName: 'search_ferry_trips', input: {} },
+    { type: 'tool-output-available', toolCallId: 'f', output: { legs: [] } },
+  ];
+
+  it('adds the widget part right after a Ferryhopper output', async () => {
+    const out = await run(ferryCall, (id) => (id === 'f' ? app : undefined));
+    expect(out.map((c) => c.type)).toEqual([
+      'tool-input-available',
+      'tool-output-available',
+      'data-mcp-app',
+    ]);
+    expect(out[2]).toMatchObject({ id: 'f', data: app });
+  });
+
+  it('adds none for a plain tool', async () => {
+    const chunks: UIMessageChunk[] = [
+      { type: 'tool-input-available', toolCallId: 'y', toolName: 'get_place', input: {} },
+      { type: 'tool-output-available', toolCallId: 'y', output: { place: {} } },
+    ];
+    expect(await run(chunks, () => undefined)).toEqual(chunks);
+  });
+
+  it('skips an invalid part or a throwing lookup without breaking the stream', async () => {
+    expect(await run(ferryCall, () => ({ ...app, resourceUri: 'https://x' }))).toEqual(ferryCall);
+    expect(
+      await run(ferryCall, () => {
+        throw new Error('boom');
+      }),
+    ).toEqual(ferryCall);
   });
 });

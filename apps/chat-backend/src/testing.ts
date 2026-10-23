@@ -35,6 +35,7 @@ import type { LanguageModel, UIMessageChunk } from 'ai';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { createLocalJWKSet } from 'jose';
 import { type AppDeps, buildApp } from './app';
+import type { Ferryhopper } from './mcp/external/ferryhopper';
 import { loadSigningKey } from './tokens/keys';
 import type { TokenConfig } from './tokens/mint';
 import { inProcessBinding } from './tools/inprocess';
@@ -71,7 +72,7 @@ export interface TestApp {
 
 /** A chat-backend app on its own test database, with a movable clock. */
 export async function createTestApp(
-  options: { trustProxy?: string; queue?: JobQueue } = {},
+  options: { trustProxy?: string; queue?: JobQueue; ferryhopper?: Ferryhopper } = {},
 ): Promise<TestApp> {
   const queue = options.queue ?? noopQueue;
   const testDb = await createTestDatabase();
@@ -98,7 +99,7 @@ export async function createTestApp(
     media: createLocalMediaStore(mediaDir),
     trustProxy: options.trustProxy,
     tokens,
-    chat: NO_CHAT,
+    chat: options.ferryhopper ? { ...NO_CHAT, ferryhopper: options.ferryhopper } : NO_CHAT,
   });
   await app.ready();
   return {
@@ -206,6 +207,8 @@ export async function createChatTestApp(options: {
   pushPublicKey?: string;
   /** The turn's and get_weather's weather; every upstream down by default. */
   weather?: WeatherSource;
+  /** The external ferry server (MCP mode only); none by default. */
+  ferryhopper?: Ferryhopper;
 }): Promise<ChatTestApp> {
   if (options.transport === 'inprocess') return createInProcessChatTestApp(options);
   const weather = options.weather ?? unavailableWeatherSource();
@@ -245,7 +248,12 @@ export async function createChatTestApp(options: {
     queue: options.queue ?? noopQueue,
     media: createLocalMediaStore(mediaDir),
     tokens: { key, issuer: TEST_ISSUER, mcpBaseUrl: TEST_MCP_BASE },
-    chat: { model: options.model, mcpFetch, weather },
+    chat: {
+      model: options.model,
+      mcpFetch,
+      weather,
+      ...(options.ferryhopper ? { ferryhopper: options.ferryhopper } : {}),
+    },
     push: { publicKey: options.pushPublicKey ?? null },
   });
   await app.ready();

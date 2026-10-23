@@ -3,11 +3,17 @@ import type { CallToolResult, Tool } from '@modelcontextprotocol/client';
 import { type JSONSchema7, jsonSchema, type ToolSet, tool } from 'ai';
 import type { TurnTools } from '../tools/registry';
 import type { TurnClients } from './clients';
+import type { FerryhopperListed } from './external/ferryhopper';
+import { FERRYHOPPER } from './external/pin';
 
-export interface ListedTool {
+/** A first-party tool and the server that runs it. */
+export interface FirstPartyListed {
   server: McpServerName;
   tool: Tool;
 }
+
+/** A tool of this turn: first-party, or Ferryhopper's (external, untrusted). */
+export type ListedTool = FirstPartyListed | FerryhopperListed;
 
 export interface ToolCatalog {
   list(clients: TurnClients, server: McpServerName, scopes: string): Promise<Tool[]>;
@@ -37,7 +43,7 @@ export async function listTurnTools(
   catalog: ToolCatalog,
   clients: TurnClients,
   scopesByServer: Record<McpServerName, string>,
-): Promise<ListedTool[]> {
+): Promise<FirstPartyListed[]> {
   const lists = await Promise.all(
     MCP_SERVERS.map((server) => catalog.list(clients, server, scopesByServer[server])),
   );
@@ -47,9 +53,17 @@ export async function listTurnTools(
 /** A tool the server marks for the guest's confirmation: the model pauses on it. */
 export const guestConfirms = (t: Tool) => t._meta?.[GUEST_CONFIRMS_META_KEY] === true;
 
+const isFirstParty = (l: ListedTool): l is FirstPartyListed => l.server !== FERRYHOPPER;
+
 /** The paused tools of this turn by name, each with the server that runs its halves. */
-export function pausedTools(listed: ListedTool[]): Map<string, ListedTool> {
-  return new Map(listed.filter((l) => guestConfirms(l.tool)).map((l) => [l.tool.name, l]));
+export function pausedTools(listed: ListedTool[]): Map<string, FirstPartyListed> {
+  // Only first-party servers ask for the guest's confirmation.
+  return new Map(
+    listed
+      .filter(isFirstParty)
+      .filter((l) => guestConfirms(l.tool))
+      .map((l) => [l.tool.name, l]),
+  );
 }
 
 export const textOf = (content: CallToolResult['content']) =>
@@ -87,9 +101,9 @@ export function toAiTools(
     }
     tools[t.name] = tool({
       ...definition,
-      execute: async (input: unknown) => {
+      execute: async (input: unknown, { toolCallId }) => {
         opts.onCall?.(t.name);
-        return opts.tools.call(l, input);
+        return opts.tools.call(l, input, toolCallId);
       },
     });
   }

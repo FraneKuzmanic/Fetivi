@@ -92,6 +92,10 @@ _Avoid_: notice (a Notice is Fetivi's inbox message)
 A search of allowlisted sites (tourist boards, ferry operators, DHMZ, venues' own sites) through Brave, used when curated search has no answer and as the only local source outside a destination. The query is topic keywords plus a place, never private data. Results are unchecked links with a source chip, never recommendations and never bookable.
 _Avoid_: web search (for the whole feature)
 
+**Ferry widget**:
+Ferryhopper's own sailings card (an MCP App), shown in the Chat in a sandbox on its own origin. Its data is Ferryhopper's and untrusted; booking continues on Ferryhopper's site, and Fetivi earns nothing from it.
+_Avoid_: ferry card (Fetivi has no ferry component of its own), booking widget
+
 **Curation gap**:
 A question the catalog could not answer, recorded as one `fallback_log` row per Web fallback call (topic, place, time, outcome; no guest wording). Admins use them to see what to curate next.
 

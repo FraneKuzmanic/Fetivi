@@ -764,6 +764,27 @@ input {
   align-self: stretch;
 }
 
+/* An external server's widget: its own card, so no frame, border or shadow of ours around it. */
+.fetivi-turn > .mcp-app {
+  align-self: stretch;
+}
+
+.mcp-app-caption {
+  margin: 0 0 0.25rem;
+  color: var(--gray-500);
+  font-size: 0.8125rem;
+}
+
+.mcp-app-frame iframe {
+  display: block;
+}
+
+.mcp-app-unavailable {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 0.9375rem;
+}
+
 .save-error-note {
   color: var(--danger);
   font-size: 0.875rem;

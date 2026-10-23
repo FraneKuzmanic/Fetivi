@@ -30,6 +30,13 @@ describe('chat-backend config: TOOL_TRANSPORT', () => {
   });
 });
 
+describe('chat-backend config: FERRYHOPPER_MCP_URL', () => {
+  it("defaults to Ferryhopper's public server, and empty disables it", () => {
+    expect(loadConfig({}).FERRYHOPPER_MCP_URL).toBe('https://mcp.ferryhopper.com/mcp');
+    expect(loadConfig({ FERRYHOPPER_MCP_URL: '' }).FERRYHOPPER_MCP_URL).toBeUndefined();
+  });
+});
+
 describe('chat-backend config: GUEST_LINK_SECRET', () => {
   it('has a dev default and refuses it in production', () => {
     expect(loadConfig({}).GUEST_LINK_SECRET.length).toBeGreaterThanOrEqual(32);

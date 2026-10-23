@@ -237,6 +237,23 @@ export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('web-results'), payload: webResults }),
 ]);
 
+/**
+ * The UI message part type of an external server's widget (an MCP App); its id is the tool call's
+ * id. Not a component: first-party components are never MCP Apps (architecture §4.3).
+ */
+export const MCP_APP_PART_TYPE = 'data-mcp-app';
+
+/** What the guest app needs to load a widget and hand it the call it shows. */
+export const mcpAppPart = z.object({
+  server: z.literal('ferryhopper'),
+  toolName: z.string(),
+  resourceUri: z.string().startsWith('ui://'),
+  pinHash: z.string(),
+  input: z.record(z.string(), z.unknown()),
+  result: z.object({ content: z.array(z.unknown()) }).passthrough(),
+});
+export type McpAppPart = z.infer<typeof mcpAppPart>;
+
 /** The UI message part type of a confirmation card; its id is the paused tool call's id. */
 export const ELICITATION_PART_TYPE = 'data-elicitation';
 

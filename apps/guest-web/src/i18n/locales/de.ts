@@ -342,6 +342,12 @@ export const de: Messages = {
     planLabel: 'Tagesplan',
     askText: 'Erzählen Sie mir mehr über „{{title}}“ am {{day}}.',
   },
+  mcpApps: {
+    frameTitle: 'Fährverbindungen von Ferryhopper',
+    from: 'Von Ferryhopper',
+    unavailable:
+      'Die Ergebnisse von Ferryhopper konnten hier nicht geladen werden. Fetivis Antwort oben enthält trotzdem die Details.',
+  },
   webResults: {
     heading: 'Aus dem Web',
     notChecked: 'Nicht von Fetivi geprüft. Schauen Sie vor dem Losgehen auf der Seite nach.',

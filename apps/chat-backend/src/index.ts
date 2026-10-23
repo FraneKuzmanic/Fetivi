@@ -11,6 +11,7 @@ import { buildApp } from './app';
 import { createChatModel } from './chat/model';
 import { loadConfig } from './config';
 import { egress, mcpEgress } from './egress';
+import { createFerryhopper } from './mcp/external/ferryhopper';
 import { loadSigningKey } from './tokens/keys';
 import { inProcessBinding } from './tools/inprocess';
 
@@ -32,6 +33,23 @@ const queue = createJobQueue(boss);
 const inProcess = config.TOOL_TRANSPORT === 'inprocess';
 // One weather source per process (the turn's weather note and V0's get_weather), so one cache.
 const weather = createWeatherSource({ fetch: egress.fetch, userAgent: config.WEATHER_USER_AGENT });
+// V1 only: V0 has no MCP client to reach it (architecture §4.5). It logs through the app's
+// logger, which exists before the first turn lists tools.
+const ferryhopper =
+  !inProcess && config.FERRYHOPPER_MCP_URL
+    ? createFerryhopper({
+        url: config.FERRYHOPPER_MCP_URL,
+        fetch: egress.fetch,
+        log: {
+          info: (obj, msg) => {
+            app.log.info(obj, msg);
+          },
+          warn: (obj, msg) => {
+            app.log.warn(obj, msg);
+          },
+        },
+      })
+    : undefined;
 
 const app = buildApp({
   db,
@@ -46,6 +64,7 @@ const app = buildApp({
     model: createChatModel({ apiKey: config.ANTHROPIC_API_KEY, fetch: egress.fetch }),
     mcpFetch: mcpEgress(new URL(config.MCP_PUBLIC_URL)).fetch,
     weather,
+    ...(ferryhopper ? { ferryhopper } : {}),
     ...(inProcess
       ? {
           tools: inProcessBinding({

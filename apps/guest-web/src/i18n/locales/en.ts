@@ -332,6 +332,12 @@ export const en = {
     planLabel: 'Day plan',
     askText: 'Tell me more about "{{title}}" on {{day}}.',
   },
+  mcpApps: {
+    frameTitle: 'Ferry results from Ferryhopper',
+    from: 'From Ferryhopper',
+    unavailable:
+      "Ferryhopper's results couldn't load here. Fetivi's answer above still has the details.",
+  },
   webResults: {
     heading: 'From the web',
     notChecked: 'Not checked by Fetivi. Confirm on the site before you go.',

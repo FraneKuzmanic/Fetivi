@@ -16,6 +16,7 @@ import {
 } from '@fetivi/mcp-servers/tools';
 import type { CallToolResult, Tool } from '@modelcontextprotocol/client';
 import { EXPIRED, NOT_SHOWN, type Outcome, toOutcome } from '../loop/elicitation';
+import { FERRYHOPPER } from '../mcp/external/pin';
 import { type ListedTool, outputOf } from '../mcp/tools';
 import { answerPending } from '../pending/answer';
 import type { ToolBinding, TurnTools } from './registry';
@@ -61,10 +62,13 @@ export function inProcessBinding(deps: ToolDeps): ToolBinding {
         }
       }
 
+      // V0 never lists Ferryhopper (architecture §4.5); the check only narrows the server.
       const specOf = (listed: ListedTool): GuestToolSpec | undefined =>
-        listedTools(listed.server, identities[listed.server]).find(
-          (s) => s.name === listed.tool.name,
-        );
+        listed.server === FERRYHOPPER
+          ? undefined
+          : listedTools(listed.server, identities[listed.server]).find(
+              (s) => s.name === listed.tool.name,
+            );
 
       /**
        * The confirm tool a paused call runs, or why it cannot run here. A tool this caller's
@@ -106,13 +110,16 @@ export function inProcessBinding(deps: ToolDeps): ToolBinding {
         async call(listed, input) {
           const spec = specOf(listed);
           const handler = spec?.handler;
-          if (!spec || !handler) throw new Error(`Tool ${listed.tool.name} not found`);
+          if (!spec || !handler || listed.server === FERRYHOPPER) {
+            throw new Error(`Tool ${listed.tool.name} not found`);
+          }
           const identity = identities[listed.server];
           const result = (await invoke(spec, input, (args) =>
             runGuestTool(identity, spec.config, () => handler(args, identity, deps)),
           )) as CallToolResult;
           return outputOf(result);
         },
+        appPart: () => undefined,
         async firstHalf(call): Promise<Outcome> {
           const tool = confirmable(call.listed);
           if ('kind' in tool) return tool;

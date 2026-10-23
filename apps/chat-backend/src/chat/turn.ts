@@ -29,7 +29,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { HttpError } from '../http-error';
 import type { GuestAnswer } from '../loop/elicitation';
 import { cancelOpenCalls, createLoop, type LoopResult, openCalls } from '../loop/run';
-import { type ListedTool, pausedTools, toAiTools } from '../mcp/tools';
+import { type FirstPartyListed, pausedTools, toAiTools } from '../mcp/tools';
 import {
   aboutMeNote,
   buildSystemText,
@@ -104,7 +104,7 @@ interface OpenTurn {
   t0: number;
   turnTools: TurnTools;
   tools: ToolSet;
-  paused: Map<string, ListedTool>;
+  paused: Map<string, FirstPartyListed>;
   /** Guest tool calls of this turn, for metrics. */
   calls: string[];
 }

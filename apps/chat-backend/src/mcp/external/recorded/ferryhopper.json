@@ -1,0 +1,1733 @@
+{
+  "recordedAt": "2026-10-23T09:09:15.443Z",
+  "exchanges": [
+    {
+      "match": {
+        "method": "server/discover"
+      },
+      "request": {
+        "httpMethod": "POST",
+        "protocolVersion": "2026-07-28",
+        "body": {
+          "jsonrpc": "2.0",
+          "id": "server-discover-probe-1",
+          "method": "server/discover",
+          "params": {
+            "_meta": {
+              "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+              "io.modelcontextprotocol/clientInfo": {
+                "name": "fetivi-chat-backend",
+                "version": "0"
+              },
+              "io.modelcontextprotocol/clientCapabilities": {
+                "extensions": {
+                  "io.modelcontextprotocol/ui": {
+                    "mimeTypes": ["text/html;profile=mcp-app"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "status": 400,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "messages": [
+        {
+          "jsonrpc": "2.0",
+          "error": {
+            "code": -32000,
+            "message": "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)"
+          },
+          "id": null
+        }
+      ]
+    },
+    {
+      "match": {
+        "method": "initialize"
+      },
+      "request": {
+        "httpMethod": "POST",
+        "body": {
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {
+              "extensions": {
+                "io.modelcontextprotocol/ui": {
+                  "mimeTypes": ["text/html;profile=mcp-app"]
+                }
+              }
+            },
+            "clientInfo": {
+              "name": "fetivi-chat-backend",
+              "version": "0"
+            }
+          },
+          "jsonrpc": "2.0",
+          "id": 0
+        }
+      },
+      "status": 200,
+      "headers": {
+        "content-type": "text/event-stream"
+      },
+      "messages": [
+        {
+          "result": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {
+              "tools": {
+                "listChanged": true
+              },
+              "resources": {
+                "listChanged": true
+              }
+            },
+            "serverInfo": {
+              "name": "FerryhopperMCP",
+              "description": "An MCP Server for searching ferry trips and creating bookings.",
+              "version": "1.0.0"
+            }
+          },
+          "jsonrpc": "2.0",
+          "id": 0
+        }
+      ]
+    },
+    {
+      "match": {
+        "method": "notifications/initialized"
+      },
+      "request": {
+        "httpMethod": "POST",
+        "protocolVersion": "2025-11-25",
+        "body": {
+          "jsonrpc": "2.0",
+          "method": "notifications/initialized"
+        }
+      },
+      "status": 202,
+      "headers": {
+        "content-type": "text/plain; charset=UTF-8"
+      },
+      "body": ""
+    },
+    {
+      "match": {
+        "method": "GET"
+      },
+      "request": {
+        "httpMethod": "GET",
+        "protocolVersion": "2025-11-25"
+      },
+      "status": 405,
+      "headers": {},
+      "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Method not allowed.\"},\"id\":null}"
+    },
+    {
+      "match": {
+        "method": "tools/list"
+      },
+      "request": {
+        "httpMethod": "POST",
+        "protocolVersion": "2025-11-25",
+        "body": {
+          "method": "tools/list",
+          "jsonrpc": "2.0",
+          "id": 1
+        }
+      },
+      "status": 200,
+      "headers": {
+        "content-type": "text/event-stream"
+      },
+      "messages": [
+        {
+          "result": {
+            "tools": [
+              {
+                "name": "get_ports",
+                "title": "Get Ports",
+                "description": "Find ferry ports, harbors, maritime terminals, port IDs, codes, and geographic locations.",
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "annotations": {
+                  "readOnlyHint": true,
+                  "openWorldHint": false,
+                  "destructiveHint": false
+                },
+                "execution": {
+                  "taskSupport": "forbidden"
+                },
+                "outputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "ports": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "countryName": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "The unique code of the port"
+                          }
+                        },
+                        "required": ["name", "countryName", "code"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["ports"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+              },
+              {
+                "name": "get_disruptions",
+                "title": "Get Disruptions",
+                "description": "Find all ferry travel disruptions, including delays, weather alerts, and strikes for a given date and country.",
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "tripDate": {
+                      "type": "string",
+                      "description": "Departure date in ISO format YYYY-MM-DD (e.g. 2026-03-15)."
+                    },
+                    "country": {
+                      "type": "string",
+                      "description": "ISO 3166-1 alpha-2 country code to filter disruptions by country (e.g. \"GR\" for Greece)."
+                    }
+                  },
+                  "required": ["tripDate", "country"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                },
+                "annotations": {
+                  "readOnlyHint": true,
+                  "openWorldHint": false,
+                  "destructiveHint": false
+                },
+                "execution": {
+                  "taskSupport": "forbidden"
+                },
+                "_meta": {
+                  "ui": {
+                    "resourceUri": "ui://widgets/disruptions.html"
+                  }
+                },
+                "outputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "disruptions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "description": "Category of the disruption (e.g. \"strike\", \"weather\", \"port_closure\")."
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "Short human-readable title of the disruption."
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "Full description of the disruption and its impact on ferry services."
+                          },
+                          "countries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The countries affected by this disruption."
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "PORT_MODIFICATION",
+                              "TIME_MODIFICATION",
+                              "VESSEL_CHANGE",
+                              "STRIKE",
+                              "WEATHER",
+                              "COMMUNICATION",
+                              "TECHNICAL_ISSUE",
+                              "TRIP_CANCELLATION"
+                            ],
+                            "description": "The type of disruption"
+                          },
+                          "updatedAt": {
+                            "type": ["string", "null"],
+                            "description": "ISO 8601 timestamp of the last update to this disruption record, or null if unknown."
+                          }
+                        },
+                        "required": ["type", "title", "content", "countries", "reason"],
+                        "additionalProperties": false
+                      },
+                      "description": "List of active disruptions matching the requested date and country."
+                    }
+                  },
+                  "required": ["disruptions"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+              },
+              {
+                "name": "get_direct_connections_for_ports",
+                "title": "Get Direct Connections",
+                "description": "Find all direct ferry routes and reachable destination ports from a given origin port without layovers or transfers.",
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "portLocation": {
+                      "type": "string",
+                      "description": "Location name or search term used to find matching ports (not limited to exact port codes)."
+                    }
+                  },
+                  "required": ["portLocation"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                },
+                "annotations": {
+                  "readOnlyHint": true,
+                  "openWorldHint": false,
+                  "destructiveHint": false
+                },
+                "execution": {
+                  "taskSupport": "forbidden"
+                },
+                "outputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "departurePort": {
+                      "type": "string",
+                      "description": "The name of the departure port"
+                    },
+                    "connectedDestinations": {
+                      "type": "object",
+                      "properties": {
+                        "ports": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "countryName": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string",
+                                "description": "The unique code of the port"
+                              }
+                            },
+                            "required": ["name", "countryName", "code"],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": ["ports"],
+                      "additionalProperties": false,
+                      "description": "List of ports directly connected to the departure port"
+                    }
+                  },
+                  "required": ["departurePort", "connectedDestinations"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+              },
+              {
+                "name": "search_trips",
+                "title": "Search Trips (Deprecated)",
+                "description": "Deprecated: prefer search_ferry_trips, which covers this tool plus round-trip and multi-leg search and per-segment availability flags. Get a list of available one-way ferry trips between two ports on a specific date.",
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "departureLocation": {
+                      "type": "string",
+                      "description": "Departure location as a human-readable name or search term (e.g. city, port name), not a port code."
+                    },
+                    "arrivalLocation": {
+                      "type": "string",
+                      "description": "Arrival location as a human-readable name or search term (e.g. city, port name), not a port code."
+                    },
+                    "date": {
+                      "type": "string",
+                      "description": "Departure date in ISO format YYYY-MM-DD (e.g. 2026-03-15)."
+                    }
+                  },
+                  "required": ["departureLocation", "arrivalLocation", "date"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                },
+                "annotations": {
+                  "readOnlyHint": true,
+                  "openWorldHint": true,
+                  "destructiveHint": false
+                },
+                "execution": {
+                  "taskSupport": "forbidden"
+                },
+                "_meta": {
+                  "ui": {
+                    "resourceUri": "ui://widgets/trips-carousel.html"
+                  }
+                },
+                "outputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "foundDirectItinerariesForTrip": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "segments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "vehicleIsMandatory": {
+                                  "type": "boolean"
+                                },
+                                "departurePort": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["name"],
+                                  "additionalProperties": false
+                                },
+                                "arrivalPort": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["name"],
+                                  "additionalProperties": false
+                                },
+                                "departureDateTime": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "description": "Date time is in local time of port. Date time format is 2023-11-29T11:25:00+02:00, including the difference with UTC time"
+                                },
+                                "arrivalDateTime": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "description": "Date time is in local time of port. Date time format is 2023-11-29T11:25:00+02:00, including the difference with UTC time"
+                                },
+                                "ownerCompany": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["name"],
+                                  "additionalProperties": false,
+                                  "description": "This is the original owner of the vessel."
+                                },
+                                "vessel": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["name"],
+                                  "additionalProperties": false
+                                },
+                                "marketingCompany": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "iconURL": {
+                                          "type": "string",
+                                          "format": "uri"
+                                        }
+                                      },
+                                      "required": ["name", "iconURL"],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Marketing company is the one managing this trip segment. This company and its logo should be used in UI and client side information and displays."
+                                },
+                                "accommodations": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string"
+                                      },
+                                      "expectedPrice": {
+                                        "type": "object",
+                                        "properties": {
+                                          "totalPriceInCents": {
+                                            "type": "number"
+                                          }
+                                        },
+                                        "required": ["totalPriceInCents"],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "required": ["type", "expectedPrice"],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "Each segment has a list of available accommodations. The accommodation selection will be common for all passengers."
+                                }
+                              },
+                              "required": [
+                                "vehicleIsMandatory",
+                                "departurePort",
+                                "arrivalPort",
+                                "departureDateTime",
+                                "arrivalDateTime",
+                                "ownerCompany",
+                                "vessel",
+                                "marketingCompany",
+                                "accommodations"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "hasVehicles": {
+                            "type": "boolean",
+                            "description": "Whether vehicle options are available for this trip."
+                          },
+                          "hasPets": {
+                            "type": "boolean",
+                            "description": "Whether pets are allowed on this trip. True if petPolicy.type is NOTICKET or TICKET."
+                          },
+                          "hasETicket": {
+                            "type": "boolean",
+                            "description": "Whether e-ticket/mobile boarding is available for this trip."
+                          },
+                          "deepLink": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "A redirection URL to the search results page for the user to proceed to the booking flow"
+                          }
+                        },
+                        "required": [
+                          "segments",
+                          "hasVehicles",
+                          "hasPets",
+                          "hasETicket",
+                          "deepLink"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["foundDirectItinerariesForTrip"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+              },
+              {
+                "name": "search_ferry_trips",
+                "title": "Search Ferry Trips",
+                "description": "Search ferry trips as an ordered chain of 1 to 5 legs. Takes human-readable location names (e.g. city or port name) for each leg, not port codes — no need to call get_ports first. Availability flags (cabin, vehicles, pets, e-ticket) are reported per segment.\n\n- One leg: a plain one-way search.\n- Two legs where leg 2 reverses leg 1 (e.g. leg 1 Piraeus→Mykonos, leg 2 Mykonos→Piraeus): a round trip.\n- Up to 5 legs otherwise (e.g. A to B, then B to C, then C to D): an island-hopping chain.\n\nLegs after the first must depart from the location the previous leg arrived at, and must be in chronological order (a later leg may share the same date as an earlier one, but may not precede it).\n\nThe response returns each leg's available options independently (legs[].options) — options are never filtered against another leg's options. Consecutive legs must leave enough time between one leg's arrival and the next leg's departure to be a valid connection; this is not pre-filtered server-side or reflected in this output, so do not assume every combination of options across legs is a valid connection — the widget the user interacts with enforces this.",
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "legs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "departureLocation": {
+                            "type": "string",
+                            "description": "Departure location as a human-readable name or search term (e.g. city, port name), not a port code."
+                          },
+                          "arrivalLocation": {
+                            "type": "string",
+                            "description": "Arrival location as a human-readable name or search term (e.g. city, port name), not a port code."
+                          },
+                          "departureDate": {
+                            "type": "string",
+                            "format": "date",
+                            "description": "Departure date for this leg in ISO format YYYY-MM-DD (e.g. 2026-06-21)."
+                          }
+                        },
+                        "required": ["departureLocation", "arrivalLocation", "departureDate"],
+                        "additionalProperties": false
+                      },
+                      "minItems": 1,
+                      "maxItems": 5,
+                      "description": "An ordered chain of sailing legs. A one-way search is a single leg. A round trip is 2 legs where leg 2 reverses leg 1 (e.g. leg 1 Piraeus→Mykonos, leg 2 Mykonos→Piraeus). An island-hopping chain is up to 5 legs, e.g. A→B, then B→C, then C→D. Each leg after the first must depart from the location the previous leg arrived at."
+                    }
+                  },
+                  "required": ["legs"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                },
+                "annotations": {
+                  "readOnlyHint": true,
+                  "openWorldHint": true,
+                  "destructiveHint": false
+                },
+                "execution": {
+                  "taskSupport": "forbidden"
+                },
+                "_meta": {
+                  "ui": {
+                    "resourceUri": "ui://widgets/ferry-trips-picker.html"
+                  }
+                },
+                "outputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "legs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "departurePort": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["name", "code"],
+                            "additionalProperties": false
+                          },
+                          "arrivalPort": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["name", "code"],
+                            "additionalProperties": false
+                          },
+                          "departureDate": {
+                            "type": "string"
+                          },
+                          "options": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "description": "Stable identifier for this sailing option. Pass it to trip_details for full vessel/accommodation info."
+                                },
+                                "segments": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "vehicleIsMandatory": {
+                                        "type": "boolean"
+                                      },
+                                      "departurePort": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "code": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["name", "code"],
+                                        "additionalProperties": false
+                                      },
+                                      "arrivalPort": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "code": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["name", "code"],
+                                        "additionalProperties": false
+                                      },
+                                      "departureDateTime": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "description": "Date time is in local time of port. Date time format is 2023-11-29T11:25:00+02:00, including the difference with UTC time"
+                                      },
+                                      "arrivalDateTime": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "description": "Date time is in local time of port. Date time format is 2023-11-29T11:25:00+02:00, including the difference with UTC time"
+                                      },
+                                      "ownerCompany": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "code": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["name", "code"],
+                                        "additionalProperties": false,
+                                        "description": "This is the original owner of the vessel."
+                                      },
+                                      "vessel": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "code": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["name", "code"],
+                                        "additionalProperties": false
+                                      },
+                                      "marketingCompany": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "name": {
+                                                "type": "string"
+                                              },
+                                              "iconURL": {
+                                                "type": "string",
+                                                "format": "uri"
+                                              }
+                                            },
+                                            "required": ["name", "iconURL"],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ],
+                                        "description": "Marketing company is the one managing this trip segment. This company and its logo should be used in UI and client side information and displays."
+                                      },
+                                      "accommodations": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "type": "string"
+                                            },
+                                            "expectedPrice": {
+                                              "type": "object",
+                                              "properties": {
+                                                "totalPriceInCents": {
+                                                  "type": "number"
+                                                }
+                                              },
+                                              "required": ["totalPriceInCents"],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "required": ["type", "expectedPrice"],
+                                          "additionalProperties": false
+                                        },
+                                        "description": "Each segment has a list of available accommodations. The accommodation selection will be common for all passengers."
+                                      },
+                                      "hasCabin": {
+                                        "type": "boolean",
+                                        "description": "Whether cabin accommodation is available on this segment."
+                                      },
+                                      "hasVehicles": {
+                                        "type": "boolean",
+                                        "description": "Whether vehicle options are available for this segment."
+                                      },
+                                      "hasPets": {
+                                        "type": "boolean",
+                                        "description": "Whether pets are allowed on this segment. True if petPolicy.type is NOTICKET or TICKET."
+                                      },
+                                      "hasETicket": {
+                                        "type": "boolean",
+                                        "description": "Whether e-ticket/mobile boarding is available for this segment."
+                                      }
+                                    },
+                                    "required": [
+                                      "vehicleIsMandatory",
+                                      "departurePort",
+                                      "arrivalPort",
+                                      "departureDateTime",
+                                      "arrivalDateTime",
+                                      "ownerCompany",
+                                      "vessel",
+                                      "marketingCompany",
+                                      "accommodations",
+                                      "hasCabin",
+                                      "hasVehicles",
+                                      "hasPets",
+                                      "hasETicket"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": ["id", "segments"],
+                              "additionalProperties": false
+                            },
+                            "description": "Every available sailing for this leg on the requested date, independent of every other leg — nothing here is filtered by what was picked (or is even possible) on another leg. The caller picks exactly one option per leg; consecutive picks must still leave enough time between one leg's arrival and the next leg's departure to be a valid connection (enforced client-side; not reflected in this output)."
+                          }
+                        },
+                        "required": ["departurePort", "arrivalPort", "departureDate", "options"],
+                        "additionalProperties": false
+                      },
+                      "description": "One entry per requested leg, in chronological order. For a one-way search this has 1 entry. For a round trip (2 legs where leg 2 reverses leg 1) index 0 is outbound and index 1 is the return. For a longer island-hopping chain there are 2-5 entries, one per leg."
+                    }
+                  },
+                  "required": ["legs"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+              },
+              {
+                "name": "trip_details",
+                "title": "Trip Details",
+                "description": "Get full details for a single sailing leg, looked up by the id of one of the options returned by search_ferry_trips (legs[].options[].id). Returns the trip's departure/arrival time, ports, and operating company, plus the vessel's technical specs, onboard amenities, and photos. Use this to answer questions about a vessel such as: does it have wifi / a restaurant / a snack bar / an open deck / a lift or elevator / wheelchair or disabled access / a designated smoking area? Is it pet-friendly, or does it allow pets on board? Does it have cabins, or a garage / vehicle deck for cars and motorbikes? How many passengers or vehicles does it carry (capacity)? How long is the vessel (length in meters)? What is its IMO number or MMSI (maritime identification numbers used for registry/tracking lookups)? Is this vessel accessible, family-friendly, or suitable for passengers who need mobility assistance? What does the vessel look like (photos)? If no detailed specs exist for the vessel in the source system, vessel.hasDetails is returned as false and every spec/amenity field is null — this means the data is unavailable, not that the vessel lacks that amenity. Also returns the trip's bookable accommodation tiers (seat/cabin classes) with their price and a photo of that accommodation, when available. Throws if the tripId is malformed or the trip is no longer bookable (e.g. it has already departed, was cancelled, or sold out) — re-run search_ferry_trips to get a fresh tripId in that case.",
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "tripId": {
+                      "type": "string",
+                      "description": "The trip identifier for a single sailing leg, as returned in legs[].options[].id by search_ferry_trips. Do not fabricate this value."
+                    }
+                  },
+                  "required": ["tripId"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                },
+                "annotations": {
+                  "readOnlyHint": true,
+                  "openWorldHint": true,
+                  "destructiveHint": false
+                },
+                "execution": {
+                  "taskSupport": "forbidden"
+                },
+                "_meta": {
+                  "ui": {
+                    "resourceUri": "ui://widgets/trip-details.html"
+                  }
+                },
+                "outputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "trip": {
+                      "type": "object",
+                      "properties": {
+                        "origin": {
+                          "type": "string",
+                          "description": "Departure port code."
+                        },
+                        "destination": {
+                          "type": "string",
+                          "description": "Arrival port code."
+                        },
+                        "departure": {
+                          "type": "string",
+                          "description": "Departure date/time, ISO-8601 with UTC offset."
+                        },
+                        "arrival": {
+                          "type": "string",
+                          "description": "Arrival date/time, ISO-8601 with UTC offset."
+                        },
+                        "company": {
+                          "type": "string",
+                          "description": "Name of the operating company for this sailing."
+                        }
+                      },
+                      "required": ["origin", "destination", "departure", "arrival", "company"],
+                      "additionalProperties": false
+                    },
+                    "vessel": {
+                      "type": "object",
+                      "properties": {
+                        "vesselCode": {
+                          "type": "string"
+                        },
+                        "vesselName": {
+                          "type": "string"
+                        },
+                        "hasDetails": {
+                          "type": "boolean",
+                          "description": "Whether detailed specs/amenities exist for this vessel in the source system. If false, every field below is null because no additional data is available — this is not the same as the vessel lacking those amenities."
+                        },
+                        "vesselLength": {
+                          "type": ["number", "null"],
+                          "description": "Overall vessel length in meters, or null if unknown."
+                        },
+                        "passengerCapacity": {
+                          "type": ["number", "null"],
+                          "description": "Maximum number of passengers the vessel can carry, or null if unknown."
+                        },
+                        "vehicleCapacity": {
+                          "type": ["number", "null"],
+                          "description": "Maximum number of vehicles the vessel can carry, or null if unknown."
+                        },
+                        "vesselIMO": {
+                          "type": ["number", "null"],
+                          "description": "IMO number, the permanent international identifier assigned to the ship hull, or null if unknown."
+                        },
+                        "vesselMMSI": {
+                          "type": ["string", "null"],
+                          "description": "Maritime Mobile Service Identity, used for AIS radio/tracking identification, or null if unknown."
+                        },
+                        "hasCabins": {
+                          "type": ["boolean", "null"],
+                          "description": "Whether cabin accommodation is available on board."
+                        },
+                        "hasGarage": {
+                          "type": ["boolean", "null"],
+                          "description": "Whether the vessel has a vehicle garage/deck for cars, motorbikes, etc."
+                        },
+                        "hasPets": {
+                          "type": ["boolean", "null"],
+                          "description": "Whether pets are allowed on board."
+                        },
+                        "hasWifi": {
+                          "type": ["boolean", "null"],
+                          "description": "Whether wifi/internet access is available on board."
+                        },
+                        "hasLift": {
+                          "type": ["boolean", "null"],
+                          "description": "Whether the vessel has an elevator/lift between decks."
+                        },
+                        "hasSmoking": {
+                          "type": ["boolean", "null"],
+                          "description": "Whether the vessel has a designated smoking area."
+                        },
+                        "hasRestaurant": {
+                          "type": ["boolean", "null"],
+                          "description": "Whether the vessel has a restaurant."
+                        },
+                        "hasSnackBar": {
+                          "type": ["boolean", "null"],
+                          "description": "Whether the vessel has a snack bar/cafe."
+                        },
+                        "hasOpenDeck": {
+                          "type": ["boolean", "null"],
+                          "description": "Whether the vessel has an open (outdoor) deck."
+                        },
+                        "hasDisabledAccess": {
+                          "type": ["boolean", "null"],
+                          "description": "Whether the vessel is wheelchair-accessible / accommodates passengers with reduced mobility."
+                        }
+                      },
+                      "required": [
+                        "vesselCode",
+                        "vesselName",
+                        "hasDetails",
+                        "vesselLength",
+                        "passengerCapacity",
+                        "vehicleCapacity",
+                        "vesselIMO",
+                        "vesselMMSI",
+                        "hasCabins",
+                        "hasGarage",
+                        "hasPets",
+                        "hasWifi",
+                        "hasLift",
+                        "hasSmoking",
+                        "hasRestaurant",
+                        "hasSnackBar",
+                        "hasOpenDeck",
+                        "hasDisabledAccess"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "vesselImages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string",
+                            "format": "uri"
+                          },
+                          "caption": {
+                            "type": "string",
+                            "description": "Raw caption identifier as provided by the source system, untranslated."
+                          },
+                          "order": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["url", "caption", "order"],
+                        "additionalProperties": false
+                      },
+                      "description": "Vessel photos ordered for display (e.g. in a carousel). Empty if no photos are available."
+                    },
+                    "accommodations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "description": "Raw accommodation category identifier as provided by the source system, untranslated."
+                          },
+                          "expectedPrice": {
+                            "type": "object",
+                            "properties": {
+                              "totalPriceInCents": {
+                                "type": "number"
+                              }
+                            },
+                            "required": ["totalPriceInCents"],
+                            "additionalProperties": false
+                          },
+                          "imageUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uri"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Photo for this accommodation tier, or null if unavailable."
+                          }
+                        },
+                        "required": ["type", "expectedPrice", "imageUrl"],
+                        "additionalProperties": false
+                      },
+                      "description": "Bookable accommodation tiers for this trip (seat/cabin classes), one entry per fare code as priced by the source system — multiple entries may share the same type/image at different prices (e.g. different berth counts within the same cabin category)."
+                    }
+                  },
+                  "required": ["trip", "vessel", "vesselImages", "accommodations"],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+              }
+            ]
+          },
+          "jsonrpc": "2.0",
+          "id": 1
+        }
+      ]
+    },
+    {
+      "match": {
+        "method": "tools/call",
+        "name": "search_ferry_trips"
+      },
+      "request": {
+        "httpMethod": "POST",
+        "protocolVersion": "2025-11-25",
+        "body": {
+          "method": "tools/call",
+          "params": {
+            "name": "search_ferry_trips",
+            "arguments": {
+              "legs": [
+                {
+                  "departureLocation": "Split",
+                  "arrivalLocation": "Stari Grad",
+                  "departureDate": "2026-11-02"
+                }
+              ]
+            }
+          },
+          "jsonrpc": "2.0",
+          "id": 2
+        }
+      },
+      "status": 200,
+      "headers": {
+        "content-type": "text/event-stream"
+      },
+      "messages": [
+        {
+          "result": {
+            "_meta": {
+              "ferryhopper/widgetConfig": {
+                "baseUrl": "https://www.ferryhopper.com",
+                "affiliateId": "mcpint",
+                "minTurnaroundMinutes": 30
+              }
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Found 4 itineraries across 1 leg(s).",
+                "_meta": {}
+              }
+            ],
+            "structuredContent": {
+              "legs": [
+                {
+                  "departurePort": {
+                    "name": "SPLIT",
+                    "code": "SPA"
+                  },
+                  "arrivalPort": {
+                    "name": "HVAR",
+                    "code": "HVA"
+                  },
+                  "departureDate": "2026-11-02",
+                  "options": [
+                    {
+                      "id": "SPA/HVA/2026-11-02T09:00:00Z/DEF",
+                      "segments": [
+                        {
+                          "vehicleIsMandatory": false,
+                          "departurePort": {
+                            "name": "SPLIT",
+                            "code": "SPA"
+                          },
+                          "arrivalPort": {
+                            "name": "HVAR",
+                            "code": "HVA"
+                          },
+                          "departureDateTime": "2026-11-02T09:00:00Z",
+                          "arrivalDateTime": "2026-11-02T09:55:00Z",
+                          "ownerCompany": {
+                            "name": "KAPETAN LUKA-KRILO",
+                            "code": "KRLU"
+                          },
+                          "marketingCompany": {
+                            "name": "KAPETAN LUKA-KRILO",
+                            "iconURL": "https://images.ferryhopper.com/companies/optimized/KRLU-min.png"
+                          },
+                          "vessel": {
+                            "name": "KAPETAN LUKA",
+                            "code": "DEF"
+                          },
+                          "accommodations": [
+                            {
+                              "type": "SEAT_NOTNUMBERED",
+                              "expectedPrice": {
+                                "totalPriceInCents": 2500
+                              }
+                            }
+                          ],
+                          "hasCabin": false,
+                          "hasVehicles": false,
+                          "hasPets": true,
+                          "hasETicket": true
+                        }
+                      ]
+                    },
+                    {
+                      "id": "SPA/HVA/2026-11-02T13:00:00Z/DEF",
+                      "segments": [
+                        {
+                          "vehicleIsMandatory": false,
+                          "departurePort": {
+                            "name": "SPLIT",
+                            "code": "SPA"
+                          },
+                          "arrivalPort": {
+                            "name": "HVAR",
+                            "code": "HVA"
+                          },
+                          "departureDateTime": "2026-11-02T13:00:00Z",
+                          "arrivalDateTime": "2026-11-02T13:55:00Z",
+                          "ownerCompany": {
+                            "name": "KAPETAN LUKA-KRILO",
+                            "code": "KRLU"
+                          },
+                          "marketingCompany": {
+                            "name": "KAPETAN LUKA-KRILO",
+                            "iconURL": "https://images.ferryhopper.com/companies/optimized/KRLU-min.png"
+                          },
+                          "vessel": {
+                            "name": "KAPETAN LUKA",
+                            "code": "DEF"
+                          },
+                          "accommodations": [
+                            {
+                              "type": "SEAT_NOTNUMBERED",
+                              "expectedPrice": {
+                                "totalPriceInCents": 2500
+                              }
+                            }
+                          ],
+                          "hasCabin": false,
+                          "hasVehicles": false,
+                          "hasPets": true,
+                          "hasETicket": true
+                        }
+                      ]
+                    },
+                    {
+                      "id": "SPA/HVA/2026-11-02T14:00:00Z/9",
+                      "segments": [
+                        {
+                          "vehicleIsMandatory": false,
+                          "departurePort": {
+                            "name": "SPLIT",
+                            "code": "SPA"
+                          },
+                          "arrivalPort": {
+                            "name": "HVAR",
+                            "code": "HVA"
+                          },
+                          "departureDateTime": "2026-11-02T14:00:00Z",
+                          "arrivalDateTime": "2026-11-02T15:00:00Z",
+                          "ownerCompany": {
+                            "name": "TP LINE",
+                            "code": "TPLI"
+                          },
+                          "marketingCompany": {
+                            "name": "TP LINE",
+                            "iconURL": "https://images.ferryhopper.com/companies/optimized/TPLI-min.png"
+                          },
+                          "vessel": {
+                            "name": "KOLOVARE",
+                            "code": "9"
+                          },
+                          "accommodations": [
+                            {
+                              "type": "SEAT_NOTNUMBERED",
+                              "expectedPrice": {
+                                "totalPriceInCents": 640
+                              }
+                            }
+                          ],
+                          "hasCabin": false,
+                          "hasVehicles": false,
+                          "hasPets": true,
+                          "hasETicket": true
+                        }
+                      ]
+                    },
+                    {
+                      "id": "SPA/HVA/2026-11-02T16:00:00Z/7",
+                      "segments": [
+                        {
+                          "vehicleIsMandatory": false,
+                          "departurePort": {
+                            "name": "SPLIT",
+                            "code": "SPA"
+                          },
+                          "arrivalPort": {
+                            "name": "HVAR",
+                            "code": "HVA"
+                          },
+                          "departureDateTime": "2026-11-02T16:00:00Z",
+                          "arrivalDateTime": "2026-11-02T16:55:00Z",
+                          "ownerCompany": {
+                            "name": "TP LINE",
+                            "code": "TPLI"
+                          },
+                          "marketingCompany": {
+                            "name": "TP LINE",
+                            "iconURL": "https://images.ferryhopper.com/companies/optimized/TPLI-min.png"
+                          },
+                          "vessel": {
+                            "name": "PROVERSA",
+                            "code": "7"
+                          },
+                          "accommodations": [
+                            {
+                              "type": "SEAT_NOTNUMBERED",
+                              "expectedPrice": {
+                                "totalPriceInCents": 640
+                              }
+                            }
+                          ],
+                          "hasCabin": false,
+                          "hasVehicles": false,
+                          "hasPets": true,
+                          "hasETicket": true
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "jsonrpc": "2.0",
+          "id": 2
+        }
+      ]
+    },
+    {
+      "match": {
+        "method": "tools/call",
+        "name": "get_ports"
+      },
+      "request": {
+        "httpMethod": "POST",
+        "protocolVersion": "2025-11-25",
+        "body": {
+          "method": "tools/call",
+          "params": {
+            "name": "get_ports",
+            "arguments": {}
+          },
+          "jsonrpc": "2.0",
+          "id": 3
+        }
+      },
+      "status": 200,
+      "headers": {
+        "content-type": "text/event-stream"
+      },
+      "messages": [
+        {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\n  \"ports\": [\n    {\n      \"name\": \"BAŠKA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRBAS\"\n    },\n    {\n      \"name\": \"BOL\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"BOL\"\n    },\n    {\n      \"name\": \"BRAC (ALL PORTS)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"BRAC00\"\n    },\n    {\n      \"name\": \"BRBINJ (DUGI OTOK)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRBRB\"\n    },\n    {\n      \"name\": \"BRSANJ\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRBRS\"\n    },\n    {\n      \"name\": \"CAVTAT\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRCVT\"\n    },\n    {\n      \"name\": \"CRIKVENICA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRCRA\"\n    },\n    {\n      \"name\": \"CROATIA (ALL PORTS)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HR00\"\n    },\n    {\n      \"name\": \"DUBROVNIK\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"DBV\"\n    },\n    {\n      \"name\": \"HVAR (ALL PORTS)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HVA00\"\n    },\n    {\n      \"name\": \"HVAR\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HVA\"\n    },\n    {\n      \"name\": \"VIRA PIER (HVAR)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRVIR\"\n    },\n    {\n      \"name\": \"ILOVIK\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"ILV\"\n    },\n    {\n      \"name\": \"JELSA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRJSA\"\n    },\n    {\n      \"name\": \"KOLOCEP\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRDNC\"\n    },\n    {\n      \"name\": \"KORCULA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"KOR\"\n    },\n    {\n      \"name\": \"KORCULA (ALL PORTS)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"KOR00\"\n    },\n    {\n      \"name\": \"KRALJEVICA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRKRA\"\n    },\n    {\n      \"name\": \"KRK (ALL PORTS)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"KRK00\"\n    },\n    {\n      \"name\": \"LOPAR (RAB)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRPAR\"\n    },\n    {\n      \"name\": \"LOSINJ\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"LSN\"\n    },\n    {\n      \"name\": \"MAKARSKA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRMAK\"\n    },\n    {\n      \"name\": \"MALI IZ\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRMIZ\"\n    },\n    {\n      \"name\": \"MILNA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"MIL\"\n    },\n    {\n      \"name\": \"MLINI\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRMLN\"\n    },\n    {\n      \"name\": \"MLJET (ALL PORTS)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"MLJ00\"\n    },\n    {\n      \"name\": \"MOLAT (ALL PORTS)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"MOL00\"\n    },\n    {\n      \"name\": \"NOVALJA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"NVL\"\n    },\n    {\n      \"name\": \"OLIB\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"OLI\"\n    },\n    {\n      \"name\": \"OREBIC\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRORB\"\n    },\n    {\n      \"name\": \"PLOCE\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRPLE\"\n    },\n    {\n      \"name\": \"POLACE\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRPLA\"\n    },\n    {\n      \"name\": \"POMENA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"PMN\"\n    },\n    {\n      \"name\": \"POREC\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"PRC\"\n    },\n    {\n      \"name\": \"PREMUDA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"PRE\"\n    },\n    {\n      \"name\": \"PRIGRADICA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"PGR\"\n    },\n    {\n      \"name\": \"PULA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"PUY\"\n    },\n    {\n      \"name\": \"RAB\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"RAB\"\n    },\n    {\n      \"name\": \"RAVA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRRAV\"\n    },\n    {\n      \"name\": \"ROGAC\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRRGC\"\n    },\n    {\n      \"name\": \"ROVINJ\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"ROG\"\n    },\n    {\n      \"name\": \"SALI\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRSAL\"\n    },\n    {\n      \"name\": \"SENJ\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRSEN\"\n    },\n    {\n      \"name\": \"SILBA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"SIL\"\n    },\n    {\n      \"name\": \"SIPANSKA LUKA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRSIP\"\n    },\n    {\n      \"name\": \"SOBRA\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRSBR\"\n    },\n    {\n      \"name\": \"SPLIT\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"SPA\"\n    },\n    {\n      \"name\": \"SPLIT AIRPORT\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"SPU\"\n    },\n    {\n      \"name\": \"SUCURAJ\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRSUC\"\n    },\n    {\n      \"name\": \"SUPETAR\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRSUP\"\n    },\n    {\n      \"name\": \"SUSAK\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"SSK\"\n    },\n    {\n      \"name\": \"SUTIVAN\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"SUT\"\n    },\n    {\n      \"name\": \"TOVARNELE\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRTOV\"\n    },\n    {\n      \"name\": \"UBLE\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRUBL\"\n    },\n    {\n      \"name\": \"UMAG\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRUMG\"\n    },\n    {\n      \"name\": \"UNIJE\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"UNJ\"\n    },\n    {\n      \"name\": \"VELA LUKA (KORCULA)\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRVLK\"\n    },\n    {\n      \"name\": \"VELI IZ\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRVIZ\"\n    },\n    {\n      \"name\": \"VIS\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRVIS\"\n    },\n    {\n      \"name\": \"ZADAR\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"ZAD\"\n    },\n    {\n      \"name\": \"ZAGLAV\",\n      \"countryName\": \"Croatia\",\n      \"code\": \"HRZAG\"\n    }\n  ]\n}",
+                "_meta": {}
+              }
+            ],
+            "structuredContent": {
+              "ports": [
+                {
+                  "name": "BAŠKA",
+                  "countryName": "Croatia",
+                  "code": "HRBAS"
+                },
+                {
+                  "name": "BOL",
+                  "countryName": "Croatia",
+                  "code": "BOL"
+                },
+                {
+                  "name": "BRAC (ALL PORTS)",
+                  "countryName": "Croatia",
+                  "code": "BRAC00"
+                },
+                {
+                  "name": "BRBINJ (DUGI OTOK)",
+                  "countryName": "Croatia",
+                  "code": "HRBRB"
+                },
+                {
+                  "name": "BRSANJ",
+                  "countryName": "Croatia",
+                  "code": "HRBRS"
+                },
+                {
+                  "name": "CAVTAT",
+                  "countryName": "Croatia",
+                  "code": "HRCVT"
+                },
+                {
+                  "name": "CRIKVENICA",
+                  "countryName": "Croatia",
+                  "code": "HRCRA"
+                },
+                {
+                  "name": "CROATIA (ALL PORTS)",
+                  "countryName": "Croatia",
+                  "code": "HR00"
+                },
+                {
+                  "name": "DUBROVNIK",
+                  "countryName": "Croatia",
+                  "code": "DBV"
+                },
+                {
+                  "name": "HVAR (ALL PORTS)",
+                  "countryName": "Croatia",
+                  "code": "HVA00"
+                },
+                {
+                  "name": "HVAR",
+                  "countryName": "Croatia",
+                  "code": "HVA"
+                },
+                {
+                  "name": "VIRA PIER (HVAR)",
+                  "countryName": "Croatia",
+                  "code": "HRVIR"
+                },
+                {
+                  "name": "ILOVIK",
+                  "countryName": "Croatia",
+                  "code": "ILV"
+                },
+                {
+                  "name": "JELSA",
+                  "countryName": "Croatia",
+                  "code": "HRJSA"
+                },
+                {
+                  "name": "KOLOCEP",
+                  "countryName": "Croatia",
+                  "code": "HRDNC"
+                },
+                {
+                  "name": "KORCULA",
+                  "countryName": "Croatia",
+                  "code": "KOR"
+                },
+                {
+                  "name": "KORCULA (ALL PORTS)",
+                  "countryName": "Croatia",
+                  "code": "KOR00"
+                },
+                {
+                  "name": "KRALJEVICA",
+                  "countryName": "Croatia",
+                  "code": "HRKRA"
+                },
+                {
+                  "name": "KRK (ALL PORTS)",
+                  "countryName": "Croatia",
+                  "code": "KRK00"
+                },
+                {
+                  "name": "LOPAR (RAB)",
+                  "countryName": "Croatia",
+                  "code": "HRPAR"
+                },
+                {
+                  "name": "LOSINJ",
+                  "countryName": "Croatia",
+                  "code": "LSN"
+                },
+                {
+                  "name": "MAKARSKA",
+                  "countryName": "Croatia",
+                  "code": "HRMAK"
+                },
+                {
+                  "name": "MALI IZ",
+                  "countryName": "Croatia",
+                  "code": "HRMIZ"
+                },
+                {
+                  "name": "MILNA",
+                  "countryName": "Croatia",
+                  "code": "MIL"
+                },
+                {
+                  "name": "MLINI",
+                  "countryName": "Croatia",
+                  "code": "HRMLN"
+                },
+                {
+                  "name": "MLJET (ALL PORTS)",
+                  "countryName": "Croatia",
+                  "code": "MLJ00"
+                },
+                {
+                  "name": "MOLAT (ALL PORTS)",
+                  "countryName": "Croatia",
+                  "code": "MOL00"
+                },
+                {
+                  "name": "NOVALJA",
+                  "countryName": "Croatia",
+                  "code": "NVL"
+                },
+                {
+                  "name": "OLIB",
+                  "countryName": "Croatia",
+                  "code": "OLI"
+                },
+                {
+                  "name": "OREBIC",
+                  "countryName": "Croatia",
+                  "code": "HRORB"
+                },
+                {
+                  "name": "PLOCE",
+                  "countryName": "Croatia",
+                  "code": "HRPLE"
+                },
+                {
+                  "name": "POLACE",
+                  "countryName": "Croatia",
+                  "code": "HRPLA"
+                },
+                {
+                  "name": "POMENA",
+                  "countryName": "Croatia",
+                  "code": "PMN"
+                },
+                {
+                  "name": "POREC",
+                  "countryName": "Croatia",
+                  "code": "PRC"
+                },
+                {
+                  "name": "PREMUDA",
+                  "countryName": "Croatia",
+                  "code": "PRE"
+                },
+                {
+                  "name": "PRIGRADICA",
+                  "countryName": "Croatia",
+                  "code": "PGR"
+                },
+                {
+                  "name": "PULA",
+                  "countryName": "Croatia",
+                  "code": "PUY"
+                },
+                {
+                  "name": "RAB",
+                  "countryName": "Croatia",
+                  "code": "RAB"
+                },
+                {
+                  "name": "RAVA",
+                  "countryName": "Croatia",
+                  "code": "HRRAV"
+                },
+                {
+                  "name": "ROGAC",
+                  "countryName": "Croatia",
+                  "code": "HRRGC"
+                },
+                {
+                  "name": "ROVINJ",
+                  "countryName": "Croatia",
+                  "code": "ROG"
+                },
+                {
+                  "name": "SALI",
+                  "countryName": "Croatia",
+                  "code": "HRSAL"
+                },
+                {
+                  "name": "SENJ",
+                  "countryName": "Croatia",
+                  "code": "HRSEN"
+                },
+                {
+                  "name": "SILBA",
+                  "countryName": "Croatia",
+                  "code": "SIL"
+                },
+                {
+                  "name": "SIPANSKA LUKA",
+                  "countryName": "Croatia",
+                  "code": "HRSIP"
+                },
+                {
+                  "name": "SOBRA",
+                  "countryName": "Croatia",
+                  "code": "HRSBR"
+                },
+                {
+                  "name": "SPLIT",
+                  "countryName": "Croatia",
+                  "code": "SPA"
+                },
+                {
+                  "name": "SPLIT AIRPORT",
+                  "countryName": "Croatia",
+                  "code": "SPU"
+                },
+                {
+                  "name": "SUCURAJ",
+                  "countryName": "Croatia",
+                  "code": "HRSUC"
+                },
+                {
+                  "name": "SUPETAR",
+                  "countryName": "Croatia",
+                  "code": "HRSUP"
+                },
+                {
+                  "name": "SUSAK",
+                  "countryName": "Croatia",
+                  "code": "SSK"
+                },
+                {
+                  "name": "SUTIVAN",
+                  "countryName": "Croatia",
+                  "code": "SUT"
+                },
+                {
+                  "name": "TOVARNELE",
+                  "countryName": "Croatia",
+                  "code": "HRTOV"
+                },
+                {
+                  "name": "UBLE",
+                  "countryName": "Croatia",
+                  "code": "HRUBL"
+                },
+                {
+                  "name": "UMAG",
+                  "countryName": "Croatia",
+                  "code": "HRUMG"
+                },
+                {
+                  "name": "UNIJE",
+                  "countryName": "Croatia",
+                  "code": "UNJ"
+                },
+                {
+                  "name": "VELA LUKA (KORCULA)",
+                  "countryName": "Croatia",
+                  "code": "HRVLK"
+                },
+                {
+                  "name": "VELI IZ",
+                  "countryName": "Croatia",
+                  "code": "HRVIZ"
+                },
+                {
+                  "name": "VIS",
+                  "countryName": "Croatia",
+                  "code": "HRVIS"
+                },
+                {
+                  "name": "ZADAR",
+                  "countryName": "Croatia",
+                  "code": "ZAD"
+                },
+                {
+                  "name": "ZAGLAV",
+                  "countryName": "Croatia",
+                  "code": "HRZAG"
+                }
+              ]
+            }
+          },
+          "jsonrpc": "2.0",
+          "id": 3
+        }
+      ]
+    },
+    {
+      "match": {
+        "method": "tools/call",
+        "name": "get_disruptions"
+      },
+      "request": {
+        "httpMethod": "POST",
+        "protocolVersion": "2025-11-25",
+        "body": {
+          "method": "tools/call",
+          "params": {
+            "name": "get_disruptions",
+            "arguments": {
+              "tripDate": "2026-11-02",
+              "country": "HR"
+            }
+          },
+          "jsonrpc": "2.0",
+          "id": 4
+        }
+      },
+      "status": 200,
+      "headers": {
+        "content-type": "text/event-stream"
+      },
+      "messages": [
+        {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\n  \"disruptions\": []\n}",
+                "_meta": {}
+              }
+            ],
+            "structuredContent": {
+              "disruptions": []
+            }
+          },
+          "jsonrpc": "2.0",
+          "id": 4
+        }
+      ]
+    },
+    {
+      "match": {
+        "method": "resources/read",
+        "uri": "ui://widgets/ferry-trips-picker.html"
+      },
+      "request": {
+        "httpMethod": "POST",
+        "protocolVersion": "2025-11-25",
+        "body": {
+          "method": "resources/read",
+          "params": {
+            "uri": "ui://widgets/ferry-trips-picker.html"
+          },
+          "jsonrpc": "2.0",
+          "id": 5
+        }
+      },
+      "status": 200,
+      "headers": {
+        "content-type": "text/event-stream"
+      },
+      "messages": [
+        {
+          "result": {
+            "contents": [
+              {
+                "uri": "ui://widgets/ferry-trips-picker.html",
+                "mimeType": "text/html;profile=mcp-app",
+                "text": "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>Ferryhopper stand-in</title></head>\n<body style=\"margin:0;font:14px sans-serif\">\n<p>Recorded stand-in for ui://widgets/ferry-trips-picker.html</p>\n<button id=\"open\" type=\"button\">Continue on Ferryhopper</button>\n<script>\nlet id = 0;\nconst send = (m) => window.parent.postMessage({ jsonrpc: '2.0', ...m }, '*');\nconst ask = (method, params) => send({ id: ++id, method, params });\nwindow.addEventListener('message', (e) => {\n  const m = e.data;\n  if (m && m.id === 1 && m.result) {\n    send({ method: 'ui/notifications/initialized', params: {} });\n    send({ method: 'ui/notifications/size-changed', params: { height: 300 } });\n  }\n});\nask('ui/initialize', { protocolVersion: '2026-01-26', appInfo: { name: 'ferryhopper-stand-in', version: '0' }, appCapabilities: {} });\ndocument.getElementById('open').onclick = () => ask('ui/open-link', { url: \"https://www.ferryhopper.com/en/booking/results?utm_source=llm_mcp&aff_uid=mcpint\" });\n</script>\n</body></html>",
+                "_meta": {
+                  "ui": {
+                    "csp": {
+                      "connectDomains": ["https://www.ferryhopper.com"],
+                      "resourceDomains": [
+                        "https://images.ferryhopper.com",
+                        "https://cdn.ferryhopper.com",
+                        "https://cdn1.ferryhopper.com"
+                      ]
+                    },
+                    "domain": "405fbb85ef532af805e3363c472433e3.claudemcpcontent.com"
+                  },
+                  "openai/widgetCSP": {
+                    "connect_domains": ["https://www.ferryhopper.com"],
+                    "resource_domains": [
+                      "https://images.ferryhopper.com",
+                      "https://cdn.ferryhopper.com",
+                      "https://cdn1.ferryhopper.com"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "jsonrpc": "2.0",
+          "id": 5
+        }
+      ]
+    }
+  ]
+}

@@ -333,6 +333,12 @@ export const hr: Messages = {
     planLabel: 'Plan dana',
     askText: 'Recite mi više o „{{title}}” ({{day}}).',
   },
+  mcpApps: {
+    frameTitle: 'Rezultati trajekata s Ferryhoppera',
+    from: 'Izvor: Ferryhopper',
+    unavailable:
+      'Rezultati s Ferryhoppera ovdje se nisu mogli učitati. Fetivijev odgovor iznad i dalje sadrži pojedinosti.',
+  },
   webResults: {
     heading: 'S interneta',
     notChecked: 'Fetivi ovo nije provjerio. Provjerite na stranici prije polaska.',

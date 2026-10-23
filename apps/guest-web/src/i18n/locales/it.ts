@@ -337,6 +337,12 @@ export const it: Messages = {
     planLabel: 'Programma del giorno',
     askText: 'Dimmi di più su «{{title}}» di {{day}}.',
   },
+  mcpApps: {
+    frameTitle: 'Risultati dei traghetti da Ferryhopper',
+    from: 'Da Ferryhopper',
+    unavailable:
+      'Non è stato possibile caricare qui i risultati di Ferryhopper. La risposta di Fetivi qui sopra contiene comunque i dettagli.',
+  },
   webResults: {
     heading: 'Dal web',
     notChecked: 'Non verificato da Fetivi. Controllate sul sito prima di andare.',

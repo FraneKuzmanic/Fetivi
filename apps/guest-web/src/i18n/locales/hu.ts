@@ -336,6 +336,12 @@ export const hu: Messages = {
     planLabel: 'Napi terv',
     askText: 'Mesélj még erről: „{{title}}” ({{day}}).',
   },
+  mcpApps: {
+    frameTitle: 'Kompjáratok a Ferryhoppertől',
+    from: 'A Ferryhoppertől',
+    unavailable:
+      'A Ferryhopper találatai itt nem töltődtek be. Fetivi fenti válaszában így is megvannak a részletek.',
+  },
   webResults: {
     heading: 'Az internetről',
     notChecked: 'A Fetivi ezt nem ellenőrizte. Indulás előtt nézze meg az oldalon.',

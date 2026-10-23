@@ -3,6 +3,8 @@ import {
   type ComponentPart,
   componentPart,
   contactsCard,
+  MCP_APP_PART_TYPE,
+  mcpAppPart,
 } from '@fetivi/ui/payloads';
 import type { UIMessageChunk } from 'ai';
 import { isPresentationTool } from './presentation';
@@ -103,10 +105,13 @@ export function componentFor(toolName: string, value: unknown): ComponentPart | 
 }
 
 /**
- * Adds a `data-component` chunk right after each tool output that maps to a valid component. Never
- * throws: a payload that cannot be shown is skipped and the stream goes on.
+ * Adds a `data-component` chunk right after each tool output that maps to a valid component, and a
+ * `data-mcp-app` chunk after an external tool's output that shows a widget (`appPart` looks up the
+ * call's raw result). Never throws: a payload that cannot be shown is skipped and the stream goes on.
  */
-export function withComponentParts(): TransformStream<UIMessageChunk, UIMessageChunk> {
+export function withComponentParts(
+  appPart: (toolCallId: string) => unknown = () => undefined,
+): TransformStream<UIMessageChunk, UIMessageChunk> {
   const calls = new Map<string, { toolName: string; input: unknown }>();
   return new TransformStream({
     transform(chunk, controller) {
@@ -128,6 +133,15 @@ export function withComponentParts(): TransformStream<UIMessageChunk, UIMessageC
         data = null;
       }
       if (data) controller.enqueue({ type: COMPONENT_PART_TYPE, id: chunk.toolCallId, data });
+      let app: ReturnType<typeof mcpAppPart.safeParse> | null = null;
+      try {
+        app = mcpAppPart.safeParse(appPart(chunk.toolCallId));
+      } catch {
+        app = null;
+      }
+      if (app?.success) {
+        controller.enqueue({ type: MCP_APP_PART_TYPE, id: chunk.toolCallId, data: app.data });
+      }
     },
   });
 }

@@ -22,7 +22,7 @@ import {
 } from '@modelcontextprotocol/client';
 import { z } from 'zod';
 import type { TurnClients } from '../mcp/clients';
-import { type ListedTool, textOf } from '../mcp/tools';
+import { type FirstPartyListed, textOf } from '../mcp/tools';
 
 // The two halves of a guest-confirmed tool (architecture §4.3, spike S1), here over MCP; V0 runs
 // them in process (src/tools/inprocess.ts) with the same outcomes. The backend keeps nothing
@@ -66,7 +66,7 @@ export type Outcome =
 
 export interface PausedCall {
   /** The listed definition and its server. */
-  listed: ListedTool;
+  listed: FirstPartyListed;
   toolCallId: string;
   toolName: string;
   input: unknown;

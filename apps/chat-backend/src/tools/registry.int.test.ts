@@ -31,6 +31,9 @@ import type { FastifyInstance } from 'fastify';
 import { createLocalJWKSet, decodeJwt } from 'jose';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXPIRED, type Outcome, type PausedCall } from '../loop/elicitation';
+import { createFerryhopper } from '../mcp/external/ferryhopper';
+import { FERRYHOPPER_PINNED_TOOLS } from '../mcp/external/pin';
+import { recordedFerryhopperFetch } from '../mcp/external/testing';
 import { createToolCatalog } from '../mcp/tools';
 import { TEST_ISSUER, TEST_MCP_BASE } from '../testing';
 import { loadSigningKey } from '../tokens/keys';
@@ -46,6 +49,7 @@ const CONTACT = { email: 'guest@example.test', name: 'Ana', phone: '+385 91 000'
 let testDb: TestDatabase;
 let mcpApp: FastifyInstance;
 let tokens: TokenConfig;
+let mcpFetch: Egress['fetch'];
 let current = Date.now();
 const clock = { now: () => new Date(current) };
 const bindings = {} as Record<'mcp' | 'inprocess', ToolBinding>;
@@ -64,7 +68,7 @@ beforeAll(async () => {
   await mcpApp.listen({ host: '127.0.0.1', port: 0 });
   const port = (mcpApp.server.address() as AddressInfo).port;
   const egress = createEgress({ allowlist: ['127.0.0.1'], allowInsecureLocalhost: true });
-  const mcpFetch: Egress['fetch'] = (url, init) =>
+  mcpFetch = (url, init) =>
     egress.fetch(String(url).replace(TEST_MCP_BASE, `http://127.0.0.1:${port}`), init);
   bindings.mcp = mcpBinding({ tokens, mcpFetch, catalog: createToolCatalog() });
   bindings.inprocess = inProcessBinding({
@@ -206,6 +210,23 @@ describe('tool definitions', () => {
     // Whole Tool objects, in order: name, title, description, schemas, annotations and _meta.
     expect(inProcess).toEqual(overMcp);
   });
+
+  it('list Ferryhopper only over MCP, after the first-party tools; never in V0', async () => {
+    const ferryhopper = createFerryhopper({
+      url: 'https://mcp.test/mcp',
+      fetch: recordedFerryhopperFetch(),
+      log: { info: () => {}, warn: () => {} },
+    });
+    const binding = mcpBinding({ tokens, mcpFetch, catalog: createToolCatalog(), ferryhopper });
+    const ctx = context({});
+    const withFerries = await binding.open(ctx, new Date());
+    opened.push(withFerries);
+    const listed = await withFerries.list();
+    const names = SITUATIONS[0]?.[2] ?? [];
+    expect(listed.map((l) => l.tool.name)).toEqual([...names, ...FERRYHOPPER_PINNED_TOOLS]);
+    const v0 = await (await open('inprocess', ctx)).list();
+    expect(v0.some((l) => l.server === 'ferryhopper')).toBe(false);
+  });
 });
 
 describe('identity', () => {
@@ -319,7 +340,7 @@ const pausedCall = async (
   toolName = 'create_order',
 ): Promise<PausedCall> => {
   const listed = (await tools.list()).find((l) => l.tool.name === toolName);
-  if (!listed) throw new Error(`${toolName} not listed`);
+  if (!listed || listed.server === 'ferryhopper') throw new Error(`${toolName} not listed`);
   return { listed, toolCallId: id, toolName, input };
 };
 

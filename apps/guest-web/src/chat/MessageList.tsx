@@ -2,12 +2,14 @@ import { componentPart } from '@fetivi/ui/payloads';
 import { type ChatStatus, isToolUIPart, type UIMessage } from 'ai';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { McpAppPart } from '../mcp-apps/McpAppPart';
 import { Mascot } from '../shell/Mascot';
 import {
   type InboxEntry,
   isComponentPart,
   isElicitationPart,
   isGuestAnswer,
+  isMcpAppPart,
   messageText,
 } from './chat-api';
 import { ComponentPart } from './render/ComponentPart';
@@ -20,7 +22,11 @@ const NEAR_BOTTOM_PX = 120;
 const isBusy = (status: ChatStatus) => status === 'submitted' || status === 'streaming';
 
 type Card = { key: string; card: unknown; state: 'open' | 'sending' };
-type Segment = { key: string; text: string } | { key: string; data: unknown } | Card;
+type Segment =
+  | { key: string; text: string }
+  | { key: string; data: unknown }
+  | { key: string; app: unknown }
+  | Card;
 
 const nameOf = (segment: Segment) =>
   'data' in segment ? (segment.data as { name?: unknown } | null)?.name : undefined;
@@ -63,7 +69,7 @@ function cardShownKey(message: UIMessage): 'hostMessage.cardShown' | 'order.card
 
 /**
  * An answer reads as its words first, in one bubble, then any confirmation card, then its
- * components in part order, with follow-up chips last: the model often searches before it
+ * components and external widgets in part order, with follow-up chips last: the model often searches before it
  * writes, and the words introduce the cards.
  */
 function segmentsOf(message: UIMessage, busy: boolean): Segment[] {
@@ -72,6 +78,8 @@ function segmentsOf(message: UIMessage, busy: boolean): Segment[] {
   message.parts.forEach((part, index) => {
     if (isComponentPart(part))
       components.push({ key: part.id ?? `part-${index}`, data: part.data });
+    else if (isMcpAppPart(part))
+      components.push({ key: `app-${part.id ?? index}`, app: part.data });
   });
   // get_plan then update_plan in one answer: the later state is the one to show.
   const lastPlan = components.findLast(isDayPlan);
@@ -229,6 +237,16 @@ export function MessageList({
                   data={segment.card}
                   state={segment.state}
                   onAnswer={onAnswer}
+                />
+              );
+            }
+            if ('app' in segment) {
+              // Brought into view only while the newest answer streams, so history never jumps.
+              return (
+                <McpAppPart
+                  key={segment.key}
+                  data={segment.app}
+                  reveal={i === messages.length - 1 && isBusy(status)}
                 />
               );
             }

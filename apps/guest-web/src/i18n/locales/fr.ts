@@ -341,6 +341,12 @@ export const fr: Messages = {
     planLabel: 'Programme du jour',
     askText: 'Parlez-moi de « {{title}} » le {{day}}.',
   },
+  mcpApps: {
+    frameTitle: 'Traversées en ferry de Ferryhopper',
+    from: 'De Ferryhopper',
+    unavailable:
+      "Les résultats de Ferryhopper n'ont pas pu s'afficher ici. La réponse de Fetivi ci-dessus contient quand même les détails.",
+  },
   webResults: {
     heading: 'Sur le web',
     notChecked: "Non vérifié par Fetivi. Vérifiez sur le site avant d'y aller.",

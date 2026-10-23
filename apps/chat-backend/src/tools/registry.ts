@@ -8,6 +8,7 @@ import {
   UNIT_RESOURCE_URI,
 } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
+import type { McpAppPart } from '@fetivi/ui/payloads';
 import type { CallToolResult } from '@modelcontextprotocol/client';
 import {
   type AnsweredCall,
@@ -17,16 +18,20 @@ import {
   type PausedCall,
 } from '../loop/elicitation';
 import { openTurnClients, type TurnClients } from '../mcp/clients';
+import type { Ferryhopper } from '../mcp/external/ferryhopper';
+import { FERRYHOPPER } from '../mcp/external/pin';
 import { type ListedTool, listTurnTools, outputOf, type ToolCatalog } from '../mcp/tools';
 import { mintServerTokens, type TokenConfig } from '../tokens/mint';
 
 /** One turn's (or one request's) guest tools, whichever transport runs them. */
 export interface TurnTools {
   readonly transport: ToolTransport;
-  /** Every server's tools, in MCP_SERVERS order then each server's own order. */
+  /** Every server's tools, in MCP_SERVERS order then each server's own order; Ferryhopper's last. */
   list(): Promise<ListedTool[]>;
   /** A tool that is not paused; a tool error is thrown as an Error with its text. */
-  call(listed: ListedTool, input: unknown): Promise<unknown>;
+  call(listed: ListedTool, input: unknown, toolCallId?: string): Promise<unknown>;
+  /** The widget a call of this turn shows (an external server's MCP App), if any. */
+  appPart(toolCallId: string): McpAppPart | undefined;
   /** A paused tool's first half. */
   firstHalf(call: PausedCall): Promise<Outcome>;
   /** A paused tool's second half, with the stored requestState. */
@@ -49,6 +54,8 @@ export function mcpBinding(deps: {
   tokens: TokenConfig;
   mcpFetch: Egress['fetch'];
   catalog: ToolCatalog;
+  /** Ferryhopper, shared by every turn; absent when disabled. */
+  ferryhopper?: Ferryhopper;
 }): ToolBinding {
   return {
     transport: 'mcp',
@@ -61,7 +68,7 @@ export function mcpBinding(deps: {
       const scopes = Object.fromEntries(
         MCP_SERVERS.map((s) => [s, scopesFor(s, ctx).join(' ')]),
       ) as Record<McpServerName, string>;
-      return mcpTurnTools(clients, deps.catalog, scopes);
+      return mcpTurnTools(clients, deps.catalog, scopes, deps.ferryhopper);
     },
   };
 }
@@ -71,11 +78,39 @@ export function mcpTurnTools(
   clients: TurnClients,
   catalog: ToolCatalog,
   scopes: Record<McpServerName, string>,
+  ferryhopper?: Ferryhopper,
 ): TurnTools {
+  // Raw results of this turn's Ferryhopper calls that show a widget, by tool call id.
+  const appParts = new Map<string, McpAppPart>();
   return {
     transport: 'mcp',
-    list: () => listTurnTools(catalog, clients, scopes),
-    async call({ server, tool }, input) {
+    async list() {
+      const [firstParty, external] = await Promise.all([
+        listTurnTools(catalog, clients, scopes),
+        ferryhopper?.list() ?? [],
+      ]);
+      return [...firstParty, ...external];
+    },
+    async call({ server, tool }, input, toolCallId) {
+      if (server === FERRYHOPPER) {
+        if (!ferryhopper) throw new Error(`Tool ${tool.name} not found`);
+        const args = (input ?? {}) as Record<string, unknown>;
+        const result = await clients.timed(() => ferryhopper.call(tool.name, args, 'model'));
+        const resourceUri = ferryhopper.widgetUriOf(tool.name);
+        const pinHash = ferryhopper.pinHash;
+        // An error result gets no widget; the model sees the tool error.
+        if (toolCallId && resourceUri && pinHash && !result.isError) {
+          appParts.set(toolCallId, {
+            server,
+            toolName: tool.name,
+            resourceUri,
+            pinHash,
+            input: args,
+            result: result as McpAppPart['result'],
+          });
+        }
+        return outputOf(result);
+      }
       const result = (await clients.timed(async () =>
         (
           await clients.get(server)
@@ -86,6 +121,7 @@ export function mcpTurnTools(
       )) as CallToolResult;
       return outputOf(result);
     },
+    appPart: (toolCallId) => appParts.get(toolCallId),
     firstHalf: (call) => firstHalf({ ...call, clients }),
     answer: (call) => answer({ ...call, clients }),
     async readProjection() {

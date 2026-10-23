@@ -21,7 +21,7 @@ import {
 } from 'ai';
 import type { FastifyBaseLogger } from 'fastify';
 import { CHAT_PROVIDER_OPTIONS, MAX_OUTPUT_TOKENS, MAX_STEPS } from '../chat/model';
-import type { ListedTool } from '../mcp/tools';
+import type { FirstPartyListed } from '../mcp/tools';
 import { componentFor, withComponentParts } from '../stream/parts';
 import { endsWithPresentation, textAfterSilentChips } from '../stream/presentation';
 import type { TurnTools } from '../tools/registry';
@@ -37,7 +37,7 @@ export interface LoopDeps {
   instructions: Instructions;
   tools: ToolSet;
   /** Guest-confirmed tools, each with the server that runs its halves. */
-  paused: Map<string, ListedTool>;
+  paused: Map<string, FirstPartyListed>;
   /** Runs the paused tools' halves, over MCP or in process. */
   turnTools: TurnTools;
   log: FastifyBaseLogger;
@@ -58,7 +58,7 @@ type ToolPart = Extract<UIMessage['parts'][number], { toolCallId: string; input?
 export interface OpenCall {
   part: ToolPart;
   toolName: string;
-  listed: ListedTool;
+  listed: FirstPartyListed;
   requestState: string | null;
 }
 
@@ -84,7 +84,7 @@ async function applyChunks(message: UIMessage, chunks: UIMessageChunk[]): Promis
 }
 
 /** Paused calls of a message still waiting for an answer (state input-available). */
-export function openCalls(message: UIMessage, paused: Map<string, ListedTool>): OpenCall[] {
+export function openCalls(message: UIMessage, paused: Map<string, FirstPartyListed>): OpenCall[] {
   const calls: OpenCall[] = [];
   for (const part of message.parts) {
     if (!isToolUIPart(part) || part.state !== 'input-available') continue;
@@ -192,7 +192,7 @@ export function createLoop(
         outcome = event.outcome;
       },
       onError: () => 'turn-failed',
-    }).pipeThrough(withComponentParts());
+    }).pipeThrough(withComponentParts((id) => deps.turnTools.appPart(id)));
     for await (const chunk of stream) {
       writer.write(chunk);
       chunks.push(chunk);

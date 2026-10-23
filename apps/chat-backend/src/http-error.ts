@@ -21,7 +21,11 @@ export type ErrorCode =
   | 'push-endpoint'
   | 'invalid-token'
   | 'invalid-link'
-  | 'no-email';
+  | 'no-email'
+  | 'widget-not-found'
+  | 'widget-unavailable'
+  | 'tool-blocked'
+  | 'tool-unavailable';
 
 export class HttpError extends Error {
   override name = 'HttpError';

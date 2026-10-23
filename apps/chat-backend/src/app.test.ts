@@ -85,6 +85,7 @@ describe('chat-backend', () => {
       GUEST_LINK_SECRET: 'dev-only-guest-link-secret-change-me-in-production',
       MEDIA_DIR: '../../.data/media',
       WEATHER_USER_AGENT: 'Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)',
+      FERRYHOPPER_MCP_URL: 'https://mcp.ferryhopper.com/mcp',
     });
   });
 

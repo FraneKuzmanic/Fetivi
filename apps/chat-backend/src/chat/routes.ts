@@ -1,5 +1,10 @@
 import { findConversation, loadMessages, type MessagePart } from '@fetivi/domain';
-import { COMPONENT_PART_TYPE, ELICITATION_PART_TYPE, INBOX_PART_TYPE } from '@fetivi/ui/payloads';
+import {
+  COMPONENT_PART_TYPE,
+  ELICITATION_PART_TYPE,
+  INBOX_PART_TYPE,
+  MCP_APP_PART_TYPE,
+} from '@fetivi/ui/payloads';
 import type { FastifyPluginAsync } from 'fastify';
 import { spaceOf } from '../access/plugin';
 import { chatBody } from './schemas';
@@ -10,7 +15,8 @@ const shown = (part: MessagePart) =>
   part.type.startsWith('tool-') ||
   part.type === COMPONENT_PART_TYPE ||
   part.type === ELICITATION_PART_TYPE ||
-  part.type === INBOX_PART_TYPE;
+  part.type === INBOX_PART_TYPE ||
+  part.type === MCP_APP_PART_TYPE;
 
 export const chatRoutes: FastifyPluginAsync<ChatDeps> = async (app, deps) => {
   /** The guest's chat history: their messages, Fetivi's and inbox messages, without system notes. */
