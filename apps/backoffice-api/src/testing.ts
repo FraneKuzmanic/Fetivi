@@ -9,6 +9,7 @@ import {
   ensureQueues,
   type ManualImportModel,
   type ManualModelResult,
+  type PaymentGateway,
 } from '@fetivi/domain';
 import { createTestDatabase, type TestDatabase } from '@fetivi/domain/testing';
 import type { FastifyInstance, FastifyPluginAsync, LightMyRequestResponse } from 'fastify';
@@ -64,6 +65,7 @@ export async function createTestApp(
     manualImportModel?: ManualImportModel;
     resendWebhookSecret?: string;
     vapidPublicKey?: string;
+    stripe?: { gateway: PaymentGateway; webhookSecret?: string };
   } = {},
 ) {
   const testDb = await createTestDatabase();
@@ -93,6 +95,7 @@ export async function createTestApp(
     manualImportModel: options.manualImportModel ?? NOT_CONFIGURED_MODEL,
     resendWebhookSecret: options.resendWebhookSecret,
     vapidPublicKey: options.vapidPublicKey,
+    stripe: options.stripe,
   });
   if (options.extraRoutes) app.register(options.extraRoutes);
   await app.ready();

@@ -22,6 +22,10 @@ const schema = z
     MAIL_FROM: z.string().default(DEV_MAIL_FROM),
     /** Resend's webhook signing secret (whsec_...); without it the bounce webhook is off. */
     RESEND_WEBHOOK_SECRET: optionalString,
+    /** Stripe (sk_test_... in development), for Provider onboarding; without it onboarding is off. */
+    STRIPE_SECRET_KEY: optionalString,
+    /** The Stripe webhook signing secret (whsec_...); without it /webhooks/stripe is off. */
+    STRIPE_WEBHOOK_SECRET: optionalString,
     NODE_ENV: z.string().optional(),
     /** Set behind Caddy (e.g. 'loopback') so login throttling sees the real client address. */
     TRUST_PROXY: z.string().optional(),

@@ -1,4 +1,4 @@
-import { type Db, loadSituation } from '@fetivi/domain';
+import { checkoutFor, type Db, loadSituation } from '@fetivi/domain';
 import { orderSummary } from '@fetivi/ui/payloads';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
@@ -13,6 +13,7 @@ export interface OrderRouteDeps {
 }
 
 const listed = z.object({ orders: z.array(orderSummary) });
+const OrderParams = z.object({ id: z.uuid() });
 
 export const orderRoutes: FastifyPluginAsync<OrderRouteDeps> = async (app, deps) => {
   /**
@@ -38,5 +39,18 @@ export const orderRoutes: FastifyPluginAsync<OrderRouteDeps> = async (app, deps)
     } finally {
       await tools?.close();
     }
+  });
+
+  /**
+   * Pay now: the stored Stripe Checkout URL of a pay-online Order of the space, `preparing` while
+   * the payment job is still opening it, or `closed` once the window has passed. The URL never
+   * reaches the model; the stored chat receipt may be stale, so the server decides. POST, so the
+   * space cookie's Origin rule applies.
+   */
+  app.post('/api/orders/:id/checkout', { config: { access: 'space' } }, async (request) => {
+    const { id } = OrderParams.parse(request.params);
+    const checkout = await checkoutFor(deps.db, spaceOf(request).space.id, id, deps.now());
+    if (!checkout) throw new HttpError(404, 'not-found');
+    return checkout;
   });
 };

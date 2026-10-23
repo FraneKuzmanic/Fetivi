@@ -19,6 +19,18 @@ export {
 } from './fallback';
 export * from './fixtures';
 export {
+  type CaptureCall,
+  type FakeCall,
+  type FakeIntent,
+  type FakeRefund,
+  type FakeSession,
+  type FakeStripeControls,
+  type FakeStripeEvent,
+  type FakeStripeOp,
+  type FakeStripeOptions,
+  fakePaymentGateway,
+} from './stripe';
+export {
   fixedWeatherSource,
   type RecordedWeatherFetchOptions,
   recordedWeatherFetch,

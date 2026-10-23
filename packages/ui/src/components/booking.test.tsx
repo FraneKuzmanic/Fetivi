@@ -96,7 +96,9 @@ const CARD: ConfirmationCardLabels = {
   field: { email: 'Email', name: 'Name', phone: 'Phone' },
   invalid: { email: 'Enter an email.', name: 'Enter a name.', phone: 'Enter a phone number.' },
   note: 'These details go to the provider for this booking only.',
+  noteOnline: 'Next you pay on a secure page; your card is charged only once confirmed.',
   confirm: 'Confirm',
+  confirmOnline: 'Continue to payment',
   cancel: 'Cancel',
   sending: 'Booking…',
 };
@@ -120,6 +122,27 @@ const card = (state: 'open' | 'sending' = 'open', onConfirm = vi.fn(), onCancel 
   );
 
 describe('ConfirmationCard', () => {
+  it('explains paying online and names the next step on the button', () => {
+    mount(
+      <ConfirmationCard
+        draft={{ ...DRAFT, paymentMode: 'online' }}
+        fields={FIELDS}
+        state="open"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        labels={CARD}
+      />,
+    );
+    expect(host.textContent).toContain(CARD.noteOnline);
+    expect(host.querySelector('button[type="submit"]')?.textContent).toBe('Continue to payment');
+  });
+
+  it('keeps the pay-direct copy', () => {
+    card();
+    expect(host.textContent).not.toContain(CARD.noteOnline);
+    expect(host.querySelector('button[type="submit"]')?.textContent).toBe('Confirm');
+  });
+
   it('shows every stored fact and the note', () => {
     card();
     const text = host.textContent ?? '';
@@ -366,6 +389,7 @@ const ORDER: OrderSummaryPayload = {
   currency: 'EUR',
   priceUnit: 'person',
   createdAt: '2026-10-21T10:00:00.000Z',
+  payBy: null,
 };
 
 const RECEIPT: ReceiptLabels = {
@@ -379,6 +403,9 @@ const RECEIPT: ReceiptLabels = {
   price: CARD.price,
   orderStatus: (s) => (s === 'confirmed' ? 'Confirmed' : s),
   paymentStatus: (s, mode) => (s === 'none' && mode === 'direct' ? 'Pay the provider directly' : s),
+  pay: 'Pay now',
+  payBy: (iso) => `Complete payment by ${iso.slice(11, 16)}`,
+  paying: 'Opening the secure payment page…',
 };
 
 describe('ReceiptCard', () => {
@@ -400,5 +427,36 @@ describe('ReceiptCard', () => {
     expect(dots.map((d) => d.getAttribute('aria-hidden'))).toEqual(['true', 'true']);
     // Confirmed is done; paying the provider is still to do, so the markers differ.
     expect(dots.map((d) => d.getAttribute('data-tone'))).toEqual(['good', 'wait']);
+  });
+
+  it('offers Pay now while the checkout is open, and only with a handler', () => {
+    const online = {
+      ...ORDER,
+      status: 'confirming' as const,
+      paymentMode: 'online' as const,
+      payBy: '2026-10-21T10:30:00.000Z',
+    };
+    const onPay = vi.fn();
+    mount(<ReceiptCard order={online} labels={RECEIPT} onPay={onPay} />);
+    const pay = [...host.querySelectorAll('button')].find((b) => b.textContent === 'Pay now');
+    expect(host.textContent).toContain('Complete payment by 10:30');
+    act(() => pay?.click());
+    expect(onPay).toHaveBeenCalledWith(ORDER.id);
+
+    mount(<ReceiptCard order={online} labels={RECEIPT} onPay={onPay} paying />);
+    expect(host.querySelector('button')?.disabled).toBe(true);
+    expect(host.textContent).toContain('Opening the secure payment page…');
+
+    mount(<ReceiptCard order={online} labels={RECEIPT} />);
+    expect(host.querySelector('button')).toBeNull();
+    mount(<ReceiptCard order={{ ...online, payBy: null }} labels={RECEIPT} onPay={onPay} />);
+    expect(host.querySelector('button')).toBeNull();
+  });
+
+  it('shows a notice line', () => {
+    mount(<ReceiptCard order={ORDER} labels={RECEIPT} notice="The payment window has closed." />);
+    expect(host.querySelector('[role="status"]')?.textContent).toBe(
+      'The payment window has closed.',
+    );
   });
 });

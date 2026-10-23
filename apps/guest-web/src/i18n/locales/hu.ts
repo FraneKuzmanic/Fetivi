@@ -319,6 +319,13 @@ export const hu: Messages = {
     paymentRefundPending: 'Visszatérítés folyamatban',
     paymentRefunded: 'Visszatérítve',
     paymentFailed: 'Sikertelen fizetés',
+    pay: 'Fizetés most',
+    payBy: 'Fizess {{time}}-ig',
+    paying: 'Megnyitom a biztonságos fizetési oldalt…',
+    noteOnline:
+      'Ezután a Stripe biztonságos oldalán fizetsz. A kártyádat csak akkor terheljük meg, ha a foglalás visszaigazolást kapott.',
+    confirmOnline: 'Tovább a fizetéshez',
+    checkoutClosed: 'A fizetési idő lejárt. A foglalás állapotát az Utazásom részben látod.',
   },
   trip: {
     plan: 'Terv',
@@ -335,6 +342,8 @@ export const hu: Messages = {
     askShort: 'Kérdezd Fetivit',
     planLabel: 'Napi terv',
     askText: 'Mesélj még erről: „{{title}}” ({{day}}).',
+    checkoutConfirming: 'Köszönöm! Most igazoltatom vissza a foglalásodat a szolgáltatóval…',
+    checkoutLate: 'A fizetés a foglalás lezárása után érkezett, ezért semmit sem terheltünk meg.',
   },
   mcpApps: {
     frameTitle: 'Kompjáratok a Ferryhoppertől',

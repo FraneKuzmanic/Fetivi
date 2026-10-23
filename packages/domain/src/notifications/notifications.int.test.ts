@@ -3,7 +3,7 @@ import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { accounts } from '../db/schema/accounts';
 import { orderNotificationDeliveries } from '../db/schema/notifications';
-import { orders } from '../db/schema/orders';
+import { orderEvents, orders } from '../db/schema/orders';
 import { createJobQueue, ensureQueues, type JobQueue } from '../jobs/queue';
 import { createMemoryMailer, type Mailer } from '../mail';
 import { cancel, createOrder, type OrderDeps } from '../orders/machine';
@@ -175,5 +175,34 @@ describe('the admin alert', () => {
     expect(mailer.sent[0]?.text).not.toContain('Ana Horvat');
     expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('already_sent');
     expect(mailer.sent).toHaveLength(2);
+  });
+
+  it('tells the admins why a payment needs a look, from the latest event note', async () => {
+    const { job } = await confirmedOrder();
+    const EVENT = {
+      trigger: 'payment_job',
+      fromStatus: 'confirmed',
+      toStatus: 'confirmed',
+      toPaymentStatus: 'none',
+      createdAt: NOW,
+    } as const;
+    await testDb.db.insert(orderEvents).values([
+      { ...EVENT, orderId: job.orderId, note: 'older note' },
+      {
+        ...EVENT,
+        orderId: job.orderId,
+        trigger: 'payment_job',
+        note: 'authorization cancelled on a confirmed Order',
+        createdAt: NOW,
+      },
+    ]);
+    const mailer = createMemoryMailer();
+    const alert = { ...job, kind: 'admin_payment_attention' as const };
+    expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('sent');
+    expect(mailer.sent[0]?.subject).toMatch(/^Payment needs a look: /);
+    expect(mailer.sent[0]?.text).toContain(
+      `Order ${job.orderId} (Kayak tour, 4 May 2027) needs a look: authorization cancelled on a confirmed Order.`,
+    );
+    expect(mailer.sent[0]?.text).not.toContain('ana@example.test');
   });
 });

@@ -162,6 +162,11 @@ function stubBackend(chat: () => Response, ...histories: (() => UIMessage[])[]) 
       });
     }
     if (url === '/api/chat' && method === 'POST') return chat();
+    if (url.endsWith('/checkout') && method === 'POST') {
+      return new Response(JSON.stringify({ state: 'closed' }), {
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     if (url === '/api/chat') {
       const messages = (histories.length > 1 ? histories.shift() : histories[0])?.() ?? [];
       return new Response(JSON.stringify({ messages }), {
@@ -327,6 +332,35 @@ describe('booking confirmation in the guest app', () => {
     expect(host.querySelector('.fv-confirm')).not.toBeNull();
     expect(host.querySelector('.fv-choice')?.textContent).toContain('Places left: 10');
     expect(host.querySelector('[role="radio"]')).toBeNull();
+  });
+});
+
+describe('Pay now on a chat receipt', () => {
+  it('asks the server, which says the stored receipt is out of date', async () => {
+    stubBackend(resumeResponse);
+    const online = {
+      ...ORDER,
+      status: 'confirming',
+      paymentMode: 'online',
+      payBy: '2026-10-22T06:30:00.000Z',
+    };
+    const history = answered();
+    const part = history[1]?.parts[2] as { data: { payload: { order: unknown } } };
+    part.data.payload.order = online;
+    await mount(history);
+    const pay = [...host.querySelectorAll('.fv-receipt button')].find(
+      (b) => b.textContent === 'Pay now',
+    );
+    expect(host.querySelector('.fv-receipt')?.textContent).toContain('Complete payment by');
+    await act(async () => (pay as HTMLButtonElement | undefined)?.click());
+    await vi.waitFor(() =>
+      expect(host.querySelector('.fv-receipt')?.textContent).toContain(
+        'This payment window has closed.',
+      ),
+    );
+    expect(
+      calls.some((c) => c.url === `/api/orders/${ORDER.id}/checkout` && c.method === 'POST'),
+    ).toBe(true);
   });
 });
 

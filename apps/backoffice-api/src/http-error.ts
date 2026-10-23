@@ -41,7 +41,11 @@ export type ErrorCode =
   | 'proposal-gone'
   | 'not-possibly-cancelled'
   | 'already-replied'
-  | 'push-endpoint';
+  | 'push-endpoint'
+  | 'no-account'
+  | 'payments-not-configured'
+  | 'stripe-unavailable'
+  | 'stripe-rejected';
 
 export class HttpError extends Error {
   override name = 'HttpError';

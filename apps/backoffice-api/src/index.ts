@@ -4,6 +4,7 @@ import {
   createJobQueue,
   createLocalMediaStore,
   createMailer,
+  createStripeGateway,
   ensureQueues,
 } from '@fetivi/domain';
 import { PgBoss } from 'pg-boss';
@@ -15,6 +16,10 @@ const config = loadConfig();
 if (!config.ANTHROPIC_API_KEY) {
   console.warn('ANTHROPIC_API_KEY is not set: house manual imports will fail as not configured');
 }
+const gateway = config.STRIPE_SECRET_KEY
+  ? createStripeGateway({ apiKey: config.STRIPE_SECRET_KEY, fetch: egress.fetch })
+  : null;
+if (!gateway) console.warn('STRIPE_SECRET_KEY is not set: Provider payment onboarding is off');
 const { db, pool } = createDb(config.DATABASE_URL);
 // Only sends jobs; the jobs process works them.
 const boss = new PgBoss({
@@ -44,6 +49,7 @@ const app = buildApp({
   }),
   resendWebhookSecret: config.RESEND_WEBHOOK_SECRET,
   vapidPublicKey: config.VAPID_PUBLIC_KEY,
+  stripe: gateway ? { gateway, webhookSecret: config.STRIPE_WEBHOOK_SECRET } : undefined,
 });
 
 await app.listen({ host: config.HOST, port: config.PORT });

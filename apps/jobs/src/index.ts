@@ -4,6 +4,7 @@ import {
   createDb,
   createJobQueue,
   createMailer,
+  createStripeGateway,
   createWeatherSource,
   createWebPushSender,
 } from '@fetivi/domain';
@@ -36,6 +37,10 @@ const push =
       })
     : null;
 if (!push) console.warn('VAPID keys are not set: push notifications are skipped');
+const gateway = config.STRIPE_SECRET_KEY
+  ? createStripeGateway({ apiKey: config.STRIPE_SECRET_KEY, fetch: egress.fetch })
+  : null;
+if (!gateway) console.warn('STRIPE_SECRET_KEY is not set: online payments are off');
 const weather = createWeatherSource({ fetch: egress.fetch, userAgent: config.WEATHER_USER_AGENT });
 const boss = await startJobRunner({
   connectionString: config.DATABASE_URL,
@@ -62,6 +67,7 @@ const boss = await startJobRunner({
       fetch: egress.fetch,
       webOrigin: config.WEB_ORIGIN,
       weather,
+      gateway,
       jadrolinija: config.JADROLINIJA_RSS_ENABLED,
       userAgent: config.WEATHER_USER_AGENT,
     }),

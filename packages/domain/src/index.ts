@@ -15,6 +15,7 @@ export * from './metrics';
 export * from './notifications';
 export * from './offers';
 export * from './orders';
+export * from './payments';
 export * from './plan';
 export * from './projection';
 export * from './property';

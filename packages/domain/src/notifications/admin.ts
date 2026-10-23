@@ -1,19 +1,25 @@
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull } from 'drizzle-orm';
 import { accounts } from '../db/schema/accounts';
 import { offers, providers } from '../db/schema/offers';
-import { orderProposals, orders } from '../db/schema/orders';
+import { orderEvents, orderProposals, orders } from '../db/schema/orders';
 import { orderJobKey } from '../orders/timers';
 import { deliverOnce } from './deliveries';
 import { formatCivilDate } from './provider/compose';
 import type { NotifyDeps, SendOutcome } from './provider/send';
 
 /**
- * Emails every admin that a Provider tapped Can't fulfil, in English (the admin UI's language).
- * Order facts only, no guest contact details. One delivery for the whole kind.
+ * Emails every admin about an Order, in English (the admin UI's language): a Provider tapped
+ * Can't fulfil, or a pay-online Order's payment needs a human (the reason is the note of the
+ * latest OrderEvent that has one). Order facts only, no guest contact details. One delivery for
+ * the whole kind.
  */
 export async function sendAdminAlert(
   deps: Pick<NotifyDeps, 'db' | 'mailer' | 'now'>,
-  job: { orderId: string; proposalId: string; kind: 'admin_provider_cancelled' },
+  job: {
+    orderId: string;
+    proposalId: string;
+    kind: 'admin_provider_cancelled' | 'admin_payment_attention';
+  },
 ): Promise<SendOutcome> {
   const admins = await deps.db
     .select({ id: accounts.id, email: accounts.email })
@@ -33,17 +39,38 @@ export async function sendAdminAlert(
     .leftJoin(providers, eq(providers.id, offers.providerId))
     .where(eq(orders.id, job.orderId));
   if (admins.length === 0 || !row) return 'skipped';
-  const subject = `Provider can't fulfil: ${row.offerTitle}, ${formatCivilDate(row.date, 'en')}`;
-  const text = [
-    `${row.providerName ?? 'The Provider'} can't fulfil this order. It is cancelled and the seats are back.`,
-    '',
-    `Offer: ${row.offerTitle}`,
-    `Date: ${formatCivilDate(row.date, 'en')}`,
-    `Quantity: ${row.quantity}`,
-    `Order: ${job.orderId}`,
-    '',
-    'Contact the guest about an alternative.',
-  ].join('\n');
+  const date = formatCivilDate(row.date, 'en');
+  let subject: string;
+  let text: string;
+  if (job.kind === 'admin_payment_attention') {
+    const [flagged] = await deps.db
+      .select({ note: orderEvents.note })
+      .from(orderEvents)
+      .where(and(eq(orderEvents.orderId, job.orderId), isNotNull(orderEvents.note)))
+      .orderBy(desc(orderEvents.id))
+      .limit(1);
+    subject = `Payment needs a look: ${row.offerTitle}, ${date}`;
+    text = [
+      `Order ${job.orderId} (${row.offerTitle}, ${date}) needs a look: ${flagged?.note ?? 'the payment needs attention'}.`,
+      '',
+      `Provider: ${row.providerName ?? 'unknown'}`,
+      `Quantity: ${row.quantity}`,
+      '',
+      "Check it in Stripe, on the Provider's connected account.",
+    ].join('\n');
+  } else {
+    subject = `Provider can't fulfil: ${row.offerTitle}, ${date}`;
+    text = [
+      `${row.providerName ?? 'The Provider'} can't fulfil this order. It is cancelled and the seats are back.`,
+      '',
+      `Offer: ${row.offerTitle}`,
+      `Date: ${date}`,
+      `Quantity: ${row.quantity}`,
+      `Order: ${job.orderId}`,
+      '',
+      'Contact the guest about an alternative.',
+    ].join('\n');
+  }
   const key = orderJobKey(job.orderId, job.proposalId, `notify:${job.kind}`);
   return deliverOnce(deps.db, job, deps.now(), async () => {
     for (const admin of admins) {

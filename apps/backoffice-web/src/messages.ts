@@ -43,6 +43,10 @@ const MESSAGES: Record<string, string> = {
   'too-many-calendars': 'A unit can have up to 6 calendars.',
   'proposal-gone': 'This booking was already handled. Reload the page.',
   'not-possibly-cancelled': 'This Stay is not marked as possibly cancelled.',
+  'no-account': 'Create an onboarding link first: this Provider has no Stripe account yet.',
+  'payments-not-configured': 'Online payments are not set up on this server (no Stripe key).',
+  'stripe-unavailable': 'Stripe did not answer. Please try again in a minute.',
+  'stripe-rejected': 'Stripe refused the request. Check the Provider details and try again.',
 };
 
 export function messageFor(code: string): string {

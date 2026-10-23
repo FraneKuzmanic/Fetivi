@@ -23,6 +23,7 @@ import type {
   PriceUnit,
   ProviderLanguage,
 } from '@fetivi/domain/offer-vocabulary';
+import type { ProviderCardStatus } from '@fetivi/domain/payments-vocabulary';
 import type {
   Amenity,
   Bed,
@@ -864,6 +865,9 @@ export interface Provider {
   commissionBp: number;
   dealNotes: string | null;
   stripeConnected: boolean;
+  /** Stripe's card capability, as last read; null until onboarding starts. */
+  stripeCardPayments: ProviderCardStatus | null;
+  stripeCheckedAt: string | null;
   active: boolean;
   offerCount: number;
   createdAt: string;
@@ -1008,6 +1012,11 @@ export const providers = {
   get: (id: string) => api<Provider>(providerPath(id)),
   update: (id: string, body: Partial<ProviderInput>) => patch<Provider>(providerPath(id), body),
   remove: (id: string) => remove(providerPath(id)),
+  /** A fresh Stripe onboarding link; creates the connected account on the first call. */
+  stripeOnboardingLink: (id: string) =>
+    post<{ url: string; expiresAt: string }>(`${providerPath(id)}/stripe/onboarding-link`),
+  /** Reads the card capability from Stripe and stores it. */
+  stripeRefresh: (id: string) => post<Provider>(`${providerPath(id)}/stripe/refresh`),
   offers: (providerId: string) =>
     api<{ offers: OfferSummary[] }>(`${providerPath(providerId)}/offers`),
   createOffer: (providerId: string, body: OfferInput) =>

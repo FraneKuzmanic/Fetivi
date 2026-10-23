@@ -72,4 +72,10 @@ describe('confirmationMessage', () => {
       'Book Blue Lagoon boat trip on 2027-05-04 at 09:00 for 2, 90.00 EUR total, paid directly to the provider? Cancellation policy: Free until 24 hours before.',
     );
   });
+
+  it('says a pay-online booking is charged only once confirmed', () => {
+    expect(confirmationMessage({ ...draft, paymentMode: 'online' })).toBe(
+      'Book Blue Lagoon boat trip on 2027-05-04 at 09:00 for 2, 90.00 EUR total, paid online after you confirm (your card is charged only once the booking is confirmed)? Cancellation policy: Free until 24 hours before.',
+    );
+  });
 });

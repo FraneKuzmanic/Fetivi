@@ -119,6 +119,8 @@ export const orderSummary = z.object({
   currency: z.string(),
   priceUnit: z.enum(PRICE_UNITS),
   createdAt: z.string(),
+  /** Defaults so receipts stored before pay-online (33) still parse. */
+  payBy: z.string().nullable().default(null),
 });
 
 export const receiptCard = z.object({ order: orderSummary });

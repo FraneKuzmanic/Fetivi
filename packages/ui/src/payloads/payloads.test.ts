@@ -116,6 +116,7 @@ const ORDER: OrderSummaryPayload = {
   currency: 'EUR',
   priceUnit: 'person',
   createdAt: '2026-10-21T10:00:00.000Z',
+  payBy: null,
 };
 
 const ELICITATION: ElicitationPayload = {

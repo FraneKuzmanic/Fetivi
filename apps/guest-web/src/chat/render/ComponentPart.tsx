@@ -10,13 +10,14 @@ import {
   WeatherCard,
   WebResults,
 } from '@fetivi/ui';
-import { componentPart } from '@fetivi/ui/payloads';
+import { componentPart, type OrderSummaryPayload } from '@fetivi/ui/payloads';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EmailOffer } from '../../email/EmailOffer';
 import { mediaUrl } from '../../guide/guide-api';
 import { propertyInfoLabels } from '../../guide/labels';
 import { useInbox } from '../../inbox/InboxProvider';
+import { usePay } from '../../my-trip/orders/orders-api';
 import { AlertOffer } from '../../push/AlertOffer';
 import {
   choiceLabels,
@@ -30,6 +31,24 @@ import {
   webResultsLabels,
 } from './labels';
 import { useSavedPlaces } from './SavedPlaces';
+
+/**
+ * A receipt in the chat. It is a stored part, so its `payBy` is from when the guest tapped: on
+ * Pay now the server decides, and a closed window says so here.
+ */
+function ReceiptPart({ order }: { order: OrderSummaryPayload }) {
+  const { t, i18n } = useTranslation();
+  const { paying, notice, pay } = usePay();
+  return (
+    <ReceiptCard
+      order={order}
+      labels={receiptLabels(t, i18n.language)}
+      onPay={(id) => void pay(id)}
+      paying={paying === order.id}
+      notice={notice ? t(notice.key) : null}
+    />
+  );
+}
 
 /**
  * One streamed component. The payload is checked again (a stored part may predate a schema
@@ -98,7 +117,7 @@ export function ComponentPart({
       );
     }
     case 'receipt-card':
-      return <ReceiptCard order={part.payload.order} labels={receiptLabels(t, i18n.language)} />;
+      return <ReceiptPart order={part.payload.order} />;
     case 'host-message-sent': {
       const { message } = part.payload;
       const status = inbox.status(message.id) ?? 'sent';

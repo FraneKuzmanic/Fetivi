@@ -1302,7 +1302,8 @@ button svg,
   color: var(--navy-900);
 }
 
-.handover {
+.handover,
+.onboarding-link {
   display: flex;
   flex-direction: column;
   gap: 6px;

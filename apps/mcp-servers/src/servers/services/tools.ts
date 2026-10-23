@@ -56,7 +56,7 @@ export const servicesTools: readonly GuestToolSpec[] = [
     config: {
       title: 'List offers',
       description:
-        "Services the guest can arrange through Fetivi: boat trips, tours, tastings, transfers, rentals and more, with price, cancellation policy and the contact details the provider needs. Filter by category, or by a place's id from search_places. Only offers with availabilityMode allotment and paymentMode direct can be booked in chat now.",
+        "Services the guest can arrange through Fetivi: boat trips, tours, tastings, transfers, rentals and more, with price, cancellation policy and the contact details the provider needs. Filter by category, or by a place's id from search_places. Only offers with availabilityMode allotment can be booked in chat now; paymentMode online ones are paid on a secure page after the guest confirms.",
       scope: 'offers:read',
       inputSchema: listOffersInput,
       outputSchema: listOffersOutput,

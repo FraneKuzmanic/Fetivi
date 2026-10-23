@@ -50,6 +50,15 @@ export const de: GuestCopy = {
       pushTitle: 'Anfrage geschlossen',
       pushBody: '{{offer}}, {{date}}',
     },
+    order_checkout_expired: {
+      subject: 'Nicht rechtzeitig abgeschlossen: {{offer}}, {{date}}',
+      lines: [
+        'Die Zahlung für {{offer}} am {{date}} wurde nicht rechtzeitig abgeschlossen, daher ist die Buchung geschlossen und es wurde nichts belastet.',
+        'Im Chat können Sie mich bitten, es noch einmal zu versuchen.',
+      ],
+      pushTitle: 'Buchung geschlossen',
+      pushBody: '{{offer}}, {{date}}',
+    },
     order_failed: {
       subject: 'Buchung nicht möglich: {{offer}}, {{date}}',
       lines: [

@@ -318,6 +318,13 @@ export const pl: Messages = {
     paymentRefundPending: 'Zwrot w drodze',
     paymentRefunded: 'Zwrócono',
     paymentFailed: 'Płatność nieudana',
+    pay: 'Zapłać teraz',
+    payBy: 'Zapłać do {{time}}',
+    paying: 'Otwieram bezpieczną stronę płatności…',
+    noteOnline:
+      'Następnie zapłacisz na bezpiecznej stronie Stripe. Karta zostanie obciążona dopiero po potwierdzeniu rezerwacji.',
+    confirmOnline: 'Przejdź do płatności',
+    checkoutClosed: 'Czas na płatność minął. Stan rezerwacji sprawdzisz w zakładce Moja podróż.',
   },
   trip: {
     plan: 'Plan',
@@ -334,6 +341,8 @@ export const pl: Messages = {
     askShort: 'Zapytaj Fetivi',
     planLabel: 'Plan dnia',
     askText: 'Opowiedz mi więcej o „{{title}}” ({{day}}).',
+    checkoutConfirming: 'Dziękuję! Potwierdzam Twoją rezerwację u usługodawcy…',
+    checkoutLate: 'Płatność dotarła po zamknięciu rezerwacji, więc nic nie zostało pobrane.',
   },
   mcpApps: {
     frameTitle: 'Wyniki promów z Ferryhopper',

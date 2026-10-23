@@ -32,6 +32,9 @@ export function providerOut(row: ProviderRow, offerCount = 0) {
     dealNotes: row.dealNotes,
     /** The raw Stripe id is not exposed. */
     stripeConnected: row.stripeAccountId !== null,
+    /** Stripe's card capability, as last read; null until onboarding starts. */
+    stripeCardPayments: row.stripeCardPayments,
+    stripeCheckedAt: row.stripeCheckedAt?.toISOString() ?? null,
     active: row.active,
     offerCount,
     createdAt: row.createdAt.toISOString(),

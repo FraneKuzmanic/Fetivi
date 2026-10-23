@@ -15,6 +15,8 @@ export const GUEST_NOTIFICATION_KINDS = [
   'order_declined',
   'order_expired',
   'order_failed',
+  /** A pay-online checkout was not completed in time; nothing was charged (33). */
+  'order_checkout_expired',
   /** 18:00 property time the evening before a booked item. */
   'order_reminder',
   'host_reply',
@@ -40,6 +42,7 @@ export const ORDER_GUEST_KINDS = [
   'order_declined',
   'order_expired',
   'order_failed',
+  'order_checkout_expired',
 ] as const satisfies readonly GuestNotificationKind[];
 export type OrderGuestKind = (typeof ORDER_GUEST_KINDS)[number];
 
@@ -58,6 +61,7 @@ export const CHANNELS_BY_KIND: Record<GuestNotificationKind, readonly GuestChann
   order_declined: GUEST_CHANNELS,
   order_expired: GUEST_CHANNELS,
   order_failed: GUEST_CHANNELS,
+  order_checkout_expired: GUEST_CHANNELS,
   order_reminder: GUEST_CHANNELS,
   host_reply: ['email', 'push'],
   arrival_details: GUEST_CHANNELS,
@@ -81,6 +85,7 @@ export const NOTICE_PATHS = {
   order_declined: '/trip',
   order_expired: '/trip',
   order_failed: '/trip',
+  order_checkout_expired: '/trip',
   order_reminder: '/trip',
   host_reply: '/chat',
   arrival_details: '/guide',

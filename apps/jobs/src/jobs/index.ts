@@ -9,6 +9,7 @@ import { type DailyTipsDeps, dailyTipsJob } from './daily-tips';
 import { guestNotifyJob, guestRemindersJob } from './guest-notify';
 import { hostDigestsJob, hostNotifyJob } from './host-notify';
 import { orderNotifyJob } from './orders/notify';
+import { type OrderPaymentJobDeps, orderPaymentJob } from './orders/payment';
 import { orderTimerJob } from './orders/timer';
 import {
   type CalendarJobDeps,
@@ -32,7 +33,8 @@ export function createJobs(
     CalendarJobDeps &
     HandoffJobDeps &
     SafetyAlertsDeps &
-    DailyTipsDeps,
+    DailyTipsDeps &
+    OrderPaymentJobDeps,
 ): JobDefinition[] {
   // The runner hands each handler the data its own queue was sent.
   return [
@@ -41,6 +43,7 @@ export function createJobs(
     translateOfferJob(deps) as JobDefinition,
     orderTimerJob(deps) as JobDefinition,
     orderNotifyJob(deps) as JobDefinition,
+    orderPaymentJob(deps) as JobDefinition,
     pollCalendarsJob(deps),
     pollCalendarJob(deps) as JobDefinition,
     stayNotifyJob(deps) as JobDefinition,

@@ -40,7 +40,10 @@ export function confirmationMessage(draft: CreateOrderDraft): string {
     : draft.date;
   const price =
     draft.priceMinor === null ? '' : `, ${money(draft.priceMinor, draft.currency)} total`;
-  const paid = draft.paymentMode === 'direct' ? ', paid directly to the provider' : '';
+  const paid =
+    draft.paymentMode === 'direct'
+      ? ', paid directly to the provider'
+      : ', paid online after you confirm (your card is charged only once the booking is confirmed)';
   return `Book ${draft.offerTitle} on ${when} for ${draft.quantity}${price}${paid}? Cancellation policy: ${draft.cancellationPolicy}`;
 }
 

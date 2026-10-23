@@ -61,13 +61,13 @@ function stubOrders(...replies: (() => Response)[]) {
   return orders;
 }
 
-async function mount() {
+async function mount(path = '/trip') {
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
   await act(async () =>
     root?.render(
-      <MemoryRouter initialEntries={['/trip']}>
+      <MemoryRouter initialEntries={[path]}>
         <SpaceProvider
           initial={{
             status: 'ready',
@@ -124,5 +124,92 @@ describe('My trip → Reservations & orders', () => {
     });
     await vi.waitFor(() => expect(host.querySelectorAll('.fv-receipt')).toHaveLength(1));
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+const online = (id: string, status: string, paymentStatus: string, payBy: string | null) => ({
+  ...order(id, status, paymentStatus),
+  paymentMode: 'online',
+  payBy,
+});
+
+/** Answers /api/orders and the checkout POST with their replies in turn. */
+function stubPay(orders: (() => Response)[], checkouts: (() => Response)[] = []) {
+  const calls: string[] = [];
+  const next = (list: (() => Response)[]) =>
+    (list.length > 1 ? list.shift() : list[0]) as () => Response;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      calls.push(`${init?.method ?? 'GET'} ${url}`);
+      if (url === '/api/orders') return next(orders)();
+      if (url.endsWith('/checkout')) return next(checkouts)();
+      return json(EMPTY_PLAN);
+    }),
+  );
+  return calls;
+}
+
+const payButton = () =>
+  [...host.querySelectorAll('button')].find((b) => b.textContent === 'Pay now');
+
+describe('My trip → paying online', () => {
+  it('opens the secure page once it is ready', async () => {
+    const assign = vi.fn();
+    vi.spyOn(window.location, 'assign').mockImplementation(assign);
+    const calls = stubPay(
+      [() => json({ orders: [online('o1', 'confirming', 'none', '2026-10-22T10:30:00.000Z')] })],
+      [
+        () => json({ state: 'preparing' }),
+        () => json({ state: 'ready', url: 'https://checkout.stripe.com/x' }),
+      ],
+    );
+    await mount();
+    await vi.waitFor(() => expect(payButton()).toBeDefined());
+    expect(host.textContent).toContain('Complete payment by');
+    await act(async () => payButton()?.click());
+    expect(host.textContent).toContain('Opening the secure payment page…');
+    await vi.waitFor(() => expect(assign).toHaveBeenCalledWith('https://checkout.stripe.com/x'), {
+      timeout: 3000,
+    });
+    expect(calls.filter((c) => c === 'POST /api/orders/o1/checkout')).toHaveLength(2);
+  });
+
+  it('says when the payment window has closed', async () => {
+    stubPay(
+      [
+        () => json({ orders: [online('o1', 'confirming', 'none', '2026-10-22T10:30:00.000Z')] }),
+        () => json({ orders: [online('o1', 'expired', 'none', null)] }),
+      ],
+      [() => json({ state: 'closed' })],
+    );
+    await mount();
+    await vi.waitFor(() => expect(payButton()).toBeDefined());
+    await act(async () => payButton()?.click());
+    await vi.waitFor(() => expect(host.textContent).toContain('This payment window has closed.'));
+    expect(payButton()).toBeUndefined();
+  });
+
+  it('waits for the booking after the return from Stripe', async () => {
+    const calls = stubPay([
+      () => json({ orders: [online('o1', 'confirming', 'none', '2026-10-22T10:30:00.000Z')] }),
+      () => json({ orders: [online('o1', 'confirmed', 'captured', null)] }),
+    ]);
+    await mount('/trip?checkout=o1');
+    await vi.waitFor(() =>
+      expect(host.textContent).toContain("Thanks! I'm confirming your booking with the provider…"),
+    );
+    await vi.waitFor(() => expect(host.textContent).toContain('Paid'), { timeout: 4000 });
+    expect(host.textContent).not.toContain("I'm confirming your booking");
+    expect(calls.filter((c) => c === 'GET /api/orders')).toHaveLength(2);
+  });
+
+  it('explains a payment that came in after the booking closed', async () => {
+    stubPay([() => json({ orders: [online('o1', 'expired', 'voided', null)] })]);
+    await mount('/trip?checkout=o1');
+    await vi.waitFor(() =>
+      expect(host.textContent).toContain('The payment came in after the booking had closed'),
+    );
   });
 });

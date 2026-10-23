@@ -50,6 +50,15 @@ export const pl: GuestCopy = {
       pushTitle: 'Prośba zamknięta',
       pushBody: '{{offer}}, {{date}}',
     },
+    order_checkout_expired: {
+      subject: 'Nie dokończono na czas: {{offer}}, {{date}}',
+      lines: [
+        'Płatność za {{offer}} ({{date}}) nie została dokończona na czas, więc rezerwacja została zamknięta i nic nie pobrano.',
+        'Na czacie możesz poprosić mnie o ponowną próbę.',
+      ],
+      pushTitle: 'Rezerwacja zamknięta',
+      pushBody: '{{offer}}, {{date}}',
+    },
     order_failed: {
       subject: 'Nie udało się zarezerwować: {{offer}}, {{date}}',
       lines: [

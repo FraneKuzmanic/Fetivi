@@ -315,6 +315,13 @@ export const en = {
     paymentRefundPending: 'Refund on its way',
     paymentRefunded: 'Refunded',
     paymentFailed: 'Payment failed',
+    pay: 'Pay now',
+    payBy: 'Complete payment by {{time}}',
+    paying: 'Opening the secure payment page…',
+    noteOnline:
+      "Next you'll pay on Stripe's secure page. Your card is only charged once the booking is confirmed.",
+    confirmOnline: 'Continue to payment',
+    checkoutClosed: "This payment window has closed. Check My trip for the booking's status.",
   },
   trip: {
     plan: 'Plan',
@@ -331,6 +338,8 @@ export const en = {
     askShort: 'Ask Fetivi',
     planLabel: 'Day plan',
     askText: 'Tell me more about "{{title}}" on {{day}}.',
+    checkoutConfirming: "Thanks! I'm confirming your booking with the provider…",
+    checkoutLate: 'The payment came in after the booking had closed, so nothing was charged.',
   },
   mcpApps: {
     frameTitle: 'Ferry results from Ferryhopper',

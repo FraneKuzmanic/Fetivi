@@ -320,6 +320,14 @@ export const it: Messages = {
     paymentRefundPending: 'Rimborso in arrivo',
     paymentRefunded: 'Rimborsato',
     paymentFailed: 'Pagamento non riuscito',
+    pay: 'Paga ora',
+    payBy: 'Completa il pagamento entro le {{time}}',
+    paying: 'Apro la pagina di pagamento sicura…',
+    noteOnline:
+      'Poi paghi sulla pagina sicura di Stripe. La tua carta viene addebitata solo quando la prenotazione è confermata.',
+    confirmOnline: 'Continua al pagamento',
+    checkoutClosed:
+      'Il tempo per pagare è scaduto. Lo stato della prenotazione è in Il mio viaggio.',
   },
   trip: {
     plan: 'Piano',
@@ -336,6 +344,9 @@ export const it: Messages = {
     askShort: 'Chiedi a Fetivi',
     planLabel: 'Programma del giorno',
     askText: 'Dimmi di più su «{{title}}» di {{day}}.',
+    checkoutConfirming: 'Grazie! Sto confermando la tua prenotazione con il fornitore…',
+    checkoutLate:
+      'Il pagamento è arrivato dopo la chiusura della prenotazione, quindi non è stato addebitato nulla.',
   },
   mcpApps: {
     frameTitle: 'Risultati dei traghetti da Ferryhopper',

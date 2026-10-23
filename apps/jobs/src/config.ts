@@ -38,6 +38,8 @@ const schema = z
     VAPID_PUBLIC_KEY: optionalString,
     VAPID_PRIVATE_KEY: optionalString,
     VAPID_SUBJECT: z.string().default('mailto:admin@localhost'),
+    /** Stripe, for pay-online checkout, capture, void and refund. Without it online payments are off. */
+    STRIPE_SECRET_KEY: optionalString,
     /** DHMZ and Jadrolinija get an identifying agent; production sets a reachable one. */
     WEATHER_USER_AGENT: z
       .string()

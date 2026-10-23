@@ -31,6 +31,7 @@ export function orderNotifyJob(
           outcome = await sendProviderNotification(deps, { orderId, proposalId, kind });
           break;
         case 'admin_provider_cancelled':
+        case 'admin_payment_attention':
           outcome = await sendAdminAlert(deps, { orderId, proposalId, kind });
           break;
         default:

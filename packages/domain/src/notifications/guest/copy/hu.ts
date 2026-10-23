@@ -47,6 +47,15 @@ export const hu: GuestCopy = {
       pushTitle: 'A kérés lezárult',
       pushBody: '{{offer}}, {{date}}',
     },
+    order_checkout_expired: {
+      subject: 'Nem fejeződött be időben: {{offer}}, {{date}}',
+      lines: [
+        'A fizetés nem fejeződött be időben, ezért a foglalás lezárult, és nem terheltünk semmit: {{offer}} ({{date}}).',
+        'A csevegésben megkérhetsz, hogy próbáljuk újra.',
+      ],
+      pushTitle: 'A foglalás lezárult',
+      pushBody: '{{offer}}, {{date}}',
+    },
     order_failed: {
       subject: 'A foglalás nem sikerült: {{offer}}, {{date}}',
       lines: [

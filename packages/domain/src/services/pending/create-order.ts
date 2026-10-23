@@ -3,7 +3,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { Executor } from '../../db/client';
 import { offers, offerTranslations } from '../../db/schema/offers';
-import { orderProposals, orders } from '../../db/schema/orders';
+import { orderProposals, orders, paymentAttempts } from '../../db/schema/orders';
 import { pendingActions } from '../../db/schema/pending-actions';
 import { properties, units } from '../../db/schema/properties';
 import { spaces } from '../../db/schema/spaces';
@@ -12,6 +12,9 @@ import { type GuestOffer, type GuestOfferScope, getGuestOffer } from '../../offe
 import type { PaymentMode, PriceUnit } from '../../offers/vocabulary';
 import { createOrder, getOrder, type OrderDeps, OrderRuleError } from '../../orders/machine';
 import type { OrderStatus, PaymentStatus } from '../../orders/vocabulary';
+import { checkoutOpen } from '../../payments/checkout';
+import { providerAcceptsCards } from '../../payments/onboarding';
+import { CHECKOUT_HOLD_MINUTES } from '../../payments/vocabulary';
 import type { GuestLanguage } from '../../property/vocabulary';
 import { optInSpaceEmail } from '../../spaces/email';
 import { toLocalDateTime } from '../../time';
@@ -95,6 +98,8 @@ export interface OrderSummary {
   currency: string;
   priceUnit: PriceUnit;
   createdAt: string;
+  /** ISO instant the guest must pay by; set only while a pay-online checkout is open. */
+  payBy: string | null;
 }
 
 const CIVIL_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -140,8 +145,11 @@ async function startsOf(
     throw new ServiceRuleError('date-past');
   }
   if (!isQuantity(input.quantity)) throw new ServiceRuleError('invalid-input');
-  // Pay-online is ticket 33; on request and live are 36 and 37.
-  if (offer.paymentMode === 'online') throw new ServiceRuleError('not-bookable-in-chat');
+  // Pay-online needs a Provider's allotment Offer with a price and an onboarded Provider (33);
+  // on request and live are 36 and 37.
+  if (offer.paymentMode === 'online' && !(await providerAcceptsCards(deps.db, offer.id))) {
+    throw new ServiceRuleError('not-bookable-in-chat');
+  }
   let adapter: ReturnType<typeof adapterFor>;
   try {
     adapter = adapterFor(offer.availabilityMode);
@@ -288,6 +296,7 @@ const RULE_CODES: Partial<Record<OrderRuleError['code'], ServiceRuleCode>> = {
   'date-outside-stay': 'date-outside-stay',
   'offer-inactive': 'offer-not-visible',
   'payment-mode-unsupported': 'not-bookable-in-chat',
+  'payments-not-ready': 'not-bookable-in-chat',
 };
 
 type Completion =
@@ -348,7 +357,14 @@ export async function completeOrder(
           startsAt: draft.startsAt ? new Date(draft.startsAt) : undefined,
           quantity: draft.quantity,
           contact,
-          hold: { expiresAt: new Date(now.getTime() + ORDER_HOLD_MINUTES * 60_000) },
+          // A pay-online hold lasts as long as its Checkout Session, and expires with it.
+          hold: {
+            expiresAt: new Date(
+              now.getTime() +
+                (draft.paymentMode === 'online' ? CHECKOUT_HOLD_MINUTES : ORDER_HOLD_MINUTES) *
+                  60_000,
+            ),
+          },
         },
       );
     } catch (error) {
@@ -366,10 +382,11 @@ export async function completeOrder(
   if (!result.ok) throw new ServiceRuleError(result.code);
 
   // External commits run outside the transaction. A replay finishes a commit an earlier call
-  // lost; confirmHeldOrder is idempotent.
+  // lost; confirmHeldOrder is idempotent. A pay-online Order is confirmed by its payment job,
+  // once the card is authorized.
   const created = await getOrder(deps.db, result.orderId);
   if (!created) throw new ServiceRuleError('not-found');
-  if (created.order.status === 'confirming') {
+  if (created.order.status === 'confirming' && created.order.paymentMode !== 'online') {
     await confirmHeldOrder(deps, { orderId: created.order.id, proposalId: created.proposal.id });
   }
   const [order] = await summaries(
@@ -377,6 +394,7 @@ export async function completeOrder(
     input.spaceId,
     input.offerScope.language,
     result.orderId,
+    deps.now(),
   );
   if (!order) throw new ServiceRuleError('not-found');
   return { order, replay: result.replay };
@@ -410,18 +428,21 @@ async function summaries(
   db: Executor,
   spaceId: string,
   language: GuestLanguage,
-  orderId?: string,
+  orderId: string | undefined,
+  now: Date,
 ): Promise<OrderSummary[]> {
   const rows = await db
     .select({
       order: orders,
       proposal: orderProposals,
+      attempt: paymentAttempts,
       sourceTitle: offers.title,
       title: offerTranslations.title,
       zone: properties.timezone,
     })
     .from(orders)
     .innerJoin(orderProposals, eq(orderProposals.id, orders.currentProposalId))
+    .leftJoin(paymentAttempts, eq(paymentAttempts.proposalId, orders.currentProposalId))
     .innerJoin(offers, eq(offers.id, orders.offerId))
     .leftJoin(
       offerTranslations,
@@ -436,7 +457,7 @@ async function summaries(
     .innerJoin(properties, eq(properties.id, units.propertyId))
     .where(and(eq(orders.spaceId, spaceId), orderId ? eq(orders.id, orderId) : undefined))
     .orderBy(desc(orders.createdAt), desc(orders.id));
-  return rows.map(({ order, proposal, sourceTitle, title, zone }) => ({
+  return rows.map(({ order, proposal, attempt, sourceTitle, title, zone }) => ({
     id: order.id,
     offerId: order.offerId,
     offerTitle: title ?? sourceTitle,
@@ -451,6 +472,7 @@ async function summaries(
     currency: proposal.currency,
     priceUnit: order.priceUnit,
     createdAt: order.createdAt.toISOString(),
+    payBy: attempt && checkoutOpen(order, attempt, now) ? attempt.expiresAt.toISOString() : null,
   }));
 }
 
@@ -460,8 +482,9 @@ export async function getSpaceOrder(
   spaceId: string,
   language: GuestLanguage,
   orderId: string,
+  now: Date = new Date(),
 ): Promise<OrderSummary | null> {
-  const [order] = await summaries(db, spaceId, language, orderId);
+  const [order] = await summaries(db, spaceId, language, orderId, now);
   return order ?? null;
 }
 
@@ -470,8 +493,9 @@ export function listSpaceOrders(
   db: Executor,
   spaceId: string,
   language: GuestLanguage,
+  now: Date = new Date(),
 ): Promise<OrderSummary[]> {
-  return summaries(db, spaceId, language);
+  return summaries(db, spaceId, language, undefined, now);
 }
 
 /** The kind-neutral name for a decline or cancel (the host message card uses it too). */

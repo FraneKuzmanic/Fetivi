@@ -19,10 +19,17 @@ export interface OrderNotifyJobData {
   kind: OrderNotification;
 }
 
+/** The operation part of an Order job's key: a timer, a notification or a payment job (33). */
+export type OrderJobOperation =
+  | TimerOperation
+  | `${TimerOperation}:${string}`
+  | `notify:${OrderNotification}`
+  | `payment:${string}`;
+
 export function orderJobKey(
   orderId: string,
   proposalId: string,
-  operation: TimerOperation | `notify:${OrderNotification}`,
+  operation: OrderJobOperation,
 ): string {
   return `order:${orderId}:proposal:${proposalId}:${operation}`;
 }
@@ -30,19 +37,25 @@ export function orderJobKey(
 export function orderJobId(
   orderId: string,
   proposalId: string,
-  operation: TimerOperation | `notify:${OrderNotification}`,
+  operation: OrderJobOperation,
 ): string {
   return uuidFrom(orderJobKey(orderId, proposalId, operation));
 }
 
-/** Schedules a timer inside `tx`, due at `at`. */
+/**
+ * Schedules a timer inside `tx`, due at `at`. `keySuffix` names a second timer of the same
+ * operation (a restamped hold's new expiry, 33), which the first one's key would swallow.
+ */
 export async function scheduleTimer(
   tx: Executor,
   queue: JobQueue,
   data: OrderTimerJobData,
   at: Date,
+  keySuffix?: string,
 ): Promise<void> {
-  const id = orderJobId(data.orderId, data.proposalId, data.operation);
+  const operation: OrderJobOperation =
+    keySuffix === undefined ? data.operation : `${data.operation}:${keySuffix}`;
+  const id = orderJobId(data.orderId, data.proposalId, operation);
   await queue.send(QUEUES.orderTimer, data, tx, { id, startAfter: at });
 }
 

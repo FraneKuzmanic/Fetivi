@@ -316,6 +316,14 @@ export const hr: Messages = {
     paymentRefundPending: 'Povrat je na putu',
     paymentRefunded: 'Vraćeno',
     paymentFailed: 'Plaćanje nije uspjelo',
+    pay: 'Plati sada',
+    payBy: 'Platite do {{time}}',
+    paying: 'Otvaram sigurnu stranicu za plaćanje…',
+    noteOnline:
+      'Zatim plaćate na sigurnoj Stripeovoj stranici. Kartica vam se tereti tek kad se rezervacija potvrdi.',
+    confirmOnline: 'Nastavi na plaćanje',
+    checkoutClosed:
+      'Vrijeme za plaćanje je isteklo. Stanje rezervacije pogledajte u Mojem putovanju.',
   },
   trip: {
     plan: 'Plan',
@@ -332,6 +340,8 @@ export const hr: Messages = {
     askShort: 'Pitajte Fetivi',
     planLabel: 'Plan dana',
     askText: 'Recite mi više o „{{title}}” ({{day}}).',
+    checkoutConfirming: 'Hvala! Potvrđujem vašu rezervaciju kod pružatelja usluge…',
+    checkoutLate: 'Plaćanje je stiglo nakon što je rezervacija istekla, pa ništa nije naplaćeno.',
   },
   mcpApps: {
     frameTitle: 'Rezultati trajekata s Ferryhoppera',

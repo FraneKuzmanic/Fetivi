@@ -654,6 +654,13 @@
   background: var(--white);
 }
 
+.fv-receipt-pay {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
 .fv-status {
   display: inline-flex;
   /* The dot stays on the first line when the status wraps. */

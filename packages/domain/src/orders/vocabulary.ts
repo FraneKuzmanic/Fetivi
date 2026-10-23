@@ -42,8 +42,9 @@ export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 /**
  * The explicit causes of a transition (architecture §4.3), recorded on every OrderEvent.
- * `payment_webhook` is reserved for ticket 33 and unused until then. `window_timer` is never
- * recorded: a missed response window alerts the admin and changes no status.
+ * `payment_webhook` is a verified Stripe event; `payment_job` is the outcome of a Stripe call the
+ * order-payment job made (33). `window_timer` is never recorded: a missed response window alerts
+ * the admin and changes no status.
  */
 export const ORDER_TRIGGERS = [
   'guest',
@@ -55,6 +56,7 @@ export const ORDER_TRIGGERS = [
   'completion_timer',
   'admin',
   'payment_webhook',
+  'payment_job',
 ] as const;
 export type OrderTrigger = (typeof ORDER_TRIGGERS)[number];
 
@@ -94,5 +96,13 @@ export const ORDER_NOTIFICATIONS = [
   'provider_confirmed',
   /** To the admin: the Provider tapped Can't fulfil (15). */
   'admin_provider_cancelled',
+  /** To the guest: the checkout was not completed in time; nothing was charged (33). */
+  'order_checkout_expired',
+  /**
+   * To the admin: a pay-online Order needs a human (capture or refund failed, a non-card method on
+   * the session, an authorization cancelled on a confirmed Order). The reason is the note of the
+   * OrderEvent that flagged it (33).
+   */
+  'admin_payment_attention',
 ] as const;
 export type OrderNotification = (typeof ORDER_NOTIFICATIONS)[number];

@@ -26,6 +26,7 @@ import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
 import { useAction } from '../../useAction';
 import { bpFromPercent, formatPrice, percentFromBp } from './money';
+import { OnlinePaymentsPanel } from './OnlinePaymentsPanel';
 
 const WHATSAPP_HINT = 'Stored for order links by WhatsApp later; email is used for now.';
 const LANGUAGE_LABEL = 'Language for order emails';
@@ -298,14 +299,7 @@ export function ProviderPage() {
           <small>Paused Providers' Offers are hidden from guests.</small>
         </Section>
 
-        <section className="panel">
-          <h2>Online payments</h2>
-          <p className="muted">
-            {provider.stripeConnected
-              ? 'Connected.'
-              : 'Not connected. Onboarding links come with online payments.'}
-          </p>
-        </section>
+        <OnlinePaymentsPanel provider={provider} onChange={setProvider} />
 
         <section className="panel danger-zone">
           <h2>Delete provider</h2>

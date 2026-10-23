@@ -79,6 +79,12 @@ const orderSummary = z.object({
   currency: z.string(),
   priceUnit: z.enum(PRICE_UNITS).describe('What quantity counts.'),
   createdAt: z.string(),
+  payBy: z
+    .string()
+    .nullable()
+    .describe(
+      'While set, the guest pays on a secure page via the Pay now button on the receipt, by this time; never paste a link.',
+    ),
 });
 
 export const listOffersOutput = z.object({ offers: z.array(guestOffer) });

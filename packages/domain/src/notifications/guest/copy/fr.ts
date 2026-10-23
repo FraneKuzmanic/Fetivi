@@ -47,6 +47,15 @@ export const fr: GuestCopy = {
       pushTitle: 'Demande close',
       pushBody: '{{offer}}, {{date}}',
     },
+    order_checkout_expired: {
+      subject: 'Non finalisé à temps : {{offer}}, {{date}}',
+      lines: [
+        'Le paiement pour {{offer}} du {{date}} n’a pas été finalisé à temps, la réservation est donc close et rien n’a été débité.',
+        'Dans la discussion, vous pouvez me demander de réessayer.',
+      ],
+      pushTitle: 'Réservation close',
+      pushBody: '{{offer}}, {{date}}',
+    },
     order_failed: {
       subject: 'Réservation impossible : {{offer}}, {{date}}',
       lines: [

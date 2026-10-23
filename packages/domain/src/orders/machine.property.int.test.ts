@@ -1,13 +1,30 @@
 import { randomUUID } from 'node:crypto';
-import { inArray, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import fc from 'fast-check';
 import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { allotmentSlots } from '../db/schema/offers';
-import { inventoryHolds, orderEvents, orderProposals, orders } from '../db/schema/orders';
+import { allotmentSlots, providers } from '../db/schema/offers';
+import {
+  inventoryHolds,
+  orderEvents,
+  orderProposals,
+  orders,
+  paymentAttempts,
+} from '../db/schema/orders';
 import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../jobs/queue';
+import type { OrderPaymentJobData } from '../payments/enqueue';
+import { applyStripeEvent, parseStripeEvent } from '../payments/events';
+import { PaymentGatewayError } from '../payments/gateway';
+import { type PaymentDeps, runPaymentJob } from '../payments/jobs';
+import { CHECKOUT_HOLD_MINUTES, type PaymentOperation } from '../payments/vocabulary';
 import { createTestDatabase, type TestDatabase } from '../testing';
-import { type SeededGuestUnit, seedGuestUnit, seedOrderableOffer } from '../testing/fixtures';
+import {
+  type SeededGuestUnit,
+  seedGuestUnit,
+  seedOrderableOffer,
+  seedProvider,
+} from '../testing/fixtures';
+import { type FakeStripeEvent, type FakeStripeOp, fakePaymentGateway } from '../testing/stripe';
 import {
   cancel,
   confirm,
@@ -26,9 +43,12 @@ import type { OrderTimerJobData } from './timers';
 import { requiredNotifications } from './transitions';
 import { isFinalOrderStatus } from './vocabulary';
 
-// Rebuilt from spike S2's property test for the pay-direct invariants: random interleavings of
-// guest, Provider, adapter, admin and timer events, with crashes before commit and duplicate
-// deliveries, checked after every step and after draining every timer.
+// Rebuilt from spike S2's property test: random interleavings of guest, Provider, adapter, admin
+// and timer events, with crashes before commit and duplicate deliveries, checked after every step
+// and after draining every timer. Since 33 a pay-online Offer joins the three pay-direct ones,
+// with a fake Stripe: the guest pays, payment jobs call Stripe (a crash rolls back the write
+// after the call; a lost response throws after it), and webhooks arrive duplicated, reordered,
+// delayed, or (the checkout completion only) never. S2's payment invariants P1-P7 are checked.
 // ORDER_PROPERTY_RUNS (default 25) sets the volume; ORDER_PROPERTY_SEED replays a failure.
 
 const RUNS = Number(process.env.ORDER_PROPERTY_RUNS ?? 25);
@@ -59,12 +79,13 @@ beforeAll(async () => {
     begin
       if tg_op = 'INSERT' then
         insert into test_status_changes values (new.id, 1);
-      elsif old.status is distinct from new.status then
+      elsif old.status is distinct from new.status
+         or old.payment_status is distinct from new.payment_status then
         update test_status_changes set n = n + 1 where order_id = new.id;
       end if;
       return new;
     end $$;
-    create trigger test_count_status after insert or update of status on orders
+    create trigger test_count_status after insert or update of status, payment_status on orders
       for each row execute function test_count_status();
   `);
 });
@@ -83,17 +104,22 @@ type Step =
   | { kind: 'providerAccept' | 'providerDecline'; order: number; stalePage: boolean }
   | { kind: 'providerPropose'; order: number; stalePage: boolean; date: number; quantity: number }
   | { kind: 'guestConfirm'; order: number; staleCard: boolean }
-  | { kind: 'advance'; minutes: number; shuffle: number };
+  | { kind: 'advance'; minutes: number; shuffle: number }
+  | { kind: 'guestPay'; order: number; late: boolean }
+  | { kind: 'deliverWebhooks'; shuffle: number; dropCompletion: boolean }
+  | { kind: 'runPaymentJobs'; shuffle: number; lostResponse: boolean; rounds: number }
+  | { kind: 'stripeExpire' };
 type Action = Step & { crash: boolean; duplicate: boolean };
 
 // Few Orders per run, so actions pile up on the same Order and reach its later proposals.
 const orderIdx = fc.nat(3);
 const stepArb: fc.Arbitrary<Step> = fc.oneof(
   {
-    weight: 3,
+    weight: 6,
     arbitrary: fc.record({
       kind: fc.constant('create' as const),
-      offer: fc.nat(2),
+      // Half the Orders are pay-online (Offer 3); the rest spread over the three pay-direct ones.
+      offer: fc.oneof(fc.nat(2), fc.constant(3)),
       quantity: fc.integer({ min: 1, max: 3 }),
       sameId: fc.boolean(),
     }),
@@ -135,10 +161,39 @@ const stepArb: fc.Arbitrary<Step> = fc.oneof(
     weight: 2,
     arbitrary: fc.record({
       kind: fc.constant('advance' as const),
-      minutes: fc.integer({ min: 1, max: 180 }),
+      // Mostly short steps, so a 30-minute checkout often survives to be paid.
+      minutes: fc.oneof(fc.integer({ min: 1, max: 10 }), fc.integer({ min: 1, max: 180 })),
       shuffle: fc.nat(),
     }),
   },
+  {
+    weight: 4,
+    arbitrary: fc.record({
+      kind: fc.constant('guestPay' as const),
+      order: orderIdx,
+      late: fc.nat(3).map((n) => n === 0),
+    }),
+  },
+  {
+    weight: 5,
+    arbitrary: fc.record({
+      kind: fc.constant('deliverWebhooks' as const),
+      shuffle: fc.nat(),
+      // Only the completion can be lost in 33: the expire_session job closes that gap.
+      dropCompletion: fc.nat(4).map((n) => n === 0),
+    }),
+  },
+  {
+    weight: 6,
+    arbitrary: fc.record({
+      kind: fc.constant('runPaymentJobs' as const),
+      shuffle: fc.nat(),
+      lostResponse: fc.nat(3).map((n) => n === 0),
+      // The worker keeps polling: jobs the first round enqueues may run in the same step.
+      rounds: fc.integer({ min: 1, max: 3 }),
+    }),
+  },
+  fc.record({ kind: fc.constant('stripeExpire' as const) }),
 );
 const actionArb: fc.Arbitrary<Action> = fc
   // One step in five crashes before commit, one in four is delivered twice.
@@ -147,24 +202,71 @@ const actionArb: fc.Arbitrary<Action> = fc
 
 class Crash extends Error {}
 
+const GUEST_ORIGIN = 'http://guest.test';
+const COMPLETION_EVENTS = [
+  'checkout.session.completed',
+  'payment_intent.amount_capturable_updated',
+];
+/** The Stripe call each payment operation makes, for a lost response. */
+const STRIPE_OP: Record<PaymentOperation, FakeStripeOp | null> = {
+  open: 'create_session',
+  confirm: null,
+  capture: 'capture',
+  void: 'cancel',
+  expire_session: 'expire_session',
+  refund: 'refund',
+};
+const RETRY = Symbol('retry');
+
+/** Shuffles in place with a small LCG, so a seed replays the same order. */
+function shuffled<T>(items: T[], seed: number): T[] {
+  let x = seed;
+  for (let i = items.length - 1; i > 0; i--) {
+    x = (x * 1103515245 + 12345) % 2147483648;
+    const j = x % (i + 1);
+    [items[i], items[j]] = [items[j] as T, items[i] as T];
+  }
+  return items;
+}
+
+type Mode = 'allotment' | 'on_request' | 'live' | 'online';
+
 /** One run's world: fresh Offers, a virtual clock and the Orders it created. */
 class World {
   t = NOW;
-  orders: { id: string; firstProposalId: string }[] = [];
+  orders: { id: string; firstProposalId: string; online: boolean }[] = [];
   lastCreateId: string | undefined;
   /** Proposals whose response window alerted the admin (committed runs only). */
   windowAlerts = new Set<string>();
   readonly deps: OrderDeps;
+  readonly gateway = fakePaymentGateway({ now: () => this.t });
+  /** Webhook events Stripe has sent and not yet seen acknowledged (a crash keeps one here). */
+  inbox: FakeStripeEvent[] = [];
+  /** P1 and M7 violations, collected where they happen. */
+  violations: string[] = [];
+  captures = 0;
 
   constructor(
-    readonly offers: {
-      offerId: string;
-      slotId?: string;
-      mode: 'allotment' | 'on_request' | 'live';
-    }[],
+    readonly offers: { offerId: string; slotId?: string; mode: Mode }[],
     readonly capacity: number,
   ) {
     this.deps = { db: testDb.db, queue, now: () => this.t };
+    // P1: Stripe captures only for the proposal confirmed at that instant.
+    this.gateway.onCapture(async (call) => {
+      this.captures++;
+      const [row] = await testDb.db
+        .select({ order: orders, proposalId: paymentAttempts.proposalId })
+        .from(paymentAttempts)
+        .innerJoin(orders, eq(orders.id, paymentAttempts.orderId))
+        .where(eq(paymentAttempts.id, call.attemptId ?? ''));
+      if (row?.order.status !== 'confirmed' || row.order.currentProposalId !== row.proposalId) {
+        this.violations.push(`P1 capture of ${call.attemptId} while ${row?.order.status}`);
+      }
+    });
+  }
+
+  paymentDeps(d: OrderDeps): PaymentDeps {
+    return { ...d, gateway: this.gateway, guestOrigin: GUEST_ORIGIN };
   }
 
   /** Runs `fn` once (or inside a crashing transaction) and again on a duplicate delivery. */
@@ -206,6 +308,13 @@ class World {
         if (!offer) return;
         const id = a.sameId && this.lastCreateId ? this.lastCreateId : randomUUID();
         this.lastCreateId = id;
+        const hold =
+          offer.mode === 'on_request'
+            ? undefined
+            : {
+                expiresAt: later(offer.mode === 'online' ? CHECKOUT_HOLD_MINUTES : 30),
+                externalRef: offer.mode === 'live' ? `L-${id}` : undefined,
+              };
         const result = await this.run(a, (d) =>
           createOrder(d, {
             id,
@@ -215,19 +324,19 @@ class World {
             date: DATES[1],
             quantity: a.quantity,
             contact: { email: 'guest@example.test' },
-            hold:
-              offer.mode === 'on_request'
-                ? undefined
-                : {
-                    expiresAt: later(30),
-                    externalRef: offer.mode === 'live' ? `L-${id}` : undefined,
-                  },
+            hold,
             responseDeadline: offer.mode === 'on_request' ? later(60) : undefined,
           }),
         );
         if (result?.created) {
           const found = await getOrder(testDb.db, id);
-          if (found) this.orders.push({ id, firstProposalId: found.proposal.id });
+          if (found) {
+            this.orders.push({
+              id,
+              firstProposalId: found.proposal.id,
+              online: offer.mode === 'online',
+            });
+          }
         }
         return;
       }
@@ -290,9 +399,119 @@ class World {
       }
       case 'advance':
         this.t = later(a.minutes);
+        // Stripe expires its sessions at `expires_at`, like the hold timers.
+        this.gateway.expireDue(this.t);
         await this.fireDueTimers(a);
         return;
+      case 'guestPay':
+        await this.guestPay(a);
+        return;
+      case 'deliverWebhooks':
+        await this.deliverWebhooks(a);
+        return;
+      case 'runPaymentJobs':
+        for (let round = 0; round < a.rounds; round++) {
+          const ran = await this.runPaymentJobs({
+            ...a,
+            shuffle: a.shuffle + round,
+            lostResponse: a.lostResponse && round === 0,
+          });
+          if (ran === 0) return;
+        }
+        return;
+      case 'stripeExpire':
+        this.gateway.expireDue(this.t);
+        return;
     }
+  }
+
+  /**
+   * The guest completes the hosted Checkout of an Order's open session. `late`: at the last
+   * second, so the completion arrives after the hold expired (S2 M3).
+   */
+  async guestPay(a: Action & { kind: 'guestPay' }) {
+    const online = this.orders.filter((o) => o.online);
+    const order = online.length ? online[a.order % online.length] : undefined;
+    if (!order) return;
+    const [attempt] = await testDb.db
+      .select()
+      .from(paymentAttempts)
+      .where(eq(paymentAttempts.orderId, order.id));
+    this.gateway.expireDue(this.t);
+    const session = this.gateway
+      .state()
+      .sessions.find((s) => s.clientReferenceId === attempt?.id && s.status === 'open');
+    if (!session) return;
+    this.gateway.pay(session.id);
+    if (a.late) {
+      this.t = new Date(session.expiresAt.getTime() + MINUTE);
+      await this.fireDueTimers({ ...a, shuffle: 0 });
+    }
+  }
+
+  /** Stripe's webhook deliveries: pending events in a shuffled order; a crash redelivers later. */
+  async deliverWebhooks(a: Action & { kind: 'deliverWebhooks' }) {
+    this.inbox.push(...this.gateway.takeEvents());
+    const batch = shuffled([...this.inbox], a.shuffle);
+    let delivered = 0;
+    for (const event of batch) {
+      if (a.dropCompletion && COMPLETION_EVENTS.includes(event.type)) {
+        this.inbox = this.inbox.filter((e) => e !== event);
+        continue;
+      }
+      await this.run(a, (d) => applyStripeEvent(d, parseStripeEvent(event)));
+      if (a.crash) continue; // answered 500: Stripe sends it again
+      this.inbox = this.inbox.filter((e) => e !== event);
+      delivered++;
+    }
+    return delivered;
+  }
+
+  /** Plays the worker for order-payment: every queued job, shuffled; a failed one stays queued. */
+  async runPaymentJobs(a: Action & { kind: 'runPaymentJobs' }) {
+    const ids = this.orders.filter((o) => o.online).map((o) => o.id);
+    if (ids.length === 0) return 0;
+    const attempts = await testDb.db
+      .select({ id: paymentAttempts.id })
+      .from(paymentAttempts)
+      .where(inArray(paymentAttempts.orderId, ids));
+    if (attempts.length === 0) return 0;
+    const { rows } = await testDb.db.execute<{ id: string; data: OrderPaymentJobData }>(
+      sql`select id, data from pgboss.job where name = ${QUEUES.orderPayment} and state = 'created'
+          and data->>'attemptId' in ${sql`(${sql.join(
+            attempts.map((x) => sql`${x.id}`),
+            sql`, `,
+          )})`}`,
+    );
+    const due = shuffled(
+      rows.sort((x, y) => x.id.localeCompare(y.id)),
+      a.shuffle,
+    );
+    let lost = a.lostResponse;
+    for (const [index, job] of due.entries()) {
+      // A payment job commits its own writes around the Stripe call, so rolling it back whole
+      // would undo a write committed before the call. A crash is modelled where it can happen:
+      // before the job runs (it stays queued), or after Stripe answered (a lost response).
+      if (a.crash && index === 0) continue;
+      const op = STRIPE_OP[job.data.operation];
+      if (lost && op) {
+        this.gateway.failNext(op, 'response-lost');
+        lost = false;
+      }
+      const result = await this.run({ crash: false, duplicate: a.duplicate }, async (d) => {
+        try {
+          return await runPaymentJob(this.paymentDeps(d), job.data);
+        } catch (error) {
+          if (!(error instanceof PaymentGatewayError)) throw error;
+          // M7: a retry must send identical parameters under its key.
+          if (error.code === 'idempotency-mismatch') this.violations.push(`M7 ${error.message}`);
+          return RETRY;
+        }
+      });
+      if (result === RETRY) continue; // pg-boss runs it again
+      await testDb.db.execute(sql`update pgboss.job set state = 'completed' where id = ${job.id}`);
+    }
+    return due.length;
   }
 
   /** Plays the pg-boss worker: runs every due timer, in a shuffled order, then marks it done. */
@@ -325,13 +544,39 @@ class World {
     return due.length;
   }
 
-  /** Advances far past every deadline and runs timers, each delivered twice, until none is due. */
+  /**
+   * Lets the workers settle what is in flight at the current time, then advances far past every
+   * deadline and runs timers, payment jobs and webhooks, each delivered twice and none lost,
+   * until nothing is left.
+   */
   async drain() {
-    this.t = new Date(this.t.getTime() + 30 * 24 * 60 * MINUTE);
     for (let i = 0; i < 10; i++) {
-      if ((await this.fireDueTimers({ crash: false, duplicate: true, shuffle: i })) === 0) return;
+      if ((await this.settle(i)) === 0) break;
     }
-    throw new Error('timers kept firing');
+    for (let i = 0; i < 20; i++) {
+      this.t = new Date(this.t.getTime() + 30 * 24 * 60 * MINUTE);
+      if ((await this.settle(i)) === 0) return;
+    }
+    throw new Error('timers, payment jobs or webhooks kept coming');
+  }
+
+  /** One round of every worker at the current time; returns how much it did or left behind. */
+  async settle(shuffle: number) {
+    const twice = { crash: false, duplicate: true, shuffle };
+    this.gateway.expireDue(this.t);
+    const timers = await this.fireDueTimers(twice);
+    const jobs = await this.runPaymentJobs({
+      kind: 'runPaymentJobs',
+      ...twice,
+      rounds: 1,
+      lostResponse: false,
+    });
+    const events = await this.deliverWebhooks({
+      kind: 'deliverWebhooks',
+      ...twice,
+      dropCompletion: false,
+    });
+    return timers + jobs + events + this.inbox.length;
   }
 
   async check({ drained = false } = {}) {
@@ -362,13 +607,27 @@ class World {
       )})`}`,
     );
 
+    const attempts = await testDb.db
+      .select()
+      .from(paymentAttempts)
+      .where(inArray(paymentAttempts.orderId, ids));
+    const stripe = this.gateway.state();
+
     for (const order of all) {
       const mine = events.filter((e) => e.orderId === order.id);
-      // 1. One OrderEvent per status change.
-      expect(mine.length, `events of ${order.id}`).toBe(
+      // 1. One OrderEvent per change of Order or Payment status; an admin flag writes one more,
+      // with no change.
+      const changes = mine.filter(
+        (e) =>
+          e.fromStatus === null ||
+          e.fromStatus !== e.toStatus ||
+          e.fromPaymentStatus !== e.toPaymentStatus,
+      );
+      expect(changes.length, `events of ${order.id}`).toBe(
         counted.find((c) => c.order_id === order.id)?.n,
       );
       expect(mine.at(-1)?.toStatus).toBe(order.status);
+      expect(mine.at(-1)?.toPaymentStatus).toBe(order.paymentStatus);
       // 3. At most one held hold, and none on a final or awaiting Order.
       const held = holds.filter((h) => h.orderId === order.id && h.state === 'held');
       expect(held.length).toBeLessThanOrEqual(1);
@@ -394,9 +653,13 @@ class World {
       expect(currentId).toBe(order.currentProposalId);
       const live = proposals.filter((p) => p.orderId === order.id && p.supersededAt === null);
       expect(live.map((p) => p.id)).toEqual([order.currentProposalId]);
-      // 6. Pay-direct keeps Payment status none.
-      expect(order.paymentStatus).toBe('none');
-      expect(mine.every((e) => e.toPaymentStatus === 'none')).toBe(true);
+      if (order.paymentMode === 'direct') {
+        // 6. Pay-direct keeps Payment status none.
+        expect(order.paymentStatus).toBe('none');
+        expect(mine.every((e) => e.toPaymentStatus === 'none')).toBe(true);
+      } else {
+        this.checkPayment(order, attempts, stripe, drained);
+      }
       // 7. After the drain nothing waits on an expired hold.
       if (drained && order.status === 'confirming') {
         expect(held.every((h) => h.expiresAt > this.t)).toBe(true);
@@ -424,20 +687,87 @@ class World {
             sql`, `,
           )})`}`,
     );
-    const actual = notes.map((n) => `${n.data.orderId} ${n.data.proposalId} ${n.data.kind}`);
+    // The admin's payment flag is enqueued by the payment transition that raised it, not by a
+    // status change: it is checked against the flagging events below.
+    const flags = notes.filter((n) => n.data.kind === 'admin_payment_attention');
+    const actual = notes
+      .filter((n) => n.data.kind !== 'admin_payment_attention')
+      .map((n) => `${n.data.orderId} ${n.data.proposalId} ${n.data.kind}`);
     const expected: string[] = [];
+    const modeOf = new Map(all.map((o) => [o.id, o.paymentMode]));
     for (const e of events) {
-      for (const kind of requiredNotifications(e.fromStatus, e.toStatus, e.trigger)) {
+      if (e.fromStatus !== null && e.fromStatus === e.toStatus) continue;
+      const mode = modeOf.get(e.orderId) ?? 'direct';
+      for (const kind of requiredNotifications(e.fromStatus, e.toStatus, e.trigger, mode)) {
         expected.push(`${e.orderId} ${e.proposalId} ${kind}`);
       }
     }
+    for (const flag of flags) {
+      // Every flag explains itself on an OrderEvent note of that Order.
+      expect(modeOf.get(flag.data.orderId ?? '')).toBe('online');
+      expect(events.some((e) => e.orderId === flag.data.orderId && e.note)).toBe(true);
+    }
+    const flagged = flags.map((f) => f.data.orderId);
+    for (const id of this.needsFlag) expect(flagged, `flag for ${id}`).toContain(id);
+    this.needsFlag = [];
+    // P1 and M7, recorded where they happen.
+    expect(this.violations).toEqual([]);
     for (const proposalId of this.windowAlerts) {
       const p = proposals.find((x) => x.id === proposalId);
       if (p) expected.push(`${p.orderId} ${proposalId} admin_window_missed`);
     }
     expect(actual.sort()).toEqual(expected.sort());
   }
+
+  /** Confirmed pay-online Orders left uncaptured: each must have an admin flag (P5). */
+  needsFlag: string[] = [];
+
+  /** S2's payment invariants for one pay-online Order. */
+  checkPayment(order: OrderRow, all: AttemptRow[], stripe: StripeState, drained: boolean) {
+    const attempts = all.filter((x) => x.orderId === order.id);
+    // One attempt per proposal, and pay-online is allotment only in 33: one proposal.
+    expect(attempts).toHaveLength(1);
+    const attempt = attempts[0] as AttemptRow;
+    // P7: every Stripe event id is processed at most once.
+    expect(new Set(attempt.processedEventIds).size).toBe(attempt.processedEventIds.length);
+    // P2: money is captured only for a confirmed Order (a capture that lost a race to a cancel
+    // moves on to the refund in the same transaction).
+    if (order.paymentStatus === 'captured') {
+      expect(['confirmed', 'completed'], `captured ${order.id}`).toContain(order.status);
+    }
+    if (!drained) return;
+    const sessions = stripe.sessions.filter((x) => x.clientReferenceId === attempt.id);
+    const session = sessions[0];
+    const intent = stripe.intents.find((i) => i.id === session?.paymentIntentId);
+    const refund = stripe.refunds.find((r) => r.paymentIntentId === intent?.id);
+    // P4: Fetivi's attempt state equals Stripe's; every session belongs to an attempt.
+    expect(sessions.length).toBeLessThanOrEqual(1);
+    expect(attempt.sessionId ?? null).toBe(session?.id ?? null);
+    expect(attempt.sessionStatus ?? null).toBe(session?.status ?? null);
+    expect(attempt.paymentIntentId ?? null).toBe(intent?.id ?? null);
+    expect(attempt.intentStatus ?? null).toBe(intent?.status ?? null);
+    expect(attempt.refundStatus ?? null).toBe(refund?.status ?? null);
+    // P6: no session is left open.
+    expect(session?.status).not.toBe('open');
+    if (isFinalOrderStatus(order.status) && order.status !== 'completed') {
+      // P3: terminal Orders hold no money.
+      expect(['none', 'voided', 'refunded'], `payment of ${order.id}`).toContain(
+        order.paymentStatus,
+      );
+      expect(intent?.status).not.toBe('requires_capture');
+      if (intent?.status === 'succeeded') expect(refund?.status).toBe('succeeded');
+    }
+    if (order.status === 'confirmed' || order.status === 'completed') {
+      // P5: a confirmed pay-online Order ends captured, or the admin was told.
+      if (order.paymentStatus !== 'captured') this.needsFlag.push(order.id);
+      else expect(intent?.applicationFeeAmount).toBe(attempt.applicationFeeMinor);
+    }
+  }
 }
+
+type OrderRow = typeof orders.$inferSelect;
+type AttemptRow = typeof paymentAttempts.$inferSelect;
+type StripeState = ReturnType<World['gateway']['state']>;
 
 async function newWorld(capacity: number): Promise<World> {
   const allotment = await seedOrderableOffer(testDb.db, {
@@ -454,11 +784,26 @@ async function newWorld(capacity: number): Promise<World> {
     hostId: unit.hostId,
     availabilityMode: 'live',
   });
+  // Pay-online needs a Provider that can take cards.
+  const provider = await seedProvider(testDb.db, { commissionBp: 1250 });
+  await testDb.db
+    .update(providers)
+    .set({ stripeAccountId: `acct_prop_${provider.id.slice(0, 8)}`, stripeCardPayments: 'active' })
+    .where(eq(providers.id, provider.id));
+  const online = await seedOrderableOffer(testDb.db, {
+    providerId: provider.id,
+    availabilityMode: 'allotment',
+    paymentMode: 'online',
+    priceMinor: 2500,
+    capacity,
+    startsAt: SLOT_AT,
+  });
   return new World(
     [
       { ...allotment, mode: 'allotment' },
       { ...onRequest, mode: 'on_request' },
       { ...live, mode: 'live' },
+      { ...online, mode: 'online' },
     ],
     capacity,
   );
@@ -477,14 +822,14 @@ async function play(capacity: number, actions: Action[]) {
 
 const plain = { crash: false, duplicate: false };
 
-describe('Order machine property (pay-direct)', () => {
+describe('Order machine property', () => {
   it(
     `keeps the invariants over ${RUNS} random interleavings`,
     async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.integer({ min: 1, max: 4 }),
-          fc.array(actionArb, { maxLength: 30 }),
+          fc.array(actionArb, { maxLength: 30, size: 'medium' }),
           async (capacity, actions) => {
             await play(capacity, actions);
           },
@@ -492,7 +837,7 @@ describe('Order machine property (pay-direct)', () => {
         { numRuns: RUNS, seed: SEED, verbose: true },
       );
     },
-    RUNS * 4000 + 30_000,
+    RUNS * 8000 + 30_000,
   );
 
   it('ignores a stale Provider page after a new proposal', async () => {
@@ -529,5 +874,191 @@ describe('Order machine property (pay-direct)', () => {
     expect(world.orders).toHaveLength(1);
     const found = await getOrder(testDb.db, world.orders[0]?.id ?? '');
     expect(found?.order.status).toBe('completed');
+  });
+});
+
+// Pay-online scenarios: each one kills one of S2's deliberate bugs (M1-M7), on top of the random
+// interleavings above.
+const buy: Action = { kind: 'create', offer: 3, quantity: 2, sameId: false, ...plain };
+const jobs = (extra: Partial<Action & { kind: 'runPaymentJobs' }> = {}): Action => ({
+  kind: 'runPaymentJobs',
+  shuffle: 0,
+  rounds: 1,
+  lostResponse: false,
+  ...plain,
+  ...extra,
+});
+const hooks = (extra: Partial<Action & { kind: 'deliverWebhooks' }> = {}): Action => ({
+  kind: 'deliverWebhooks',
+  shuffle: 0,
+  dropCompletion: false,
+  ...plain,
+  ...extra,
+});
+const pay = (late = false): Action => ({ kind: 'guestPay', order: 0, late, ...plain });
+const wait = (minutes: number): Action => ({ kind: 'advance', minutes, shuffle: 0, ...plain });
+
+async function steps(world: World, actions: Action[]) {
+  for (const action of actions) {
+    await world.step(action);
+    await world.check();
+  }
+}
+
+async function finish(world: World) {
+  await world.drain();
+  await world.check({ drained: true });
+}
+
+async function stateOf(world: World) {
+  const found = await getOrder(testDb.db, world.orders[0]?.id ?? '');
+  const [attempt] = await testDb.db
+    .select()
+    .from(paymentAttempts)
+    .where(eq(paymentAttempts.orderId, world.orders[0]?.id ?? ''));
+  return { order: found?.order, attempt };
+}
+
+const callsOf = (world: World, op: FakeStripeOp) => world.gateway.calls.filter((c) => c.op === op);
+
+describe('Order machine property (pay-online, S2 mutants)', () => {
+  it('M1, M2: captures only once confirmed, once per duplicated or reordered event', async () => {
+    const world = await newWorld(2);
+    await steps(world, [
+      buy,
+      jobs(),
+      pay(),
+      hooks({ shuffle: 7, duplicate: true }),
+      jobs(), // confirm
+      jobs(), // capture
+    ]);
+    const { order, attempt } = await stateOf(world);
+    expect([order?.status, order?.paymentStatus]).toEqual(['confirmed', 'captured']);
+    expect(world.captures).toBe(1);
+    // 2 × 25.00 at 12.5 %.
+    expect(world.gateway.state().intents[0]?.applicationFeeAmount).toBe(625);
+    expect(attempt?.processedEventIds).toHaveLength(2);
+    await finish(world);
+  });
+
+  it('a crashed webhook is redelivered and applied once', async () => {
+    const world = await newWorld(2);
+    await steps(world, [buy, jobs(), pay(), hooks({ crash: true })]);
+    expect((await stateOf(world)).order?.paymentStatus).toBe('none');
+    await steps(world, [hooks()]);
+    expect((await stateOf(world)).order?.paymentStatus).toBe('authorized');
+    await finish(world);
+  });
+
+  it('M3: a checkout completed after the hold expired is voided', async () => {
+    const world = await newWorld(2);
+    await steps(world, [buy, jobs(), pay(true)]);
+    expect((await stateOf(world)).order?.status).toBe('expired');
+    await steps(world, [hooks(), jobs(), hooks()]);
+    const { order } = await stateOf(world);
+    expect([order?.status, order?.paymentStatus]).toEqual(['expired', 'voided']);
+    const { rows } = await testDb.db.execute<{ kind: string }>(
+      sql`select data->>'kind' as kind from pgboss.job where name = ${QUEUES.orderNotify}
+          and data->>'orderId' = ${order?.id ?? ''}`,
+    );
+    expect(rows.map((r) => r.kind)).toContain('order_checkout_expired');
+    expect(rows.map((r) => r.kind)).not.toContain('order_expired');
+    await finish(world);
+  });
+
+  it('M4: a void that meets a captured intent refunds it, fee included', async () => {
+    const world = await newWorld(2);
+    await steps(world, [
+      buy,
+      jobs(),
+      pay(),
+      hooks(),
+      jobs(), // confirm
+      jobs({ lostResponse: true }), // Stripe captured; the answer never came
+      { kind: 'providerCantFulfil', order: 0, ...plain },
+      jobs(), // capture is stale now; the void finds the intent captured
+    ]);
+    expect((await stateOf(world)).order?.status).toBe('cancelled');
+    await finish(world);
+    const { order } = await stateOf(world);
+    expect(order?.paymentStatus).toBe('refunded');
+    expect(world.gateway.state().refunds).toEqual([
+      expect.objectContaining({ status: 'succeeded', refundApplicationFee: true }),
+    ]);
+  });
+
+  it('capture re-checks confirmed: a cancel before the capture job leaves nothing captured', async () => {
+    const world = await newWorld(2);
+    await steps(world, [
+      buy,
+      jobs(),
+      pay(),
+      hooks(),
+      jobs(), // confirm
+      { kind: 'providerCantFulfil', order: 0, ...plain },
+      jobs(),
+    ]);
+    expect(callsOf(world, 'capture')).toHaveLength(0);
+    const { order } = await stateOf(world);
+    expect([order?.status, order?.paymentStatus]).toEqual(['cancelled', 'voided']);
+    await finish(world);
+  });
+
+  it('M6: a restamped checkout makes the old hold timer stale', async () => {
+    const world = await newWorld(2);
+    await steps(world, [buy, wait(2), jobs(), jobs()]);
+    const { attempt } = await stateOf(world);
+    const restamped = new Date(NOW.getTime() + (2 + CHECKOUT_HOLD_MINUTES) * MINUTE);
+    expect(attempt?.expiresAt).toEqual(restamped);
+    const [hold] = await testDb.db
+      .select()
+      .from(inventoryHolds)
+      .where(eq(inventoryHolds.orderId, world.orders[0]?.id ?? ''));
+    expect(hold?.expiresAt).toEqual(restamped);
+    expect(world.gateway.state().sessions[0]?.expiresAt).toEqual(restamped);
+    // The first hold timer (30 minutes after create) comes due and changes nothing.
+    await steps(world, [wait(29)]);
+    expect((await stateOf(world)).order?.status).toBe('confirming');
+    await steps(world, [wait(2), hooks()]);
+    expect((await stateOf(world)).order?.status).toBe('expired');
+    await finish(world);
+  });
+
+  it('M7: the retry after a lost create response sends identical parameters', async () => {
+    const world = await newWorld(2);
+    await steps(world, [buy, jobs({ lostResponse: true }), jobs()]);
+    const creates = callsOf(world, 'create_session');
+    expect(creates).toHaveLength(2);
+    expect(creates[1]?.idempotencyKey).toBe(creates[0]?.idempotencyKey);
+    expect(JSON.stringify(creates[1]?.params)).toBe(JSON.stringify(creates[0]?.params));
+    expect(world.gateway.state().sessions).toHaveLength(1);
+    expect((await stateOf(world)).attempt?.sessionId).toBe(world.gateway.state().sessions[0]?.id);
+    await finish(world);
+  });
+
+  it('learns the session from its webhook when the create response was lost', async () => {
+    // Found by the random run: the guest paid late a session Fetivi never heard back about.
+    const world = await newWorld(1);
+    await steps(world, [
+      { ...buy, quantity: 1 },
+      jobs({ lostResponse: true }),
+      pay(true),
+      hooks({ duplicate: true }),
+    ]);
+    const { order, attempt } = await stateOf(world);
+    expect(order?.status).toBe('expired');
+    expect(attempt?.sessionId).toBe(world.gateway.state().sessions[0]?.id);
+    await finish(world);
+    expect((await stateOf(world)).order?.paymentStatus).toBe('voided');
+  });
+
+  it('a lost completion webhook is closed by the expire_session job', async () => {
+    const world = await newWorld(2);
+    await steps(world, [buy, jobs(), pay(), hooks({ dropCompletion: true })]);
+    expect((await stateOf(world)).order?.paymentStatus).toBe('none');
+    await finish(world);
+    const { order } = await stateOf(world);
+    expect([order?.status, order?.paymentStatus]).toEqual(['expired', 'voided']);
+    expect(callsOf(world, 'retrieve_session').length).toBeGreaterThan(0);
   });
 });

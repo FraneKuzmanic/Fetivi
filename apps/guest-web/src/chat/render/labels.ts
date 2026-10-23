@@ -115,7 +115,9 @@ export function confirmationLabels(t: TFunction, language: string): Confirmation
       phone: t('order.invalidPhone'),
     },
     note: t('order.note'),
+    noteOnline: t('order.noteOnline'),
     confirm: t('order.confirm'),
+    confirmOnline: t('order.confirmOnline'),
     cancel: t('order.cancel'),
     sending: t('order.sending'),
   };
@@ -155,6 +157,13 @@ export function receiptLabels(t: TFunction, language: string): ReceiptLabels {
       status === 'none' && mode === 'direct'
         ? t('order.payDirect')
         : t(PAYMENT_STATUS_KEYS[status]),
+    pay: t('order.pay'),
+    // An instant: shown on the guest's own clock, where they are paying.
+    payBy: (iso) =>
+      t('order.payBy', {
+        time: new Intl.DateTimeFormat(language, { timeStyle: 'short' }).format(new Date(iso)),
+      }),
+    paying: t('order.paying'),
   };
 }
 

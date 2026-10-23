@@ -1,4 +1,11 @@
-import type { Db, JobQueue, Mailer, ManualImportModel, MediaStore } from '@fetivi/domain';
+import type {
+  Db,
+  JobQueue,
+  Mailer,
+  ManualImportModel,
+  MediaStore,
+  PaymentGateway,
+} from '@fetivi/domain';
 import Fastify from 'fastify';
 import { adminRoutes } from './admin/routes';
 import { registerAuth } from './auth/plugin';
@@ -13,9 +20,11 @@ import { manualImportRoutes } from './manual-import/routes';
 import { mediaRoutes } from './media/routes';
 import { propertyRoutes } from './properties/routes';
 import { providerLinkRoutes } from './provider-link/routes';
+import { onboardingRoutes } from './providers/onboarding';
 import { providerRoutes } from './providers/routes';
 import { stayRoutes } from './stays/routes';
 import { resendWebhookRoutes } from './webhooks/resend';
+import { stripeWebhookRoutes } from './webhooks/stripe';
 
 export interface AppDeps {
   db: Db;
@@ -37,6 +46,11 @@ export interface AppDeps {
   resendWebhookSecret?: string | undefined;
   /** The VAPID public key for the host's phone alerts; unset turns them off. */
   vapidPublicKey?: string | undefined;
+  /**
+   * Stripe, for Provider onboarding and the payment webhook. Without a gateway onboarding answers
+   * 503; without the webhook secret `/webhooks/stripe` is not registered.
+   */
+  stripe?: { gateway: PaymentGateway; webhookSecret?: string | undefined } | undefined;
 }
 
 export function buildApp(deps: AppDeps) {
@@ -56,6 +70,7 @@ export function buildApp(deps: AppDeps) {
   app.register(adminRoutes, { db, now });
   app.register(catalogRoutes, { db, queue, now });
   app.register(providerRoutes, { db, queue, now });
+  app.register(onboardingRoutes, { db, now, webOrigin, gateway: deps.stripe?.gateway ?? null });
   app.register(providerLinkRoutes, { db, queue, now });
   app.register(stayRoutes, { db, now, guestOrigin });
   app.register(calendarRoutes, { db, queue, now, guestOrigin });
@@ -63,6 +78,15 @@ export function buildApp(deps: AppDeps) {
   app.register(hostNotificationRoutes, { db, now, vapidPublicKey: deps.vapidPublicKey ?? null });
   if (deps.resendWebhookSecret) {
     app.register(resendWebhookRoutes, { db, now, secret: deps.resendWebhookSecret });
+  }
+  if (deps.stripe?.webhookSecret) {
+    app.register(stripeWebhookRoutes, {
+      db,
+      queue,
+      now,
+      secret: deps.stripe.webhookSecret,
+      gateway: deps.stripe.gateway,
+    });
   }
   return app;
 }

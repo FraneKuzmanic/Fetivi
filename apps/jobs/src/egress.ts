@@ -13,6 +13,8 @@ export const EGRESS_ALLOWLIST: readonly string[] = [
   ...new Set([...PUSH_HOSTS, ...HOST_PUSH_HOSTS]),
   // DHMZ weather warnings, for safety alerts.
   'meteo.hr',
+  // Stripe, for pay-online checkout, capture, void and refund.
+  'api.stripe.com',
 ];
 
 /** The allowlist; Jadrolinija's host joins only when its feed is on (written permission). */

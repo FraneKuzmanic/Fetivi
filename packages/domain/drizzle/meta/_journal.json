@@ -253,6 +253,13 @@
       "when": 1792743155530,
       "tag": "0035_fallback_log",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792750689240,
+      "tag": "0036_payment_attempts",
+      "breakpoints": true
     }
   ]
 }

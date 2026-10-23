@@ -324,6 +324,14 @@ export const fr: Messages = {
     paymentRefundPending: 'Remboursement en cours',
     paymentRefunded: 'Remboursé',
     paymentFailed: 'Échec du paiement',
+    pay: 'Payer maintenant',
+    payBy: 'À payer avant {{time}}',
+    paying: 'Ouverture de la page de paiement sécurisée…',
+    noteOnline:
+      'Vous paierez ensuite sur la page sécurisée de Stripe. Votre carte n’est débitée qu’une fois la réservation confirmée.',
+    confirmOnline: 'Continuer vers le paiement',
+    checkoutClosed:
+      'Le délai de paiement est écoulé. Retrouvez l’état de la réservation dans Mon séjour.',
   },
   trip: {
     plan: 'Plan',
@@ -340,6 +348,9 @@ export const fr: Messages = {
     askShort: 'Demander à Fetivi',
     planLabel: 'Programme du jour',
     askText: 'Parlez-moi de « {{title}} » le {{day}}.',
+    checkoutConfirming: 'Merci ! Je confirme votre réservation auprès du prestataire…',
+    checkoutLate:
+      'Le paiement est arrivé après la clôture de la réservation : rien n’a été débité.',
   },
   mcpApps: {
     frameTitle: 'Traversées en ferry de Ferryhopper',

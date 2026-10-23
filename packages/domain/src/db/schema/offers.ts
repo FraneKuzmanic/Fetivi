@@ -24,6 +24,7 @@ import {
   PRICE_UNITS,
   PROVIDER_LANGUAGES,
 } from '../../offers/vocabulary';
+import { PROVIDER_CARD_STATUSES } from '../../payments/vocabulary';
 import { accounts } from './accounts';
 import { catalogRecords, destinations } from './catalog';
 import { sourceLanguage, translationError, translationStatus } from './info-blocks';
@@ -37,6 +38,7 @@ export const contactFields = pgEnum('contact_fields', CONTACT_FIELDS);
 export const priceUnit = pgEnum('price_unit', PRICE_UNITS);
 export const adapterKind = pgEnum('adapter_kind', ADAPTER_KINDS);
 export const providerLanguage = pgEnum('provider_language', PROVIDER_LANGUAGES);
+export const providerCardStatus = pgEnum('provider_card_status', PROVIDER_CARD_STATUSES);
 
 /** A local business the admin has a deal with. It gets each Order by email and has no login. */
 export const providers = pgTable(
@@ -54,8 +56,11 @@ export const providers = pgTable(
     commissionBp: integer('commission_bp').notNull().default(0),
     /** Free text, visible to the admin only. */
     dealNotes: text('deal_notes'),
-    /** Set by ticket 33's Stripe onboarding; null until then. */
+    /** The Stripe connected account (Accounts v2, merchant), created by the admin's onboarding link. */
     stripeAccountId: text('stripe_account_id'),
+    /** The account's card payments capability as last read from Stripe; null when never onboarded. */
+    stripeCardPayments: providerCardStatus('stripe_card_payments'),
+    stripeCheckedAt: timestamp('stripe_checked_at', { withTimezone: true }),
     active: boolean('active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

@@ -22,7 +22,8 @@
     "./weather-vocabulary": "./src/weather/vocabulary.ts",
     "./alerts-vocabulary": "./src/alerts/vocabulary.ts",
     "./tips-vocabulary": "./src/tips/vocabulary.ts",
-    "./fallback-vocabulary": "./src/fallback/vocabulary.ts"
+    "./fallback-vocabulary": "./src/fallback/vocabulary.ts",
+    "./payments-vocabulary": "./src/payments/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -38,6 +39,7 @@
     "mammoth": "1.13.0",
     "pg": "8.23.1",
     "pg-boss": "12.38.0",
+    "stripe": "23.0.0",
     "unpdf": "1.8.1",
     "web-push": "3.6.7",
     "zod": "4.6.7"

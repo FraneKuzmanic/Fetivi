@@ -325,6 +325,14 @@ export const de: Messages = {
     paymentRefundPending: 'Erstattung unterwegs',
     paymentRefunded: 'Erstattet',
     paymentFailed: 'Zahlung fehlgeschlagen',
+    pay: 'Jetzt bezahlen',
+    payBy: 'Bitte bis {{time}} bezahlen',
+    paying: 'Die sichere Zahlungsseite wird geöffnet…',
+    noteOnline:
+      'Als Nächstes bezahlen Sie auf der sicheren Seite von Stripe. Ihre Karte wird erst belastet, wenn die Buchung bestätigt ist.',
+    confirmOnline: 'Weiter zur Zahlung',
+    checkoutClosed:
+      'Die Zeit für die Zahlung ist abgelaufen. Den Stand der Buchung sehen Sie unter Meine Reise.',
   },
   trip: {
     plan: 'Plan',
@@ -341,6 +349,9 @@ export const de: Messages = {
     askShort: 'Fetivi fragen',
     planLabel: 'Tagesplan',
     askText: 'Erzählen Sie mir mehr über „{{title}}“ am {{day}}.',
+    checkoutConfirming: 'Danke! Ich bestätige Ihre Buchung gerade beim Anbieter…',
+    checkoutLate:
+      'Die Zahlung kam erst nach Ablauf der Buchung an, deshalb wurde nichts abgebucht.',
   },
   mcpApps: {
     frameTitle: 'Fährverbindungen von Ferryhopper',

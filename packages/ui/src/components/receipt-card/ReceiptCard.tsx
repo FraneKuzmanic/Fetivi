@@ -14,6 +14,12 @@ export interface ReceiptLabels {
   price: (priceMinor: number | null, currency: string) => string;
   orderStatus: (status: OrderStatus) => string;
   paymentStatus: (status: PaymentStatus, mode: PaymentMode) => string;
+  /** The Pay now button of a pay-online Order the guest can still pay. */
+  pay: string;
+  /** The line under it: the time the checkout closes. */
+  payBy: (iso: string) => string;
+  /** While the secure payment page opens. */
+  paying: string;
 }
 
 type Tone = 'good' | 'wait' | 'off';
@@ -53,9 +59,17 @@ export const Status = ({ tone, text }: { tone: Tone; text: string }) => (
 export function ReceiptCard({
   order,
   labels,
+  onPay,
+  paying = false,
+  notice,
 }: {
   order: OrderSummaryPayload;
   labels: ReceiptLabels;
+  /** Shows Pay now while `order.payBy` is set; the URL comes from the server on tap. */
+  onPay?: (orderId: string) => void;
+  paying?: boolean;
+  /** A short line under the facts, such as why the payment window closed. */
+  notice?: string | null;
 }) {
   return (
     <article className="fv-receipt">
@@ -93,6 +107,24 @@ export function ReceiptCard({
           <dd>{order.id.slice(0, 8).toUpperCase()}</dd>
         </div>
       </dl>
+      {order.payBy && onPay && (
+        <div className="fv-receipt-pay">
+          <button
+            type="button"
+            className="fv-confirm-yes"
+            disabled={paying}
+            onClick={() => onPay(order.id)}
+          >
+            {labels.pay}
+          </button>
+          <p className="fv-confirm-note">{paying ? labels.paying : labels.payBy(order.payBy)}</p>
+        </div>
+      )}
+      {notice && (
+        <p role="status" className="fv-confirm-note">
+          {notice}
+        </p>
+      )}
     </article>
   );
 }

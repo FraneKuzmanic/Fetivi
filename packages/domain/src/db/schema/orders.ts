@@ -21,6 +21,7 @@ import {
   PAYMENT_STATUSES,
   PROPOSERS,
 } from '../../orders/vocabulary';
+import { INTENT_STATUSES, REFUND_STATUSES, SESSION_STATUSES } from '../../payments/vocabulary';
 import { accounts } from './accounts';
 import { allotmentSlots, availabilityMode, offers, paymentMode, priceUnit } from './offers';
 import { spaces } from './spaces';
@@ -31,10 +32,13 @@ export const paymentStatus = pgEnum('payment_status', PAYMENT_STATUSES);
 export const orderTrigger = pgEnum('order_trigger', ORDER_TRIGGERS);
 export const proposer = pgEnum('proposer', PROPOSERS);
 export const holdState = pgEnum('hold_state', HOLD_STATES);
+export const sessionStatus = pgEnum('session_status', SESSION_STATUSES);
+export const intentStatus = pgEnum('intent_status', INTENT_STATUSES);
+export const refundStatus = pgEnum('refund_status', REFUND_STATUSES);
 
 /**
- * One guest interaction with an Offer. Its id is the order handle. Only `orders/machine.ts`
- * writes `status` and `payment_status`.
+ * One guest interaction with an Offer. Its id is the order handle. Only `orders/machine.ts` and
+ * `orders/payments.ts` write `status` and `payment_status`.
  */
 export const orders = pgTable(
   'orders',
@@ -165,19 +169,63 @@ export const inventoryHolds = pgTable('inventory_holds', {
   resolvedAt: timestamp('resolved_at', { withTimezone: true }),
 });
 
-/** Placeholder; ticket 33 adds the Stripe session and intent columns. */
-export const paymentAttempts = pgTable('payment_attempts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  orderId: uuid('order_id')
-    .notNull()
-    .references(() => orders.id, { onDelete: 'cascade' }),
-  proposalId: uuid('proposal_id')
-    .notNull()
-    .references(() => orderProposals.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+/**
+ * One Stripe Checkout Session and payment intent for one proposal, on the Provider's connected
+ * account. Every Stripe parameter is stored here before the first call, so a retry sends identical
+ * parameters. Written only by `orders/machine.ts`, `orders/payments.ts` and `payments/jobs.ts`
+ * (Stripe ids and mirror).
+ */
+export const paymentAttempts = pgTable(
+  'payment_attempts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orderId: uuid('order_id')
+      .notNull()
+      .references(() => orders.id, { onDelete: 'cascade' }),
+    proposalId: uuid('proposal_id')
+      .notNull()
+      .references(() => orderProposals.id, { onDelete: 'cascade' }),
+    /** The proposal's version: the `<n>` of the idempotency keys. */
+    proposalVersion: integer('proposal_version').notNull(),
+    /** Snapshot of the Provider's connected account at create. */
+    stripeAccountId: text('stripe_account_id').notNull(),
+    amountMinor: integer('amount_minor').notNull(),
+    currency: text('currency').notNull(),
+    /** Fetivi's commission, set on the capture call. */
+    applicationFeeMinor: integer('application_fee_minor').notNull(),
+    /** Snapshot of the Offer title, the Checkout line item. */
+    productName: text('product_name').notNull(),
+    /** Checkout `locale`. */
+    locale: text('locale').notNull(),
+    /** The Checkout Session's `expires_at`, equal to the inventory hold's; stored before the create call. */
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    /** Set when a create was sent at least once: from then on the create is replayed, never restamped. */
+    createSentAt: timestamp('create_sent_at', { withTimezone: true }),
+    sessionId: text('session_id').unique(),
+    checkoutUrl: text('checkout_url'),
+    sessionStatus: sessionStatus('session_status'),
+    paymentIntentId: text('payment_intent_id').unique(),
+    intentStatus: intentStatus('intent_status'),
+    refundId: text('refund_id'),
+    refundStatus: refundStatus('refund_status'),
+    /** Stripe event ids already applied; an event is processed once. */
+    processedEventIds: text('processed_event_ids').array().notNull().default(sql`'{}'::text[]`),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('payment_attempts_proposal_unique').on(t.proposalId),
+    index('payment_attempts_order_idx').on(t.orderId),
+    check('payment_attempts_amount_check', sql`${t.amountMinor} > 0`),
+    check(
+      'payment_attempts_fee_check',
+      sql`${t.applicationFeeMinor} >= 0 and ${t.applicationFeeMinor} <= ${t.amountMinor}`,
+    ),
+  ],
+);
 
 export type OrderRow = typeof orders.$inferSelect;
 export type OrderProposalRow = typeof orderProposals.$inferSelect;
 export type OrderEventRow = typeof orderEvents.$inferSelect;
 export type InventoryHoldRow = typeof inventoryHolds.$inferSelect;
+export type PaymentAttemptRow = typeof paymentAttempts.$inferSelect;

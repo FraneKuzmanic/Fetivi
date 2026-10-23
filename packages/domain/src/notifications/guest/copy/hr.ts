@@ -47,6 +47,15 @@ export const hr: GuestCopy = {
       pushTitle: 'Zahtjev je zatvoren',
       pushBody: '{{offer}}, {{date}}',
     },
+    order_checkout_expired: {
+      subject: 'Nije dovršeno na vrijeme: {{offer}}, {{date}}',
+      lines: [
+        'Plaćanje za {{offer}} ({{date}}) nije dovršeno na vrijeme pa je rezervacija zatvorena i ništa nije naplaćeno.',
+        'U razgovoru me možete zamoliti da pokušamo ponovno.',
+      ],
+      pushTitle: 'Rezervacija je zatvorena',
+      pushBody: '{{offer}}, {{date}}',
+    },
     order_failed: {
       subject: 'Rezervacija nije uspjela: {{offer}}, {{date}}',
       lines: [

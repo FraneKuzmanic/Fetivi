@@ -21,7 +21,11 @@ export interface ConfirmationCardLabels {
   invalid: Record<ContactField, string>;
   /** Who gets the details, and that the confirmation goes to the email. */
   note: string;
+  /** Pay-online only: the guest pays on Stripe's page next; charged only once confirmed. */
+  noteOnline: string;
   confirm: string;
+  /** The confirm button of a pay-online draft. */
+  confirmOnline: string;
   cancel: string;
   sending: string;
 }
@@ -82,6 +86,7 @@ export function ConfirmationCard({
     });
   }, [initialValues]);
   const sending = state === 'sending';
+  const online = draft.paymentMode === 'online';
   const headingId = `${id}-heading`;
 
   const submit = (event: FormEvent) => {
@@ -153,9 +158,10 @@ export function ConfirmationCard({
           );
         })}
         <p className="fv-confirm-note">{labels.note}</p>
+        {online && <p className="fv-confirm-note">{labels.noteOnline}</p>}
         <div className="fv-confirm-actions">
           <button type="submit" className="fv-confirm-yes" disabled={sending}>
-            {labels.confirm}
+            {online ? labels.confirmOnline : labels.confirm}
           </button>
           <button type="button" className="fv-confirm-no" disabled={sending} onClick={onCancel}>
             {labels.cancel}
