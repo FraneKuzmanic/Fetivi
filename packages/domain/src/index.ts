@@ -6,6 +6,7 @@ export * from './conversations';
 export * from './db/client';
 export * from './db/migrate';
 export * from './db/schema';
+export * from './fallback';
 export * from './handoff';
 export * from './jobs';
 export * from './mail';

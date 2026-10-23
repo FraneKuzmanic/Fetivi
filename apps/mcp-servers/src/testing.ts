@@ -14,12 +14,14 @@ import {
   type SpaceContext,
   serverUrl,
   type WeatherSource,
+  type WebSearch,
 } from '@fetivi/domain';
 import {
   createTestDatabase,
   noopQueue,
   type TestDatabase,
   unavailableWeatherSource,
+  unavailableWebSearch,
 } from '@fetivi/domain/testing';
 import { createMcpFastifyApp } from '@modelcontextprotocol/fastify';
 import { McpServer } from '@modelcontextprotocol/server';
@@ -115,6 +117,8 @@ export async function createTestServer(
     now?: () => Date;
     /** Default: every weather upstream down, so no test reaches the network. */
     weather?: WeatherSource;
+    /** Default: web search down, so no test reaches Brave. */
+    webSearch?: WebSearch;
   } = {},
 ): Promise<TestServer> {
   const testDb = await createTestDatabase();
@@ -135,6 +139,7 @@ export async function createTestServer(
     queue: createJobQueue(boss),
     now: options.now,
     weather: options.weather ?? unavailableWeatherSource(),
+    webSearch: options.webSearch ?? unavailableWebSearch(),
   });
   let url = '';
   if (options.listen) {
@@ -177,17 +182,19 @@ type MountOptions = Parameters<typeof mountServers>[1];
 
 /**
  * The four servers as buildApp mounts them, for other apps' tests; `overrides` swaps a server.
- * Jobs are dropped, the requestState key is fixed and every weather upstream is down unless given.
+ * Jobs are dropped, the requestState key is fixed and every weather upstream and web search is
+ * down unless given.
  */
 export function buildMcpTestApp(
-  opts: Omit<MountOptions, 'queue' | 'requestStateSecret' | 'weather'> &
-    Partial<Pick<MountOptions, 'queue' | 'requestStateSecret' | 'weather'>>,
+  opts: Omit<MountOptions, 'queue' | 'requestStateSecret' | 'weather' | 'webSearch'> &
+    Partial<Pick<MountOptions, 'queue' | 'requestStateSecret' | 'weather' | 'webSearch'>>,
 ): FastifyInstance {
   const app = createMcpFastifyApp({ host: '127.0.0.1', allowedHosts: ['127.0.0.1', 'localhost'] });
   mountServers(app, {
     queue: noopQueue,
     requestStateSecret: TEST_REQUEST_STATE_SECRET,
     weather: unavailableWeatherSource(),
+    webSearch: unavailableWebSearch(),
     ...opts,
   });
   return app;

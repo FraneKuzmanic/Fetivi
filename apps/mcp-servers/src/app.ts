@@ -1,4 +1,5 @@
 import {
+  createBraveSearch,
   createWeatherSource,
   type Db,
   type GuestIdentity,
@@ -8,6 +9,7 @@ import {
   type Scope,
   serverUrl,
   type WeatherSource,
+  type WebSearch,
 } from '@fetivi/domain';
 import { createMcpFastifyApp } from '@modelcontextprotocol/fastify';
 import type { McpServer } from '@modelcontextprotocol/server';
@@ -31,6 +33,7 @@ export interface AppDeps {
     | 'GUEST_TOKEN_ISSUER'
     | 'REQUEST_STATE_SECRET'
     | 'WEATHER_USER_AGENT'
+    | 'BRAVE_SEARCH_API_KEY'
   >;
   db: Db;
   /** Send-only: the Order machine enqueues its timers and notifications in its transaction. */
@@ -41,6 +44,8 @@ export interface AppDeps {
   now?: () => Date;
   /** Built once here when not given, through the egress allowlist, so its cache is per process. */
   weather?: WeatherSource;
+  /** Built here when not given: Brave through the egress allowlist; no key means unavailable. */
+  webSearch?: WebSearch;
 }
 
 export function buildApp(deps: AppDeps) {
@@ -59,6 +64,9 @@ export function buildApp(deps: AppDeps) {
     weather:
       deps.weather ??
       createWeatherSource({ fetch: egress.fetch, userAgent: config.WEATHER_USER_AGENT }),
+    webSearch:
+      deps.webSearch ??
+      createBraveSearch({ fetch: egress.fetch, apiKey: config.BRAVE_SEARCH_API_KEY }),
   });
   return app;
 }
@@ -76,13 +84,14 @@ export function mountServers(
     /** HMAC key of the elicitation `requestState`, at least 32 bytes. */
     requestStateSecret: string;
     weather: WeatherSource;
+    webSearch: WebSearch;
     overrides?: Partial<Record<McpServerName, (identity: GuestIdentity) => McpServer>>;
   },
 ) {
-  const { db, now, queue, requestStateSecret, weather } = opts;
-  const deps = { db, now, queue, requestStateSecret, weather };
+  const { db, now, queue, requestStateSecret, weather, webSearch } = opts;
+  const deps = { db, now, queue, requestStateSecret, weather, webSearch };
   // `local` needs no scope at the gate: outside a destination the token has no catalog:read, yet
-  // the server still answers (an empty list now, web_fallback_search in 31); tools check per call.
+  // the server still answers with web_fallback_search alone; tools check per call.
   // `services` likewise: after checkout only list_my_orders is listed, and each tool checks its own.
   const servers: Record<
     McpServerName,

@@ -43,6 +43,11 @@ const schema = z
       .string()
       .min(10)
       .default('Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)'),
+    /** Read only with TOOL_TRANSPORT=inprocess: Brave Search for V0's web_fallback_search. */
+    BRAVE_SEARCH_API_KEY: z
+      .string()
+      .optional()
+      .transform((s) => s || undefined),
   })
   .refine((c) => c.NODE_ENV !== 'production' || Boolean(c.GUEST_TOKEN_PRIVATE_KEY), {
     message: 'GUEST_TOKEN_PRIVATE_KEY is required in production',

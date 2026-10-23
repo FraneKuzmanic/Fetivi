@@ -8,6 +8,7 @@ import {
   PropertyInfoCard,
   ReceiptCard,
   WeatherCard,
+  WebResults,
 } from '@fetivi/ui';
 import { componentPart } from '@fetivi/ui/payloads';
 import { useMemo } from 'react';
@@ -26,6 +27,7 @@ import {
   planLabels,
   receiptLabels,
   weatherLabels,
+  webResultsLabels,
 } from './labels';
 import { useSavedPlaces } from './SavedPlaces';
 
@@ -131,6 +133,9 @@ export function ComponentPart({
       );
     case 'weather':
       return <WeatherCard report={part.payload} labels={weatherLabels(t, i18n.language)} />;
+    case 'web-results':
+      // Links with source chips: never place cards, nothing to save or book.
+      return <WebResults results={part.payload.results} labels={webResultsLabels(t)} />;
     case 'property-info':
       return (
         <PropertyInfoCard

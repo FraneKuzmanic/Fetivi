@@ -31,6 +31,11 @@ const schema = z
       .string()
       .min(10)
       .default('Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)'),
+    /** Brave Search for web_fallback_search; without it the tool answers "not available". */
+    BRAVE_SEARCH_API_KEY: z
+      .string()
+      .optional()
+      .transform((s) => s || undefined),
   })
   .refine(
     (c) => c.NODE_ENV !== 'production' || c.REQUEST_STATE_SECRET !== DEV_REQUEST_STATE_SECRET,

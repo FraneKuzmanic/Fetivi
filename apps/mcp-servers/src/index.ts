@@ -21,6 +21,10 @@ await boss.start();
 await ensureQueues(boss);
 const app = buildApp({ config, db, keys, queue: createJobQueue(boss) });
 
+if (!config.BRAVE_SEARCH_API_KEY) {
+  app.log.warn('BRAVE_SEARCH_API_KEY is not set: web_fallback_search answers "not available"');
+}
+
 await app.listen({ host: config.HOST, port: config.PORT });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

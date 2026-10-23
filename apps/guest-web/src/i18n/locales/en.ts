@@ -332,6 +332,15 @@ export const en = {
     planLabel: 'Day plan',
     askText: 'Tell me more about "{{title}}" on {{day}}.',
   },
+  webResults: {
+    heading: 'From the web',
+    notChecked: 'Not checked by Fetivi. Confirm on the site before you go.',
+    opensInNewTab: 'opens in a new tab',
+    kind_tourist_board: 'Tourist board',
+    kind_ferry_operator: 'Ferry operator',
+    kind_weather_service: 'Weather service',
+    kind_venue: "Venue's own site",
+  },
   weather: {
     heading: 'Weather',
     today: 'Today',

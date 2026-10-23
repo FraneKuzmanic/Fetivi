@@ -333,6 +333,15 @@ export const hr: Messages = {
     planLabel: 'Plan dana',
     askText: 'Recite mi više o „{{title}}” ({{day}}).',
   },
+  webResults: {
+    heading: 'S interneta',
+    notChecked: 'Fetivi ovo nije provjerio. Provjerite na stranici prije polaska.',
+    opensInNewTab: 'otvara se u novoj kartici',
+    kind_tourist_board: 'Turistička zajednica',
+    kind_ferry_operator: 'Brodar',
+    kind_weather_service: 'Meteorološka služba',
+    kind_venue: 'Stranica mjesta',
+  },
   weather: {
     heading: 'Vrijeme',
     today: 'Danas',

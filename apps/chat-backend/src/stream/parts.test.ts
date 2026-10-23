@@ -301,3 +301,29 @@ describe('weather component', () => {
     ).toBeNull();
   });
 });
+
+describe('web results component', () => {
+  const result = {
+    title: 'Kayaking in Trogir',
+    snippet: 'Sea kayak tours.',
+    url: 'https://www.visittrogir.hr/en/kayak',
+    source: { host: 'visittrogir.hr', kind: 'tourist_board' },
+  };
+
+  it('shows web_fallback_search results as links with source chips', () => {
+    expect(componentFor('web_fallback_search', { results: [result] })).toEqual({
+      name: 'web-results',
+      payload: { results: [result] },
+    });
+  });
+
+  it('shows nothing for no results, an error text or a javascript link', () => {
+    expect(componentFor('web_fallback_search', { results: [] })).toBeNull();
+    expect(
+      componentFor('web_fallback_search', 'Web search is not available right now.'),
+    ).toBeNull();
+    expect(
+      componentFor('web_fallback_search', { results: [{ ...result, url: 'javascript:alert(1)' }] }),
+    ).toBeNull();
+  });
+});

@@ -15,6 +15,7 @@ import {
   placeCarousel,
   receiptCard,
   weatherCard,
+  webResults,
 } from '.';
 
 const PLACE: PlaceCardPayload = {
@@ -430,5 +431,32 @@ describe('weather', () => {
     expect(weatherCard.safeParse({ ...result, credits: [] }).success).toBe(false);
     const days = [{ ...result.days?.[0], sky: 'sunny' }];
     expect(weatherCard.safeParse({ ...result, days }).success).toBe(false);
+  });
+});
+
+describe('webResults', () => {
+  const result = {
+    title: 'Kayaking in Trogir',
+    snippet: 'Sea kayak tours around Čiovo.',
+    url: 'https://www.visittrogir.hr/en/kayak',
+    source: { host: 'visittrogir.hr', kind: 'tourist_board' },
+  };
+
+  it('takes https links with a source', () => {
+    expect(webResults.safeParse({ results: [result] }).success).toBe(true);
+    expect(
+      componentPart.safeParse({ name: 'web-results', payload: { results: [result] } }).success,
+    ).toBe(true);
+  });
+
+  it('refuses http and javascript links, an empty list and an unknown kind', () => {
+    for (const url of ['http://www.croatia.hr/x', 'javascript:alert(1)']) {
+      expect(webResults.safeParse({ results: [{ ...result, url }] }).success).toBe(false);
+    }
+    expect(webResults.safeParse({ results: [] }).success).toBe(false);
+    expect(
+      webResults.safeParse({ results: [{ ...result, source: { host: 'x.hr', kind: 'blog' } }] })
+        .success,
+    ).toBe(false);
   });
 });

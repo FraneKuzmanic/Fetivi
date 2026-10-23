@@ -1,5 +1,7 @@
 import {
   type EventSearch,
+  FALLBACK_LIMITS,
+  FALLBACK_SOURCE_KINDS,
   IMAGE_SOURCES,
   PLACE_CATEGORIES,
   type PlaceDetail,
@@ -12,6 +14,7 @@ import {
   WARNING_TYPES,
   WEATHER_SOURCES,
   type WeatherToolResult,
+  type WebFallbackResult,
 } from '@fetivi/domain';
 import { z } from 'zod';
 
@@ -52,6 +55,22 @@ export const getWeatherInput = z.object({
   date: civilDate
     .optional()
     .describe('The day the guest asks about; default today at the property. Up to 8 days ahead.'),
+});
+export const webFallbackInput = z.object({
+  keywords: z
+    .string()
+    .trim()
+    .min(FALLBACK_LIMITS.minChars)
+    .max(FALLBACK_LIMITS.keywordsMaxChars)
+    .describe(
+      '2-8 topic keywords in any language, e.g. "kayak rental". Never names, codes, numbers, contact or booking details, or anything about the guests.',
+    ),
+  place: z
+    .string()
+    .trim()
+    .min(FALLBACK_LIMITS.minChars)
+    .max(FALLBACK_LIMITS.placeMaxChars)
+    .describe('The town or place name, e.g. "Trogir".'),
 });
 
 const latLng = z.object({ lat: z.number(), lng: z.number() });
@@ -190,6 +209,16 @@ export const getWeatherOutput = z.object({
     z.object({ source: z.enum(WEATHER_SOURCES), label: z.string(), url: z.string() }),
   ),
 });
+export const webFallbackOutput = z.object({
+  results: z.array(
+    z.object({
+      title: z.string(),
+      snippet: z.string(),
+      url: z.string(),
+      source: z.object({ host: z.string(), kind: z.enum(FALLBACK_SOURCE_KINDS) }),
+    }),
+  ),
+});
 
 // A drift between the domain types and these schemas fails typecheck, not a tool call.
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
@@ -199,5 +228,6 @@ const _schemasMatch: [
   Same<z.infer<typeof searchEventsOutput>, EventSearch>,
   Same<z.infer<typeof transportNote>, TransportNote>,
   Same<z.infer<typeof getWeatherOutput>, WeatherToolResult>,
-] = [true, true, true, true, true];
+  Same<z.infer<typeof webFallbackOutput>, WebFallbackResult>,
+] = [true, true, true, true, true, true];
 void _schemasMatch;

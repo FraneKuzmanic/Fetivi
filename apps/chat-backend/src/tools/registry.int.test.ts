@@ -21,6 +21,7 @@ import {
   seedProvider,
   type TestDatabase,
   unavailableWeatherSource,
+  unavailableWebSearch,
 } from '@fetivi/domain/testing';
 import { createEgress, type Egress } from '@fetivi/egress';
 import { buildMcpTestApp, TEST_REQUEST_STATE_SECRET } from '@fetivi/mcp-servers/testing';
@@ -72,6 +73,7 @@ beforeAll(async () => {
     queue: noopQueue,
     requestStateSecret: TEST_REQUEST_STATE_SECRET,
     weather: unavailableWeatherSource(),
+    webSearch: unavailableWebSearch(),
   });
 });
 
@@ -115,6 +117,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'search_events',
       'get_weather',
       'get_transport_notes',
+      'web_fallback_search',
       'list_offers',
       'check_availability',
       'list_my_orders',
@@ -136,6 +139,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'search_events',
       'get_weather',
       'get_transport_notes',
+      'web_fallback_search',
       'list_offers',
       'check_availability',
       'list_my_orders',
@@ -152,6 +156,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
     [
       'draft_host_message',
       'send_host_message',
+      'web_fallback_search',
       'list_my_orders',
       'get_plan',
       'update_plan',
@@ -165,6 +170,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
     [
       'draft_host_message',
       'send_host_message',
+      'web_fallback_search',
       'list_offers',
       'check_availability',
       'list_my_orders',
@@ -184,6 +190,7 @@ const SITUATIONS: [string, SpaceContext, string[]][] = [
       'search_events',
       'get_weather',
       'get_transport_notes',
+      'web_fallback_search',
       'list_my_orders',
       'get_plan',
       'get_about_me',

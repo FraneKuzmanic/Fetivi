@@ -12,6 +12,7 @@ import type {
   PlaceLabels,
   ReceiptLabels,
   WeatherLabels,
+  WebResultsLabels,
 } from '@fetivi/ui';
 import type { InboxItem } from '@fetivi/ui/payloads';
 import type { TFunction } from 'i18next';
@@ -236,6 +237,14 @@ export function weatherLabels(t: TFunction, language: string): WeatherLabels {
     skyName: (sky) => t(`weather.sky_${sky}`),
   };
 }
+
+/** The web results' strings: heading, the not-checked line and each source kind. */
+export const webResultsLabels = (t: TFunction): WebResultsLabels => ({
+  heading: t('webResults.heading'),
+  notChecked: t('webResults.notChecked'),
+  opensInNewTab: t('webResults.opensInNewTab'),
+  kind: (kind) => t(`webResults.kind_${kind}`),
+});
 
 /** The host message card's strings. */
 export const hostDraftLabels = (t: TFunction): HostDraftLabels => ({

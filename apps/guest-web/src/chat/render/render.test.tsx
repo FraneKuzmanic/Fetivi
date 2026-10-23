@@ -286,3 +286,33 @@ describe('weather card in the chat', () => {
     expect(html).toContain('the official weather warnings just now.');
   });
 });
+
+describe('web results in the chat', () => {
+  const results = {
+    type: 'data-component',
+    id: 'r1',
+    data: {
+      name: 'web-results',
+      payload: {
+        results: [
+          {
+            title: 'Kayaking around Trogir',
+            snippet: 'Sea kayak tours around Čiovo.',
+            url: 'https://www.visittrogir.hr/en/kayak',
+            source: { host: 'visittrogir.hr', kind: 'tourist_board' },
+          },
+        ],
+      },
+    },
+  } as const;
+
+  it('renders a stored web-results part as links with source chips, not place cards', () => {
+    const html = render([question, answer([results])]);
+    expect(html).toContain('From the web');
+    expect(html).toContain('Not checked by Fetivi.');
+    expect(html).toContain('href="https://www.visittrogir.hr/en/kayak"');
+    expect(html).toContain('visittrogir.hr');
+    expect(html).toContain('Tourist board');
+    expect(html).not.toContain('fv-place-card');
+  });
+});

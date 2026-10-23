@@ -23,6 +23,7 @@ import {
   type SeededGuestUnit,
   type TestDatabase,
   unavailableWeatherSource,
+  unavailableWebSearch,
 } from '@fetivi/domain/testing';
 import { createEgress, type Egress } from '@fetivi/egress';
 import {
@@ -305,6 +306,7 @@ async function createInProcessChatTestApp(options: {
         queue: options.queue ?? noopQueue,
         requestStateSecret: TEST_REQUEST_STATE_SECRET,
         weather,
+        webSearch: unavailableWebSearch(),
       }),
       weather,
     },

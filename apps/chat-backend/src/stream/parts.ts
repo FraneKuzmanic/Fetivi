@@ -63,6 +63,12 @@ const candidate = (toolName: string, value: unknown): unknown => {
     case 'get_weather':
       // Parsing keeps what the card shows; symbol codes and forecastUpdatedAt stay in the result.
       return isRecord(value) ? { name: 'weather', payload: value } : null;
+    case 'web_fallback_search': {
+      // Links with source chips, never place cards.
+      const results = isRecord(value) ? value.results : null;
+      if (!Array.isArray(results) || results.length === 0) return null;
+      return { name: 'web-results', payload: { results } };
+    }
     case 'draft_host_message': {
       // The emergency path: 112 first, then the host's phone, as the Guide's contacts card.
       if (!isRecord(value) || value.outcome !== 'emergency' || !isRecord(value.emergency)) {

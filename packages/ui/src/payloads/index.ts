@@ -4,6 +4,7 @@
 import { FERRY_LINE_IDS } from '@fetivi/domain/alerts-vocabulary';
 import { CALENDAR_SOURCES } from '@fetivi/domain/calendar-vocabulary';
 import { PLACE_CATEGORIES, STALENESS_STATUSES } from '@fetivi/domain/catalog-vocabulary';
+import { FALLBACK_LIMITS, FALLBACK_SOURCE_KINDS } from '@fetivi/domain/fallback-vocabulary';
 import {
   HANDOFF_LIMITS,
   HANDOFF_REASONS,
@@ -204,6 +205,24 @@ export const weatherCard = z.object({
     .min(1),
 });
 
+/**
+ * web_fallback_search's results: unchecked pages shown as links with a source chip, never as
+ * place cards. Only https links; the domain already re-checked each host against the allowlist.
+ */
+export const webResults = z.object({
+  results: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        snippet: z.string().max(400),
+        url: z.url().refine((u) => u.startsWith('https://')),
+        source: z.object({ host: z.string().min(1), kind: z.enum(FALLBACK_SOURCE_KINDS) }),
+      }),
+    )
+    .min(1)
+    .max(FALLBACK_LIMITS.results),
+});
+
 /** A streamed component: its name and a payload valid for that name. */
 export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('follow-up-chips'), payload: followUpChips }),
@@ -215,6 +234,7 @@ export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('host-message-sent'), payload: hostMessageSent }),
   z.object({ name: z.literal('day-plan'), payload: dayPlan }),
   z.object({ name: z.literal('weather'), payload: weatherCard }),
+  z.object({ name: z.literal('web-results'), payload: webResults }),
 ]);
 
 /** The UI message part type of a confirmation card; its id is the paused tool call's id. */
@@ -384,3 +404,4 @@ export type InboxItem = z.infer<typeof inboxItem>;
 export type DayPlanPayload = z.infer<typeof dayPlan>;
 export type PlanItemPayload = z.infer<typeof planItem>;
 export type WeatherCardPayload = z.infer<typeof weatherCard>;
+export type WebResultsPayload = z.infer<typeof webResults>;

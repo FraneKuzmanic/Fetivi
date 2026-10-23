@@ -12,6 +12,12 @@ export {
   sampleExtraction,
 } from '../property/manual-import/sample-manual';
 export { createTestDatabase, type TestDatabase } from './database';
+export {
+  fixedWebSearch,
+  type RecordedBraveFetchOptions,
+  recordedBraveFetch,
+  unavailableWebSearch,
+} from './fallback';
 export * from './fixtures';
 export {
   fixedWeatherSource,

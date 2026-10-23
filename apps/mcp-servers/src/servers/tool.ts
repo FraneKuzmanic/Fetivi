@@ -5,6 +5,7 @@ import {
   type JobQueue,
   type Scope,
   type WeatherSource,
+  type WebSearch,
 } from '@fetivi/domain';
 import {
   type CallToolResult,
@@ -76,6 +77,8 @@ export interface ToolDeps {
   requestStateSecret: string;
   /** Weather for get_weather; shared per process so its cache is. */
   weather: WeatherSource;
+  /** Brave for web_fallback_search; one per process. */
+  webSearch: WebSearch;
 }
 
 /** One guest tool as data: the MCP servers register it, V0 calls it in process. */

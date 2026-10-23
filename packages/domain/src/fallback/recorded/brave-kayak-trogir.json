@@ -1,0 +1,156 @@
+{
+  "_note": "Recorded from the live Brave Search API on 2026-10-23 (count=10, result_filter=web, safesearch=strict), trimmed to title/url/description/meta_url. The tripadvisor.com hit was added by hand to exercise the re-check; the http://www.croatia.hr hit is real.",
+  "type": "search",
+  "query": {
+    "original": "kayak rental trogir (site:croatia.hr OR site:dalmatia.hr OR site:visittrogir.hr OR site:jadrolinija.hr OR site:krilo.hr OR site:tp-line.hr OR site:meteo.hr)",
+    "search_operators": {
+      "applied": true,
+      "cleaned_query": "kayak rental trogir",
+      "sites": [
+        "croatia.hr",
+        "dalmatia.hr",
+        "visittrogir.hr",
+        "jadrolinija.hr",
+        "krilo.hr",
+        "tp-line.hr",
+        "meteo.hr"
+      ]
+    }
+  },
+  "web": {
+    "type": "search",
+    "results": [
+      {
+        "title": "Canoeing & Kayaking",
+        "url": "http://www.croatia.hr/en-GB/experiences/active/canoeing-and-kayaking",
+        "description": "Live exciting fluvial adventures or navigate through the calm waters of the Adriatic Sea and let your feelings guide you in expeditions across beautiful islands such as Trogir, included in the UNESCO List of World Heritage Sites, Šolta Island, Brač Island or any of the other 66 islands, 652 islets, 389 rock and 78 reefs. In recent years kayaking in Croatia has been an essential form of adventure which offers plenty of fun for all those looking for the true experience of untouched nature and who are ready to find happiness with their own strengths.",
+        "meta_url": {
+          "scheme": "http",
+          "netloc": "croatia.hr",
+          "hostname": "www.croatia.hr",
+          "favicon": "https://imgs.search.brave.com/YKnaSQ9Iite7YmGgEtpxNjQhzVYCKBAfEWhDPVNTLs8/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb20vaWNv/bnMvODgxYTUwOGY5/ZTJmMzQ5NDc2YmEx/MTgzOTdmYzgzZWRm/YWEwOGEyYTc5MTVm/OWZhNWQ1NDVlMjhl/OTkwNDI4OC93d3cu/Y3JvYXRpYS5oci8",
+          "path": "› en-GB  › experiences  › active  › canoeing-and-kayaking"
+        }
+      },
+      {
+        "title": "Nautical tourism Croatia - a paradise for sailing and sailing",
+        "url": "https://croatia.hr/en-GB/experiences/nautical/marina-trogir",
+        "description": "Croatia is one of the best destinations for sailing and nautical tourism. Enjoy the beauties of the sea, head to the nearest marina, and rent your charter.",
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "croatia.hr",
+          "hostname": "croatia.hr",
+          "favicon": "https://imgs.search.brave.com/mFjxw2aJi6lA7WJNVVwHBPSHDN-vozEXBmJa8P-Bnoc/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb20vaWNv/bnMvYzZjM2I2Njk2/ZDQyMjI3NTY0ZDdl/ZWE2NDRhMGY2Mjc1/NzA3NzMwZWI2NGIw/N2MyOTVjZmY0NmJl/MGIwZmNlZS9jcm9h/dGlhLmhyLw",
+          "path": "› en-GB  › experiences  › nautical  › marina-trogir"
+        }
+      },
+      {
+        "title": "Camping and camps Trogir I Croatia.hr",
+        "url": "https://croatia.hr/en-gb/camping/trogir",
+        "description": "Experience camping in Trogir, a city that has been on the UNESCO World Cultural Heritage List since 1997 for the best-preserved Romanesque-Gothic city.",
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "croatia.hr",
+          "hostname": "croatia.hr",
+          "favicon": "https://imgs.search.brave.com/mFjxw2aJi6lA7WJNVVwHBPSHDN-vozEXBmJa8P-Bnoc/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb20vaWNv/bnMvYzZjM2I2Njk2/ZDQyMjI3NTY0ZDdl/ZWE2NDRhMGY2Mjc1/NzA3NzMwZWI2NGIw/N2MyOTVjZmY0NmJl/MGIwZmNlZS9jcm9h/dGlhLmhyLw",
+          "path": "› en-gb  › camping  › trogir"
+        }
+      },
+      {
+        "title": "Kayak rentals in Trogir - Tripadvisor",
+        "url": "https://www.tripadvisor.com/Attractions-g295371-Activities-c57-t191-Trogir.html",
+        "description": "Book kayak tours in Trogir.",
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "tripadvisor.com",
+          "hostname": "www.tripadvisor.com",
+          "path": "› Attractions"
+        }
+      },
+      {
+        "title": "Nautics - Tourist Board Trogir",
+        "url": "https://www.visittrogir.hr/en/tourist/activities/nautics",
+        "description": "Quiet bays, intact islets and islands in its archipelago attract numerous yachtsmen and sailing fans who are amazed by fusion of cultural amenities, refined gastro experiences and natural beauty. Due to its unique position and developed marine infrastructure, Trogir is entitled “The best Croatian nautical destination” in 2022.",
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "visittrogir.hr",
+          "hostname": "www.visittrogir.hr",
+          "favicon": "https://imgs.search.brave.com/5wrzQh5C6VmhmGCObO5AjW8ZvMW1H_-pxWp3tPR0Bkg/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb20vaWNv/bnMvMzQ4MmFmNWRm/YzY0ODVkOTU5Y2Ni/MTE1ZTdhZjMxNjdi/ODVkNGZlYmU5NGY1/ODIxZDk5ZjdhNzI3/MmMwNTNjMS93d3cu/dmlzaXR0cm9naXIu/aHIv",
+          "path": "  › tourist board trogir  › activities  › nautics"
+        }
+      },
+      {
+        "title": "Nautical tourism - The official site of the Tourist Board Split-Dalmatia County",
+        "url": "https://www.dalmatia.hr/nautical-tourism/",
+        "description": "You will find something for yourself on most of the beaches in Dalmatia. Whether it’s jet-skiing, fishing, sea paragliding or kayaking and pedal boating. ... Start your journey in Split, a truly breathtaking Mediterranean capital, or Trogir, also called museum town due to its rich history and striking experiences.",
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "dalmatia.hr",
+          "hostname": "www.dalmatia.hr",
+          "favicon": "https://imgs.search.brave.com/6dywglzV4J5rMeP1GAZo6oak9-AVvA9dKMhJzukLRdc/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb20vaWNv/bnMvZjUxNzE4OGZl/ZmM5MTdjOGRmM2U4/MzNlMmZkNGExNWMy/ZmJiZTYxMTZiNTI5/NTcwNjY1YTk4N2U3/NGE1NmQ2NS93d3cu/ZGFsbWF0aWEuaHIv",
+          "path": "  › home  › nautical tourism"
+        }
+      },
+      {
+        "title": "Kayaking on the River Krka and Prokljansko Lake | Croatia.hr",
+        "url": "https://croatia.hr/en-gb/outdoors-and-active-holidays/canoeing-and-kayaking/krka-skradin-lake-prokljan",
+        "description": "Hidden near a waterfall about twenty meters high, the river Krka begins its journey. You can also find an oasis for kayaking nearby - lake Prokljansko.",
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "croatia.hr",
+          "hostname": "croatia.hr",
+          "favicon": "https://imgs.search.brave.com/mFjxw2aJi6lA7WJNVVwHBPSHDN-vozEXBmJa8P-Bnoc/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb20vaWNv/bnMvYzZjM2I2Njk2/ZDQyMjI3NTY0ZDdl/ZWE2NDRhMGY2Mjc1/NzA3NzMwZWI2NGIw/N2MyOTVjZmY0NmJl/MGIwZmNlZS9jcm9h/dGlhLmhyLw",
+          "path": "› en-gb  › outdoors-and-active-holidays  › canoeing-and-kayaking  › krka-skradin-lake-prokljan"
+        }
+      },
+      {
+        "title": "Visit Trogir | Trogir - Croatia.hr",
+        "url": "https://visittrogir.croatia.hr/",
+        "description": "We&#x27;re sorry but this app doesn&#x27;t work properly without JavaScript enabled. Please enable it to continue",
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "visittrogir.croatia.hr",
+          "hostname": "visittrogir.croatia.hr",
+          "favicon": "https://imgs.search.brave.com/7cTsWWMsuH1PxmpXtZY5aOfMI0wHgnhtH0rwPDY_ucE/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb20vaWNv/bnMvMDdkZWE1NjZj/MmJiYmEzMDRjZTM4/ZTIxMmEwMzZjZmM0/YjI2NjBlYjViNWMx/NjQyN2IxOGFlYzhl/NzI0MzZlMC92aXNp/dHRyb2dpci5jcm9h/dGlhLmhyLw",
+          "path": ""
+        }
+      },
+      {
+        "title": "Korčula, Korčula island | TP Line d.o.o.",
+        "url": "https://www.tp-line.hr/en/destination/korcula-otok-korcula",
+        "description": "- Rent a kayak and explore the archipelago of Korčula. - ﻿Buy tickets for TP Line catamaran in Korkyra Info Agency on address Trg Petra Šegedina 3a, Korčula. - Spend some time on one of the many charming beaches such as Žitna, Žal and Pržina which is the only sandy beach on Korčula.",
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "tp-line.hr",
+          "hostname": "www.tp-line.hr",
+          "favicon": "https://imgs.search.brave.com/3x7f9PjVdu2TpFX78tVutIWj4yDmJn6ze2JvDt0bvvE/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb20vaWNv/bnMvZGI4YjYyODRh/NDliYTdkMmRlN2Mz/ZjdkYTJhOWVhNDI1/YjhjMzJmZDZjZjVj/NDA0MWNjNzM0MDAz/OWNlNTcwOS93d3cu/dHAtbGluZS5oci8",
+          "path": "› en  › destination  › korcula-otok-korcula"
+        }
+      },
+      {
+        "title": "Charters - The official site of the Tourist Board Split-Dalmatia County",
+        "url": "https://www.dalmatia.hr/charters-2/",
+        "description": "Croatia Yachting – Charter base Trogir · Don Petra Špike 2a 21 218 Seget Donji · +385 91 332 3368 · seget@croatia-yachting.hr · www.croatia-yachting.com · Call E-mail Website · Dalmatia Charter · Put Brodograditelja 7 21220 Trogir · +385 21 797 239 ·",
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "dalmatia.hr",
+          "hostname": "www.dalmatia.hr",
+          "favicon": "https://imgs.search.brave.com/6dywglzV4J5rMeP1GAZo6oak9-AVvA9dKMhJzukLRdc/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb20vaWNv/bnMvZjUxNzE4OGZl/ZmM5MTdjOGRmM2U4/MzNlMmZkNGExNWMy/ZmJiZTYxMTZiNTI5/NTcwNjY1YTk4N2U3/NGE1NmQ2NS93d3cu/ZGFsbWF0aWEuaHIv",
+          "path": "  › home  › charters"
+        }
+      },
+      {
+        "title": "Koktel aktivnosti u Splitsko-dalmatinskoj županiji - The official site of the Tourist Board Split-Dalmatia County",
+        "url": "https://www.dalmatia.hr/activities/koktel-aktivnosti-u-splitsko-dalmatinskoj-zupaniji-2/",
+        "description": "This travel program offers a variety of active tourism opportunities, including hiking, kayaking, and cycling. Excursion programs can be tailored to suit different fitness levels, group sizes, and generations. In addition to exploring the cities of Trogir and Split, with their UNESCO World Heritage cultural and historical landmarks, the itinerary includes a visit to Biokovo Nature Park.",
+        "meta_url": {
+          "scheme": "https",
+          "netloc": "dalmatia.hr",
+          "hostname": "www.dalmatia.hr",
+          "favicon": "https://imgs.search.brave.com/6dywglzV4J5rMeP1GAZo6oak9-AVvA9dKMhJzukLRdc/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb20vaWNv/bnMvZjUxNzE4OGZl/ZmM5MTdjOGRmM2U4/MzNlMmZkNGExNWMy/ZmJiZTYxMTZiNTI5/NTcwNjY1YTk4N2U3/NGE1NmQ2NS93d3cu/ZGFsbWF0aWEuaHIv",
+          "path": "  › home  › koktel aktivnosti u splitsko-dalmatinskoj županiji"
+        }
+      }
+    ]
+  }
+}

@@ -21,7 +21,8 @@
     "./host-notification-vocabulary": "./src/notifications/host/vocabulary.ts",
     "./weather-vocabulary": "./src/weather/vocabulary.ts",
     "./alerts-vocabulary": "./src/alerts/vocabulary.ts",
-    "./tips-vocabulary": "./src/tips/vocabulary.ts"
+    "./tips-vocabulary": "./src/tips/vocabulary.ts",
+    "./fallback-vocabulary": "./src/fallback/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

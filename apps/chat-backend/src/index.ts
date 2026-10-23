@@ -1,4 +1,5 @@
 import {
+  createBraveSearch,
   createDb,
   createJobQueue,
   createLocalMediaStore,
@@ -53,6 +54,10 @@ const app = buildApp({
             queue,
             requestStateSecret: config.REQUEST_STATE_SECRET,
             weather,
+            webSearch: createBraveSearch({
+              fetch: egress.fetch,
+              apiKey: config.BRAVE_SEARCH_API_KEY,
+            }),
           }),
         }
       : {}),

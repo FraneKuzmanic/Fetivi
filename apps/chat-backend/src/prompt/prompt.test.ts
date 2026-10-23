@@ -94,6 +94,12 @@ describe('system text', () => {
     expect(INSTRUCTIONS).toContain('A plan item is not a booking.');
   });
 
+  it('allows the web fallback only after the local tools found nothing, never as a pick', () => {
+    expect(INSTRUCTIONS).toContain('If the local tools return nothing for a local question');
+    expect(INSTRUCTIONS).toContain('it is your only local source');
+    expect(INSTRUCTIONS).toContain('never offer to book them');
+  });
+
   it('puts the cache breakpoint on its single block', () => {
     expect(systemInstructions('text')).toEqual([
       {

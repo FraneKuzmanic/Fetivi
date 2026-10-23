@@ -337,6 +337,15 @@ export const it: Messages = {
     planLabel: 'Programma del giorno',
     askText: 'Dimmi di più su «{{title}}» di {{day}}.',
   },
+  webResults: {
+    heading: 'Dal web',
+    notChecked: 'Non verificato da Fetivi. Controllate sul sito prima di andare.',
+    opensInNewTab: 'si apre in una nuova scheda',
+    kind_tourist_board: 'Ente del turismo',
+    kind_ferry_operator: 'Compagnia di traghetti',
+    kind_weather_service: 'Servizio meteo',
+    kind_venue: 'Sito del locale',
+  },
   weather: {
     heading: 'Meteo',
     today: 'Oggi',

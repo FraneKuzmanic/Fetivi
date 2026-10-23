@@ -336,6 +336,15 @@ export const hu: Messages = {
     planLabel: 'Napi terv',
     askText: 'Mesélj még erről: „{{title}}” ({{day}}).',
   },
+  webResults: {
+    heading: 'Az internetről',
+    notChecked: 'A Fetivi ezt nem ellenőrizte. Indulás előtt nézze meg az oldalon.',
+    opensInNewTab: 'új lapon nyílik meg',
+    kind_tourist_board: 'Turisztikai iroda',
+    kind_ferry_operator: 'Kompüzemeltető',
+    kind_weather_service: 'Meteorológiai szolgálat',
+    kind_venue: 'A hely saját oldala',
+  },
   weather: {
     heading: 'Időjárás',
     today: 'Ma',

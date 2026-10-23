@@ -1253,3 +1253,103 @@
   min-height: var(--tap);
   color: var(--blue-700);
 }
+
+/* Web results: unchecked pages from allowlisted sites. Rows on a hairline, never place cards. */
+
+.fv-web-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.875rem 1rem 0.375rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+}
+
+.fv-web-results p {
+  margin: 0;
+}
+
+.fv-web-results-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.fv-web-results-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.fv-web-results-heading svg {
+  flex: none;
+  color: var(--blue-600);
+}
+
+.fv-web-results-note {
+  color: var(--gray-500);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.fv-web-results-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fv-web-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--gray-200);
+  overflow-wrap: anywhere;
+}
+
+.fv-web-result-title {
+  color: var(--blue-700);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.fv-web-result-snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--navy-900);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.fv-source-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--sky-200);
+  border-radius: 999px;
+  color: var(--navy-900);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.fv-source-chip svg {
+  flex: none;
+  color: var(--blue-600);
+}
+
+.fv-source-chip-host {
+  font-weight: 600;
+}

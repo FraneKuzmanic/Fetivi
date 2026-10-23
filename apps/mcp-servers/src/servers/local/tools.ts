@@ -26,6 +26,7 @@ import {
   transportNotesInput,
   transportNotesOutput,
 } from './schemas';
+import { webFallbackTool } from './web-fallback';
 
 // search_places bumps a recommendation counter, but the guest-visible result does not change.
 const readOnly = {
@@ -172,4 +173,5 @@ export const localTools: readonly GuestToolSpec[] = [
       };
     },
   }),
+  webFallbackTool,
 ];

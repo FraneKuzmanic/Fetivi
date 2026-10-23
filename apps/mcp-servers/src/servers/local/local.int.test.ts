@@ -131,9 +131,9 @@ const listNames = async (token: string) => {
 };
 
 describe('local tool list', () => {
-  it('lists the catalog tools and get_weather inside a destination', async () => {
+  it('lists the catalog tools, get_weather and web_fallback_search inside a destination', async () => {
     const tools = await listNames(tokenA);
-    expect(tools.map((tool) => tool.name)).toEqual(CATALOG_TOOLS);
+    expect(tools.map((tool) => tool.name)).toEqual([...CATALOG_TOOLS, 'web_fallback_search']);
     const identity = new Set<string>(IDENTITY_ARGS.map((x) => x.toLowerCase()));
     for (const tool of tools) {
       expect(tool.annotations?.readOnlyHint).toBe(true);
@@ -144,12 +144,18 @@ describe('local tool list', () => {
     }
   });
 
-  it('lists no tools without a destination', async () => {
-    expect(await listNames(tokenB)).toEqual([]);
-    expect(await listNames(tokenC)).toEqual([]);
+  it('lists only web_fallback_search without a destination', async () => {
+    for (const token of [tokenB, tokenC]) {
+      expect((await listNames(token)).map((tool) => tool.name)).toEqual(['web_fallback_search']);
+    }
   });
 
-  it('lists no tools without catalog:read', async () => {
+  it('lists only web_fallback_search without catalog:read', async () => {
+    const token = await tokenFor(a.spaceId, { scope: 'web_fallback:search' });
+    expect((await listNames(token)).map((tool) => tool.name)).toEqual(['web_fallback_search']);
+  });
+
+  it('lists no tools without any local scope', async () => {
     expect(await listNames(await tokenFor(a.spaceId, { scope: '' }))).toEqual([]);
   });
 });
