@@ -12,6 +12,7 @@ const base: HostOrderEmailInput = {
   respondBy: '2027-05-01T12:30',
   priceMinor: 5000,
   currency: 'EUR',
+  acknowledge: false,
   inboxUrl: 'http://admin.test/inbox',
 };
 
@@ -21,7 +22,7 @@ describe('composeHostOrderEmail', () => {
     expect(subject).toBe('New request: Airport transfer');
     expect(text).toContain('Please answer by 1 May 2027 12:30 in your Fetivi inbox.');
     expect(text).toContain('Date: 4 May 2027');
-    expect(text).toContain('Persons: 2');
+    expect(text).toContain('People: 2');
     expect(text).toContain('Price: €50.00');
     expect(text).toContain('Accept, decline or suggest another time: http://admin.test/inbox');
     expect(text).not.toContain('Time:');
@@ -36,6 +37,7 @@ describe('composeHostOrderEmail', () => {
       respondBy: null,
       priceMinor: null,
       guest: { name: 'Ana', phone: '+385 91' },
+      acknowledge: true,
     });
     expect(subject).toBe('New order: Airport transfer');
     expect(text).toContain('Time: 09:00');
@@ -44,5 +46,18 @@ describe('composeHostOrderEmail', () => {
     expect(text).toContain('Open your inbox to confirm you got it: http://admin.test/inbox');
     expect(text).not.toContain('Price:');
     expect(text).not.toContain('answer by');
+  });
+
+  it('asks for no Got it on a confirmed request, and counts a group in people', () => {
+    const { text } = composeHostOrderEmail({
+      ...base,
+      kind: 'provider_confirmed',
+      priceUnit: 'group',
+      quantity: 3,
+      respondBy: null,
+    });
+    expect(text).toContain('People: 3');
+    expect(text).toContain('See it in your inbox: http://admin.test/inbox');
+    expect(text).not.toContain('confirm you got it');
   });
 });

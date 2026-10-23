@@ -172,11 +172,16 @@ export function OrderPage() {
     );
   }
 
-  const [statusText, statusTone] = ORDER_STATUS[order.status];
+  const [statusLabel, statusTone] = ORDER_STATUS[order.status];
   const [paymentText, paymentTone] = PAYMENT_STATUS[order.paymentStatus];
   const paidEuros = order.paidAmountMinor === null ? 0 : order.paidAmountMinor / 100;
+  // A host's own Offer (38) has no Provider: the host is paid and is merchant of record.
+  const payee = order.providerName === null ? 'host' : 'Provider';
+  const statusText = order.status === 'pending_provider' ? `Waiting for the ${payee}` : statusLabel;
   const facts: [string, string][] = [
-    ['Provider', order.providerName ?? 'Host Offer'],
+    order.providerName === null
+      ? ['Host', `${order.hostEmail ?? 'Host'} (own service)`]
+      : ['Provider', order.providerName],
     ['When', order.startsAt ? time(order.startsAt) : day(order.date)],
     ['Quantity', String(order.quantity)],
     ['Terms', `Version ${order.version}, from ${PROPOSERS[order.proposer]}`],
@@ -184,7 +189,7 @@ export function OrderPage() {
       'Total',
       order.priceMinor === null ? 'Set by the Provider' : money(order.priceMinor, order.currency),
     ],
-    ['Payment', order.paymentMode === 'online' ? 'Paid online' : 'Paid to the Provider directly'],
+    ['Payment', order.paymentMode === 'online' ? 'Paid online' : `Paid to the ${payee} directly`],
     ['Refund rules', rulesText(order)],
     ['Policy text', order.cancellationPolicy],
   ];
@@ -385,7 +390,7 @@ export function OrderPage() {
           </form>
         ) : null}
 
-        <p className="muted">Further refunds are made in the Provider's Stripe dashboard.</p>
+        <p className="muted">Further refunds are made in the {payee}'s Stripe dashboard.</p>
 
         <section className="panel" aria-labelledby="order-history">
           <h2 id="order-history">History</h2>

@@ -515,6 +515,8 @@ export interface AdminOrder {
   availabilityMode: AvailabilityMode;
   offerTitle: string;
   providerName: string | null;
+  /** A host's own Offer: the host is paid and is merchant of record. */
+  hostEmail: string | null;
   date: string;
   startsAt: string | null;
   quantity: number;

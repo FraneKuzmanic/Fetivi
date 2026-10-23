@@ -498,6 +498,12 @@ export function ServicePage() {
           ) : null}
         </Section>
 
+        {offer.availabilityMode === 'allotment' ? (
+          <Section title="Times and seats">
+            <SlotsPanel offerId={offer.id} timezone={offer.timezone} client={host} />
+          </Section>
+        ) : null}
+
         <Section
           title="Cancellation rules"
           description="What is applied when a guest cancels. Keep the policy text above in line with it."
@@ -547,14 +553,13 @@ export function ServicePage() {
         </Section>
 
         <Section title="Translations">
-          <OfferTranslations offer={offer} client={translationsClient} onChanged={reload} />
+          <OfferTranslations
+            offer={offer}
+            client={translationsClient}
+            onChanged={reload}
+            noun="service"
+          />
         </Section>
-
-        {offer.availabilityMode === 'allotment' ? (
-          <Section title="Times and seats">
-            <SlotsPanel offerId={offer.id} timezone={offer.timezone} client={host} />
-          </Section>
-        ) : null}
 
         <section className="panel danger-zone">
           <h2>Delete service</h2>

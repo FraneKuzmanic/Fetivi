@@ -3,7 +3,8 @@ import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { HostProvider, OfferSummary } from '../../api';
+import { OfferTranslations } from '../../admin/providers/OfferTranslations';
+import type { HostProvider, Offer, OfferSummary, OfferTranslationsView } from '../../api';
 import { ProvidersPage } from './ProvidersPage';
 import { NewServicePage } from './ServicePage';
 import { ServicesPage } from './ServicesPage';
@@ -194,5 +195,26 @@ describe('host services', () => {
       note: null,
       destinationId: 'd1',
     });
+  });
+
+  it('calls an unpublished service a service in its translations', async () => {
+    const view: OfferTranslationsView = {
+      offerId: 'o1',
+      revision: 1,
+      publishedRevision: null,
+      status: 'pending',
+      error: null,
+      sourceLanguage: 'en',
+      languages: [],
+    };
+    const client = { translations: async () => view, retryTranslation: async () => ({ view }) };
+    const offer = { id: 'o1', translation: TRANSFER.translation } as Offer;
+    await mount(
+      '/services/o1',
+      <OfferTranslations offer={offer} client={client} onChanged={async () => {}} noun="service" />,
+    );
+    await vi.waitFor(() =>
+      expect(el.textContent).toContain("Guests don't see this service until it is translated."),
+    );
   });
 });

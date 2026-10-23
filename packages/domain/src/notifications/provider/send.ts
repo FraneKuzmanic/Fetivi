@@ -121,6 +121,7 @@ async function sendHostNotification(
     respondBy: view.respondBy,
     priceMinor: view.priceMinor,
     currency: view.currency,
+    acknowledge: view.actions.includes('acknowledge'),
     inboxUrl: `${deps.webOrigin}${HOST_INBOX_PATH}`,
   });
   return deliverOnce(deps.db, job, deps.now(), () =>

@@ -22,9 +22,12 @@ export const orderDay = (date: string) => day.format(new Date(`${date}T00:00:00Z
 const money = (minor: number, currency: string) =>
   new Intl.NumberFormat('en', { style: 'currency', currency }).format(minor / 100);
 
+const people = (n: number) => (n === 1 ? '1 person' : `${n} people`);
+
+// A per-group price is flat and its quantity is the party size (machine.ts), so both read as people.
 const QUANTITY: Record<HostOrderView['priceUnit'], (n: number) => string> = {
-  person: (n) => (n === 1 ? '1 person' : `${n} persons`),
-  group: (n) => (n === 1 ? '1 group' : `${n} groups`),
+  person: people,
+  group: people,
   item: (n) => `${n} ×`,
 };
 

@@ -20,12 +20,15 @@ export interface HostOrderEmailInput {
   /** The Order's total; null for a request-kind Order before the host names it. */
   priceMinor: number | null;
   currency: string;
+  /** The Order waits for the host's Got it; an accepted request asks nothing more. */
+  acknowledge: boolean;
   inboxUrl: string;
 }
 
+// A per-group price is flat and its quantity is the party size, so both count people.
 const QUANTITY_LABELS: Record<PriceUnit, string> = {
-  person: 'Persons',
-  group: 'Groups',
+  person: 'People',
+  group: 'People',
   item: 'Quantity',
 };
 
@@ -59,7 +62,9 @@ export function composeHostOrderEmail(input: HostOrderEmailInput): {
       '',
       request
         ? `Accept, decline or suggest another time: ${input.inboxUrl}`
-        : `Open your inbox to confirm you got it: ${input.inboxUrl}`,
+        : input.acknowledge
+          ? `Open your inbox to confirm you got it: ${input.inboxUrl}`
+          : `See it in your inbox: ${input.inboxUrl}`,
       '',
       'Fetivi takes no commission on your own services.',
     ].join('\n'),

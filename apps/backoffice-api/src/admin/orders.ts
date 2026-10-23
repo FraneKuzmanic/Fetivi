@@ -61,6 +61,7 @@ async function orderView(db: Db, id: string, now: Date) {
       offerTitle: offers.title,
       orderKind: offers.orderKind,
       providerName: providers.name,
+      hostEmail: accounts.email,
       zone: properties.timezone,
       destinationZone: destinations.timezone,
       stayFrom: stays.checkIn,
@@ -71,6 +72,7 @@ async function orderView(db: Db, id: string, now: Date) {
     .leftJoin(paymentAttempts, eq(paymentAttempts.proposalId, orders.currentProposalId))
     .innerJoin(offers, eq(offers.id, orders.offerId))
     .leftJoin(providers, eq(providers.id, offers.providerId))
+    .leftJoin(accounts, eq(accounts.id, offers.hostId))
     .leftJoin(destinations, eq(destinations.id, offers.destinationId))
     .innerJoin(stays, eq(stays.id, orders.stayId))
     .innerJoin(units, eq(units.id, stays.unitId))
@@ -104,6 +106,8 @@ async function orderView(db: Db, id: string, now: Date) {
     availabilityMode: order.availabilityMode,
     offerTitle: row.offerTitle,
     providerName: row.providerName,
+    /** A host's own Offer (38): the host is paid and is merchant of record. */
+    hostEmail: row.hostEmail,
     date: proposal.date,
     startsAt: iso(proposal.startsAt),
     quantity: proposal.quantity,

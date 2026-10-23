@@ -1544,10 +1544,14 @@ button svg,
 
 .order-card-head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 4px 12px;
+}
+
+/* The title wraps and the status stays beside it, the same on every card. */
+.order-card-head .chip {
+  flex-shrink: 0;
 }
 
 .order-card p {

@@ -79,3 +79,37 @@ describe('constructEvent', () => {
     expect(() => gateway.constructEvent(payload, header, secret)).toThrow();
   });
 });
+
+describe('capturePaymentIntent', () => {
+  /** The real gateway over a fetch that records each form body and answers a captured intent. */
+  function recording() {
+    const bodies: string[] = [];
+    const gateway = createStripeGateway({
+      apiKey: 'sk_test_dummy',
+      fetch: async (_url, init) => {
+        bodies.push(String(init?.body ?? ''));
+        return new Response(
+          JSON.stringify({ id: 'pi_1', object: 'payment_intent', status: 'succeeded' }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      },
+    });
+    return { gateway, bodies };
+  }
+
+  it("sends the Fetivi fee, and omits it on a host's own Offer (38)", async () => {
+    const { gateway, bodies } = recording();
+    await gateway.capturePaymentIntent(
+      'pi_1',
+      { applicationFeeAmount: 500 },
+      { idempotencyKey: 'k1', stripeAccount: 'acct_1' },
+    );
+    await gateway.capturePaymentIntent(
+      'pi_1',
+      { applicationFeeAmount: 0 },
+      { idempotencyKey: 'k2', stripeAccount: 'acct_1' },
+    );
+    expect(bodies[0]).toContain('application_fee_amount=500');
+    expect(bodies[1]).not.toContain('application_fee_amount');
+  });
+});

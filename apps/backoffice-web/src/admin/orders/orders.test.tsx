@@ -17,6 +17,7 @@ const ORDER: AdminOrder = {
   availabilityMode: 'allotment',
   offerTitle: 'Blue Lagoon boat trip',
   providerName: 'Adriatic Boats',
+  hostEmail: null,
   date: '2026-10-25',
   startsAt: '2026-10-25T07:00:00.000Z',
   quantity: 2,
@@ -166,6 +167,23 @@ describe('OrderPage', () => {
     expect(rows[1]?.textContent).toContain('Confirming → Confirmed');
     expect(rows[1]?.textContent).toContain('Authorized → Captured');
     expect(button('Refund')).toBeUndefined();
+  });
+
+  it("names the host as the one paid on a host's own service", async () => {
+    stubApi({
+      ...ORDER,
+      status: 'pending_provider',
+      providerName: null,
+      hostEmail: 'host@example.com',
+      paymentMode: 'direct',
+    });
+    await mount(`/admin/orders/${ID}`);
+    const text = el.textContent ?? '';
+    expect(text).toContain('Hosthost@example.com (own service)');
+    expect(text).toContain('Waiting for the host');
+    expect(text).toContain('Paid to the host directly');
+    expect(text).toContain("Further refunds are made in the host's Stripe dashboard.");
+    expect(text).not.toContain('Provider');
   });
 
   it('cancels with the override in cents and the note', async () => {

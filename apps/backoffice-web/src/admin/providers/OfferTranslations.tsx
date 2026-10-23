@@ -22,9 +22,10 @@ function sourceLine(view: OfferTranslationsView): string {
   return `Written in ${LANGUAGE_LABELS[sourceLanguage]}.`;
 }
 
-function guestsLine(view: OfferTranslationsView): string | null {
+function guestsLine(view: OfferTranslationsView, noun: string): string | null {
   if (view.publishedRevision === view.revision) return null;
-  if (view.publishedRevision === null) return "Guests don't see this Offer until it is translated.";
+  if (view.publishedRevision === null)
+    return `Guests don't see this ${noun} until it is translated.`;
   return 'Guests see the previously published version until this one is published.';
 }
 
@@ -33,11 +34,14 @@ export function OfferTranslations({
   offer,
   client,
   onChanged,
+  noun = 'Offer',
 }: {
   offer: Offer;
   /** The admin's Offer routes or the host's own-service routes (38). */
   client: OfferTranslationsClient;
   onChanged: () => Promise<void>;
+  /** What the page calls the Offer: a host reads "service". */
+  noun?: string;
 }) {
   const { busy, error, run } = useAction();
   const [view, setView] = useState<OfferTranslationsView | null>(null);
@@ -57,7 +61,7 @@ export function OfferTranslations({
 
   if (!view) return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
 
-  const guests = guestsLine(view);
+  const guests = guestsLine(view, noun);
 
   return (
     <div className="translations">

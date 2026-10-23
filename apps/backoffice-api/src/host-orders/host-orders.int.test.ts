@@ -268,6 +268,12 @@ describe('host orders', () => {
     expect(await statusOf(ref.orderId)).toBe('pending_provider');
   });
 
+  it("the admin Order page names the host of a host's own Offer", async () => {
+    const ref = await askedOrder();
+    const view = await get(t.app, `/api/admin/orders/${ref.orderId}`, adminCookie);
+    expect(view.json()).toMatchObject({ providerName: null, hostEmail: 'a@example.test' });
+  });
+
   it('an admin acting as the host can answer, as the actor, audited', async () => {
     const ref = await askedOrder();
     const [admin] = await t.db
