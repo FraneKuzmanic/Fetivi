@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { accounts } from '../db/schema/accounts';
 import { orderNotificationDeliveries } from '../db/schema/notifications';
 import { providers } from '../db/schema/offers';
-import { orderEvents, orders } from '../db/schema/orders';
+import { orderEvents, orderProposals, orders } from '../db/schema/orders';
 import { createJobQueue, ensureQueues, type JobQueue } from '../jobs/queue';
 import { createMemoryMailer, type Mailer } from '../mail';
 import { cancel, confirm, createOrder, type OrderDeps } from '../orders/machine';
@@ -273,6 +273,20 @@ describe('the on-request ask', () => {
     const mailer = createMemoryMailer();
     const job = { ...ref, kind: 'provider_request' as const };
     expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('skipped');
+  });
+
+  it('never falls back to the confirmed email when the deadline is missing', async () => {
+    const { ref } = await pendingOrder();
+    await testDb.db
+      .update(orderProposals)
+      .set({ responseDueAt: null })
+      .where(eq(orderProposals.id, ref.proposalId));
+    const mailer = createMemoryMailer();
+    const job = { ...ref, kind: 'provider_request' as const };
+    await expect(sendProviderNotification(notifyDeps(mailer), job)).rejects.toThrow(
+      /no response deadline/,
+    );
+    expect(mailer.sent).toHaveLength(0);
   });
 });
 

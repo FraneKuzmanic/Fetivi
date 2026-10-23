@@ -15,9 +15,9 @@ import type { NotifyDeps, SendOutcome } from './provider/send';
  * Emails every admin about an Order, in English (the admin UI's language): a Provider tapped
  * Can't fulfil, a Provider missed an on-request response window (36; with the Provider's contact
  * details, so the admin can phone them), or a pay-online Order's payment needs a human (the
- * reason is the note of the flagging OrderEvent the job names). Order facts only, no guest contact details. One delivery
- * per kind, and per flagging OrderEvent for a payment alert. With the back-office origin, the
- * email links the admin Order page.
+ * reason is the note of the flagging OrderEvent the job names). Order facts only, no guest
+ * contact details. One delivery per kind, and per flagging OrderEvent for a payment alert. With
+ * the back-office origin, the email links the admin Order page.
  */
 export async function sendAdminAlert(
   deps: Pick<NotifyDeps, 'db' | 'mailer' | 'now'> & { webOrigin?: string },

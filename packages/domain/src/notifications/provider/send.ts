@@ -60,15 +60,19 @@ export async function sendProviderNotification(
     guest: view.guest,
     link: providerLinkUrl(deps.providerLink.baseUrl, token),
   };
-  const message =
-    job.kind === 'provider_request' && view.respondBy
-      ? composeProviderRequest({
-          ...input,
-          respondBy: view.respondBy,
-          priceMinor: view.priceMinor,
-          currency: view.currency,
-        })
-      : composeProviderConfirmed(input);
+  let message: ReturnType<typeof composeProviderConfirmed>;
+  if (job.kind === 'provider_request') {
+    // The machine stores the deadline with the ask; without it the email would mislead.
+    if (!view.respondBy) throw new Error(`Order ${job.orderId} waits with no response deadline`);
+    message = composeProviderRequest({
+      ...input,
+      respondBy: view.respondBy,
+      priceMinor: view.priceMinor,
+      currency: view.currency,
+    });
+  } else {
+    message = composeProviderConfirmed(input);
+  }
   return deliverOnce(deps.db, job, deps.now(), () =>
     deps.mailer.send({
       to: email,

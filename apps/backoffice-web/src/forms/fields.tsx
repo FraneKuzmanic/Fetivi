@@ -42,6 +42,8 @@ export function TextField({
   required,
   type = 'text',
   autoComplete = 'off',
+  min,
+  max,
 }: FieldProps & {
   value: string | null;
   onChange: (value: string | null) => void;
@@ -50,6 +52,9 @@ export function TextField({
   required?: boolean;
   type?: 'text' | 'tel' | 'email' | 'date';
   autoComplete?: string;
+  /** The earliest and latest day of a date field. */
+  min?: string;
+  max?: string;
 }) {
   return (
     <Field label={label} hint={hint} hideLabel={hideLabel}>
@@ -63,6 +68,8 @@ export function TextField({
           placeholder={placeholder}
           required={required}
           autoComplete={autoComplete}
+          min={min}
+          max={max}
           onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
         />
       )}

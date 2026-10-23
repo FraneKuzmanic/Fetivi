@@ -294,7 +294,6 @@ describe('an on-request Order waiting for the Provider', () => {
       respondBy: '2027-05-01T12:30',
       stayFrom: unit.stay.checkIn,
       stayTo: unit.stay.checkout,
-      zone: 'Europe/Zagreb',
       currency: 'EUR',
       needsPrice: false,
     });

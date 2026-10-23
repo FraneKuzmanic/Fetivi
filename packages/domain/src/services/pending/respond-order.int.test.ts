@@ -144,7 +144,6 @@ describe('respond_to_order_update', () => {
     });
     expect(result).toMatchObject({
       outcome: 'accepted',
-      replay: false,
       order: { status: 'confirmed', respondBy: null },
     });
     expect(await notifyKinds(orderId)).toEqual(
@@ -156,7 +155,7 @@ describe('respond_to_order_update', () => {
       spaceId: guest.spaceId,
       answer: 'decline',
     });
-    expect(again).toMatchObject({ outcome: 'accepted', replay: true });
+    expect(again).toMatchObject({ outcome: 'accepted' });
     expect((await getOrder(testDb.db, orderId))?.order.status).toBe('confirmed');
   });
 

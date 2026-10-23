@@ -18,7 +18,11 @@ import {
   PAYMENT_MODES,
   PRICE_UNITS,
 } from '@fetivi/domain/offer-vocabulary';
-import { ORDER_STATUSES, PAYMENT_STATUSES } from '@fetivi/domain/order-vocabulary';
+import {
+  NEW_TERMS_PROPOSERS,
+  ORDER_STATUSES,
+  PAYMENT_STATUSES,
+} from '@fetivi/domain/order-vocabulary';
 import { PLAN_ITEM_KINDS } from '@fetivi/domain/plan-vocabulary';
 import { STAY_LIMITS } from '@fetivi/domain/stay-vocabulary';
 import { TIP_RECORD_KINDS, TIP_RULES } from '@fetivi/domain/tips-vocabulary';
@@ -321,7 +325,7 @@ export const respondOrderDraft = z.object({
   proposalId: z.string().min(1),
   offerTitle: z.string(),
   language: z.enum(GUEST_LANGUAGES),
-  proposer: z.enum(['provider_time', 'provider_price', 'admin']),
+  proposer: z.enum(NEW_TERMS_PROPOSERS),
   date: z.string(),
   startsAtLocal: z.string().nullable(),
   quantity: z.number().int(),

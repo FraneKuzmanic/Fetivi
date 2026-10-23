@@ -7,6 +7,7 @@ import { properties, units } from '../../db/schema/properties';
 import { stays } from '../../db/schema/stays';
 import { PAYMENT_MODES } from '../../offers/vocabulary';
 import { cancel, guestConfirm, type OrderDeps } from '../../orders/machine';
+import { NEW_TERMS_PROPOSERS } from '../../orders/vocabulary';
 import { CHECKOUT_HOLD_MINUTES } from '../../payments/vocabulary';
 import { GUEST_LANGUAGES, type GuestLanguage } from '../../property/vocabulary';
 import { toLocalDateTime } from '../../time';
@@ -20,8 +21,6 @@ import { ORDER_HOLD_MINUTES, PENDING_TTL_SECONDS, type PendingState } from './vo
 // card window passed, makes the tap a refusal. Lock order: pending row, then the machine's
 // (Order, attempt, slot).
 
-const PROPOSAL_PROPOSERS = ['provider_time', 'provider_price', 'admin'] as const;
-
 /** The stored respond draft: everything the card shows. */
 export const respondOrderPayload = z.object({
   orderId: z.uuid(),
@@ -29,7 +28,7 @@ export const respondOrderPayload = z.object({
   proposalId: z.uuid(),
   offerTitle: z.string(),
   language: z.enum(GUEST_LANGUAGES),
-  proposer: z.enum(PROPOSAL_PROPOSERS),
+  proposer: z.enum(NEW_TERMS_PROPOSERS),
   date: z.string(),
   /** 'YYYY-MM-DDTHH:mm' in the property's zone. */
   startsAtLocal: z.string().nullable(),
@@ -89,7 +88,7 @@ async function loadRespond(db: Executor, spaceId: string, orderId: string) {
 }
 
 /** Only an Order waiting for the guest's answer to a later proposal has one to give. */
-function answerable(order: { status: string }, proposal: { version: number }): boolean {
+function awaitsGuest(order: { status: string }, proposal: { version: number }): boolean {
   return order.status === 'awaiting_confirmation' && proposal.version > 1;
 }
 
@@ -112,7 +111,7 @@ export async function prepareRespond(
   if (order.status === 'expired' && proposal.version > 1) {
     throw new RespondRuleError('card-expired');
   }
-  if (!answerable(order, proposal) || proposal.proposer === 'offer') {
+  if (!awaitsGuest(order, proposal) || proposal.proposer === 'offer') {
     throw new RespondRuleError('no-update');
   }
   if (!proposal.cardExpiresAt || proposal.cardExpiresAt <= now) {
@@ -183,11 +182,10 @@ export async function getPendingRespond(
 export interface RespondCompletion {
   outcome: 'accepted' | 'declined';
   order: OrderSummary;
-  replay: boolean;
 }
 
 type Step =
-  | { kind: 'done'; draft: RespondOrderDraft; answer: RespondAnswer; replay: boolean }
+  | { kind: 'done'; draft: RespondOrderDraft; answer: RespondAnswer }
   | { kind: 'refused'; code: RespondRuleCode };
 
 /**
@@ -209,7 +207,7 @@ export async function completeRespond(
     }
     const { answer: stored, ...draft } = respondOrderRecord.parse(row.payload);
     if (row.state === 'consumed') {
-      return { kind: 'done', draft, answer: stored ?? input.answer, replay: true };
+      return { kind: 'done', draft, answer: stored ?? input.answer };
     }
     if (row.state === 'released') return { kind: 'refused', code: 'released' };
     const now = deps.now();
@@ -233,7 +231,7 @@ export async function completeRespond(
     if (current.proposal.id !== draft.proposalId) return refuse('stale');
     const { order, proposal } = current;
     if (order.status === 'expired') return refuse('card-expired');
-    if (!answerable(order, proposal)) return refuse('stale');
+    if (!awaitsGuest(order, proposal)) return refuse('stale');
     if (!proposal.cardExpiresAt || proposal.cardExpiresAt <= now) return refuse('card-expired');
 
     const machine = { db: tx, queue: deps.queue, now: deps.now };
@@ -252,7 +250,7 @@ export async function completeRespond(
       .set({ payload: { ...draft, answer: input.answer } })
       .where(eq(pendingActions.id, row.id));
     await markPending(tx, row.id, 'consumed', now);
-    return { kind: 'done', draft, answer: input.answer, replay: false };
+    return { kind: 'done', draft, answer: input.answer };
   });
   if (step.kind === 'refused') throw new RespondRuleError(step.code);
 
@@ -273,9 +271,5 @@ export async function completeRespond(
     deps.now(),
   );
   if (!order) throw new RespondRuleError('not-found');
-  return {
-    outcome: step.answer === 'accept' ? 'accepted' : 'declined',
-    order,
-    replay: step.replay,
-  };
+  return { outcome: step.answer === 'accept' ? 'accepted' : 'declined', order };
 }

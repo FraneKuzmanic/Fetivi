@@ -917,8 +917,8 @@ export async function propose(deps: OrderDeps, input: ProposeInput): Promise<Tra
       .set({ supersededAt: now })
       .where(eq(orderProposals.id, proposal.id));
     await releaseHold(tx, deps, proposal.id);
-    const voided = order.paymentStatus === 'authorized';
-    if (old && voided) await enqueuePaymentJob(tx, deps.queue, old, 'void');
+    const wasAuthorized = order.paymentStatus === 'authorized';
+    if (old && wasAuthorized) await enqueuePaymentJob(tx, deps.queue, old, 'void');
     else if (old && order.paymentStatus === 'none') await expireOpenSession(tx, deps, old);
     const [next] = await tx
       .insert(orderProposals)
@@ -950,7 +950,7 @@ export async function propose(deps: OrderDeps, input: ProposeInput): Promise<Tra
       moved,
       { status: to, paymentStatus: 'none' },
       next.id,
-      voided
+      wasAuthorized
         ? { ...input, note: input.note ?? 'new proposal; earlier authorization voided' }
         : input,
     );

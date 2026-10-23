@@ -63,6 +63,12 @@ const money = (minor: number, currency: string) =>
   new Intl.NumberFormat('en', { style: 'currency', currency }).format(minor / 100);
 const time = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+/** A civil 'YYYY-MM-DD' in the same style, without shifting it through a time zone. */
+const day = (date: string) =>
+  new Date(`${date}T00:00:00Z`).toLocaleDateString(undefined, {
+    dateStyle: 'medium',
+    timeZone: 'UTC',
+  });
 
 const Chip = ({ text, tone }: { text: string; tone: Tone }) => (
   <span className={`chip ${tone}`}>{text}</span>
@@ -171,7 +177,7 @@ export function OrderPage() {
   const paidEuros = order.paidAmountMinor === null ? 0 : order.paidAmountMinor / 100;
   const facts: [string, string][] = [
     ['Provider', order.providerName ?? 'Host Offer'],
-    ['When', order.startsAt ? time(order.startsAt) : order.date],
+    ['When', order.startsAt ? time(order.startsAt) : day(order.date)],
     ['Quantity', String(order.quantity)],
     ['Terms', `Version ${order.version}, from ${PROPOSERS[order.proposer]}`],
     [
@@ -243,8 +249,11 @@ export function OrderPage() {
               <div className="field-row">
                 <TextField
                   label="New date"
+                  hint={`Within the stay, ${day(order.stayFrom)} – ${day(order.stayTo)}.`}
                   type="date"
                   value={newDate ?? order.date}
+                  min={order.stayFrom}
+                  max={order.stayTo}
                   maxLength={10}
                   onChange={setNewDate}
                 />

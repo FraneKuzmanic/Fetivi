@@ -19,6 +19,7 @@ import {
 } from '@fetivi/domain';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { HHMM } from '../properties/schemas';
 import {
   FLASHES,
   type Flash,
@@ -68,7 +69,6 @@ const Body = z.object({
 });
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 // Major units with up to two decimals; a comma is the Croatian decimal mark.
 const PRICE = /^(\d{1,7})(?:[.,](\d{1,2}))?$/;
 
@@ -89,7 +89,7 @@ function termsOf(
   const date = priceOnly ? view.date : form.date;
   if (!DATE.test(date) || date < view.stayFrom || date > view.stayTo) return 'date';
   const time = priceOnly ? (view.startTime ?? '') : form.time;
-  if (time !== '' && !TIME.test(time)) return 'time';
+  if (time !== '' && !HHMM.test(time)) return 'time';
   let priceMinor: number | undefined;
   if (form.price.trim() !== '' || view.needsPrice || priceOnly) {
     priceMinor = parsePrice(form.price);

@@ -25,10 +25,11 @@ import {
   units,
 } from '@fetivi/domain';
 import { asc, eq } from 'drizzle-orm';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { principalOf } from '../auth/plugin';
 import { HttpError } from '../http-error';
+import { HHMM } from '../properties/schemas';
 
 export interface AdminOrderDeps {
   db: Db;
@@ -44,10 +45,7 @@ const RefundBody = z.object({ refundMinor: z.number().int().min(1), note: Note }
 const AnswerBody = z.object({ proposalId: z.uuid(), note: z.string().trim().min(1).max(500) });
 const ProposeBody = AnswerBody.extend({
   date: z.iso.date(),
-  time: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
-    .optional(),
+  time: z.string().regex(HHMM).optional(),
   priceMinor: z.number().int().min(1).max(OFFER_LIMITS.priceMinorMax).optional(),
 });
 
@@ -166,7 +164,9 @@ async function acting(
   } catch (error) {
     if (error instanceof OrderRuleError) {
       if (error.code === 'not-found') throw new HttpError(404, 'not-found');
-      if (error.code === 'invalid-input') throw new HttpError(400, 'invalid-input');
+      if (error.code === 'invalid-input' || error.code === 'date-outside-stay') {
+        throw new HttpError(400, 'invalid-input');
+      }
     }
     throw error;
   }
@@ -174,6 +174,13 @@ async function acting(
     throw new HttpError(409, conflict);
   }
 }
+
+/** A phoned answer is recorded as the admin, with the note as what the Provider said. */
+const answerMeta = (request: FastifyRequest, note: string) => ({
+  trigger: 'admin' as const,
+  actorId: principalOf(request).account.id,
+  note,
+});
 
 /**
  * The admin's single-Order page (35): the Order, its payment, policy and events, a cancel with
@@ -235,11 +242,7 @@ export async function adminOrderRoutes(app: FastifyInstance, deps: AdminOrderDep
   app.post('/api/admin/orders/:id/accept', admin, async (request) => {
     const { id } = IdParams.parse(request.params);
     const body = AnswerBody.parse(request.body ?? {});
-    const meta = {
-      trigger: 'admin' as const,
-      actorId: principalOf(request).account.id,
-      note: body.note,
-    };
+    const meta = answerMeta(request, body.note);
     await acting(
       () => providerAccept(machine(), { orderId: id, proposalId: body.proposalId }, meta),
       'not-answerable',
@@ -250,11 +253,7 @@ export async function adminOrderRoutes(app: FastifyInstance, deps: AdminOrderDep
   app.post('/api/admin/orders/:id/decline', admin, async (request) => {
     const { id } = IdParams.parse(request.params);
     const body = AnswerBody.parse(request.body ?? {});
-    const meta = {
-      trigger: 'admin' as const,
-      actorId: principalOf(request).account.id,
-      note: body.note,
-    };
+    const meta = answerMeta(request, body.note);
     await acting(
       () => providerDecline(machine(), { orderId: id, proposalId: body.proposalId }, meta),
       'not-answerable',
@@ -265,11 +264,7 @@ export async function adminOrderRoutes(app: FastifyInstance, deps: AdminOrderDep
   app.post('/api/admin/orders/:id/propose', admin, async (request) => {
     const { id } = IdParams.parse(request.params);
     const body = ProposeBody.parse(request.body ?? {});
-    const meta = {
-      trigger: 'admin' as const,
-      actorId: principalOf(request).account.id,
-      note: body.note,
-    };
+    const meta = answerMeta(request, body.note);
     const terms = { date: body.date, time: body.time, priceMinor: body.priceMinor };
     await acting(
       () => providerPropose(machine(), { orderId: id, proposalId: body.proposalId }, terms, meta),

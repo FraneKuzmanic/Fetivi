@@ -272,6 +272,15 @@ describe("OrderPage, the Provider's answer", () => {
     });
   });
 
+  it('formats a date-only When and keeps a new date within the stay', async () => {
+    stubApi({ ...PENDING, startsAt: null });
+    await mount(`/admin/orders/${ID}`);
+    expect(el.textContent).not.toContain('2026-10-25');
+    const dateInput = el.querySelector<HTMLInputElement>('input[type="date"]');
+    expect(dateInput?.min).toBe(PENDING.stayFrom);
+    expect(dateInput?.max).toBe(PENDING.stayTo);
+  });
+
   it('has no plain Accept for a request-kind Offer', async () => {
     stubApi({ ...PENDING, orderKind: 'request', priceMinor: null });
     await mount(`/admin/orders/${ID}`);

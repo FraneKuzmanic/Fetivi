@@ -70,6 +70,8 @@ export type OrderTrigger = (typeof ORDER_TRIGGERS)[number];
 
 /** Who set a proposal's terms: the Offer's listed terms, "Suggest another time", "Accept with price", admin. */
 export const PROPOSERS = ['offer', 'provider_time', 'provider_price', 'admin'] as const;
+/** The proposers of new terms, which the guest answers in chat (36). */
+export const NEW_TERMS_PROPOSERS = ['provider_time', 'provider_price', 'admin'] as const;
 export type Proposer = (typeof PROPOSERS)[number];
 
 export const HOLD_STATES = ['held', 'committed', 'released'] as const;

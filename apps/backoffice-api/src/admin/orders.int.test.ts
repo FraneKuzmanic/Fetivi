@@ -343,14 +343,18 @@ describe("recording the Provider's phoned answer", () => {
     });
   });
 
-  it('refuses a stale proposal, a missing note and a bad date', async () => {
-    const { orderId, proposalId } = await pendingOrder();
+  it('refuses a stale proposal, a missing note, a bad date and a date outside the stay', async () => {
+    const { orderId, proposalId, stay } = await pendingOrder();
     const missing = await post(t.app, path(orderId, '/accept'), { proposalId }, adminCookie);
     expect(missing.statusCode).toBe(400);
     const badDate = { proposalId, note: 'x', date: '2026-02-30' };
     expect((await post(t.app, path(orderId, '/propose'), badDate, adminCookie)).statusCode).toBe(
       400,
     );
+    const outside = { proposalId, note: 'x', date: '2030-01-01' };
+    const outsideRes = await post(t.app, path(orderId, '/propose'), outside, adminCookie);
+    expect(outsideRes.statusCode).toBe(400);
+    expect(stay.checkout < outside.date).toBe(true);
     const stale = {
       proposalId: '00000000-0000-4000-8000-000000000000',
       note: 'Phoned: yes',

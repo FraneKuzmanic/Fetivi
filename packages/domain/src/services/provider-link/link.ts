@@ -100,12 +100,11 @@ export interface ProviderLinkView {
   /** The proposal's total; null for a request-kind Order before the Provider names it. */
   priceMinor: number | null;
   currency: string;
-  /** 'YYYY-MM-DDTHH:mm' in `zone` when the on-request answer is due; null otherwise. */
+  /** 'YYYY-MM-DDTHH:mm' in the Offer's zone when the on-request answer is due; null otherwise. */
   respondBy: string | null;
   /** The stay's dates: a suggested date must lie between them. */
   stayFrom: CivilDate;
   stayTo: CivilDate;
-  zone: string;
   /** New terms must carry a price: a request-kind Order, or a pay-online one without a price. */
   needsPrice: boolean;
 }
@@ -148,7 +147,6 @@ export function providerLinkView(found: FoundProviderOrder): ProviderLinkView {
       asked && proposal.responseDueAt ? toLocalDateTime(proposal.responseDueAt, zone) : null,
     stayFrom: found.stay.checkIn,
     stayTo: found.stay.checkout,
-    zone,
     needsPrice: requestKind || (order.paymentMode === 'online' && proposal.priceMinor === null),
   };
 }
