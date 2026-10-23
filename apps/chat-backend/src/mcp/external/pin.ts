@@ -22,9 +22,9 @@ export interface Pin {
 
 export type Caller = 'model' | 'app';
 
-export type CallCheck =
-  | { ok: true; tool: Tool }
-  | { ok: false; reason: 'not-pinned' | 'not-read-only' | 'not-visible' };
+export type BlockReason = 'not-pinned' | 'not-read-only' | 'not-visible';
+
+export type CallCheck = { ok: true; tool: Tool } | { ok: false; reason: BlockReason };
 
 /** JSON with object keys sorted, so the hash does not depend on the server's key order. */
 function canonical(value: unknown): string {

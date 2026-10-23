@@ -3,7 +3,7 @@ import type { CallToolResult } from '@modelcontextprotocol/client';
 import type { AppBridge } from '@modelcontextprotocol/ext-apps/app-bridge';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isFerryhopperLink } from './links';
+import { openFerryhopperLink } from './links';
 import { callWidgetTool, fetchWidget } from './mcp-apps-api';
 import { sandboxUrl } from './sandbox';
 
@@ -73,11 +73,7 @@ export function McpAppFrame({ part, reveal }: { part: McpAppPart; reveal: boolea
         b.onsizechange = ({ height: h }) => {
           if (h) setHeight(Math.ceil(h));
         };
-        b.onopenlink = async ({ url }) => {
-          if (!isFerryhopperLink(url)) return { isError: true };
-          window.open(url, '_blank', 'noopener,noreferrer');
-          return {};
-        };
+        b.onopenlink = async ({ url }) => openFerryhopperLink(url);
         b.oncalltool = (params) => callWidgetTool(params.name, params.arguments ?? {});
         b.onrequestdisplaymode = async () => ({ mode: 'inline' });
         // Listening before the proxy loads, so its ready message is not missed.

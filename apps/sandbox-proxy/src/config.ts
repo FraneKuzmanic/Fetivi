@@ -2,7 +2,7 @@ export type SandboxConfig = { host: string; port: number; appOrigin: string };
 
 /** Reads the proxy's settings; a bad value stops the process at boot rather than serving a broken page. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): SandboxConfig {
-  const port = Number(env.PORT ?? 5174);
+  const port = Number(env.PORT ?? 5175);
   if (!Number.isInteger(port) || port < 0 || port > 65535) {
     throw new Error(`PORT must be a port number, got ${env.PORT}`);
   }

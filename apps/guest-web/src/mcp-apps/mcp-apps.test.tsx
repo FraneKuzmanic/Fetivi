@@ -84,7 +84,7 @@ describe('MCP App parts', () => {
     expect(src.href.startsWith(SANDBOX_URL)).toBe(true);
     expect(JSON.parse(src.searchParams.get('csp') ?? '')).toEqual(CSP);
     expect(fetch).toHaveBeenCalledWith(
-      `/api/mcp-apps/ferryhopper/widget?uri=${encodeURIComponent(PICKER)}`,
+      `/api/mcp-apps/ferryhopper/widget?uri=${encodeURIComponent(PICKER)}&pin=hash-1`,
       expect.anything(),
     );
   });

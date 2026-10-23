@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { isFerryhopperLink } from './links';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { isFerryhopperLink, openFerryhopperLink } from './links';
 
 describe('isFerryhopperLink', () => {
   it("accepts Ferryhopper's booking link as recorded", () => {
@@ -22,5 +22,26 @@ describe('isFerryhopperLink', () => {
     ]) {
       expect(isFerryhopperLink(url), url).toBe(false);
     }
+  });
+});
+
+describe('openFerryhopperLink', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('refuses a link outside the allowlist without opening anything', () => {
+    const open = vi.fn();
+    vi.stubGlobal('window', { open });
+    for (const url of ['https://www.ferryhopper.com.evil.io/x', 'javascript:alert(1)']) {
+      expect(openFerryhopperLink(url), url).toEqual({ isError: true });
+    }
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it('opens an allowed link unchanged in a new tab with no opener', () => {
+    const open = vi.fn();
+    vi.stubGlobal('window', { open });
+    const url = 'https://www.ferryhopper.com/en/booking/results?utm_source=llm_mcp&aff_uid=mcpint';
+    expect(openFerryhopperLink(url)).toEqual({});
+    expect(open).toHaveBeenCalledWith(url, '_blank', 'noopener,noreferrer');
   });
 });

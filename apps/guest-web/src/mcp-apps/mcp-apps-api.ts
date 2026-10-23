@@ -9,13 +9,16 @@ export interface Widget {
 }
 
 // A widget is about 500 KB: one fetch per page for each widget and pin, however often it shows.
+// The pin is in the URL too, so the browser's HTTP cache is keyed the same way.
 const widgets = new Map<string, Promise<Widget>>();
 
 export function fetchWidget(uri: string, pinHash: string): Promise<Widget> {
   const key = `${uri}#${pinHash}`;
   let widget = widgets.get(key);
   if (!widget) {
-    widget = api<Widget>(`/api/mcp-apps/ferryhopper/widget?uri=${encodeURIComponent(uri)}`);
+    widget = api<Widget>(
+      `/api/mcp-apps/ferryhopper/widget?uri=${encodeURIComponent(uri)}&pin=${encodeURIComponent(pinHash)}`,
+    );
     widget.catch(() => widgets.delete(key));
     widgets.set(key, widget);
   }

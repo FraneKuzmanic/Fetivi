@@ -69,8 +69,8 @@ function cardShownKey(message: UIMessage): 'hostMessage.cardShown' | 'order.card
 
 /**
  * An answer reads as its words first, in one bubble, then any confirmation card, then its
- * components and external widgets in part order, with follow-up chips last: the model often searches before it
- * writes, and the words introduce the cards.
+ * components and external widgets in part order, with follow-up chips last: the model often
+ * searches before it writes, and the words introduce the cards.
  */
 function segmentsOf(message: UIMessage, busy: boolean): Segment[] {
   const text = message.parts.flatMap((p) => (p.type === 'text' && p.text ? [p.text] : []));

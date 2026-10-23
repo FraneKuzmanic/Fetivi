@@ -50,6 +50,11 @@ describe('GET /api/mcp-apps/ferryhopper/widget', () => {
     expect(body.pinHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  it('accepts the pin hash the page keys its HTTP cache by', async () => {
+    const pinned = await get(t.app, `${widgetUrl(PICKER)}&pin=hash-1`, cookie);
+    expect(pinned.statusCode).toBe(200);
+  });
+
   it('refuses a URI no pinned tool declares', async () => {
     const response = await get(t.app, widgetUrl('ui://evil/x.html'), cookie);
     expect(response.statusCode).toBe(404);

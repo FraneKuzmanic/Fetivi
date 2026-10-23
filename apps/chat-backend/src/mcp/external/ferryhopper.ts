@@ -12,7 +12,16 @@ import {
   RESOURCE_MIME_TYPE,
 } from '@modelcontextprotocol/ext-apps/app-bridge';
 import { CLIENT_INFO } from '../clients';
-import { type Caller, checkCall, FERRYHOPPER, modelVisible, type Pin, pinTools } from './pin';
+import {
+  type BlockReason,
+  type Caller,
+  checkCall,
+  FERRYHOPPER,
+  FERRYHOPPER_PINNED_TOOLS,
+  modelVisible,
+  type Pin,
+  pinTools,
+} from './pin';
 
 // ext-apps exports this only from its /server entry, which the host does not import.
 const UI_EXTENSION_ID = 'io.modelcontextprotocol/ui';
@@ -43,7 +52,7 @@ export interface Ferryhopper {
 }
 
 export class ToolBlockedError extends Error {
-  constructor(readonly reason: 'not-pinned' | 'not-read-only' | 'not-visible') {
+  constructor(readonly reason: BlockReason) {
     super(`Ferryhopper tool blocked: ${reason}`);
     this.name = 'ToolBlockedError';
   }
@@ -132,7 +141,7 @@ export function createFerryhopper(opts: {
             { pinHash: p.hash, tools: p.tools.map((t) => t.name) },
             'ferryhopper tools pinned',
           );
-          if (p.tools.length < 5)
+          if (p.tools.length < FERRYHOPPER_PINNED_TOOLS.length)
             opts.log.warn(
               { tools: p.tools.map((t) => t.name) },
               'ferryhopper lists fewer pinned tools',
