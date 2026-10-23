@@ -50,6 +50,8 @@ const MESSAGES: Record<string, string> = {
   'not-cancellable': 'This Order can no longer be cancelled. Reload the page to see its status.',
   'not-refundable':
     'This Order cannot be refunded here: it already has a refund, or nothing is captured. Further refunds are made in the Provider’s Stripe dashboard.',
+  'not-answerable':
+    'This Order is no longer waiting for the Provider, or its terms changed. Reload the page.',
 };
 
 export function messageFor(code: string): string {

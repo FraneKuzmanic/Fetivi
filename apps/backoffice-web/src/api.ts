@@ -23,7 +23,12 @@ import type {
   PriceUnit,
   ProviderLanguage,
 } from '@fetivi/domain/offer-vocabulary';
-import type { OrderStatus, OrderTrigger, PaymentStatus } from '@fetivi/domain/order-vocabulary';
+import type {
+  OrderStatus,
+  OrderTrigger,
+  PaymentStatus,
+  Proposer,
+} from '@fetivi/domain/order-vocabulary';
 import type {
   FindingKind,
   FindingStatus,
@@ -524,6 +529,20 @@ export interface AdminOrder {
   paidAmountMinor: number | null;
   /** The refund decided on the attempt; null until one is. */
   refundAmountMinor: number | null;
+  /** The current proposal: answers are bound to it. */
+  proposalId: string;
+  proposer: Proposer;
+  version: number;
+  orderKind: OrderKind;
+  /** When the Provider's on-request answer is due; null when it was never asked. */
+  responseDueAt: string | null;
+  windowMissed: boolean;
+  /** The Order waits for the Provider, so the admin may record a phoned answer. */
+  canAnswer: boolean;
+  stayFrom: string;
+  stayTo: string;
+  /** The zone a new time is entered in. */
+  zone: string;
   canCancel: boolean;
   canRefund: boolean;
   events: AdminOrderEvent[];
@@ -618,6 +637,14 @@ export const adminOrders = {
     post<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}/cancel`, body),
   refund: (id: string, body: { refundMinor: number; note?: string }) =>
     post<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}/refund`, body),
+  accept: (id: string, body: { proposalId: string; note: string }) =>
+    post<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}/accept`, body),
+  decline: (id: string, body: { proposalId: string; note: string }) =>
+    post<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}/decline`, body),
+  propose: (
+    id: string,
+    body: { proposalId: string; note: string; date: string; time?: string; priceMinor?: number },
+  ) => post<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}/propose`, body),
 };
 
 export const reconciliation = {

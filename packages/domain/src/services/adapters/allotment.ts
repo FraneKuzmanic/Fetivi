@@ -1,52 +1,17 @@
-import { and, asc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, lt, sql } from 'drizzle-orm';
 import { allotmentSlots } from '../../db/schema/offers';
-import { inventoryHolds, orders } from '../../db/schema/orders';
-import type { HoldState } from '../../orders/vocabulary';
+import { inventoryHolds } from '../../db/schema/orders';
 import { endOfCivilDay, startOfCivilDay } from '../../time';
+import { commitHold, giveBack, holdOf, lookupHold, resolveByOrder } from './holds';
 import { type AdapterContext, AdapterError, type ProviderAdapter } from './interface';
 
 // Allotment: the seats from the deal live in `allotment_slots.remaining`. A hold takes seats under
 // the slot's row lock and records an `inventory_holds` row; release and cancel give them back.
 // Every seat change is keyed on the hold row's state change, so a repeat never counts twice.
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Marks the proposal's hold released from one of `from` and returns its seats to the slot. */
-async function giveBack(ctx: AdapterContext, proposalId: string, from: HoldState[]) {
-  const [released] = await ctx.db
-    .update(inventoryHolds)
-    .set({ state: 'released', resolvedAt: ctx.now() })
-    .where(and(eq(inventoryHolds.proposalId, proposalId), inArray(inventoryHolds.state, from)))
-    .returning();
-  if (released?.slotId) {
-    await ctx.db
-      .update(allotmentSlots)
-      .set({ remaining: sql`${allotmentSlots.remaining} + ${released.quantity}` })
-      .where(eq(allotmentSlots.id, released.slotId));
-  }
-}
-
 /** Releases the proposal's hold, held or committed, and returns its seats: the machine's release. */
 export function restoreSeats(ctx: AdapterContext, proposalId: string): Promise<void> {
   return giveBack(ctx, proposalId, ['held', 'committed']);
-}
-
-async function holdOf(ctx: AdapterContext, proposalId: string) {
-  const [hold] = await ctx.db
-    .select()
-    .from(inventoryHolds)
-    .where(eq(inventoryHolds.proposalId, proposalId));
-  return hold;
-}
-
-/** The Order a reference names; the reference is the Order id. */
-async function orderOf(ctx: AdapterContext, reference: string) {
-  if (!UUID.test(reference)) return undefined;
-  const [order] = await ctx.db
-    .select({ proposalId: orders.currentProposalId, externalRef: orders.providerExternalRef })
-    .from(orders)
-    .where(eq(orders.id, reference));
-  return order;
 }
 
 export const allotmentAdapter: ProviderAdapter = {
@@ -92,32 +57,13 @@ export const allotmentAdapter: ProviderAdapter = {
     return { ref: hold.id, expiresAt: hold.expiresAt };
   },
 
-  async commit(ctx, { orderId, proposalId }) {
-    const [committed] = await ctx.db
-      .update(inventoryHolds)
-      .set({ state: 'committed', resolvedAt: ctx.now() })
-      .where(and(eq(inventoryHolds.proposalId, proposalId), eq(inventoryHolds.state, 'held')))
-      .returning({ id: inventoryHolds.id });
-    if (!committed && (await holdOf(ctx, proposalId))?.state !== 'committed') {
-      throw new AdapterError('hold-gone');
-    }
-    return { externalRef: orderId };
-  },
+  commit: commitHold,
 
   release: (ctx, { proposalId }) => giveBack(ctx, proposalId, ['held']),
 
   cancel: (ctx, { proposalId }) => giveBack(ctx, proposalId, ['committed']),
 
-  async lookup(ctx, reference) {
-    const order = await orderOf(ctx, reference);
-    const hold = order?.proposalId ? await holdOf(ctx, order.proposalId) : undefined;
-    if (!order || !hold) return { state: 'not_found', proposalId: null, externalRef: null };
-    return { state: hold.state, proposalId: hold.proposalId, externalRef: order.externalRef };
-  },
+  lookup: lookupHold,
 
-  async resolveInboundCancellation(ctx, { reference, proposalId }) {
-    const order = await orderOf(ctx, reference);
-    if (!order?.proposalId) return null;
-    return { orderId: reference, proposalId: proposalId ?? order.proposalId };
-  },
+  resolveInboundCancellation: resolveByOrder,
 };

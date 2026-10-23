@@ -1,9 +1,14 @@
-import type { OrderStatus, OrderTrigger, PaymentStatus } from '@fetivi/domain/order-vocabulary';
-import { ArrowUDownLeft, CalendarX } from '@phosphor-icons/react';
+import type {
+  OrderStatus,
+  OrderTrigger,
+  PaymentStatus,
+  Proposer,
+} from '@fetivi/domain/order-vocabulary';
+import { ArrowUDownLeft, CalendarX, Check, ClockClockwise, X } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { type AdminOrder, adminOrders } from '../../api';
-import { NumberField, TextArea } from '../../forms/fields';
+import { NumberField, TextArea, TextField, TimeField } from '../../forms/fields';
 import { useAction } from '../../useAction';
 import { centsFromEuros } from '../providers/money';
 
@@ -45,6 +50,13 @@ const TRIGGERS: Record<OrderTrigger, string> = {
   reconciliation: 'Reconciliation',
 };
 
+const PROPOSERS: Record<Proposer, string> = {
+  offer: 'the Offer',
+  provider_time: 'the Provider (new time)',
+  provider_price: 'the Provider (price)',
+  admin: 'an admin',
+};
+
 const NOTE_MAX = 500;
 
 const money = (minor: number, currency: string) =>
@@ -76,6 +88,10 @@ export function OrderPage() {
   const [cancelNote, setCancelNote] = useState<string | null>(null);
   const [refund, setRefund] = useState<number | null>(null);
   const [refundNote, setRefundNote] = useState<string | null>(null);
+  const [answerNote, setAnswerNote] = useState<string | null>(null);
+  const [newDate, setNewDate] = useState<string | null>(null);
+  const [newTime, setNewTime] = useState<string | null>(null);
+  const [newPrice, setNewPrice] = useState<number | null>(null);
 
   const load = useCallback(async () => setOrder(await adminOrders.get(id)), [id]);
 
@@ -114,6 +130,31 @@ export function OrderPage() {
     });
   }
 
+  /** Records the Provider's phoned answer on the proposal the page shows. */
+  function answer(kind: 'accept' | 'decline' | 'propose') {
+    if (!order || !answerNote?.trim()) return;
+    const body = { proposalId: order.proposalId, note: answerNote };
+    const what = {
+      accept: 'Record that the Provider accepted? The Order is confirmed and the guest is told.',
+      decline: 'Record that the Provider declined? The guest is told.',
+      propose: 'Send these new terms to the guest? They accept or decline them in chat.',
+    }[kind];
+    if (!window.confirm(what)) return;
+    void run(async () => {
+      const next =
+        kind === 'propose'
+          ? await adminOrders.propose(order.id, {
+              ...body,
+              date: newDate ?? order.date,
+              time: newTime ?? undefined,
+              priceMinor: centsFromEuros(newPrice) ?? undefined,
+            })
+          : await adminOrders[kind](order.id, body);
+      setOrder(next);
+      setAnswerNote(null);
+    });
+  }
+
   if (!order) {
     return (
       <>
@@ -132,6 +173,7 @@ export function OrderPage() {
     ['Provider', order.providerName ?? 'Host Offer'],
     ['When', order.startsAt ? time(order.startsAt) : order.date],
     ['Quantity', String(order.quantity)],
+    ['Terms', `Version ${order.version}, from ${PROPOSERS[order.proposer]}`],
     [
       'Total',
       order.priceMinor === null ? 'Set by the Provider' : money(order.priceMinor, order.currency),
@@ -175,6 +217,88 @@ export function OrderPage() {
             ))}
           </dl>
         </section>
+
+        {order.canAnswer ? (
+          <form
+            className="panel"
+            aria-labelledby="order-answer"
+            onSubmit={(event) => event.preventDefault()}
+          >
+            <h2 id="order-answer">Provider's answer</h2>
+            <p className="muted">
+              {order.windowMissed ? <Chip text="Window missed" tone="fail" /> : null}{' '}
+              {order.responseDueAt ? `The answer is due ${time(order.responseDueAt)}. ` : ''}
+              Phone the Provider and record what they said.
+            </p>
+            <div className="fields">
+              <TextArea
+                label="What the Provider said on the phone"
+                hint="Required. Saved on the Order's history."
+                value={answerNote}
+                maxLength={NOTE_MAX}
+                rows={2}
+                required
+                onChange={setAnswerNote}
+              />
+              <div className="field-row">
+                <TextField
+                  label="New date"
+                  type="date"
+                  value={newDate ?? order.date}
+                  maxLength={10}
+                  onChange={setNewDate}
+                />
+                <TimeField
+                  label="New time"
+                  hint={`Optional. ${order.zone} time.`}
+                  value={newTime}
+                  onChange={setNewTime}
+                />
+                <NumberField
+                  label={`New total price (${order.currency})`}
+                  hint={order.priceMinor === null ? 'Required: no price yet.' : 'Optional.'}
+                  value={newPrice}
+                  min={0.01}
+                  max={100_000}
+                  step="any"
+                  onChange={setNewPrice}
+                />
+              </div>
+            </div>
+            <div className="section-foot">
+              {order.orderKind === 'request' ? null : (
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={busy || !answerNote?.trim()}
+                  onClick={() => answer('accept')}
+                >
+                  <Check aria-hidden="true" weight="bold" />
+                  Accept
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={
+                  busy || !answerNote?.trim() || (order.priceMinor === null && newPrice === null)
+                }
+                onClick={() => answer('propose')}
+              >
+                <ClockClockwise aria-hidden="true" weight="bold" />
+                Send new terms
+              </button>
+              <button
+                type="button"
+                className="danger"
+                disabled={busy || !answerNote?.trim()}
+                onClick={() => answer('decline')}
+              >
+                <X aria-hidden="true" weight="bold" />
+                Decline
+              </button>
+            </div>
+          </form>
+        ) : null}
 
         {order.canCancel ? (
           <form className="panel" aria-labelledby="order-cancel" onSubmit={cancel}>

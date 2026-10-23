@@ -24,10 +24,13 @@ import {
 import { hashToken } from '../../tokens';
 import { confirmHeldOrder } from '../adapters';
 import {
+  acceptOrder,
   acknowledgeOrder,
   cannotFulfil,
+  declineOrder,
   findOrderByLinkToken,
   issueProviderLink,
+  proposeOrder,
   providerLinkView,
 } from './link';
 import { providerLinkToken } from './token';
@@ -239,7 +242,13 @@ describe('a stale page', () => {
       cardExpiresAt: new Date('2027-05-01T12:00:00Z'),
     });
     const v2 = (await getOrder(testDb.db, order.id))?.proposal.id as string;
-    await guestConfirm(deps(), { orderId: order.id, proposalId: v2, trigger: 'guest' });
+    // Terms the admin proposed need no second ask: the guest's yes places the hold.
+    await guestConfirm(deps(), {
+      orderId: order.id,
+      proposalId: v2,
+      trigger: 'guest',
+      hold: { expiresAt: new Date('2027-05-01T10:30:00Z') },
+    });
     await confirm(deps(), { orderId: order.id, proposalId: v2, trigger: 'admin' });
     expect(await status(order.id)).toBe('confirmed');
 
@@ -249,5 +258,63 @@ describe('a stale page', () => {
     expect(await status(order.id)).toBe('confirmed');
     expect(await acknowledgedAt(v1)).toBeNull();
     expect(await acknowledgedAt(v2)).toBeNull();
+  });
+});
+
+/** A pay-direct on-request Order waiting for the Provider, with its page view. */
+async function pendingOrder(orderKind: 'booking' | 'request' = 'booking') {
+  const provider = await seedProvider(testDb.db);
+  const { offerId } = await seedOrderableOffer(testDb.db, {
+    providerId: provider.id,
+    availabilityMode: 'on_request',
+    orderKind,
+  });
+  const { order } = await createOrder(deps(), {
+    spaceId: unit.spaceId,
+    offerId,
+    date: DAY,
+    quantity: 2,
+    contact: { email: 'guest@example.test', name: 'Ana' },
+  });
+  const ref = { orderId: order.id, proposalId: order.currentProposalId as string };
+  const found = await findOrderByLinkToken(
+    testDb.db,
+    await issueProviderLink(testDb.db, SECRET, order.id),
+  );
+  if (!found) throw new Error('not found');
+  return { ref, view: providerLinkView(found) };
+}
+
+describe('an on-request Order waiting for the Provider', () => {
+  it('shows Accept, Suggest another time and Decline with the answer-by time', async () => {
+    const { view } = await pendingOrder();
+    expect(view).toMatchObject({
+      status: 'pending_provider',
+      actions: ['accept', 'suggest_time', 'decline'],
+      respondBy: '2027-05-01T12:30',
+      stayFrom: unit.stay.checkIn,
+      stayTo: unit.stay.checkout,
+      zone: 'Europe/Zagreb',
+      currency: 'EUR',
+      needsPrice: false,
+    });
+  });
+
+  it('shows Accept with price for a request-kind Offer, which needs a price', async () => {
+    const { view } = await pendingOrder('request');
+    expect(view.actions).toEqual(['accept_with_price', 'suggest_time', 'decline']);
+    expect(view.needsPrice).toBe(true);
+    expect(view.priceMinor).toBeNull();
+  });
+
+  it('answers through the link: accept, decline and new terms', async () => {
+    const accepted = await pendingOrder();
+    expect((await acceptOrder(deps(), accepted.ref)).order.status).toBe('confirmed');
+    const declined = await pendingOrder();
+    expect((await declineOrder(deps(), declined.ref)).order.status).toBe('declined');
+    const proposed = await pendingOrder();
+    const result = await proposeOrder(deps(), proposed.ref, { date: DAY, time: '17:00' });
+    expect(result.order.status).toBe('awaiting_confirmation');
+    expect((await acceptOrder(deps(), proposed.ref)).outcome).toBe('stale');
   });
 });

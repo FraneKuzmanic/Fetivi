@@ -8,6 +8,12 @@ import { stays } from '../../db/schema/stays';
 import { type GuestFields, guestFieldsFor } from '../../notifications/provider/compose';
 import { PROVIDER_DEFAULTS, type PriceUnit, type ProviderLanguage } from '../../offers/vocabulary';
 import { type OrderDeps, OrderRuleError, type TransitionOutcome } from '../../orders/machine';
+import {
+  type ProposedTerms,
+  providerAccept,
+  providerDecline,
+  providerPropose,
+} from '../../orders/provider-answers';
 import { isFinalOrderStatus, type OrderStatus } from '../../orders/vocabulary';
 import { type CivilDate, toLocalDateTime } from '../../time';
 import { hashToken } from '../../tokens';
@@ -44,7 +50,9 @@ export async function findOrderByLinkToken(db: Executor, token: string) {
         title: offers.title,
         contactFields: offers.contactFields,
         orderKind: offers.orderKind,
+        currency: offers.currency,
       },
+      stay: { checkIn: stays.checkIn, checkout: stays.checkout },
       provider: { name: providers.name, email: providers.email, language: providers.language },
       destinationZone: destinations.timezone,
       propertyZone: properties.timezone,
@@ -63,7 +71,13 @@ export async function findOrderByLinkToken(db: Executor, token: string) {
 
 export type FoundProviderOrder = NonNullable<Awaited<ReturnType<typeof findOrderByLinkToken>>>;
 
-export type ProviderLinkAction = 'acknowledge' | 'cannot_fulfil';
+export type ProviderLinkAction =
+  | 'acknowledge'
+  | 'cannot_fulfil'
+  | 'accept'
+  | 'decline'
+  | 'suggest_time'
+  | 'accept_with_price';
 
 export interface ProviderLinkView {
   orderId: string;
@@ -83,6 +97,17 @@ export interface ProviderLinkView {
   final: boolean;
   acknowledgedAt: Date | null;
   actions: ProviderLinkAction[];
+  /** The proposal's total; null for a request-kind Order before the Provider names it. */
+  priceMinor: number | null;
+  currency: string;
+  /** 'YYYY-MM-DDTHH:mm' in `zone` when the on-request answer is due; null otherwise. */
+  respondBy: string | null;
+  /** The stay's dates: a suggested date must lie between them. */
+  stayFrom: CivilDate;
+  stayTo: CivilDate;
+  zone: string;
+  /** New terms must carry a price: a request-kind Order, or a pay-online one without a price. */
+  needsPrice: boolean;
 }
 
 /** What the Provider page shows: the current proposal and the actions open on it. */
@@ -91,11 +116,17 @@ export function providerLinkView(found: FoundProviderOrder): ProviderLinkView {
   const zone = found.destinationZone ?? found.propertyZone;
   const final = isFinalOrderStatus(order.status);
   const open = order.status === 'confirmed' && order.availabilityMode === 'allotment';
-  const actions: ProviderLinkAction[] = !open
-    ? []
-    : proposal.providerAcknowledgedAt
-      ? ['cannot_fulfil']
-      : ['acknowledge', 'cannot_fulfil'];
+  const asked = order.status === 'pending_provider' && order.availabilityMode === 'on_request';
+  const requestKind = found.offer.orderKind === 'request';
+  const actions: ProviderLinkAction[] = asked
+    ? requestKind
+      ? ['accept_with_price', 'suggest_time', 'decline']
+      : ['accept', 'suggest_time', 'decline']
+    : !open
+      ? []
+      : proposal.providerAcknowledgedAt
+        ? ['cannot_fulfil']
+        : ['acknowledge', 'cannot_fulfil'];
   return {
     orderId: order.id,
     proposalId: proposal.id,
@@ -111,6 +142,14 @@ export function providerLinkView(found: FoundProviderOrder): ProviderLinkView {
     final,
     acknowledgedAt: proposal.providerAcknowledgedAt,
     actions,
+    priceMinor: proposal.priceMinor,
+    currency: found.offer.currency,
+    respondBy:
+      asked && proposal.responseDueAt ? toLocalDateTime(proposal.responseDueAt, zone) : null,
+    stayFrom: found.stay.checkIn,
+    stayTo: found.stay.checkout,
+    zone,
+    needsPrice: requestKind || (order.paymentMode === 'online' && proposal.priceMinor === null),
   };
 }
 
@@ -159,4 +198,25 @@ export async function cannotFulfil(deps: OrderDeps, ref: ProposalRef): Promise<T
   );
   if (!result) throw new OrderRuleError('not-found');
   return result;
+}
+
+const LINK = { trigger: 'provider_link' } as const;
+
+/** Accept on the per-order link: confirms an on-request Order on the terms the page showed. */
+export function acceptOrder(deps: OrderDeps, ref: ProposalRef): Promise<TransitionOutcome> {
+  return providerAccept(deps, ref, LINK);
+}
+
+/** Decline on the per-order link. */
+export function declineOrder(deps: OrderDeps, ref: ProposalRef): Promise<TransitionOutcome> {
+  return providerDecline(deps, ref, LINK);
+}
+
+/** Suggest another time or Accept with price on the per-order link: new terms for the guest. */
+export function proposeOrder(
+  deps: OrderDeps,
+  ref: ProposalRef,
+  terms: ProposedTerms,
+): Promise<TransitionOutcome> {
+  return providerPropose(deps, ref, terms, LINK);
 }

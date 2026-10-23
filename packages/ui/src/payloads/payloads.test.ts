@@ -118,6 +118,7 @@ const ORDER: OrderSummaryPayload = {
   createdAt: '2026-10-21T10:00:00.000Z',
   payBy: null,
   refundMinor: null,
+  respondBy: null,
 };
 
 const ELICITATION: ElicitationPayload = {
@@ -135,6 +136,7 @@ const ELICITATION: ElicitationPayload = {
   },
   requestState: 'opaque.state',
   cancelOrder: null,
+  respondOrder: null,
   hostMessage: null,
   draft: {
     pendingId: 'p-1',

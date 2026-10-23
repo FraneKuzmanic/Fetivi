@@ -9,6 +9,8 @@ import {
   type HostMessageDraft,
   ORDER_DRAFT_META_KEY,
   type OrderSummary,
+  RESPOND_DRAFT_META_KEY,
+  type RespondOrderDraft,
 } from '@fetivi/domain';
 import {
   type CancelOrderDraftPayload,
@@ -17,6 +19,7 @@ import {
   type HostMessageDraftPayload,
   type OrderDraft,
   type OrderSummaryPayload,
+  type RespondOrderDraftPayload,
 } from '@fetivi/ui/payloads';
 import {
   type CallToolResult,
@@ -39,7 +42,8 @@ const _cardsMatch: [
   Same<OrderSummaryPayload, OrderSummary>,
   Same<HostMessageDraftPayload, HostMessageDraft & { pendingId: string }>,
   Same<CancelOrderDraftPayload, CancelOrderDraft & { pendingId: string }>,
-] = [true, true, true, true];
+  Same<RespondOrderDraftPayload, RespondOrderDraft & { pendingId: string }>,
+] = [true, true, true, true, true];
 void _cardsMatch;
 
 /**
@@ -111,6 +115,7 @@ export function toOutcome(
       draft: meta[ORDER_DRAFT_META_KEY] ?? null,
       hostMessage: meta[HOST_MESSAGE_DRAFT_META_KEY] ?? null,
       cancelOrder: meta[CANCEL_DRAFT_META_KEY] ?? null,
+      respondOrder: meta[RESPOND_DRAFT_META_KEY] ?? null,
     });
     return parsed.success
       ? { kind: 'ask', payload: parsed.data }

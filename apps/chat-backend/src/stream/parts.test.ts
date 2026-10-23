@@ -156,6 +156,7 @@ const ORDER = {
   createdAt: '2026-10-21T10:00:00.000Z',
   payBy: null,
   refundMinor: null,
+  respondBy: null,
 };
 
 describe('booking components', () => {
@@ -201,6 +202,16 @@ describe('booking components', () => {
       payload: { order: cancelled },
     });
     expect(componentFor('cancel_order', { outcome: 'not_cancelled', order: null })).toBeNull();
+  });
+
+  it('shows the receipt of an answered new proposal, nothing for not now', () => {
+    const confirmed = { ...ORDER, status: 'confirmed' };
+    expect(
+      componentFor('respond_to_order_update', { outcome: 'accepted', order: confirmed }),
+    ).toEqual({ name: 'receipt-card', payload: { order: confirmed } });
+    expect(
+      componentFor('respond_to_order_update', { outcome: 'not_answered', order: null }),
+    ).toBeNull();
   });
 });
 

@@ -17,6 +17,7 @@ import { ComponentPart } from './render/ComponentPart';
 import { type CardAnswer, ConfirmationPart } from './render/ConfirmationPart';
 import { HostMessagePart, isHostMessageCard } from './render/HostMessagePart';
 import { InboxPart } from './render/InboxPart';
+import { isRespondOrderCard, RespondOrderPart } from './render/RespondOrderPart';
 
 const NEAR_BOTTOM_PX = 120;
 
@@ -61,13 +62,22 @@ function cardsOf(message: UIMessage, busy: boolean): Card[] {
 export const asksToConfirm = (message: UIMessage | undefined) =>
   message !== undefined && cardsOf(message, false).length > 0;
 
-/** The announcement of an answer's open card: a cancellation, a host message or a booking. */
+/**
+ * The announcement of an answer's open card: a cancellation, new terms, a host message or a
+ * booking.
+ */
 function cardShownKey(
   message: UIMessage,
-): 'cancelOrder.cardShown' | 'hostMessage.cardShown' | 'order.cardShown' | null {
+):
+  | 'cancelOrder.cardShown'
+  | 'respondOrder.cardShown'
+  | 'hostMessage.cardShown'
+  | 'order.cardShown'
+  | null {
   const [card] = cardsOf(message, false);
   if (!card) return null;
   if (isCancelOrderCard(card.card)) return 'cancelOrder.cardShown';
+  if (isRespondOrderCard(card.card)) return 'respondOrder.cardShown';
   return isHostMessageCard(card.card) ? 'hostMessage.cardShown' : 'order.cardShown';
 }
 
@@ -228,6 +238,16 @@ export function MessageList({
               if (isCancelOrderCard(segment.card)) {
                 return (
                   <CancelOrderPart
+                    key={segment.key}
+                    data={segment.card}
+                    state={segment.state}
+                    onAnswer={onAnswer}
+                  />
+                );
+              }
+              if (isRespondOrderCard(segment.card)) {
+                return (
+                  <RespondOrderPart
                     key={segment.key}
                     data={segment.card}
                     state={segment.state}

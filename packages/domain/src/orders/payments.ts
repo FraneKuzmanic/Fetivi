@@ -4,6 +4,7 @@ import {
   inventoryHolds,
   type OrderRow,
   orderEvents,
+  orderProposals,
   orders,
   type PaymentAttemptRow,
   paymentAttempts,
@@ -11,6 +12,7 @@ import {
 import { enqueuePaymentJob } from '../payments/enqueue';
 import type { IntentStatus, RefundStatus, SessionStatus } from '../payments/vocabulary';
 import {
+  askProviderAfterPayment,
   type ChangeMeta,
   type OrderDeps,
   OrderRuleError,
@@ -144,7 +146,8 @@ export async function flagPaymentAttentionIn(
  * still held and was ahead when the guest completed is confirmed next (the hold timer leaves an
  * authorized `confirming` Order to the confirm job). A `confirming` Order completed after its
  * hold expired is expired here, which voids the authorization; any other Order (expired,
- * failed, cancelled) has the authorization voided.
+ * failed, cancelled) has the authorization voided. A paid-first on-request Order on the Offer's
+ * terms is put to the Provider instead of confirmed (ADR 0015).
  */
 export function authorize(
   deps: OrderDeps,
@@ -187,6 +190,18 @@ export function authorize(
     }
     const completedAt = input.completedAt ?? deps.now();
     if (hold?.state === 'held' && hold.expiresAt > completedAt) {
+      const [proposal] = await tx
+        .select()
+        .from(orderProposals)
+        .where(eq(orderProposals.id, attempt.proposalId));
+      if (!proposal) throw new OrderRuleError('not-found');
+      if (order.availabilityMode === 'on_request' && proposal.proposer === 'offer') {
+        return askProviderAfterPayment(tx, deps, result.order, proposal, {
+          orderId: order.id,
+          proposalId: proposal.id,
+          trigger: input.trigger,
+        });
+      }
       await enqueuePaymentJob(tx, deps.queue, mirrored, 'confirm');
       return result;
     }

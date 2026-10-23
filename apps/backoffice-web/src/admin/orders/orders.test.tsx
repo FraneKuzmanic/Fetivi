@@ -28,6 +28,16 @@ const ORDER: AdminOrder = {
   policyRefundMinor: 5000,
   paidAmountMinor: 5000,
   refundAmountMinor: null,
+  proposalId: '1c2d3e4f-bbbb-4ccc-8ddd-123456789abc',
+  proposer: 'offer',
+  version: 1,
+  orderKind: 'booking',
+  responseDueAt: null,
+  windowMissed: false,
+  canAnswer: false,
+  stayFrom: '2026-10-24',
+  stayTo: '2026-10-28',
+  zone: 'Europe/Zagreb',
   canCancel: true,
   canRefund: false,
   events: [
@@ -196,6 +206,77 @@ describe('OrderPage', () => {
     expect(el.querySelector('input[type="number"]')).toBeNull();
     await act(async () => button('Cancel order')?.click());
     expect(calls.at(-1)?.body).toEqual({});
+  });
+});
+
+const PENDING: AdminOrder = {
+  ...ORDER,
+  status: 'pending_provider',
+  paymentStatus: 'none',
+  paymentMode: 'direct',
+  availabilityMode: 'on_request',
+  paidAmountMinor: null,
+  policyRefundMinor: null,
+  responseDueAt: '2026-10-20T10:30:00.000Z',
+  windowMissed: true,
+  canAnswer: true,
+};
+
+describe("OrderPage, the Provider's answer", () => {
+  it('records a phoned accept with the note, once the note is written', async () => {
+    stubApi(PENDING);
+    vi.stubGlobal(
+      'confirm',
+      vi.fn(() => true),
+    );
+    await mount(`/admin/orders/${ID}`);
+    expect(el.textContent).toContain('Window missed');
+    expect(el.textContent).toContain('Version 1, from the Offer');
+    expect(button('Accept')?.disabled).toBe(true);
+    const note = el.querySelector<HTMLTextAreaElement>('textarea');
+    if (!note) throw new Error('no note');
+    await type(note, 'Phoned: they can do it');
+    await act(async () => button('Accept')?.click());
+    expect(calls.at(-1)).toEqual({
+      url: `/api/admin/orders/${ID}/accept`,
+      method: 'POST',
+      body: { proposalId: PENDING.proposalId, note: 'Phoned: they can do it' },
+    });
+  });
+
+  it('sends new terms with the time and the price in cents', async () => {
+    stubApi(PENDING);
+    vi.stubGlobal(
+      'confirm',
+      vi.fn(() => true),
+    );
+    await mount(`/admin/orders/${ID}`);
+    const note = el.querySelector<HTMLTextAreaElement>('textarea');
+    const timeInput = el.querySelector<HTMLInputElement>('input[type="time"]');
+    const price = el.querySelectorAll<HTMLInputElement>('input[type="number"]')[0];
+    if (!note || !timeInput || !price) throw new Error('no form');
+    await type(note, 'Phoned: 18:00 instead');
+    await type(timeInput, '18:00');
+    await type(price, '120.5');
+    await act(async () => button('Send new terms')?.click());
+    expect(calls.at(-1)).toEqual({
+      url: `/api/admin/orders/${ID}/propose`,
+      method: 'POST',
+      body: {
+        proposalId: PENDING.proposalId,
+        note: 'Phoned: 18:00 instead',
+        date: PENDING.date,
+        time: '18:00',
+        priceMinor: 12050,
+      },
+    });
+  });
+
+  it('has no plain Accept for a request-kind Offer', async () => {
+    stubApi({ ...PENDING, orderKind: 'request', priceMinor: null });
+    await mount(`/admin/orders/${ID}`);
+    expect(button('Accept')).toBeUndefined();
+    expect(button('Decline')).toBeDefined();
   });
 });
 

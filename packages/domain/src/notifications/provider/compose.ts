@@ -52,6 +52,13 @@ const STRINGS = {
     guestName: 'Gost',
     guestPhone: 'Telefon gosta',
     action: 'Otvorite poveznicu za potvrdu primitka ili ako ne možete izvršiti narudžbu.',
+    request: {
+      subject: 'Novi upit',
+      intro: 'Imate novi upit koji čeka vaš odgovor.',
+      respondBy: (at: string) => `Molimo odgovorite do ${at}.`,
+      price: 'Cijena',
+      action: 'Otvorite poveznicu da prihvatite, odbijete ili predložite drugo vrijeme.',
+    },
   },
   en: {
     dateFormat: 'd MMM yyyy',
@@ -66,6 +73,13 @@ const STRINGS = {
     guestName: 'Guest',
     guestPhone: 'Guest phone',
     action: "Open the link to acknowledge it, or to tell us you can't fulfil it.",
+    request: {
+      subject: 'New request',
+      intro: 'You have a new request waiting for your answer.',
+      respondBy: (at: string) => `Please answer by ${at}.`,
+      price: 'Price',
+      action: 'Open the link to accept, decline or suggest another time.',
+    },
   },
 } as const;
 
@@ -78,23 +92,67 @@ export function composeProviderConfirmed(input: ProviderConfirmedInput): {
   text: string;
 } {
   const s = STRINGS[input.language];
+  return compose(input, s.subject, [s.intro], [], s.action);
+}
+
+export interface ProviderRequestInput extends ProviderConfirmedInput {
+  /** 'YYYY-MM-DDTHH:mm' in the Offer's zone: when the answer is due. */
+  respondBy: string;
+  /** The Order's total; null for a request-kind Offer that has no price yet. */
+  priceMinor: number | null;
+  currency: string;
+}
+
+/** The on-request ask (36): the Provider answers on the link before `respondBy`. */
+export function composeProviderRequest(input: ProviderRequestInput): {
+  subject: string;
+  text: string;
+} {
+  const s = STRINGS[input.language];
+  const at = DateTime.fromISO(input.respondBy, { locale: input.language }).toFormat(
+    `${s.dateFormat} HH:mm`,
+  );
+  const price =
+    input.priceMinor === null
+      ? []
+      : [
+          `${s.request.price}: ${new Intl.NumberFormat(input.language, { style: 'currency', currency: input.currency }).format(input.priceMinor / 100)}`,
+        ];
+  return compose(
+    input,
+    s.request.subject,
+    [s.request.intro, s.request.respondBy(at)],
+    price,
+    s.request.action,
+  );
+}
+
+function compose(
+  input: ProviderConfirmedInput,
+  subject: string,
+  intro: string[],
+  extra: string[],
+  action: string,
+): { subject: string; text: string } {
+  const s = STRINGS[input.language];
   const date = formatCivilDate(input.date, input.language);
   const lines = [
     `${s.greeting} ${input.providerName},`,
     '',
-    s.intro,
+    ...intro,
     '',
     `${s.offer}: ${input.offerTitle}`,
     `${s.date}: ${date}`,
     ...(input.startTime ? [`${s.time}: ${input.startTime}`] : []),
     `${s.quantity[input.priceUnit]}: ${input.quantity}`,
+    ...extra,
     ...(input.guest.name ? [`${s.guestName}: ${input.guest.name}`] : []),
     ...(input.guest.phone ? [`${s.guestPhone}: ${input.guest.phone}`] : []),
     '',
-    s.action,
+    action,
     input.link,
     '',
     'Fetivi',
   ];
-  return { subject: `${s.subject}: ${input.offerTitle}, ${date}`, text: lines.join('\n') };
+  return { subject: `${subject}: ${input.offerTitle}, ${date}`, text: lines.join('\n') };
 }

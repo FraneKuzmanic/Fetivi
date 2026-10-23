@@ -143,7 +143,7 @@ One start time of an allotment Offer with its seat capacity and the seats remain
 _Avoid_: Departure, session, timeslot
 
 **Response window**:
-How long a Provider has to answer an on-request Order, counted only within the Offer's daily response hours and always ending under 4 days after the request.
+How long a Provider has to answer an on-request Order, counted only within the Offer's daily response hours in the property's zone and always ending under 4 days after the request (clamped to 96 h). The deadline is stored on the proposal as `response_due_at`.
 _Avoid_: SLA
 
 **Provider link**:

@@ -9,8 +9,17 @@ import { type StateCodec, stateCodec } from './request-state';
 import { answerCancelOrder, NO_CANCEL_ELICITATION, prepareCancelOrder } from './services/cancel';
 import { answerCreateOrder, NO_ELICITATION, prepareCreateOrder } from './services/create-order';
 import { clientCanElicitForm } from './services/elicitation';
-import type { cancelOrderInput, createOrderInput } from './services/schemas';
-import { cancelOrderSpec, createOrderSpec } from './services/tools';
+import {
+  answerRespondToOrderUpdate,
+  NO_RESPOND_ELICITATION,
+  prepareRespondToOrderUpdate,
+} from './services/respond';
+import type {
+  cancelOrderInput,
+  createOrderInput,
+  respondToOrderUpdateInput,
+} from './services/schemas';
+import { cancelOrderSpec, createOrderSpec, respondToOrderUpdateSpec } from './services/tools';
 import {
   answerSendHostMessage,
   NO_HOST_ELICITATION,
@@ -72,6 +81,19 @@ export const CONFIRM_TOOLS = {
       prepareCancelOrder(deps, identity, codec, args as z.infer<typeof cancelOrderInput>),
     answer: answerCancelOrder,
     noElicitation: NO_CANCEL_ELICITATION,
+  },
+  respond_to_order_update: {
+    spec: respondToOrderUpdateSpec,
+    codec: (secret, spaceId) => stateCodec('respond_to_order_update', secret, spaceId),
+    prepare: (deps, identity, codec, args) =>
+      prepareRespondToOrderUpdate(
+        deps,
+        identity,
+        codec,
+        args as z.infer<typeof respondToOrderUpdateInput>,
+      ),
+    answer: answerRespondToOrderUpdate,
+    noElicitation: NO_RESPOND_ELICITATION,
   },
   send_host_message: {
     spec: sendHostMessageSpec,

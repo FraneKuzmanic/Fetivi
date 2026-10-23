@@ -1,8 +1,13 @@
 // The approved-action binding's controlled lists (architecture §4.3). Imports nothing, so the
 // pgEnums are built from it.
 
-/** What a pending record will do once the guest confirms. 36 adds respond_to_order_update. */
-export const PENDING_ACTION_KINDS = ['create_order', 'send_host_message', 'cancel_order'] as const;
+/** What a pending record will do once the guest confirms. */
+export const PENDING_ACTION_KINDS = [
+  'create_order',
+  'send_host_message',
+  'cancel_order',
+  'respond_to_order_update',
+] as const;
 export type PendingActionKind = (typeof PENDING_ACTION_KINDS)[number];
 
 export const PENDING_STATES = ['pending', 'consumed', 'released'] as const;
@@ -22,6 +27,12 @@ export const ORDER_DRAFT_META_KEY = 'app.fetivi/order-draft';
 
 /** Where the cancel card reads its structured draft: the elicitation request's `_meta`. */
 export const CANCEL_DRAFT_META_KEY = 'app.fetivi/cancel-draft';
+
+/** Where the card for a new proposal reads its structured draft: the elicitation request's `_meta`. */
+export const RESPOND_DRAFT_META_KEY = 'app.fetivi/respond-draft';
+
+/** How long the guest has to answer a new proposal; never past its start. */
+export const PROPOSAL_CARD_HOURS = 24;
 
 /** The key of the one input request a confirm tool sends. */
 export const CONFIRM_KEY = 'confirm';

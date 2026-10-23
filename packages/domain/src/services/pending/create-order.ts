@@ -102,6 +102,8 @@ export interface OrderSummary {
   payBy: string | null;
   /** What was or will be refunded, in cents; null when nothing is refunded through Fetivi. */
   refundMinor: number | null;
+  /** ISO instant the guest must answer new terms by; set only while a new proposal waits for them. */
+  respondBy: string | null;
 }
 
 const CIVIL_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -147,8 +149,8 @@ async function startsOf(
     throw new ServiceRuleError('date-past');
   }
   if (!isQuantity(input.quantity)) throw new ServiceRuleError('invalid-input');
-  // Pay-online needs a Provider's allotment Offer with a price and an onboarded Provider (33);
-  // on request and live are 36 and 37.
+  // Pay-online needs a Provider's allotment or on-request Offer and an onboarded Provider; live
+  // is 37.
   if (offer.paymentMode === 'online' && !(await providerAcceptsCards(deps.db, offer.id))) {
     throw new ServiceRuleError('not-bookable-in-chat');
   }
@@ -160,6 +162,10 @@ async function startsOf(
       throw new ServiceRuleError('not-bookable-in-chat');
     }
     throw error;
+  }
+  // A host's on-request Orders reach the host inbox (38).
+  if (offer.owner === 'host' && offer.availabilityMode === 'on_request') {
+    throw new ServiceRuleError('not-bookable-in-chat');
   }
   const all = await adapter.checkAvailability(
     { db: deps.db, now: deps.now },
@@ -476,6 +482,10 @@ async function summaries(
     createdAt: order.createdAt.toISOString(),
     payBy: attempt && checkoutOpen(order, attempt, now) ? attempt.expiresAt.toISOString() : null,
     refundMinor: attempt?.refundAmountMinor ?? null,
+    respondBy:
+      order.status === 'awaiting_confirmation' && proposal.version > 1
+        ? (proposal.cardExpiresAt?.toISOString() ?? null)
+        : null,
   }));
 }
 

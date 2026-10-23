@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { Executor, Tx } from '../db/client';
-import { allotmentSlots, providers } from '../db/schema/offers';
+import { allotmentSlots, offers, providers } from '../db/schema/offers';
 import {
   inventoryHolds,
   type OrderProposalRow,
@@ -18,12 +18,14 @@ import type { JobQueue } from '../jobs/queue';
 import { enqueueGuestNotification } from '../notifications/guest/enqueue';
 import { orderReminderAt } from '../notifications/guest/reminders';
 import { lockOfferRow } from '../offers/translation';
+import { OFFER_LIMITS } from '../offers/vocabulary';
 import { enqueuePaymentJob } from '../payments/enqueue';
 import { applicationFee } from '../payments/keys';
 import { PAYMENT_LOCALES } from '../payments/vocabulary';
 import { allotmentAdapter, restoreSeats } from '../services/adapters/allotment';
 import { AdapterError } from '../services/adapters/interface';
 import { type CivilDate, endOfCivilDay, toLocalDateTime } from '../time';
+import { responseDueAt } from './response-window';
 import {
   enqueueAdapterCancel,
   enqueueNotification,
@@ -32,6 +34,7 @@ import {
 } from './timers';
 import {
   actionTarget,
+  asksProvider,
   nextPaymentStatus,
   nextStatus,
   type OrderAction,
@@ -52,6 +55,8 @@ import type { OrderStatus, OrderTrigger, PaymentStatus, Proposer } from './vocab
 // (createOrder: Offer, then slot). Pay-direct Orders keep Payment status `none`. A pay-online
 // Order (33) gets its payment attempt with its hold, is confirmed only once authorized, and every
 // release enqueues what frees its money: void, refund or expiring the Checkout Session.
+// On request (36): an Order waiting for the Provider holds nothing; entering `pending_provider`
+// stores the response deadline on the proposal and schedules the window timer.
 
 export interface OrderDeps {
   db: Executor;
@@ -91,11 +96,9 @@ export interface HoldInput {
   externalRef?: string;
 }
 
-/** What the guest's confirmation needs: a hold for live and allotment, a window for on request. */
+/** What the guest's confirmation needs: a hold whenever it leads to `confirming`. */
 interface GuestConfirmInput {
   hold?: HoldInput;
-  /** When the Provider's response window ends; computed by the caller (36). */
-  responseDeadline?: Date;
 }
 
 export interface CreateOrderInput extends GuestConfirmInput {
@@ -302,6 +305,14 @@ export async function requestRefundIn(
   return result;
 }
 
+/** Expires the attempt's Checkout Session when it may still be open: nothing was paid yet. */
+async function expireOpenSession(tx: Tx, deps: OrderDeps, attempt: PaymentAttemptRow) {
+  const mayBeOpen = attempt.sessionStatus === null || attempt.sessionStatus === 'open';
+  if (attempt.createSentAt && mayBeOpen) {
+    await enqueuePaymentJob(tx, deps.queue, attempt, 'expire_session');
+  }
+}
+
 /**
  * What a released pay-online Order does with its money: an authorization is voided in full, a
  * Checkout Session that may be open is expired, and a capture is refunded by the cause of the
@@ -330,13 +341,9 @@ async function afterRelease(
           meta.refundMinor ?? attempt.amountMinor,
         )
       ).order;
-    case 'none': {
-      const mayBeOpen = attempt.sessionStatus === null || attempt.sessionStatus === 'open';
-      if (attempt.createSentAt && mayBeOpen) {
-        await enqueuePaymentJob(tx, deps.queue, attempt, 'expire_session');
-      }
+    case 'none':
+      await expireOpenSession(tx, deps, attempt);
       return order;
-    }
     default:
       return order;
   }
@@ -376,10 +383,12 @@ async function transition(
   order: OrderRow,
   action: OrderAction,
   input: ActionInput,
+  /** Only `guest_confirm` reads it: whether the Provider still has to say yes (`asksProvider`). */
+  asks = false,
 ): Promise<TransitionOutcome> {
-  const to = nextStatus(order.status, action, input.trigger, order.availabilityMode);
+  const to = nextStatus(order.status, action, input.trigger, asks);
   if (to === null) {
-    const target = actionTarget(action, input.trigger, order.availabilityMode);
+    const target = actionTarget(action, input.trigger, asks);
     if (order.status === target) return { outcome: 'unchanged', order };
     return { outcome: TIMER_TRIGGERS.includes(input.trigger) ? 'stale' : 'rejected', order };
   }
@@ -472,6 +481,39 @@ export async function releaseIn(
   return { outcome: 'applied', order: await afterRelease(tx, deps, result.order, attempt, input) };
 }
 
+/**
+ * The effects of entering `pending_provider`: the response deadline, counted in the Offer's
+ * response hours in the property's zone, is stored on the proposal, and the window timer set.
+ */
+export async function askProviderIn(
+  tx: Tx,
+  deps: OrderDeps,
+  order: OrderRow,
+  proposal: OrderProposalRow,
+): Promise<void> {
+  const [offer] = await tx
+    .select({
+      windowMinutes: offers.responseWindowMinutes,
+      from: offers.responseHoursFrom,
+      to: offers.responseHoursTo,
+    })
+    .from(offers)
+    .where(eq(offers.id, order.offerId));
+  if (!offer) throw new OrderRuleError('not-found');
+  const { zone } = await stayOfOrder(tx, order);
+  const due = responseDueAt(deps.now(), offer, zone);
+  await tx
+    .update(orderProposals)
+    .set({ responseDueAt: due })
+    .where(eq(orderProposals.id, proposal.id));
+  await scheduleTimer(
+    tx,
+    deps.queue,
+    { orderId: order.id, proposalId: proposal.id, operation: 'response_window' },
+    due,
+  );
+}
+
 /** The effects of entering `confirming` or `pending_provider` after the guest's confirmation. */
 async function enterAfterGuestConfirm(
   tx: Tx,
@@ -482,14 +524,51 @@ async function enterAfterGuestConfirm(
 ) {
   if (order.status === 'confirming') {
     await placeHold(tx, deps, order, proposal, input.hold);
-  } else if (order.status === 'pending_provider' && input.responseDeadline) {
-    await scheduleTimer(
-      tx,
-      deps.queue,
-      { orderId: order.id, proposalId: proposal.id, operation: 'response_window' },
-      input.responseDeadline,
-    );
+  } else if (order.status === 'pending_provider') {
+    await askProviderIn(tx, deps, order, proposal);
   }
+}
+
+/**
+ * Opens the proposal's payment attempt and its Checkout job. The Checkout Session expires with
+ * the hold, at the one stored instant. Each proposal has its own attempt, so its Stripe keys carry
+ * the proposal's version.
+ */
+async function openAttemptIn(
+  tx: Tx,
+  deps: OrderDeps,
+  order: OrderRow,
+  proposal: OrderProposalRow,
+  expiresAt: Date,
+) {
+  if (proposal.priceMinor === null) throw new OrderRuleError('invalid-input');
+  const [offer] = await tx
+    .select({ title: offers.title, stripeAccountId: providers.stripeAccountId })
+    .from(offers)
+    .innerJoin(providers, eq(providers.id, offers.providerId))
+    .where(eq(offers.id, order.offerId));
+  if (!offer?.stripeAccountId) throw new OrderRuleError('payments-not-ready');
+  const { language } = await stayOfOrder(tx, order);
+  const now = deps.now();
+  const [attempt] = await tx
+    .insert(paymentAttempts)
+    .values({
+      orderId: order.id,
+      proposalId: proposal.id,
+      proposalVersion: proposal.version,
+      stripeAccountId: offer.stripeAccountId,
+      amountMinor: proposal.priceMinor,
+      currency: proposal.currency,
+      applicationFeeMinor: applicationFee(proposal.priceMinor, order.commissionBp),
+      productName: offer.title,
+      locale: PAYMENT_LOCALES[language],
+      expiresAt,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+  if (!attempt) throw new Error('no payment attempt');
+  await enqueuePaymentJob(tx, deps.queue, attempt, 'open');
 }
 
 /**
@@ -520,9 +599,9 @@ export async function createOrder(
     if (!offer) throw new OrderRuleError('not-found');
     if (!offer.active) throw new OrderRuleError('offer-inactive');
     const online = offer.paymentMode === 'online';
-    // Pay-online is a Provider's allotment Offer in 33: on request (36), live (37) and host
-    // Offers (38) are not yet.
-    if (online && (offer.availabilityMode !== 'allotment' || !offer.providerId)) {
+    // Pay-online is a Provider's allotment or on-request Offer: live (37) and host Offers (38)
+    // are not yet.
+    if (online && (offer.availabilityMode === 'live' || !offer.providerId)) {
       throw new OrderRuleError('payment-mode-unsupported');
     }
     if (offer.availabilityMode === 'allotment' && !input.slotId) {
@@ -552,7 +631,11 @@ export async function createOrder(
         : offer.priceUnit === 'group'
           ? offer.priceMinor
           : offer.priceMinor * input.quantity;
-    if (online && !priceMinor) throw new OrderRuleError('invalid-input');
+    // Online without a price is only a request-kind on-request Order: it pays after the
+    // Provider's Accept with price.
+    if (online && !priceMinor && offer.orderKind !== 'request') {
+      throw new OrderRuleError('invalid-input');
+    }
 
     const now = deps.now();
     const [inserted] = await tx
@@ -619,31 +702,17 @@ export async function createOrder(
     });
 
     // The Order is born from the guest's tap, so the tap is also its confirmation.
-    const to = nextStatus(inserted.status, 'guest_confirm', 'guest', offer.availabilityMode);
+    const asks = asksProvider(
+      offer.availabilityMode,
+      { proposer: 'offer', priceMinor },
+      offer.paymentMode,
+    );
+    const to = nextStatus(inserted.status, 'guest_confirm', 'guest', asks);
     if (!to) throw new Error('guest_confirm must apply to a new Order');
     const order = await writeStatus(tx, deps, inserted, to, proposal.id, { trigger: 'guest' });
     await enterAfterGuestConfirm(tx, deps, order, proposal, input);
-    if (stripeAccountId && priceMinor && input.hold) {
-      // The Checkout Session expires with the hold, at the one stored instant (AC 6).
-      const [attempt] = await tx
-        .insert(paymentAttempts)
-        .values({
-          orderId: order.id,
-          proposalId: proposal.id,
-          proposalVersion: proposal.version,
-          stripeAccountId,
-          amountMinor: priceMinor,
-          currency: offer.currency,
-          applicationFeeMinor: applicationFee(priceMinor, commissionBp),
-          productName: offer.title,
-          locale: PAYMENT_LOCALES[stayAndZone.language],
-          expiresAt: input.hold.expiresAt,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .returning();
-      if (!attempt) throw new Error('no payment attempt');
-      await enqueuePaymentJob(tx, deps.queue, attempt, 'open');
+    if (to === 'confirming' && stripeAccountId && priceMinor && input.hold) {
+      await openAttemptIn(tx, deps, order, proposal, input.hold.expiresAt);
     }
     return { order, created: true };
   });
@@ -655,9 +724,14 @@ export async function guestConfirm(
   input: ActionInput & GuestConfirmInput,
 ): Promise<TransitionOutcome> {
   return withLockedOrder(deps, input.orderId, input.proposalId, async (tx, order, proposal) => {
-    const result = await transition(tx, deps, order, 'guest_confirm', input);
-    if (result.outcome === 'applied') {
-      await enterAfterGuestConfirm(tx, deps, result.order, proposal, input);
+    const asks = asksProvider(order.availabilityMode, proposal, order.paymentMode);
+    const result = await transition(tx, deps, order, 'guest_confirm', input, asks);
+    if (result.outcome !== 'applied') return result;
+    await enterAfterGuestConfirm(tx, deps, result.order, proposal, input);
+    const online = result.order.paymentMode === 'online';
+    if (result.order.status === 'confirming' && online && proposal.priceMinor !== null) {
+      // `placeHold` above required the hold.
+      if (input.hold) await openAttemptIn(tx, deps, result.order, proposal, input.hold.expiresAt);
     }
     return result;
   });
@@ -677,7 +751,7 @@ export async function confirm(
     if (
       online &&
       order.paymentStatus !== 'authorized' &&
-      nextStatus(order.status, 'confirm', input.trigger, order.availabilityMode) !== null
+      nextStatus(order.status, 'confirm', input.trigger, false) !== null
     ) {
       return { outcome: 'rejected', order };
     }
@@ -723,6 +797,25 @@ export async function confirm(
     }
     return { outcome: 'applied', order: confirmed };
   });
+}
+
+/**
+ * A paid-first on-request Order is authorized: it is put to the Provider inside the caller's
+ * Order lock (`payments.ts` `authorize`). The Checkout's hold is released, since on request takes
+ * no capacity and reconciliation would report a `held` hold on a `pending_provider` Order.
+ */
+export async function askProviderAfterPayment(
+  tx: Tx,
+  deps: OrderDeps,
+  order: OrderRow,
+  proposal: OrderProposalRow,
+  input: ActionInput,
+): Promise<TransitionOutcome> {
+  const result = await transition(tx, deps, order, 'ask_provider', input);
+  if (result.outcome !== 'applied') return result;
+  await releaseHold(tx, deps, proposal.id);
+  await askProviderIn(tx, deps, result.order, proposal);
+  return result;
 }
 
 /** A transition to a final status that frees the hold: decline, fail, expire, cancel. */
@@ -787,26 +880,46 @@ export interface ProposeInput extends ActionInput {
 
 /**
  * New terms from the Provider or the admin. The current proposal is superseded (its hold
- * released), and the Order waits for the guest's confirmation of the new one.
+ * released, its payment attempt voided or its Checkout expired), Payment status starts again at
+ * `none` for the new proposal, and the Order waits for the guest's confirmation of it. The new
+ * proposal's attempt is opened when the guest accepts.
  */
 export async function propose(deps: OrderDeps, input: ProposeInput): Promise<TransitionOutcome> {
   return withLockedOrder(deps, input.orderId, input.proposalId, async (tx, order, proposal) => {
-    const to = nextStatus(order.status, 'propose', input.trigger, order.availabilityMode);
+    const to = nextStatus(order.status, 'propose', input.trigger, false);
     if (to === null) return transition(tx, deps, order, 'propose', input);
     const { terms } = input;
+    const now = deps.now();
     if (!isQuantity(terms.quantity)) throw new OrderRuleError('invalid-input');
+    const price = terms.priceMinor ?? proposal.priceMinor;
+    if (
+      terms.priceMinor !== undefined &&
+      (!Number.isInteger(terms.priceMinor) ||
+        terms.priceMinor < 1 ||
+        terms.priceMinor > OFFER_LIMITS.priceMinorMax)
+    ) {
+      throw new OrderRuleError('invalid-input');
+    }
+    if (order.paymentMode === 'online' && price === null) throw new OrderRuleError('invalid-input');
+    if ((terms.startsAt && terms.startsAt <= now) || input.cardExpiresAt <= now) {
+      throw new OrderRuleError('invalid-input');
+    }
     const { stay, zone } = await stayOfOrder(tx, order);
     assertWithinStay(terms.date, stay);
     const slot = terms.slotId
       ? await assertSlot(tx, terms.slotId, order.offerId, terms.date, zone)
       : undefined;
 
-    const now = deps.now();
+    // Order, then attempt: lock the superseded attempt before anything else.
+    const old = order.paymentMode === 'online' ? await lockAttempt(tx, proposal.id) : undefined;
     await tx
       .update(orderProposals)
       .set({ supersededAt: now })
       .where(eq(orderProposals.id, proposal.id));
     await releaseHold(tx, deps, proposal.id);
+    const voided = order.paymentStatus === 'authorized';
+    if (old && voided) await enqueuePaymentJob(tx, deps.queue, old, 'void');
+    else if (old && order.paymentStatus === 'none') await expireOpenSession(tx, deps, old);
     const [next] = await tx
       .insert(orderProposals)
       .values({
@@ -816,7 +929,7 @@ export async function propose(deps: OrderDeps, input: ProposeInput): Promise<Tra
         startsAt: slot?.startsAt ?? terms.startsAt,
         slotId: slot?.id,
         quantity: terms.quantity,
-        priceMinor: terms.priceMinor ?? proposal.priceMinor,
+        priceMinor: price,
         currency: proposal.currency,
         proposer: input.proposer,
         cardExpiresAt: input.cardExpiresAt,
@@ -830,7 +943,17 @@ export async function propose(deps: OrderDeps, input: ProposeInput): Promise<Tra
       .where(eq(orders.id, order.id))
       .returning();
     if (!moved) throw new OrderRuleError('not-found');
-    const updated = await writeStatus(tx, deps, moved, to, next.id, input);
+    // Payment status describes the current proposal's attempt, and the new one has none yet.
+    const updated = await writeChange(
+      tx,
+      deps,
+      moved,
+      { status: to, paymentStatus: 'none' },
+      next.id,
+      voided
+        ? { ...input, note: input.note ?? 'new proposal; earlier authorization voided' }
+        : input,
+    );
     await scheduleTimer(
       tx,
       deps.queue,
@@ -849,8 +972,12 @@ export async function responseWindowMissed(
   deps: OrderDeps,
   input: { orderId: string; proposalId: string },
 ): Promise<TransitionOutcome> {
-  return withLockedOrder(deps, input.orderId, input.proposalId, async (tx, order) => {
+  return withLockedOrder(deps, input.orderId, input.proposalId, async (tx, order, proposal) => {
     if (order.status !== 'pending_provider') return { outcome: 'stale', order };
+    // The timer re-reads the stored deadline: it acts only once it has passed.
+    if (!proposal.responseDueAt || proposal.responseDueAt > deps.now()) {
+      return { outcome: 'stale', order };
+    }
     await enqueueNotification(tx, deps.queue, {
       orderId: order.id,
       proposalId: input.proposalId,

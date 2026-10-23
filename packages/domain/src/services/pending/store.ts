@@ -11,6 +11,7 @@ import {
 } from '../../offers/vocabulary';
 import { GUEST_LANGUAGES } from '../../property/vocabulary';
 import type { CancelOrderDraft } from './cancel-order';
+import type { RespondOrderDraft } from './respond-order';
 import type { PendingActionKind, PendingState } from './vocabulary';
 
 /** The stored `create_order` draft: everything the confirmation shows and the Order is made from. */
@@ -45,7 +46,7 @@ export async function insertPending(
     stayId: string;
     /** create_order only. */
     orderId?: string;
-    payload: CreateOrderDraft | HostMessageDraft | CancelOrderDraft;
+    payload: CreateOrderDraft | HostMessageDraft | CancelOrderDraft | RespondOrderDraft;
     expiresAt: Date;
     now: Date;
   },

@@ -22,6 +22,7 @@ import {
   propose,
   runOrderTimer,
 } from './machine';
+import { responseDueAt } from './response-window';
 import { enqueueNotification, orderJobId } from './timers';
 
 let testDb: TestDatabase;
@@ -356,24 +357,31 @@ describe('on-request Order and proposals', () => {
       hostId: unit.hostId,
       availabilityMode: 'on_request',
     });
-    const deadline = new Date('2027-05-01T10:30:00Z');
-    const { order } = await createOrder(
-      deps(),
-      input({ offerId, hold: undefined, responseDeadline: deadline }),
-    );
+    const { order } = await createOrder(deps(), input({ offerId, hold: undefined }));
     expect(order.status).toBe('pending_provider');
     const { proposal: v1 } = await current(order.id);
     expect(await notifyKinds(order.id)).toEqual(['provider_request']);
+    // The machine computes the deadline: 30 minutes within 08:00–21:00 in the property's zone.
+    const deadline = responseDueAt(
+      NOW,
+      { windowMinutes: 30, from: '08:00', to: '21:00' },
+      'Europe/Zagreb',
+    );
+    expect(deadline).toEqual(new Date('2027-05-01T10:30:00Z'));
+    expect(v1.responseDueAt).toEqual(deadline);
     const windows = await jobsOf(order.id, QUEUES.orderTimer);
     expect(windows.map((j) => j.data.operation)).toEqual(['response_window']);
+    expect(windows[0]?.start_ms).toBe(deadline.getTime());
 
-    // The missed window alerts once and changes nothing.
+    // The missed window alerts once and changes nothing; before the deadline it is not due.
     const v1Window = {
       orderId: order.id,
       proposalId: v1.id,
       operation: 'response_window' as const,
     };
     const before = (await events(order.id)).length;
+    expect((await runOrderTimer(deps(), v1Window)).outcome).toBe('stale');
+    clock = deadline;
     expect((await runOrderTimer(deps(), v1Window)).outcome).toBe('applied');
     expect((await runOrderTimer(deps(), v1Window)).outcome).toBe('applied');
     expect(await notifyKinds(order.id)).toEqual(['provider_request', 'admin_window_missed']);
@@ -417,17 +425,18 @@ describe('on-request Order and proposals', () => {
     const v2Card = { orderId: order.id, proposalId: v2.id, operation: 'card_expiry' as const };
     expect((await runOrderTimer(deps(), v2Card)).outcome).toBe('stale');
 
-    // The guest confirms the new time; the Provider confirms it.
+    // The guest confirms the Provider's own new time: no second ask, the hold is committed.
     const accepted = await guestConfirm(deps(), {
       orderId: order.id,
       proposalId: v2.id,
       trigger: 'guest',
+      hold: { expiresAt: HOLD_UNTIL },
     });
-    expect(accepted.order.status).toBe('pending_provider');
+    expect(accepted.order.status).toBe('confirming');
     const ok = await confirm(deps(), {
       orderId: order.id,
       proposalId: v2.id,
-      trigger: 'provider_link',
+      trigger: 'adapter',
     });
     expect(ok.order.status).toBe('confirmed');
     // The card timer, due now, no longer applies once the guest confirmed: stale.

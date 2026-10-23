@@ -118,6 +118,8 @@ export const orderProposals = pgTable(
     supersededAt: timestamp('superseded_at', { withTimezone: true }),
     /** When the Provider tapped Got it for these terms. */
     providerAcknowledgedAt: timestamp('provider_acknowledged_at', { withTimezone: true }),
+    /** When the Provider's answer is due; set when the proposal is put to the Provider (36). */
+    responseDueAt: timestamp('response_due_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

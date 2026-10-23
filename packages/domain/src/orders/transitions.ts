@@ -1,9 +1,16 @@
 import type { AvailabilityMode, PaymentMode } from '../offers/vocabulary';
-import type { OrderNotification, OrderStatus, OrderTrigger, PaymentStatus } from './vocabulary';
+import type {
+  OrderNotification,
+  OrderStatus,
+  OrderTrigger,
+  PaymentStatus,
+  Proposer,
+} from './vocabulary';
 
 // The pure transition table of the Order machine. Anything not listed is illegal.
 // Final statuses have no outgoing edges, admin included. The response window is not an edge:
 // a missed window alerts the admin (PRD §6.4), who records the phoned answer as `admin`.
+// `ask_provider` is the authorization of a paid-first on-request Order (ADR 0015).
 
 export const ORDER_ACTIONS = [
   'guest_confirm',
@@ -14,6 +21,7 @@ export const ORDER_ACTIONS = [
   'cancel',
   'complete',
   'propose',
+  'ask_provider',
 ] as const;
 export type OrderAction = (typeof ORDER_ACTIONS)[number];
 
@@ -35,6 +43,10 @@ const TABLE: Partial<Record<OrderStatus, Partial<Record<OrderAction, Edge>>>> = 
       triggers: ['hold_timer', 'admin', 'payment_webhook', 'payment_job', 'reconciliation'],
       to: 'expired',
     },
+    ask_provider: {
+      triggers: ['payment_webhook', 'payment_job', 'reconciliation', 'admin'],
+      to: 'pending_provider',
+    },
   },
   pending_provider: {
     confirm: { triggers: ['provider_link', 'admin'], to: 'confirmed' },
@@ -48,13 +60,30 @@ const TABLE: Partial<Record<OrderStatus, Partial<Record<OrderAction, Edge>>>> = 
   },
 };
 
-/** Where the guest's confirmation leads: an engine or allotment hold, or the Provider's answer. */
-function afterGuestConfirm(mode: AvailabilityMode): OrderStatus {
-  return mode === 'on_request' ? 'pending_provider' : 'confirming';
+/**
+ * Whether the guest's confirmation of these terms still needs the Provider's yes: on request, on
+ * the Offer's own terms, and not paid first (a priced pay-online Order is put to the Provider once
+ * authorized).
+ */
+export function asksProvider(
+  mode: AvailabilityMode,
+  proposal: { proposer: Proposer; priceMinor: number | null },
+  paymentMode: PaymentMode,
+): boolean {
+  return (
+    mode === 'on_request' &&
+    proposal.proposer === 'offer' &&
+    !(paymentMode === 'online' && proposal.priceMinor !== null)
+  );
 }
 
-function target(edge: Edge, mode: AvailabilityMode): OrderStatus {
-  return edge.to === 'after_guest_confirm' ? afterGuestConfirm(mode) : edge.to;
+/** Where the guest's confirmation leads: a hold (then commit or checkout), or the Provider's answer. */
+function afterGuestConfirm(asks: boolean): OrderStatus {
+  return asks ? 'pending_provider' : 'confirming';
+}
+
+function target(edge: Edge, asks: boolean): OrderStatus {
+  return edge.to === 'after_guest_confirm' ? afterGuestConfirm(asks) : edge.to;
 }
 
 /** The status `action` leads to from `from`, or null when the transition is illegal. */
@@ -62,10 +91,10 @@ export function nextStatus(
   from: OrderStatus,
   action: OrderAction,
   trigger: OrderTrigger,
-  mode: AvailabilityMode,
+  asks: boolean,
 ): OrderStatus | null {
   const edge = TABLE[from]?.[action];
-  return edge?.triggers.includes(trigger) ? target(edge, mode) : null;
+  return edge?.triggers.includes(trigger) ? target(edge, asks) : null;
 }
 
 /**
@@ -75,11 +104,11 @@ export function nextStatus(
 export function actionTarget(
   action: OrderAction,
   trigger: OrderTrigger,
-  mode: AvailabilityMode,
+  asks: boolean,
 ): OrderStatus | null {
   for (const edges of Object.values(TABLE)) {
     const edge = edges?.[action];
-    if (edge?.triggers.includes(trigger)) return target(edge, mode);
+    if (edge?.triggers.includes(trigger)) return target(edge, asks);
   }
   return null;
 }

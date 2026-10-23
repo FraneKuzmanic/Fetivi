@@ -6,7 +6,9 @@ import {
   fromLocalDateTime,
   GUEST_CONFIRMS_META_KEY,
   paymentAttempts,
+  providerPropose,
   QUEUES,
+  RESPOND_DRAFT_META_KEY,
   type SpaceContext,
 } from '@fetivi/domain';
 import {
@@ -235,7 +237,7 @@ describe('tools/list per situation', () => {
     return tools;
   };
 
-  it('in a destination: five tools in order, with honest annotations', async () => {
+  it('in a destination: six tools in order, with honest annotations', async () => {
     const tools = await names(guest);
     expect(tools.map((x) => x.name)).toEqual([
       'list_offers',
@@ -243,6 +245,7 @@ describe('tools/list per situation', () => {
       'list_my_orders',
       'create_order',
       'cancel_order',
+      'respond_to_order_update',
     ]);
     for (const read of tools.slice(0, 3)) expect(read.annotations?.readOnlyHint).toBe(true);
     expect(tools[3]?.annotations).toEqual({
@@ -251,12 +254,14 @@ describe('tools/list per situation', () => {
       idempotentHint: false,
       openWorldHint: true,
     });
-    expect(tools[4]?.annotations).toEqual({
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: true,
-    });
+    for (const write of tools.slice(4)) {
+      expect(write.annotations).toEqual({
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      });
+    }
     for (const tool of tools) expect(tool.outputSchema).toBeDefined();
     // Only the guest-confirmed writes carry the pause flag the chat backend reads.
     expect(tools.map((x) => x._meta?.[GUEST_CONFIRMS_META_KEY] === true)).toEqual([
@@ -265,16 +270,34 @@ describe('tools/list per situation', () => {
       false,
       true,
       true,
+      true,
     ]);
   });
 
-  it('outside a destination: five tools with own Offers, else only the order tools', async () => {
-    expect((await names(outsider)).map((x) => x.name)).toHaveLength(5);
-    expect((await names(lonely)).map((x) => x.name)).toEqual(['list_my_orders', 'cancel_order']);
+  it('outside a destination: six tools with own Offers, else only the order tools', async () => {
+    expect((await names(outsider)).map((x) => x.name)).toHaveLength(6);
+    expect((await names(lonely)).map((x) => x.name)).toEqual([
+      'list_my_orders',
+      'cancel_order',
+      'respond_to_order_update',
+    ]);
   });
 
-  it('after checkout: only list_my_orders and cancel_order', async () => {
-    expect((await names(ended)).map((x) => x.name)).toEqual(['list_my_orders', 'cancel_order']);
+  it('after checkout: only list_my_orders, cancel_order and respond_to_order_update', async () => {
+    expect((await names(ended)).map((x) => x.name)).toEqual([
+      'list_my_orders',
+      'cancel_order',
+      'respond_to_order_update',
+    ]);
+  });
+
+  it('without orders:manage: no respond_to_order_update', async () => {
+    const client = await connect(await ctxOf(guest), {
+      scope: 'offers:read orders:read orders:create',
+    });
+    const { tools } = await client.listTools();
+    await client.close();
+    expect(tools.map((x) => x.name)).not.toContain('respond_to_order_update');
   });
 });
 
@@ -309,7 +332,7 @@ describe('check_availability', () => {
     expect(starts.map((s) => s.startsAtLocal)).toEqual([`${day}T09:00`, `${day}T15:00`]);
   });
 
-  it('refuses a date outside the stay, on request, and another host’s Offer', async () => {
+  it('refuses a date outside the stay and another host’s Offer; on request is bookable', async () => {
     const outside = await call(guest, 'check_availability', {
       offerId: offer.boat,
       date: '2099-01-01',
@@ -322,7 +345,10 @@ describe('check_availability', () => {
       date: day,
       quantity: 1,
     });
-    expect(errorText(sunset)).toContain("can't be booked in chat yet");
+    // The Provider answers for the time (36).
+    expect(sunset.structuredContent).toMatchObject({
+      starts: [{ slotId: null, startsAt: null, startsAtLocal: null, remaining: null }],
+    });
     const other = await call(guest, 'check_availability', {
       offerId: offer.neighbourBike,
       date: day,
@@ -724,5 +750,148 @@ describe('cancel_order', () => {
     expect((await orderById(id))?.status).toBe('confirmed');
     const done = await resume(guest, boatArgs(), order.requestState, accept);
     expect((done.structuredContent as { outcome: string }).outcome).toBe('ordered');
+  });
+});
+
+describe('respond_to_order_update', () => {
+  type RespondDraft = {
+    pendingId: string;
+    orderId: string;
+    proposer: string;
+    startsAtLocal: string | null;
+    previous: { date: string };
+  };
+  const args = (orderId: string) => ({ orderId });
+  const asRespond = { tool: 'respond_to_order_update' };
+  const answer = (value: string): Answer => ({ action: 'accept', content: { answer: value } });
+
+  /** A pay-direct on-request Order of `g` with the Provider's new time (v2) awaiting the guest. */
+  async function updated(g: SeededGuestUnit = guest) {
+    const deps = { db: t.db, queue: createJobQueue(t.boss), now: () => clock };
+    const { order } = await createOrder(deps, {
+      spaceId: g.spaceId,
+      offerId: offer.sunset,
+      date: plusDays(g.stay.checkIn, 1),
+      quantity: 2,
+      contact: { email: 'guest@example.test' },
+    });
+    await providerPropose(
+      deps,
+      { orderId: order.id, proposalId: order.currentProposalId as string },
+      { date: plusDays(g.stay.checkIn, 1), time: '18:30' },
+      { trigger: 'provider_link' },
+    );
+    return order.id;
+  }
+
+  async function asked(g: SeededGuestUnit, orderId: string) {
+    const result = (await call(
+      g,
+      'respond_to_order_update',
+      args(orderId),
+    )) as unknown as InputRequired;
+    expect(result.resultType).toBe('input_required');
+    const params = result.inputRequests.confirm?.params as {
+      message: string;
+      requestedSchema: { properties: Record<string, unknown>; required: string[] };
+      _meta: Record<string, RespondDraft>;
+    };
+    return { result, params, draft: params._meta[RESPOND_DRAFT_META_KEY] as RespondDraft };
+  }
+
+  it('shows the new terms on a card; accepting confirms the order', async () => {
+    const id = await updated();
+    const { result, params, draft } = await asked(guest, id);
+    expect(params.requestedSchema.required).toEqual(['answer']);
+    expect(draft).toMatchObject({ orderId: id, proposer: 'provider_time' });
+    expect(draft.startsAtLocal?.slice(11)).toBe('18:30');
+    expect(params.message).toContain('at 18:30');
+    const done = await resume(guest, args(id), result.requestState, answer('accept'), asRespond);
+    expect(done.structuredContent).toMatchObject({
+      outcome: 'accepted',
+      order: { id, status: 'confirmed', respondBy: null },
+    });
+  });
+
+  it('declining the terms cancels; not now leaves the order waiting', async () => {
+    const id = await updated();
+    const { result } = await asked(guest, id);
+    const notNow = await resume(
+      guest,
+      args(id),
+      result.requestState,
+      { action: 'decline' },
+      asRespond,
+    );
+    expect(notNow.structuredContent).toEqual({ outcome: 'not_answered', order: null });
+    expect((await orderById(id))?.status).toBe('awaiting_confirmation');
+
+    const again = await asked(guest, id);
+    const done = await resume(
+      guest,
+      args(id),
+      again.result.requestState,
+      answer('decline'),
+      asRespond,
+    );
+    expect(done.structuredContent).toMatchObject({
+      outcome: 'declined',
+      order: { status: 'cancelled' },
+    });
+  });
+
+  it('re-asks without an answer, and a replayed tap gives the same outcome', async () => {
+    const id = await updated();
+    const { result } = await asked(guest, id);
+    const reasked = (await resume(
+      guest,
+      args(id),
+      result.requestState,
+      { action: 'accept', content: {} },
+      asRespond,
+    )) as unknown as InputRequired;
+    expect(reasked.resultType).toBe('input_required');
+    const first = await resume(guest, args(id), result.requestState, answer('accept'), asRespond);
+    const second = await resume(guest, args(id), result.requestState, answer('decline'), asRespond);
+    expect(second.structuredContent).toEqual(first.structuredContent);
+  });
+
+  it('a card for terms already answered is refused and changes nothing', async () => {
+    const id = await updated();
+    const { result } = await asked(guest, id);
+    const other = await asked(guest, id);
+    await resume(guest, args(id), other.result.requestState, answer('decline'), asRespond);
+    const stale = await resume(guest, args(id), result.requestState, answer('accept'), asRespond);
+    expect(errorText(stale)).toBe(
+      'The provider changed the terms again; nothing was changed. Show the new terms.',
+    );
+    expect((await orderById(id))?.status).toBe('cancelled');
+  });
+
+  it('an order without new terms is refused, and another space is not permitted', async () => {
+    const first = await firstHalf(guest, boatArgs());
+    const booked = await resume(guest, boatArgs(), first.requestState, accept);
+    const bookedId = (booked.structuredContent as { order: { id: string } }).order.id;
+    const none = await call(guest, 'respond_to_order_update', args(bookedId));
+    expect(errorText(none)).toBe('This order has no new terms to answer.');
+    const id = await updated();
+    const foreign = await call(neighbour, 'respond_to_order_update', args(id));
+    expect(foreign).toMatchObject({ isError: true, content: [{ text: 'not permitted' }] });
+  });
+
+  it('a cancel_order state never completes respond_to_order_update', async () => {
+    const id = await updated();
+    const cancelCard = (await call(guest, 'cancel_order', {
+      orderId: id,
+    })) as unknown as InputRequired;
+    const crossed = await resume(
+      guest,
+      args(id),
+      cancelCard.requestState,
+      answer('accept'),
+      asRespond,
+    );
+    expect(crossed).toMatchObject({ isError: true, content: [{ text: 'not permitted' }] });
+    expect((await orderById(id))?.status).toBe('awaiting_confirmation');
   });
 });

@@ -17,6 +17,8 @@ import {
   listMyOrdersOutput,
   listOffersInput,
   listOffersOutput,
+  respondToOrderUpdateInput,
+  respondToOrderUpdateOutput,
 } from './schemas';
 
 const readOnly = {
@@ -74,6 +76,29 @@ export const cancelOrderSpec: GuestToolSpec = guestTool({
   confirm: true,
 });
 
+/** respond_to_order_update: its two halves live in respond.ts, since the guest answers between them. */
+export const respondToOrderUpdateSpec: GuestToolSpec = guestTool({
+  name: 'respond_to_order_update',
+  config: {
+    title: 'Answer new terms',
+    description:
+      "Show the guest the provider's new time or price for an order and let them accept or decline it on a card. Accepting confirms the order (online payment opens a new secure checkout); declining cancels it. Never say it is confirmed without an `accepted` outcome.",
+    scope: 'orders:manage',
+    inputSchema: respondToOrderUpdateInput,
+    outputSchema: respondToOrderUpdateOutput,
+    // It confirms or cancels an Order after the guest's tap; a repeat returns the same answer.
+    // It reaches the Provider.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+  },
+  listed: scoped('orders:manage'),
+  confirm: true,
+});
+
 /** The `services` server's tools, in `tools/list` order. */
 export const servicesTools: readonly GuestToolSpec[] = [
   guestTool({
@@ -81,7 +106,7 @@ export const servicesTools: readonly GuestToolSpec[] = [
     config: {
       title: 'List offers',
       description:
-        "Services the guest can arrange through Fetivi: boat trips, tours, tastings, transfers, rentals and more, with price, cancellation policy and the contact details the provider needs. Filter by category, or by a place's id from search_places. Only offers with availabilityMode allotment can be booked in chat now; paymentMode online ones are paid on a secure page after the guest confirms.",
+        "Services the guest can arrange through Fetivi: boat trips, tours, tastings, transfers, rentals and more, with price, cancellation policy and the contact details the provider needs. Filter by category, or by a place's id from search_places. Offers with availabilityMode allotment or on_request can be booked in chat; an on_request one waits for the provider's answer within a response window, and the provider may propose a new time or price. paymentMode online ones are paid on a secure page after the guest confirms.",
       scope: 'offers:read',
       inputSchema: listOffersInput,
       outputSchema: listOffersOutput,
@@ -127,4 +152,5 @@ export const servicesTools: readonly GuestToolSpec[] = [
   }),
   createOrderSpec,
   cancelOrderSpec,
+  respondToOrderUpdateSpec,
 ];

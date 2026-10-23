@@ -262,3 +262,102 @@ describe('admin Order page API', () => {
     expect((await orderOf(orderId)).paymentStatus).toBe('refund_pending');
   });
 });
+
+/** A pay-direct on-request Order waiting for the Provider (36). */
+async function pendingOrder() {
+  const now = t.clock.now();
+  const guest = await seedGuestUnit(t.db, { now });
+  const provider = await seedProvider(t.db);
+  const { offerId } = await seedOrderableOffer(t.db, {
+    providerId: provider.id,
+    availabilityMode: 'on_request',
+  });
+  const { order } = await createOrder(deps(), {
+    spaceId: guest.spaceId,
+    offerId,
+    date: guest.stay.checkIn,
+    quantity: 2,
+    contact: { email: 'guest@example.test' },
+  });
+  return { orderId: order.id, proposalId: order.currentProposalId as string, stay: guest.stay };
+}
+
+describe("recording the Provider's phoned answer", () => {
+  it('is for the admin only', async () => {
+    const { orderId, proposalId } = await pendingOrder();
+    const body = { proposalId, note: 'Phoned: yes' };
+    expect((await post(t.app, path(orderId, '/accept'), body)).statusCode).toBe(401);
+    expect((await post(t.app, path(orderId, '/accept'), body, hostCookie)).statusCode).toBe(403);
+    expect((await post(t.app, path(orderId, '/decline'), body, hostCookie)).statusCode).toBe(403);
+    expect((await post(t.app, path(orderId, '/propose'), body, hostCookie)).statusCode).toBe(403);
+  });
+
+  it('shows the due time and that the admin may answer', async () => {
+    const { orderId, proposalId } = await pendingOrder();
+    const res = await get(t.app, path(orderId), adminCookie);
+    expect(res.json()).toMatchObject({
+      status: 'pending_provider',
+      canAnswer: true,
+      windowMissed: false,
+      proposalId,
+      proposer: 'offer',
+      version: 1,
+      orderKind: 'booking',
+      zone: 'Europe/Zagreb',
+    });
+    expect(res.json().responseDueAt).toEqual(expect.any(String));
+  });
+
+  it('confirms on accept, as an admin OrderEvent with the actor and the note', async () => {
+    const { orderId, proposalId } = await pendingOrder();
+    const body = { proposalId, note: 'Phoned: they can do it' };
+    const res = await post(t.app, path(orderId, '/accept'), body, adminCookie);
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ status: 'confirmed', canAnswer: false });
+    const last = res.json().events.at(-1);
+    expect(last).toMatchObject({
+      trigger: 'admin',
+      to: 'confirmed',
+      note: 'Phoned: they can do it',
+      actorEmail: 'admin@example.test',
+    });
+    const [event] = await t.db.select().from(orderEvents).where(eq(orderEvents.id, last.id));
+    expect(event?.actorId).toBe(adminId);
+  });
+
+  it('declines, and records new terms the guest then answers', async () => {
+    const declined = await pendingOrder();
+    const no = { proposalId: declined.proposalId, note: 'Phoned: fully booked' };
+    const res = await post(t.app, path(declined.orderId, '/decline'), no, adminCookie);
+    expect(res.json().status).toBe('declined');
+
+    const { orderId, proposalId, stay } = await pendingOrder();
+    const terms = { proposalId, note: 'Phoned: 18:00 works', date: stay.checkout, time: '18:00' };
+    const proposed = await post(t.app, path(orderId, '/propose'), terms, adminCookie);
+    expect(proposed.statusCode).toBe(200);
+    expect(proposed.json()).toMatchObject({
+      status: 'awaiting_confirmation',
+      proposer: 'admin',
+      version: 2,
+      date: stay.checkout,
+    });
+  });
+
+  it('refuses a stale proposal, a missing note and a bad date', async () => {
+    const { orderId, proposalId } = await pendingOrder();
+    const missing = await post(t.app, path(orderId, '/accept'), { proposalId }, adminCookie);
+    expect(missing.statusCode).toBe(400);
+    const badDate = { proposalId, note: 'x', date: '2026-02-30' };
+    expect((await post(t.app, path(orderId, '/propose'), badDate, adminCookie)).statusCode).toBe(
+      400,
+    );
+    const stale = {
+      proposalId: '00000000-0000-4000-8000-000000000000',
+      note: 'Phoned: yes',
+    };
+    const res = await post(t.app, path(orderId, '/accept'), stale, adminCookie);
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error).toBe('not-answerable');
+    expect((await orderOf(orderId)).status).toBe('pending_provider');
+  });
+});

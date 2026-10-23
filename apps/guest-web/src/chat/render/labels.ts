@@ -12,6 +12,7 @@ import type {
   HostSentLabels,
   PlaceLabels,
   ReceiptLabels,
+  RespondOrderLabels,
   WeatherLabels,
   WebResultsLabels,
 } from '@fetivi/ui';
@@ -144,6 +145,35 @@ export function cancelOrderLabels(t: TFunction, language: string): CancelOrderLa
     confirm: t('cancelOrder.confirm'),
     keep: t('cancelOrder.keep'),
     sending: t('cancelOrder.sending'),
+  };
+}
+
+/** The new-terms card's strings; times as the property's wall clock. */
+export function respondOrderLabels(t: TFunction, language: string): RespondOrderLabels {
+  const f = orderFormat(t, language);
+  return {
+    heading: {
+      provider_time: t('respondOrder.headingTime'),
+      provider_price: t('respondOrder.headingPrice'),
+      admin: t('respondOrder.headingAdmin'),
+    },
+    offer: t('order.offer'),
+    when: t('order.when'),
+    quantity: t('cancelOrder.quantity'),
+    price: t('respondOrder.price'),
+    was: t('respondOrder.was'),
+    dateTime: f.dateTime,
+    answerBy: (when) => t('respondOrder.answerBy', { when }),
+    payOnline: t('respondOrder.payOnline'),
+    payDirect: t('respondOrder.payDirect'),
+    policy: t('cancelOrder.policy'),
+    accept: t('respondOrder.accept'),
+    decline: t('respondOrder.decline'),
+    notNow: t('respondOrder.notNow'),
+    declineQuestion: t('respondOrder.declineQuestion'),
+    declineYes: t('respondOrder.declineYes'),
+    back: t('respondOrder.back'),
+    sending: t('respondOrder.sending'),
   };
 }
 

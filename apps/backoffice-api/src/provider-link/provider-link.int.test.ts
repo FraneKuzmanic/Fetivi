@@ -273,3 +273,154 @@ describe('a stale page', () => {
     expect(await state(ref, slotId)).toEqual(before);
   });
 });
+
+/** A pay-direct on-request Order waiting for the Provider (36). */
+async function pendingOrder(orderKind: 'booking' | 'request' = 'booking') {
+  const provider = await seedProvider(t.db);
+  const { offerId } = await seedOrderableOffer(t.db, {
+    providerId: provider.id,
+    availabilityMode: 'on_request',
+    orderKind,
+    contactFields: 'name',
+  });
+  const { order } = await createOrder(orderDeps(), {
+    spaceId: unit.spaceId,
+    offerId,
+    date: DAY,
+    quantity: 2,
+    contact: { email: 'ana@example.test', name: 'Ana Horvat' },
+  });
+  const ref = { orderId: order.id, proposalId: order.currentProposalId as string };
+  const token = await issueProviderLink(t.db, SECRET, order.id);
+  return { ref, url: `/api/provider-link/${token}` };
+}
+
+async function current(orderId: string) {
+  const [order] = await t.db.select().from(orders).where(eq(orders.id, orderId));
+  const proposals = await t.db
+    .select()
+    .from(orderProposals)
+    .where(eq(orderProposals.orderId, orderId));
+  return { status: order?.status, proposals: proposals.length };
+}
+
+describe('an on-request Order waiting for the Provider', () => {
+  it('shows the answer-by time and Accept, Suggest another time and Decline', async () => {
+    const { url } = await pendingOrder();
+    const { body } = await get(t.app, `${url}?lang=en`);
+    expect(body).toContain('Waiting for your answer by 19 Oct 2026 12:30');
+    expect(body).toContain('value="accept"');
+    expect(body).toContain('value="suggest_time"');
+    expect(body).toContain('value="decline"');
+    expect(body).not.toContain('value="accept_with_price"');
+  });
+
+  it('confirms on Accept', async () => {
+    const { url, ref } = await pendingOrder();
+    const response = await postForm(url, { action: 'accept', proposalId: ref.proposalId });
+    expect(response.statusCode).toBe(303);
+    expect(response.headers.location).toBe(`${url}?lang=hr&done=accepted`);
+    expect((await current(ref.orderId)).status).toBe('confirmed');
+  });
+
+  it('declines on Decline', async () => {
+    const { url, ref } = await pendingOrder();
+    const response = await postForm(url, { action: 'decline', proposalId: ref.proposalId });
+    expect(response.headers.location).toBe(`${url}?lang=hr&done=declined`);
+    expect((await current(ref.orderId)).status).toBe('declined');
+  });
+
+  it('asks for the new time first, then sends it to the guest', async () => {
+    const { url, ref } = await pendingOrder();
+    const form = await postForm(url, { action: 'suggest_time', proposalId: ref.proposalId });
+    expect(form.statusCode).toBe(200);
+    expect(form.body).toContain('type="date"');
+    expect(form.body).toContain('min="2026-10-21"');
+    expect(form.body).not.toContain('name="price"');
+    expect(await current(ref.orderId)).toEqual({ status: 'pending_provider', proposals: 1 });
+
+    const sent = await postForm(url, {
+      action: 'suggest_time_confirmed',
+      proposalId: ref.proposalId,
+      date: DAY,
+      time: '17:30',
+    });
+    expect(sent.headers.location).toBe(`${url}?lang=hr&done=proposed`);
+    expect(await current(ref.orderId)).toEqual({ status: 'awaiting_confirmation', proposals: 2 });
+    expect((await get(t.app, url)).body).toContain('Čeka gosta');
+  });
+
+  it('refuses a date outside the stay with the form again, writing nothing', async () => {
+    const { url, ref } = await pendingOrder();
+    const response = await postForm(url, {
+      action: 'suggest_time_confirmed',
+      proposalId: ref.proposalId,
+      date: '2026-11-30',
+      lang: 'en',
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toContain('Choose a date from');
+    expect(response.body).toContain('value="2026-11-30"');
+    expect(await current(ref.orderId)).toEqual({ status: 'pending_provider', proposals: 1 });
+  });
+
+  it('refuses a malformed time with the form again', async () => {
+    const { url, ref } = await pendingOrder();
+    const response = await postForm(url, {
+      action: 'suggest_time_confirmed',
+      proposalId: ref.proposalId,
+      date: '2026-10-21',
+      time: '25:00',
+      lang: 'en',
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toContain('Enter the time as HH:MM.');
+    expect(await current(ref.orderId)).toEqual({ status: 'pending_provider', proposals: 1 });
+  });
+
+  it('does nothing for a page showing older terms', async () => {
+    const { url, ref } = await pendingOrder();
+    await postForm(url, {
+      action: 'suggest_time_confirmed',
+      proposalId: ref.proposalId,
+      date: DAY,
+      time: '17:30',
+    });
+    const response = await postForm(url, { action: 'accept', proposalId: ref.proposalId });
+    expect(response.headers.location).toBe(`${url}?lang=hr&done=stale`);
+    expect(await current(ref.orderId)).toEqual({ status: 'awaiting_confirmation', proposals: 2 });
+  });
+});
+
+describe('a request-kind Order', () => {
+  it('offers Accept with price instead of Accept, and needs the price', async () => {
+    const { url, ref } = await pendingOrder('request');
+    const page = await get(t.app, `${url}?lang=en`);
+    expect(page.body).toContain('Accept with price');
+    expect(page.body).not.toContain('value="accept"');
+
+    const form = await postForm(url, { action: 'accept_with_price', proposalId: ref.proposalId });
+    expect(form.body).toContain('name="price"');
+    expect(form.body).toContain('inputmode="decimal"');
+    const missing = await postForm(url, {
+      action: 'accept_with_price_confirmed',
+      proposalId: ref.proposalId,
+      price: '0',
+    });
+    expect(missing.statusCode).toBe(400);
+
+    const sent = await postForm(url, {
+      action: 'accept_with_price_confirmed',
+      proposalId: ref.proposalId,
+      price: '120,50',
+    });
+    expect(sent.headers.location).toBe(`${url}?lang=hr&done=proposed`);
+    const [proposal] = await t.db
+      .select()
+      .from(orderProposals)
+      .where(eq(orderProposals.orderId, ref.orderId))
+      .orderBy(sql`version desc`);
+    expect(proposal?.priceMinor).toBe(12050);
+    expect(proposal?.proposer).toBe('provider_price');
+  });
+});

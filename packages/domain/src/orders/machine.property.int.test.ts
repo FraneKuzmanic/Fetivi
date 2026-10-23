@@ -19,6 +19,11 @@ import { PaymentGatewayError } from '../payments/gateway';
 import { type PaymentDeps, runPaymentJob } from '../payments/jobs';
 import { runReconciliation } from '../payments/reconcile';
 import { CHECKOUT_HOLD_MINUTES, type PaymentOperation } from '../payments/vocabulary';
+import {
+  completeRespond,
+  prepareRespond,
+  RespondRuleError,
+} from '../services/pending/respond-order';
 import { createTestDatabase, type TestDatabase } from '../testing';
 import {
   type SeededGuestUnit,
@@ -56,6 +61,9 @@ import { isFinalOrderStatus } from './vocabulary';
 // job runs as a step and in every drain round: it is what closes those gaps. Since 35 a guest
 // cancel refunds what the pay-online Offer's rules give at that instant (the cutoff is an hour
 // in, so advances cross it), and P8-P9 check the refund amount, the fee share and one refund.
+// Since 36 a priced pay-online on-request Offer is paid first and put to the Provider by the
+// authorization; a new proposal voids the superseded attempt, and the guest answers it through the
+// respond_to_order_update halves (accept opens a new attempt under the next proposal's keys).
 // ORDER_PROPERTY_RUNS (default 25) sets the volume; ORDER_PROPERTY_SEED replays a failure.
 
 const RUNS = Number(process.env.ORDER_PROPERTY_RUNS ?? 25);
@@ -111,6 +119,7 @@ type Step =
   | { kind: 'providerAccept' | 'providerDecline'; order: number; stalePage: boolean }
   | { kind: 'providerPropose'; order: number; stalePage: boolean; date: number; quantity: number }
   | { kind: 'guestConfirm'; order: number; staleCard: boolean }
+  | { kind: 'guestRespond'; order: number; accept: boolean }
   | { kind: 'advance'; minutes: number; shuffle: number }
   | { kind: 'guestPay'; order: number; late: boolean }
   | { kind: 'deliverWebhooks'; shuffle: number; dropCompletion: boolean; dropCancel: boolean }
@@ -128,8 +137,9 @@ const stepArb: fc.Arbitrary<Step> = fc.oneof(
     weight: 6,
     arbitrary: fc.record({
       kind: fc.constant('create' as const),
-      // Half the Orders are pay-online (Offer 3); the rest spread over the three pay-direct ones.
-      offer: fc.oneof(fc.nat(2), fc.constant(3)),
+      // Half the Orders are pay-online (Offer 3, or the on-request Offer 4); the rest spread over
+      // the three pay-direct ones.
+      offer: fc.oneof(fc.nat(2), fc.constantFrom(3, 4)),
       quantity: fc.integer({ min: 1, max: 3 }),
       sameId: fc.boolean(),
     }),
@@ -165,6 +175,14 @@ const stepArb: fc.Arbitrary<Step> = fc.oneof(
       kind: fc.constant('guestConfirm' as const),
       order: orderIdx,
       staleCard: fc.boolean(),
+    }),
+  },
+  {
+    weight: 2,
+    arbitrary: fc.record({
+      kind: fc.constant('guestRespond' as const),
+      order: orderIdx,
+      accept: fc.boolean(),
     }),
   },
   {
@@ -265,7 +283,17 @@ async function policyRefund(d: OrderDeps, orderId: string): Promise<number | und
   }).amountMinor;
 }
 
-type Mode = 'allotment' | 'on_request' | 'live' | 'online';
+type Mode = 'allotment' | 'on_request' | 'live' | 'online' | 'online_request';
+
+/** The attempt of an Order's current proposal, if it has one. */
+async function currentAttempt(orderId: string) {
+  const [row] = await testDb.db
+    .select({ attempt: paymentAttempts })
+    .from(paymentAttempts)
+    .innerJoin(orders, eq(orders.currentProposalId, paymentAttempts.proposalId))
+    .where(eq(orders.id, orderId));
+  return row?.attempt;
+}
 
 /** One run's world: fresh Offers, a virtual clock and the Orders it created. */
 class World {
@@ -346,11 +374,12 @@ class World {
         if (!offer) return;
         const id = a.sameId && this.lastCreateId ? this.lastCreateId : randomUUID();
         this.lastCreateId = id;
+        const online = offer.mode === 'online' || offer.mode === 'online_request';
         const hold =
           offer.mode === 'on_request'
             ? undefined
             : {
-                expiresAt: later(offer.mode === 'online' ? CHECKOUT_HOLD_MINUTES : 30),
+                expiresAt: later(online ? CHECKOUT_HOLD_MINUTES : 30),
                 externalRef: offer.mode === 'live' ? `L-${id}` : undefined,
               };
         const result = await this.run(a, (d) =>
@@ -363,7 +392,6 @@ class World {
             quantity: a.quantity,
             contact: { email: 'guest@example.test' },
             hold,
-            responseDeadline: offer.mode === 'on_request' ? later(60) : undefined,
           }),
         );
         if (result?.created) {
@@ -372,7 +400,7 @@ class World {
             this.orders.push({
               id,
               firstProposalId: found.proposal.id,
-              online: offer.mode === 'online',
+              online,
             });
           }
         }
@@ -436,9 +464,30 @@ class World {
             ...ref,
             trigger: 'guest',
             hold: { expiresAt: later(30) },
-            responseDeadline: later(60),
           }),
         );
+        return;
+      }
+      case 'guestRespond': {
+        // The guest's answer to new terms through the real card halves: prepare, then the tap.
+        const order = this.pick(a.order);
+        if (!order) return;
+        await this.run(a, async (d) => {
+          try {
+            const { pendingId } = await prepareRespond(
+              d,
+              { spaceId: unit.spaceId, language: 'en' },
+              { orderId: order.id },
+            );
+            await completeRespond(d, {
+              pendingId,
+              spaceId: unit.spaceId,
+              answer: a.accept ? 'accept' : 'decline',
+            });
+          } catch (error) {
+            if (!(error instanceof RespondRuleError)) throw error;
+          }
+        });
         return;
       }
       case 'advance':
@@ -493,10 +542,7 @@ class World {
     const online = this.orders.filter((o) => o.online);
     const order = online.length ? online[index % online.length] : undefined;
     if (!order) return;
-    const [attempt] = await testDb.db
-      .select()
-      .from(paymentAttempts)
-      .where(eq(paymentAttempts.orderId, order.id));
+    const attempt = await currentAttempt(order.id);
     const session = this.gateway.state().sessions.find((x) => x.clientReferenceId === attempt?.id);
     if (session?.paymentIntentId) this.gateway.lapse(session.paymentIntentId);
   }
@@ -538,10 +584,7 @@ class World {
     const online = this.orders.filter((o) => o.online);
     const order = online.length ? online[a.order % online.length] : undefined;
     if (!order) return;
-    const [attempt] = await testDb.db
-      .select()
-      .from(paymentAttempts)
-      .where(eq(paymentAttempts.orderId, order.id));
+    const attempt = await currentAttempt(order.id);
     this.gateway.expireDue(this.t);
     const session = this.gateway
       .state()
@@ -717,6 +760,11 @@ class World {
       .from(paymentAttempts)
       .where(inArray(paymentAttempts.orderId, ids));
     const stripe = this.gateway.state();
+    const { rows: voidJobs } = await testDb.db.execute<{ attempt_id: string }>(
+      sql`select data->>'attemptId' as attempt_id from pgboss.job
+          where name = ${QUEUES.orderPayment} and data->>'operation' = 'void'`,
+    );
+    const voids = new Set(voidJobs.map((j) => j.attempt_id));
 
     for (const order of all) {
       const mine = events.filter((e) => e.orderId === order.id);
@@ -733,11 +781,16 @@ class World {
       );
       expect(mine.at(-1)?.toStatus).toBe(order.status);
       expect(mine.at(-1)?.toPaymentStatus).toBe(order.paymentStatus);
-      // 3. At most one held hold, and none on a final or awaiting Order.
+      // 3. At most one held hold, and none on a final, awaiting or Provider-pending Order: on
+      // request holds nothing while the Provider decides (36).
       const held = holds.filter((h) => h.orderId === order.id && h.state === 'held');
       expect(held.length).toBeLessThanOrEqual(1);
-      if (isFinalOrderStatus(order.status) || order.status === 'awaiting_confirmation') {
-        expect(held).toHaveLength(0);
+      if (
+        isFinalOrderStatus(order.status) ||
+        order.status === 'awaiting_confirmation' ||
+        order.status === 'pending_provider'
+      ) {
+        expect(held, `held hold on ${order.status} ${order.id}`).toHaveLength(0);
       }
       // 5. No action on a stale proposal: every event names the proposal current at that point.
       // A proposal is born with its `propose` event, so replaying the events tracks the current one.
@@ -753,6 +806,12 @@ class World {
           'pending_provider',
           'awaiting_confirmation',
         ]);
+        // 8. A new proposal starts with Payment status none; a superseded authorization is voided.
+        expect(e.toPaymentStatus, `event ${e.id}`).toBe('none');
+        if (e.fromPaymentStatus === 'authorized') {
+          const old = attempts.find((x) => x.proposalId === currentId);
+          expect(old && voids.has(old.id), `void of ${old?.id}`).toBe(true);
+        }
         currentId = e.proposalId;
       }
       expect(currentId).toBe(order.currentProposalId);
@@ -832,9 +891,17 @@ class World {
   /** S2's payment invariants for one pay-online Order. */
   checkPayment(order: OrderRow, all: AttemptRow[], stripe: StripeState, drained: boolean) {
     const attempts = all.filter((x) => x.orderId === order.id);
-    // One attempt per proposal, and pay-online is allotment only in 33: one proposal.
-    expect(attempts).toHaveLength(1);
-    const attempt = attempts[0] as AttemptRow;
+    // At most one attempt per proposal (36: a new proposal gets its own when the guest accepts).
+    expect(new Set(attempts.map((x) => x.proposalId)).size).toBe(attempts.length);
+    for (const old of attempts.filter((x) => x.proposalId !== order.currentProposalId)) {
+      this.checkSuperseded(old, stripe, drained);
+    }
+    const attempt = attempts.find((x) => x.proposalId === order.currentProposalId);
+    // No attempt yet (a request-kind or new proposal before the guest's yes): nothing is held.
+    if (!attempt) {
+      expect(order.paymentStatus, `payment of ${order.id}`).toBe('none');
+      return;
+    }
     // P7: every Stripe event id is processed at most once.
     expect(new Set(attempt.processedEventIds).size).toBe(attempt.processedEventIds.length);
     // P2: money is captured only for a confirmed Order (a capture that lost a race to a cancel
@@ -882,6 +949,18 @@ class World {
       else expect(intent?.applicationFeeAmount).toBe(attempt.applicationFeeMinor);
     }
   }
+
+  /** A superseded proposal's attempt: never captured, and after the drain it holds no money. */
+  checkSuperseded(attempt: AttemptRow, stripe: StripeState, drained: boolean) {
+    expect(new Set(attempt.processedEventIds).size).toBe(attempt.processedEventIds.length);
+    if (!drained) return;
+    const session = stripe.sessions.find((x) => x.clientReferenceId === attempt.id);
+    const intent = stripe.intents.find((i) => i.id === session?.paymentIntentId);
+    expect(session?.status, `session of superseded ${attempt.id}`).not.toBe('open');
+    expect(['requires_capture', 'succeeded'], `intent of superseded ${attempt.id}`).not.toContain(
+      intent?.status,
+    );
+  }
 }
 
 type OrderRow = typeof orders.$inferSelect;
@@ -923,6 +1002,12 @@ async function newWorld(capacity: number, options: WorldOptions = {}): Promise<W
     capacity,
     startsAt: SLOT_AT,
   });
+  const onlineRequest = await seedOrderableOffer(testDb.db, {
+    providerId: provider.id,
+    availabilityMode: 'on_request',
+    paymentMode: 'online',
+    priceMinor: 4000,
+  });
   if (options.refundPercentAfter !== undefined) {
     // The cutoff an hour after NOW: 68 h before the 69 h away start.
     await testDb.db
@@ -936,6 +1021,7 @@ async function newWorld(capacity: number, options: WorldOptions = {}): Promise<W
       { ...onRequest, mode: 'on_request' },
       { ...live, mode: 'live' },
       { ...online, mode: 'online' },
+      { ...onlineRequest, mode: 'online_request' },
     ],
     capacity,
     options.reconcile,
@@ -979,14 +1065,16 @@ describe('Order machine property', () => {
       { kind: 'create', offer: 1, quantity: 2, sameId: false, ...plain },
       { kind: 'providerPropose', order: 0, stalePage: false, date: 2, quantity: 1, ...plain },
       { kind: 'providerAccept', order: 0, stalePage: true, ...plain },
-      // The guest accepts the new time, so the Order waits for the Provider again.
+      // The guest accepts the Provider's own new time: no second ask, the hold is placed.
       { kind: 'guestConfirm', order: 0, staleCard: false, ...plain },
       { kind: 'providerAccept', order: 0, stalePage: true, ...plain },
       { kind: 'providerDecline', order: 0, stalePage: true, ...plain },
       { kind: 'guestConfirm', order: 0, staleCard: true, ...plain },
+      { kind: 'adapterConfirm', order: 0, ...plain },
     ]);
+    // None of the stale taps landed: the new terms were confirmed and the day passed.
     const found = await getOrder(testDb.db, world.orders[0]?.id ?? '');
-    expect(found?.order.status).toBe('pending_provider');
+    expect(found?.order.status).toBe('completed');
     expect(found?.proposal.version).toBe(2);
   });
 
@@ -1199,6 +1287,62 @@ describe('Order machine property (pay-online, S2 mutants)', () => {
     const { order } = await stateOf(world);
     expect([order?.status, order?.paymentStatus]).toEqual(['expired', 'voided']);
     expect(callsOf(world, 'retrieve_session').length).toBeGreaterThan(0);
+  });
+});
+
+// On request (36): a priced pay-online Offer is paid before the Provider is asked, and new terms
+// void the paid attempt and open the next one under the new proposal's keys.
+describe('Order machine property (on request, pay first)', () => {
+  const ask: Action = { kind: 'create', offer: 4, quantity: 2, sameId: false, ...plain };
+  const propose: Action = {
+    kind: 'providerPropose',
+    order: 0,
+    stalePage: false,
+    date: 2,
+    quantity: 2,
+    ...plain,
+  };
+  const respond = (accept: boolean): Action => ({
+    kind: 'guestRespond',
+    order: 0,
+    accept,
+    ...plain,
+  });
+
+  it('asks the Provider only once paid, holding nothing while it waits', async () => {
+    const world = await newWorld(2);
+    await steps(world, [ask, jobs()]);
+    expect((await stateOf(world)).order?.status).toBe('confirming');
+    await steps(world, [pay(), hooks()]);
+    const { order } = await stateOf(world);
+    expect([order?.status, order?.paymentStatus]).toEqual(['pending_provider', 'authorized']);
+    await steps(world, [{ kind: 'providerAccept', order: 0, stalePage: false, ...plain }, jobs()]);
+    expect((await stateOf(world)).order?.paymentStatus).toBe('captured');
+    await finish(world);
+  });
+
+  it('new terms void the paid attempt; the accepted ones are paid on a second attempt', async () => {
+    const world = await newWorld(2);
+    await steps(world, [ask, jobs(), pay(), hooks(), propose]);
+    let { order } = await stateOf(world);
+    expect([order?.status, order?.paymentStatus]).toEqual(['awaiting_confirmation', 'none']);
+    await steps(world, [jobs(), hooks(), respond(true), jobs(), pay(), hooks(), jobs(), jobs()]);
+    ({ order } = await stateOf(world));
+    expect([order?.status, order?.paymentStatus]).toEqual(['confirmed', 'captured']);
+    const attempts = await testDb.db
+      .select()
+      .from(paymentAttempts)
+      .where(eq(paymentAttempts.orderId, order?.id ?? ''));
+    expect(attempts.map((a) => a.proposalVersion).sort()).toEqual([1, 2]);
+    expect(attempts.find((a) => a.proposalVersion === 1)?.intentStatus).toBe('canceled');
+    await finish(world);
+  });
+
+  it('declining the new terms cancels with nothing held', async () => {
+    const world = await newWorld(2);
+    await steps(world, [ask, jobs(), pay(), hooks(), propose, respond(false)]);
+    expect((await stateOf(world)).order?.status).toBe('cancelled');
+    await finish(world);
   });
 });
 

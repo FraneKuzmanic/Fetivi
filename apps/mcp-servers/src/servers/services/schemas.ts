@@ -47,6 +47,9 @@ export const createOrderInput = z.object({
 export const cancelOrderInput = z.object({
   orderId: z.uuid().describe('An order id from list_my_orders.'),
 });
+export const respondToOrderUpdateInput = z.object({
+  orderId: z.uuid().describe('An order id from list_my_orders whose respondBy is set.'),
+});
 
 const guestOffer = z.object({
   id: z.string(),
@@ -94,6 +97,12 @@ const orderSummary = z.object({
     .describe(
       'What was or will be refunded, in cents; null when nothing is refunded through Fetivi.',
     ),
+  respondBy: z
+    .string()
+    .nullable()
+    .describe(
+      'While set, the provider proposed new terms; call respond_to_order_update so the guest can accept or decline them by this time.',
+    ),
 });
 
 export const listOffersOutput = z.object({ offers: z.array(guestOffer) });
@@ -120,6 +129,10 @@ export const createOrderOutput = z.object({
 });
 export const cancelOrderOutput = z.object({
   outcome: z.enum(['cancelled', 'not_cancelled']),
+  order: orderSummary.nullable(),
+});
+export const respondToOrderUpdateOutput = z.object({
+  outcome: z.enum(['accepted', 'declined', 'not_answered']),
   order: orderSummary.nullable(),
 });
 

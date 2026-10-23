@@ -2,6 +2,7 @@ import {
   CANCEL_DRAFT_META_KEY,
   HOST_MESSAGE_DRAFT_META_KEY,
   ORDER_DRAFT_META_KEY,
+  RESPOND_DRAFT_META_KEY,
 } from '@fetivi/domain';
 import type { Client } from '@modelcontextprotocol/client';
 import { describe, expect, it, vi } from 'vitest';
@@ -90,6 +91,7 @@ describe('firstHalf', () => {
         draft: DRAFT,
         hostMessage: null,
         cancelOrder: null,
+        respondOrder: null,
       },
     });
     expect(callTool).toHaveBeenCalledWith({ name: 'create_order', arguments: call.input }, OPTIONS);
@@ -134,6 +136,32 @@ describe('firstHalf', () => {
     expect(outcome).toMatchObject({
       kind: 'ask',
       payload: { draft: null, hostMessage: null, cancelOrder },
+    });
+  });
+
+  it('carries a respond draft with the new and the replaced terms', async () => {
+    const respondOrder = {
+      pendingId: 'p-4',
+      orderId: '6f1c1d0e-8a0b-4c2e-9f5d-1a2b3c4d5e6f',
+      proposalId: '8f1c1d0e-8a0b-4c2e-9f5d-1a2b3c4d5e6f',
+      offerTitle: 'Private boat trip',
+      language: 'en',
+      proposer: 'provider_time',
+      date: '2026-10-22',
+      startsAtLocal: '2026-10-22T17:30',
+      quantity: 2,
+      priceMinor: 24000,
+      currency: 'EUR',
+      previous: { date: '2026-10-22', startsAtLocal: null, priceMinor: 24000 },
+      paymentMode: 'direct',
+      cancellationPolicy: 'Free cancellation up to 24 hours before.',
+      respondBy: '2026-10-21T08:00:00.000Z',
+      respondByLocal: '2026-10-21T10:00',
+    };
+    const { call } = fake(() => inputRequired({ [RESPOND_DRAFT_META_KEY]: respondOrder }));
+    expect(await firstHalf(call)).toMatchObject({
+      kind: 'ask',
+      payload: { draft: null, cancelOrder: null, respondOrder },
     });
   });
 

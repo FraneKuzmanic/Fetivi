@@ -121,4 +121,40 @@ describe('order-notify job', () => {
       data: { kind: 'notice', notification: 'order_confirmed', orderId: order.id },
     });
   });
+
+  it('asks the on-request Provider and alerts the admins about a missed window, once each', async () => {
+    await testDb.pool.query(
+      `insert into accounts (email, password_hash, role) values ('notify-admin@example.test', 'x', 'admin')`,
+    );
+    const provider = await seedProvider(testDb.db);
+    const { offerId } = await seedOrderableOffer(testDb.db, {
+      providerId: provider.id,
+      availabilityMode: 'on_request',
+    });
+    const { order } = await createOrder(orderDeps(), {
+      spaceId: unit.spaceId,
+      offerId,
+      date: '2027-05-04',
+      quantity: 1,
+      contact: { email: 'guest@example.test', name: 'Ana' },
+    });
+    const ref = { orderId: order.id, proposalId: order.currentProposalId as string };
+    const mailer = createMemoryMailer();
+    const job = orderNotifyJob({
+      db: testDb.db,
+      mailer,
+      push: createMemoryPushSender(),
+      guestOrigin: 'http://guest.test',
+      guestLinkSecret: 'jobs-test-guest-link-secret-long-enough',
+      now: () => NOW,
+      providerLink: { secret: 'jobs-test-secret-that-is-long-enough-00', baseUrl: 'http://x.test' },
+    });
+    await job.handler({ ...ref, kind: 'provider_request' });
+    await job.handler({ ...ref, kind: 'provider_request' });
+    await job.handler({ ...ref, kind: 'admin_window_missed' });
+    await job.handler({ ...ref, kind: 'admin_window_missed' });
+    expect(mailer.sent.map((m) => m.to)).toEqual([provider.email, 'notify-admin@example.test']);
+    expect(mailer.sent[0]?.subject).toMatch(/^Novi upit: /);
+    expect(mailer.sent[1]?.subject).toMatch(/^Provider hasn't answered: /);
+  });
 });

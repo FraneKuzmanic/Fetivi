@@ -78,15 +78,16 @@ export async function refreshProviderPayments(
 }
 
 /**
- * Whether a pay-online Offer can be booked in chat now: an allotment Offer of a Provider whose
- * stored card status is `active`, with a price. On request (36), live (37) and host Offers (38)
- * cannot yet.
+ * Whether a pay-online Offer can be booked in chat now: an allotment or on-request Offer of a
+ * Provider whose stored card status is `active`, with a price (a request-kind Offer gets its
+ * price from the Provider). Live (37) and host Offers (38) cannot yet.
  */
 export async function providerAcceptsCards(db: Executor, offerId: string): Promise<boolean> {
   const [row] = await db
     .select({
       availabilityMode: offers.availabilityMode,
       priceMinor: offers.priceMinor,
+      orderKind: offers.orderKind,
       stripeAccountId: providers.stripeAccountId,
       cardStatus: providers.stripeCardPayments,
     })
@@ -95,8 +96,8 @@ export async function providerAcceptsCards(db: Executor, offerId: string): Promi
     .where(eq(offers.id, offerId));
   return (
     row !== undefined &&
-    row.availabilityMode === 'allotment' &&
-    !!row.priceMinor &&
+    (row.availabilityMode === 'allotment' || row.availabilityMode === 'on_request') &&
+    (!!row.priceMinor || row.orderKind === 'request') &&
     !!row.stripeAccountId &&
     row.cardStatus === 'active'
   );

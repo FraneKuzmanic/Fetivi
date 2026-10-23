@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { CONTACT_FIELDS } from '../../offers/vocabulary';
-import { composeProviderConfirmed, guestFieldsFor, type ProviderConfirmedInput } from './compose';
+import {
+  composeProviderConfirmed,
+  composeProviderRequest,
+  guestFieldsFor,
+  type ProviderConfirmedInput,
+} from './compose';
 
 const GUEST = { guestName: 'Ana Horvat', guestPhone: '+385 91 123 4567' };
 const EMAIL = 'ana@example.test';
@@ -56,5 +61,25 @@ describe('composeProviderConfirmed', () => {
     expect(text).not.toMatch(/undefined|null/);
     expect(text).not.toContain('Vrijeme');
     expect(text).not.toContain('Gost');
+  });
+});
+
+describe('composeProviderRequest', () => {
+  const request = { respondBy: '2027-05-01T12:30', priceMinor: 12050, currency: 'EUR' };
+
+  it('asks for an answer by the due time, with the price when set', () => {
+    const hr = composeProviderRequest({ ...input(), ...request });
+    expect(hr.subject).toBe('Novi upit: Sunset kayak, 4.5.2027.');
+    expect(hr.text).toContain('Molimo odgovorite do 1.5.2027. 12:30.');
+    expect(hr.text).toMatch(/Cijena: 120,50\s€/);
+    expect(hr.text).toContain('predložite drugo vrijeme');
+    const en = composeProviderRequest({ ...input({ language: 'en' }), ...request });
+    expect(en.text).toContain('Please answer by 1 May 2027 12:30.');
+    expect(en.text).toContain('Price: €120.50');
+  });
+
+  it('has no price line before the Provider names one', () => {
+    const { text } = composeProviderRequest({ ...input(), ...request, priceMinor: null });
+    expect(text).not.toContain('Cijena');
   });
 });

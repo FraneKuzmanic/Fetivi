@@ -391,6 +391,7 @@ const ORDER: OrderSummaryPayload = {
   createdAt: '2026-10-21T10:00:00.000Z',
   payBy: null,
   refundMinor: null,
+  respondBy: null,
 };
 
 const RECEIPT: ReceiptLabels = {

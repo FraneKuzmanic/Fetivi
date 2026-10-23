@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { AVAILABILITY_MODES } from '../offers/vocabulary';
 import {
   actionTarget,
+  asksProvider,
   nextPaymentStatus,
   nextStatus,
   ORDER_ACTIONS,
@@ -16,15 +16,13 @@ import {
   PAYMENT_STATUSES,
 } from './vocabulary';
 
-// Written out independently of the implementation: `from action trigger mode -> to`.
-// `*` = every availability mode.
+// Written out independently of the implementation: `from action trigger asks -> to`, where
+// `asks` is whether the guest's confirmation still needs the Provider's yes. `*` = either.
 const EXPECTED = `
-awaiting_confirmation guest_confirm guest live -> confirming
-awaiting_confirmation guest_confirm guest allotment -> confirming
-awaiting_confirmation guest_confirm guest on_request -> pending_provider
-awaiting_confirmation guest_confirm admin live -> confirming
-awaiting_confirmation guest_confirm admin allotment -> confirming
-awaiting_confirmation guest_confirm admin on_request -> pending_provider
+awaiting_confirmation guest_confirm guest no -> confirming
+awaiting_confirmation guest_confirm guest yes -> pending_provider
+awaiting_confirmation guest_confirm admin no -> confirming
+awaiting_confirmation guest_confirm admin yes -> pending_provider
 awaiting_confirmation expire card_timer * -> expired
 awaiting_confirmation expire admin * -> expired
 awaiting_confirmation cancel guest * -> cancelled
@@ -41,6 +39,10 @@ confirming expire admin * -> expired
 confirming expire payment_webhook * -> expired
 confirming expire payment_job * -> expired
 confirming expire reconciliation * -> expired
+confirming ask_provider payment_webhook * -> pending_provider
+confirming ask_provider payment_job * -> pending_provider
+confirming ask_provider reconciliation * -> pending_provider
+confirming ask_provider admin * -> pending_provider
 pending_provider confirm provider_link * -> confirmed
 pending_provider confirm admin * -> confirmed
 pending_provider decline provider_link * -> declined
@@ -56,12 +58,15 @@ confirmed complete completion_timer * -> completed
 confirmed complete admin * -> completed
 `;
 
+const ASKS = [false, true] as const;
+const word = (asks: boolean) => (asks ? 'yes' : 'no');
+
 const expected = new Map<string, string>();
 for (const line of EXPECTED.trim().split('\n')) {
   const [lhs, to] = line.split(' -> ') as [string, string];
-  const [from, action, trigger, mode] = lhs.split(' ');
-  const modes = mode === '*' ? AVAILABILITY_MODES : [mode];
-  for (const m of modes) expected.set(`${from} ${action} ${trigger} ${m}`, to);
+  const [from, action, trigger, asks] = lhs.split(' ');
+  const values = asks === '*' ? ['no', 'yes'] : [asks];
+  for (const a of values) expected.set(`${from} ${action} ${trigger} ${a}`, to);
 }
 
 describe('nextStatus', () => {
@@ -70,9 +75,9 @@ describe('nextStatus', () => {
     for (const from of ORDER_STATUSES) {
       for (const action of ORDER_ACTIONS) {
         for (const trigger of ORDER_TRIGGERS) {
-          for (const mode of AVAILABILITY_MODES) {
-            const key = `${from} ${action} ${trigger} ${mode}`;
-            const to = nextStatus(from, action, trigger, mode);
+          for (const asks of ASKS) {
+            const key = `${from} ${action} ${trigger} ${word(asks)}`;
+            const to = nextStatus(from, action, trigger, asks);
             expect(to, key).toBe(expected.get(key) ?? null);
             if (to) edges++;
           }
@@ -86,33 +91,41 @@ describe('nextStatus', () => {
     for (const from of FINAL_ORDER_STATUSES) {
       for (const action of ORDER_ACTIONS) {
         for (const trigger of ORDER_TRIGGERS) {
-          for (const mode of AVAILABILITY_MODES) {
-            expect(nextStatus(from, action, trigger, mode)).toBeNull();
+          for (const asks of ASKS) {
+            expect(nextStatus(from, action, trigger, asks)).toBeNull();
           }
         }
       }
     }
   });
 
-  it('sends the guest confirmation to the Provider only for on-request Offers', () => {
-    expect(nextStatus('awaiting_confirmation', 'guest_confirm', 'guest', 'on_request')).toBe(
+  it('sends the guest confirmation to the Provider only when the Provider still has to say yes', () => {
+    expect(nextStatus('awaiting_confirmation', 'guest_confirm', 'guest', true)).toBe(
       'pending_provider',
     );
-    expect(nextStatus('awaiting_confirmation', 'guest_confirm', 'guest', 'live')).toBe(
-      'confirming',
+    expect(nextStatus('awaiting_confirmation', 'guest_confirm', 'guest', false)).toBe('confirming');
+  });
+
+  it('puts a paid-first Order to the Provider only from confirming, and never by the guest', () => {
+    expect(nextStatus('confirming', 'ask_provider', 'payment_webhook', false)).toBe(
+      'pending_provider',
     );
+    expect(nextStatus('confirming', 'ask_provider', 'guest', false)).toBeNull();
+    expect(
+      nextStatus('awaiting_confirmation', 'ask_provider', 'payment_webhook', false),
+    ).toBeNull();
   });
 
   it('lets reconciliation expire or fail a confirming Order, and never confirm or cancel one', () => {
-    expect(nextStatus('confirming', 'fail', 'reconciliation', 'allotment')).toBe('failed');
-    expect(nextStatus('confirming', 'fail', 'payment_webhook', 'allotment')).toBe('failed');
-    expect(nextStatus('confirming', 'expire', 'reconciliation', 'allotment')).toBe('expired');
-    for (const mode of AVAILABILITY_MODES) {
-      expect(nextStatus('confirming', 'confirm', 'reconciliation', mode)).toBeNull();
+    expect(nextStatus('confirming', 'fail', 'reconciliation', false)).toBe('failed');
+    expect(nextStatus('confirming', 'fail', 'payment_webhook', false)).toBe('failed');
+    expect(nextStatus('confirming', 'expire', 'reconciliation', false)).toBe('expired');
+    for (const asks of ASKS) {
+      expect(nextStatus('confirming', 'confirm', 'reconciliation', asks)).toBeNull();
       expect(
-        nextStatus('awaiting_confirmation', 'guest_confirm', 'reconciliation', mode),
+        nextStatus('awaiting_confirmation', 'guest_confirm', 'reconciliation', asks),
       ).toBeNull();
-      expect(nextStatus('confirmed', 'cancel', 'reconciliation', mode)).toBeNull();
+      expect(nextStatus('confirmed', 'cancel', 'reconciliation', asks)).toBeNull();
     }
   });
 });
@@ -121,17 +134,45 @@ describe('actionTarget', () => {
   it('is the target of every legal edge of the action, and null for a trigger never legal', () => {
     for (const action of ORDER_ACTIONS) {
       for (const trigger of ORDER_TRIGGERS) {
-        for (const mode of AVAILABILITY_MODES) {
+        for (const asks of ASKS) {
           const targets = new Set(
-            ORDER_STATUSES.map((from) => expected.get(`${from} ${action} ${trigger} ${mode}`)),
+            ORDER_STATUSES.map((from) =>
+              expected.get(`${from} ${action} ${trigger} ${word(asks)}`),
+            ),
           );
           targets.delete(undefined);
-          const key = `${action} ${trigger} ${mode}`;
+          const key = `${action} ${trigger} ${word(asks)}`;
           expect(targets.size, key).toBeLessThanOrEqual(1);
-          expect(actionTarget(action, trigger, mode), key).toBe([...targets][0] ?? null);
+          expect(actionTarget(action, trigger, asks), key).toBe([...targets][0] ?? null);
         }
       }
     }
+  });
+});
+
+describe('asksProvider', () => {
+  const priced = { proposer: 'offer', priceMinor: 9000 } as const;
+  const request = { proposer: 'offer', priceMinor: null } as const;
+
+  it('asks the Provider for on-request Offers on their own terms that are not paid first', () => {
+    expect(asksProvider('on_request', priced, 'direct')).toBe(true);
+    expect(asksProvider('on_request', request, 'direct')).toBe(true);
+    expect(asksProvider('on_request', request, 'online')).toBe(true);
+  });
+
+  it('pays a priced pay-online on-request Order first', () => {
+    expect(asksProvider('on_request', priced, 'online')).toBe(false);
+  });
+
+  it('never asks again for terms the Provider or the admin proposed', () => {
+    for (const proposer of ['provider_time', 'provider_price', 'admin'] as const) {
+      expect(asksProvider('on_request', { proposer, priceMinor: 9000 }, 'direct')).toBe(false);
+    }
+  });
+
+  it('never asks for allotment or live Offers', () => {
+    expect(asksProvider('allotment', priced, 'direct')).toBe(false);
+    expect(asksProvider('live', request, 'direct')).toBe(false);
   });
 });
 
@@ -240,6 +281,9 @@ describe('requiredNotifications', () => {
     expect(requiredNotifications('awaiting_confirmation', 'pending_provider', 'guest')).toEqual([
       'provider_request',
     ]);
+    expect(
+      requiredNotifications('confirming', 'pending_provider', 'payment_webhook', 'online'),
+    ).toEqual(['provider_request']);
   });
 
   it('tells the Provider of an instant confirmation, but not of their own', () => {

@@ -143,7 +143,7 @@ describe('servers over HTTP', () => {
   it('serves the order tools on services (no Offers here) and the plan and About me tools on trip', async () => {
     const { ctx } = await seed();
     const expected = {
-      services: ['list_my_orders', 'cancel_order'],
+      services: ['list_my_orders', 'cancel_order', 'respond_to_order_update'],
       trip: ['get_plan', 'update_plan', 'get_about_me', 'update_about_me'],
     };
     for (const server of ['services', 'trip'] as const) {
@@ -151,10 +151,12 @@ describe('servers over HTTP', () => {
       expect(client.getProtocolEra()).toBe('modern');
       const { tools } = await client.listTools();
       expect(tools.map((tool) => tool.name)).toEqual(expected[server]);
-      // update_plan and update_about_me write without a card; only cancel_order pauses the model.
+      // update_plan and update_about_me write without a card; only the card tools pause the model.
       for (const tool of tools) {
         expect(tool._meta?.[GUEST_CONFIRMS_META_KEY]).toBe(
-          tool.name === 'cancel_order' ? true : undefined,
+          tool.name === 'cancel_order' || tool.name === 'respond_to_order_update'
+            ? true
+            : undefined,
         );
       }
       await client.close();

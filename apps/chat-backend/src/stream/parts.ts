@@ -56,6 +56,13 @@ const candidate = (toolName: string, value: unknown): unknown => {
       // The cancelled Order's receipt shows the refund; "not cancelled" is the model's words.
       if (!isRecord(value) || value.outcome !== 'cancelled') return null;
       return { name: 'receipt-card', payload: { order: value.order } };
+    case 'respond_to_order_update':
+      // An answered card gets the Order's receipt (Pay now while a new Checkout waits);
+      // "not now" is told by the model's words.
+      if (!isRecord(value) || (value.outcome !== 'accepted' && value.outcome !== 'declined')) {
+        return null;
+      }
+      return { name: 'receipt-card', payload: { order: value.order } };
     case 'send_host_message':
       // Only a sent message gets its card; "not sent" is told by the model's words.
       if (!isRecord(value) || value.outcome !== 'sent') return null;

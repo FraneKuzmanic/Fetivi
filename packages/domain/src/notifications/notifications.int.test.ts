@@ -3,10 +3,11 @@ import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { accounts } from '../db/schema/accounts';
 import { orderNotificationDeliveries } from '../db/schema/notifications';
+import { providers } from '../db/schema/offers';
 import { orderEvents, orders } from '../db/schema/orders';
 import { createJobQueue, ensureQueues, type JobQueue } from '../jobs/queue';
 import { createMemoryMailer, type Mailer } from '../mail';
-import { cancel, createOrder, type OrderDeps } from '../orders/machine';
+import { cancel, confirm, createOrder, type OrderDeps } from '../orders/machine';
 import { confirmHeldOrder } from '../services/adapters';
 import { createTestDatabase, type TestDatabase } from '../testing';
 import {
@@ -224,5 +225,82 @@ describe('the admin alert', () => {
     expect(mailer.sent.at(-1)?.text).toContain(
       'needs a look: authorization cancelled on a confirmed Order.',
     );
+  });
+});
+
+/** A pay-direct on-request Order waiting for the Provider (36). */
+async function pendingOrder() {
+  const provider = await seedProvider(testDb.db, { language: 'en' });
+  await testDb.db
+    .update(providers)
+    .set({ whatsappPhone: '+385 98 111 2222' })
+    .where(eq(providers.id, provider.id));
+  const { offerId } = await seedOrderableOffer(testDb.db, {
+    providerId: provider.id,
+    availabilityMode: 'on_request',
+    contactFields: 'name',
+  });
+  const { order } = await createOrder(orderDeps(), {
+    spaceId: unit.spaceId,
+    offerId,
+    date: DAY,
+    quantity: 2,
+    contact: { email: 'ana@example.test', name: 'Ana Horvat' },
+  });
+  const ref = { orderId: order.id, proposalId: order.currentProposalId as string };
+  return { ref, provider };
+}
+
+describe('the on-request ask', () => {
+  it('asks the Provider to answer by the due time, with the link', async () => {
+    const { ref, provider } = await pendingOrder();
+    const job = { ...ref, kind: 'provider_request' as const };
+    const mailer = createMemoryMailer();
+    expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('sent');
+    const [mail] = mailer.sent;
+    expect(mail?.to).toBe(provider.email);
+    expect(mail?.subject).toBe('New request: Kayak tour, 4 May 2027');
+    expect(mail?.text).toContain('Please answer by 1 May 2027 12:30.');
+    expect(mail?.text).toMatch(/\/api\/provider-link\/[A-Za-z0-9_-]{43}/);
+    expect(mail?.idempotencyKey).toBe(
+      `order:${ref.orderId}:proposal:${ref.proposalId}:notify:provider_request`,
+    );
+  });
+
+  it('is skipped once the Provider has answered', async () => {
+    const { ref } = await pendingOrder();
+    await confirm(orderDeps(), { ...ref, trigger: 'provider_link' });
+    const mailer = createMemoryMailer();
+    const job = { ...ref, kind: 'provider_request' as const };
+    expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('skipped');
+  });
+});
+
+describe('the missed-window alert', () => {
+  it("gives the admins the Provider's contact details, not the guest's", async () => {
+    await testDb.db
+      .insert(accounts)
+      .values({ email: 'admin-window@example.test', passwordHash: 'x', role: 'admin' })
+      .onConflictDoNothing();
+    const { ref, provider } = await pendingOrder();
+    const mailer = createMemoryMailer();
+    const alert = { ...ref, kind: 'admin_window_missed' as const };
+    expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('sent');
+    const [mail] = mailer.sent;
+    expect(mail?.subject).toBe("Provider hasn't answered: Kayak tour, 4 May 2027");
+    expect(mail?.text).toContain('The answer was due 1 May 2027 12:30.');
+    expect(mail?.text).toContain(`Provider email: ${provider.email}`);
+    expect(mail?.text).toContain('Provider phone: +385 98 111 2222');
+    expect(mail?.text).not.toContain('Ana Horvat');
+    expect(mail?.text).not.toContain('ana@example.test');
+  });
+
+  it('is skipped once the Order is no longer waiting', async () => {
+    const { ref } = await pendingOrder();
+    await confirm(orderDeps(), { ...ref, trigger: 'admin' });
+    const mailer = createMemoryMailer();
+    const alert = { ...ref, kind: 'admin_window_missed' as const };
+    expect(await sendAdminAlert(notifyDeps(mailer), alert)).toBe('skipped');
+    expect(mailer.sent).toHaveLength(0);
   });
 });

@@ -9,17 +9,20 @@ import {
   type ProposalRef,
   type ProviderAdapter,
 } from './interface';
+import { onRequestAdapter } from './on-request';
 
 export { allotmentAdapter, restoreSeats } from './allotment';
 export * from './interface';
+export { onRequestAdapter } from './on-request';
 
 /** The adapter of an availability mode. */
 export function adapterFor(mode: AvailabilityMode): ProviderAdapter {
   switch (mode) {
     case 'allotment':
       return allotmentAdapter;
-    // On request is ticket 36, live (Bókun) is ticket 37.
     case 'on_request':
+      return onRequestAdapter;
+    // Live (Bókun) is ticket 37.
     case 'live':
       throw new AdapterError('not-supported');
   }

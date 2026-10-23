@@ -7,7 +7,11 @@ import { SERVER_VERSION } from '../version';
 import { servicesTools } from './tools';
 
 /** The confirm tools of this server, in `tools/list` order after the read tools. */
-const CONFIRMS = [CONFIRM_TOOLS.create_order, CONFIRM_TOOLS.cancel_order];
+const CONFIRMS = [
+  CONFIRM_TOOLS.create_order,
+  CONFIRM_TOOLS.cancel_order,
+  CONFIRM_TOOLS.respond_to_order_update,
+];
 
 /**
  * The first codec that accepts the state. The SDK's verify hook does not name the called tool,
@@ -27,9 +31,10 @@ async function verifyAny(codecs: StateCodec[], state: string): Promise<{ pending
 }
 
 /**
- * The `services` server for one guest: Offers, availability, the guest's Orders, create_order and
- * cancel_order (architecture §4.4). Each tool is listed only while the token carries its scope, so
- * after checkout only list_my_orders and cancel_order remain. Visible Offers: the destination's
+ * The `services` server for one guest: Offers, availability, the guest's Orders, create_order,
+ * cancel_order and respond_to_order_update (architecture §4.4). Each tool is listed only while the
+ * token carries its scope, so after checkout only list_my_orders, cancel_order and
+ * respond_to_order_update remain. Visible Offers: the destination's
  * Provider Offers plus the host's own, or only the host's own outside a destination.
  */
 export function buildServicesServer(identity: GuestIdentity, deps: ToolDeps): McpServer {

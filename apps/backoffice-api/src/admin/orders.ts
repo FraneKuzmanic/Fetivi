@@ -3,8 +3,10 @@ import {
   adminCancel,
   adminRefund,
   type Db,
+  destinations,
   isFinalOrderStatus,
   type JobQueue,
+  OFFER_LIMITS,
   OrderRuleError,
   offers,
   orderEvents,
@@ -13,6 +15,9 @@ import {
   orders,
   paymentAttempts,
   properties,
+  providerAccept,
+  providerDecline,
+  providerPropose,
   providers,
   refundFor,
   stays,
@@ -35,6 +40,16 @@ const IdParams = z.object({ id: z.uuid() });
 const Note = z.string().trim().max(500).optional();
 const CancelBody = z.object({ refundMinor: z.number().int().min(0).optional(), note: Note });
 const RefundBody = z.object({ refundMinor: z.number().int().min(1), note: Note });
+// A phoned answer (36): the note is the record of what the Provider said, so it is required.
+const AnswerBody = z.object({ proposalId: z.uuid(), note: z.string().trim().min(1).max(500) });
+const ProposeBody = AnswerBody.extend({
+  date: z.iso.date(),
+  time: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional(),
+  priceMinor: z.number().int().min(1).max(OFFER_LIMITS.priceMinorMax).optional(),
+});
 
 const iso = (date: Date | null) => date?.toISOString() ?? null;
 
@@ -46,14 +61,19 @@ async function orderView(db: Db, id: string, now: Date) {
       proposal: orderProposals,
       attempt: paymentAttempts,
       offerTitle: offers.title,
+      orderKind: offers.orderKind,
       providerName: providers.name,
       zone: properties.timezone,
+      destinationZone: destinations.timezone,
+      stayFrom: stays.checkIn,
+      stayTo: stays.checkout,
     })
     .from(orders)
     .innerJoin(orderProposals, eq(orderProposals.id, orders.currentProposalId))
     .leftJoin(paymentAttempts, eq(paymentAttempts.proposalId, orders.currentProposalId))
     .innerJoin(offers, eq(offers.id, orders.offerId))
     .leftJoin(providers, eq(providers.id, offers.providerId))
+    .leftJoin(destinations, eq(destinations.id, offers.destinationId))
     .innerJoin(stays, eq(stays.id, orders.stayId))
     .innerJoin(units, eq(units.id, stays.unitId))
     .innerJoin(properties, eq(properties.id, units.propertyId))
@@ -99,6 +119,22 @@ async function orderView(db: Db, id: string, now: Date) {
     /** Paid online and captured, so an override amount applies to a cancel. */
     paidAmountMinor: captured ? (attempt?.amountMinor ?? null) : null,
     refundAmountMinor: attempt?.refundAmountMinor ?? null,
+    proposalId: proposal.id,
+    proposer: proposal.proposer,
+    version: proposal.version,
+    orderKind: row.orderKind,
+    /** When the Provider's on-request answer is due (36). */
+    responseDueAt: iso(proposal.responseDueAt),
+    windowMissed:
+      order.status === 'pending_provider' &&
+      proposal.responseDueAt !== null &&
+      proposal.responseDueAt <= now,
+    /** The admin may record the Provider's phoned answer. */
+    canAnswer: order.status === 'pending_provider',
+    stayFrom: row.stayFrom,
+    stayTo: row.stayTo,
+    /** The zone a new time is entered in, as the Provider page shows it. */
+    zone: row.destinationZone ?? row.zone,
     canCancel: !isFinalOrderStatus(order.status) && order.status !== 'confirming',
     // adminRefund's rule: one refund per attempt, only once the Order is released.
     canRefund:
@@ -122,7 +158,7 @@ async function orderView(db: Db, id: string, now: Date) {
 /** The machine's refusals as HTTP errors. */
 async function acting(
   run: () => Promise<TransitionOutcome>,
-  conflict: 'not-cancellable' | 'not-refundable',
+  conflict: 'not-cancellable' | 'not-refundable' | 'not-answerable',
 ) {
   let result: TransitionOutcome;
   try {
@@ -142,7 +178,9 @@ async function acting(
 /**
  * The admin's single-Order page (35): the Order, its payment, policy and events, a cancel with
  * an optional refund override and a refund of a released Order whose money is still captured.
- * Every action is an OrderEvent with trigger `admin`, the admin's id and a note.
+ * Every action is an OrderEvent with trigger `admin`, the admin's id and a note. On a
+ * `pending_provider` Order the admin records the Provider's phoned answer (36): accept, decline
+ * or new terms, bound to the proposal the page showed.
  */
 export async function adminOrderRoutes(app: FastifyInstance, deps: AdminOrderDeps): Promise<void> {
   const { db } = deps;
@@ -190,6 +228,52 @@ export async function adminOrderRoutes(app: FastifyInstance, deps: AdminOrderDep
           note: body.note || undefined,
         }),
       'not-refundable',
+    );
+    return view(id);
+  });
+
+  app.post('/api/admin/orders/:id/accept', admin, async (request) => {
+    const { id } = IdParams.parse(request.params);
+    const body = AnswerBody.parse(request.body ?? {});
+    const meta = {
+      trigger: 'admin' as const,
+      actorId: principalOf(request).account.id,
+      note: body.note,
+    };
+    await acting(
+      () => providerAccept(machine(), { orderId: id, proposalId: body.proposalId }, meta),
+      'not-answerable',
+    );
+    return view(id);
+  });
+
+  app.post('/api/admin/orders/:id/decline', admin, async (request) => {
+    const { id } = IdParams.parse(request.params);
+    const body = AnswerBody.parse(request.body ?? {});
+    const meta = {
+      trigger: 'admin' as const,
+      actorId: principalOf(request).account.id,
+      note: body.note,
+    };
+    await acting(
+      () => providerDecline(machine(), { orderId: id, proposalId: body.proposalId }, meta),
+      'not-answerable',
+    );
+    return view(id);
+  });
+
+  app.post('/api/admin/orders/:id/propose', admin, async (request) => {
+    const { id } = IdParams.parse(request.params);
+    const body = ProposeBody.parse(request.body ?? {});
+    const meta = {
+      trigger: 'admin' as const,
+      actorId: principalOf(request).account.id,
+      note: body.note,
+    };
+    const terms = { date: body.date, time: body.time, priceMinor: body.priceMinor };
+    await acting(
+      () => providerPropose(machine(), { orderId: id, proposalId: body.proposalId }, terms, meta),
+      'not-answerable',
     );
     return view(id);
   });

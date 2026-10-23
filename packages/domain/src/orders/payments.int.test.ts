@@ -2,7 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { allotmentSlots, providers } from '../db/schema/offers';
-import { inventoryHolds, orderEvents, paymentAttempts } from '../db/schema/orders';
+import { inventoryHolds, orderEvents, orderProposals, paymentAttempts } from '../db/schema/orders';
 import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../jobs/queue';
 import { CHECKOUT_HOLD_MINUTES } from '../payments/vocabulary';
 import { confirmHeldOrder } from '../services/adapters';
@@ -19,6 +19,7 @@ import {
   createOrder,
   type OrderDeps,
   OrderRuleError,
+  propose,
   runOrderTimer,
 } from './machine';
 import {
@@ -30,6 +31,7 @@ import {
   recordVoided,
   sessionExpired,
 } from './payments';
+import { reconcileHold } from './reconcile';
 import { orderJobId } from './timers';
 
 // The machine half of pay-online (33): Payment status, the attempt and the payment jobs the
@@ -170,7 +172,7 @@ describe('pay-online createOrder', () => {
     expect(rows[0]?.id).toBe(orderJobId(order.id, attempt.proposalId, `payment:open:${unix}`));
   });
 
-  it('refuses a Provider whose card payments are not active, and on-request Offers', async () => {
+  it('refuses a Provider whose card payments are not active, and live Offers', async () => {
     clock = NOW;
     const base = { spaceId: unit.spaceId, date: DAY, quantity: 1, contact: { email: 'g@x.test' } };
     for (const provider of [{ card: 'pending' as const }, { card: null }, { account: null }]) {
@@ -180,12 +182,12 @@ describe('pay-online createOrder', () => {
       ).rejects.toEqual(new OrderRuleError('payments-not-ready'));
     }
     const seeded = await seedProvider(testDb.db);
-    const onRequest = await seedOrderableOffer(testDb.db, {
+    const live = await seedOrderableOffer(testDb.db, {
       providerId: seeded.id,
-      availabilityMode: 'on_request',
+      availabilityMode: 'live',
       paymentMode: 'online',
     });
-    await expect(createOrder(deps(), { ...base, offerId: onRequest.offerId })).rejects.toEqual(
+    await expect(createOrder(deps(), { ...base, offerId: live.offerId })).rejects.toEqual(
       new OrderRuleError('payment-mode-unsupported'),
     );
   });
@@ -286,6 +288,116 @@ describe('pay-online happy path', () => {
     });
     expect(refunded.order).toMatchObject({ status: 'cancelled', paymentStatus: 'refunded' });
     expect((await attemptOf(attempt.id)).refundStatus).toBe('succeeded');
+  });
+});
+
+describe('pay-online on request', () => {
+  async function placeOnRequest() {
+    clock = NOW;
+    const seeded = await seedProvider(testDb.db, { commissionBp: 1250 });
+    await testDb.db
+      .update(providers)
+      .set({ stripeAccountId: 'acct_test', stripeCardPayments: 'active' })
+      .where(eq(providers.id, seeded.id));
+    const { offerId } = await seedOrderableOffer(testDb.db, {
+      providerId: seeded.id,
+      availabilityMode: 'on_request',
+      paymentMode: 'online',
+      priceMinor: 2500,
+    });
+    const { order } = await createOrder(deps(), {
+      spaceId: unit.spaceId,
+      offerId,
+      date: DAY,
+      quantity: 2,
+      contact: { email: 'guest@example.test' },
+      hold: { expiresAt: HOLD_UNTIL },
+    });
+    const [attempt] = await testDb.db
+      .select()
+      .from(paymentAttempts)
+      .where(eq(paymentAttempts.orderId, order.id));
+    if (!attempt) throw new Error('no attempt');
+    return { order, attempt, ref: { orderId: order.id, proposalId: attempt.proposalId } };
+  }
+
+  it('pays first, then puts the Order to the Provider and releases the checkout hold', async () => {
+    const { order, attempt, ref } = await placeOnRequest();
+    expect(order.status).toBe('confirming');
+    expect(await notifyKinds(order.id)).toEqual([]);
+
+    const authorized = await authorize(deps(), {
+      attemptId: attempt.id,
+      eventId: 'evt_or_1',
+      paymentIntentId: 'pi_or_1',
+      trigger: 'payment_webhook',
+    });
+    expect(authorized.outcome).toBe('applied');
+    expect(authorized.order).toMatchObject({
+      status: 'pending_provider',
+      paymentStatus: 'authorized',
+    });
+    expect(await paymentJobs(attempt.id)).toEqual(['open']);
+    expect(await notifyKinds(order.id)).toEqual(['provider_request']);
+    const [hold] = await testDb.db
+      .select()
+      .from(inventoryHolds)
+      .where(eq(inventoryHolds.proposalId, ref.proposalId));
+    expect(hold?.state).toBe('released');
+    const [proposal] = await testDb.db
+      .select()
+      .from(orderProposals)
+      .where(eq(orderProposals.id, ref.proposalId));
+    expect(proposal?.responseDueAt).not.toBeNull();
+    expect((await events(order.id)).at(-1)?.toStatus).toBe('pending_provider');
+
+    // Reconciliation never sees a held hold on a pending_provider Order.
+    if (!hold) throw new Error('no hold');
+    clock = new Date(HOLD_UNTIL.getTime() + 24 * 3_600_000);
+    expect((await reconcileHold(deps(), hold.id)).outcome).toBe('none');
+    clock = NOW;
+
+    // The Provider accepts: confirmed, then captured.
+    const ok = await confirm(deps(), { ...ref, trigger: 'provider_link' });
+    expect(ok.order.status).toBe('confirmed');
+    expect(await paymentJobs(attempt.id)).toEqual(['open', 'capture']);
+  });
+
+  it('voids the superseded authorization on a new proposal, and a late v1 event too', async () => {
+    const { order, attempt, ref } = await placeOnRequest();
+    await authorize(deps(), {
+      attemptId: attempt.id,
+      eventId: 'evt_or_2',
+      paymentIntentId: 'pi_or_2',
+      trigger: 'payment_webhook',
+    });
+    const proposed = await propose(deps(), {
+      ...ref,
+      trigger: 'provider_link',
+      proposer: 'provider_price',
+      terms: { date: DAY, quantity: 2, priceMinor: 6000 },
+      cardExpiresAt: new Date(NOW.getTime() + 3_600_000),
+    });
+    expect(proposed.order).toMatchObject({
+      status: 'awaiting_confirmation',
+      paymentStatus: 'none',
+    });
+    expect(await paymentJobs(attempt.id)).toEqual(['open', 'void']);
+    const last = (await events(order.id)).at(-1);
+    expect(last).toMatchObject({
+      fromPaymentStatus: 'authorized',
+      toPaymentStatus: 'none',
+      note: 'new proposal; earlier authorization voided',
+    });
+
+    const late = await authorize(deps(), {
+      attemptId: attempt.id,
+      eventId: 'evt_or_2_late',
+      paymentIntentId: 'pi_or_2',
+      trigger: 'payment_webhook',
+    });
+    expect(late.outcome).toBe('stale');
+    expect(late.order.paymentStatus).toBe('none');
   });
 });
 

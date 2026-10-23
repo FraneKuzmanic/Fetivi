@@ -531,16 +531,17 @@ describe('releases', () => {
 });
 
 describe('booking a pay-online Offer in chat', () => {
-  it('is bookable only for an onboarded Providerâ€™s allotment Offer', async () => {
+  it('is bookable only for an onboarded Providerâ€™s allotment or on-request Offer', async () => {
     const pending = await onlineOffer({ card: 'pending' });
     const ctx = { spaceId: guest.spaceId, offerScope: scope() };
     await expect(
       availabilityFor(deps(), ctx, { offerId: pending.offerId, date: DAY, quantity: 1 }),
     ).rejects.toEqual(new ServiceRuleError('not-bookable-in-chat'));
     const onRequest = await onlineOffer({ availabilityMode: 'on_request' });
-    await expect(
-      availabilityFor(deps(), ctx, { offerId: onRequest.offerId, date: DAY, quantity: 1 }),
-    ).rejects.toEqual(new ServiceRuleError('not-bookable-in-chat'));
+    expect(
+      (await availabilityFor(deps(), ctx, { offerId: onRequest.offerId, date: DAY, quantity: 1 }))
+        .starts,
+    ).toEqual([{ slotId: null, startsAt: null, startsAtLocal: null, remaining: null }]);
     const ready = await onlineOffer();
     const result = await availabilityFor(deps(), ctx, {
       offerId: ready.offerId,
