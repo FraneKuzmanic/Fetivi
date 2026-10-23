@@ -333,7 +333,7 @@ export const hu: Messages = {
     paymentVoided: 'Zárolás feloldva',
     paymentRefundPending: 'Visszatérítés folyamatban',
     paymentRefunded: 'Visszatérítve',
-    paymentFailed: 'Sikertelen fizetés',
+    paymentRefundFailed: 'Sikertelen visszatérítés',
     pay: 'Fizetés most',
     payBy: 'Fizess {{time}}-ig',
     paying: 'Megnyitom a biztonságos fizetési oldalt…',

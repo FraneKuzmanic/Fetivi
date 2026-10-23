@@ -329,7 +329,7 @@ export const en = {
     paymentVoided: 'Payment released',
     paymentRefundPending: 'Refund on its way',
     paymentRefunded: 'Refunded',
-    paymentFailed: 'Payment failed',
+    paymentRefundFailed: 'Refund failed',
     pay: 'Pay now',
     payBy: 'Complete payment by {{time}}',
     paying: 'Opening the secure payment page…',

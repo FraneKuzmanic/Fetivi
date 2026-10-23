@@ -24,6 +24,12 @@ export const FINAL_ORDER_STATUSES = [
   'completed',
 ] as const satisfies readonly OrderStatus[];
 
+/** Orders whose outcome is not settled: the guest may cancel them at any time, after checkout too. */
+export const UNRESOLVED_ORDER_STATUSES = [
+  'awaiting_confirmation',
+  'pending_provider',
+] as const satisfies readonly OrderStatus[];
+
 export function isFinalOrderStatus(status: OrderStatus): boolean {
   return (FINAL_ORDER_STATUSES as readonly OrderStatus[]).includes(status);
 }

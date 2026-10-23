@@ -330,7 +330,7 @@ export const hr: Messages = {
     paymentVoided: 'Plaćanje oslobođeno',
     paymentRefundPending: 'Povrat je na putu',
     paymentRefunded: 'Vraćeno',
-    paymentFailed: 'Plaćanje nije uspjelo',
+    paymentRefundFailed: 'Povrat novca nije uspio',
     pay: 'Plati sada',
     payBy: 'Platite do {{time}}',
     paying: 'Otvaram sigurnu stranicu za plaćanje…',

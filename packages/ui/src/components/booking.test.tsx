@@ -464,6 +464,8 @@ describe('ReceiptCard', () => {
     };
     mount(<ReceiptCard order={refunded} labels={RECEIPT} />);
     expect(host.textContent).toContain('refund_pending · 45 EUR');
+    mount(<ReceiptCard order={{ ...refunded, paymentStatus: 'failed' }} labels={RECEIPT} />);
+    expect(host.textContent).toContain('failed · 45 EUR');
     mount(<ReceiptCard order={{ ...refunded, paymentStatus: 'captured' }} labels={RECEIPT} />);
     expect(host.textContent).not.toContain('45 EUR');
   });

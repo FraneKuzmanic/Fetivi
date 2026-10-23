@@ -66,7 +66,8 @@ const PAYMENT_STATUS_KEYS = {
   voided: 'order.paymentVoided',
   refund_pending: 'order.paymentRefundPending',
   refunded: 'order.paymentRefunded',
-  failed: 'order.paymentFailed',
+  // A Payment fails only when Stripe could not make a refund.
+  failed: 'order.paymentRefundFailed',
 } as const satisfies Record<PaymentStatus, string>;
 
 // The quantity's heading names its unit, so the count needs no plural forms.

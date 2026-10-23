@@ -21,7 +21,13 @@ function withNote(prefix: string, note: string | undefined): string {
   return note ? `${prefix}; ${note}` : prefix;
 }
 
-/** Admin cancel: full refund unless `refundMinor` overrides it. Trigger admin, actor and note recorded. */
+/** Cents as the amount the admin typed: 3000 reads 30.00. */
+const major = (minor: number) => (minor / 100).toFixed(2);
+
+/**
+ * Admin cancel: full refund unless `refundMinor` overrides it. Trigger admin, actor and note
+ * recorded. Only captured money can be refunded in part; an authorization is voided in full.
+ */
 export async function adminCancel(
   deps: OrderDeps,
   input: { orderId: string; actorId: string; refundMinor?: number; note?: string },
@@ -31,6 +37,7 @@ export async function adminCancel(
   const { order, proposal } = found;
   let note = input.note;
   if (input.refundMinor !== undefined) {
+    if (order.paymentStatus !== 'captured') throw new OrderRuleError('invalid-input');
     // A first bound check for a clear error; the machine checks again under its locks.
     const [attempt] = await deps.db
       .select({ amountMinor: paymentAttempts.amountMinor })
@@ -44,7 +51,7 @@ export async function adminCancel(
       input.refundMinor <= amount;
     if (!valid) throw new OrderRuleError('invalid-input');
     note = withNote(
-      `refund override: ${input.refundMinor} of ${amount} ${order.currency}`,
+      `refund override: ${major(input.refundMinor)} of ${major(amount)} ${order.currency}`,
       input.note,
     );
   }
@@ -86,7 +93,7 @@ export async function adminRefund(
       return { outcome: 'rejected', order };
     }
     const note = withNote(
-      `admin refund: ${input.refundMinor} of ${attempt.amountMinor} ${attempt.currency}`,
+      `admin refund: ${major(input.refundMinor)} of ${major(attempt.amountMinor)} ${attempt.currency}`,
       input.note,
     );
     return requestRefundIn(

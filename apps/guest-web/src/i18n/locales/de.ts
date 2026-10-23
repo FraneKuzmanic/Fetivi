@@ -340,7 +340,7 @@ export const de: Messages = {
     paymentVoided: 'Zahlung freigegeben',
     paymentRefundPending: 'Erstattung unterwegs',
     paymentRefunded: 'Erstattet',
-    paymentFailed: 'Zahlung fehlgeschlagen',
+    paymentRefundFailed: 'Erstattung fehlgeschlagen',
     pay: 'Jetzt bezahlen',
     payBy: 'Bitte bis {{time}} bezahlen',
     paying: 'Die sichere Zahlungsseite wird geöffnet…',

@@ -157,7 +157,7 @@ describe('adminCancel', () => {
     expect(cancelled).toMatchObject({
       trigger: 'admin',
       actorId: adminId,
-      note: 'refund override: 1234 of 5000 EUR; goodwill',
+      note: 'refund override: 12.34 of 50.00 EUR; goodwill',
     });
     expect((await attemptOf(orderId)).refundAmountMinor).toBe(1234);
     await runJobs(w, attemptId);
@@ -177,6 +177,20 @@ describe('adminCancel', () => {
     expect((await orderOf(orderId)).status).toBe('confirmed');
     expect((await adminCancel(deps(), { orderId, actorId: adminId })).outcome).toBe('applied');
     expect((await attemptOf(orderId)).refundAmountMinor).toBe(5000);
+  });
+
+  it('refuses an override on an authorization, which is voided in full', async () => {
+    const w = world();
+    const { orderId } = await capturedOrder(w);
+    // Back to before the capture: the money is only authorized.
+    await testDb.db
+      .update(orders)
+      .set({ paymentStatus: 'authorized' })
+      .where(eq(orders.id, orderId));
+    await expect(
+      adminCancel(deps(), { orderId, actorId: adminId, refundMinor: 1000 }),
+    ).rejects.toEqual(new OrderRuleError('invalid-input'));
+    expect((await orderOf(orderId)).status).toBe('confirmed');
   });
 });
 
@@ -208,7 +222,7 @@ describe('adminRefund', () => {
     expect((await eventsOf(orderId)).at(-1)).toMatchObject({
       trigger: 'admin',
       actorId: adminId,
-      note: 'admin refund: 2000 of 5000 EUR; dispute',
+      note: 'admin refund: 20.00 of 50.00 EUR; dispute',
     });
     expect((await attemptOf(orderId)).refundAmountMinor).toBe(2000);
     expect(

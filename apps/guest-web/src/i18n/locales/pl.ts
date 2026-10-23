@@ -332,7 +332,7 @@ export const pl: Messages = {
     paymentVoided: 'Płatność zwolniona',
     paymentRefundPending: 'Zwrot w drodze',
     paymentRefunded: 'Zwrócono',
-    paymentFailed: 'Płatność nieudana',
+    paymentRefundFailed: 'Zwrot nieudany',
     pay: 'Zapłać teraz',
     payBy: 'Zapłać do {{time}}',
     paying: 'Otwieram bezpieczną stronę płatności…',

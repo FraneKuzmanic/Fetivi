@@ -113,7 +113,7 @@ _Avoid_: Order type
 Where an Order is in its lifecycle: from awaiting confirmation through confirming or pending provider, to confirmed, declined, expired or failed, and finally cancelled or completed. Independent of Payment status.
 
 **Payment status**:
-Where an Order's money is: none (paid to the provider directly, or not yet authorized for a pay-online Order), authorized, captured, voided, refund pending, refunded or failed. A payment is captured only after the Order is confirmed.
+Where an Order's money is: none (paid to the provider directly, or not yet authorized for a pay-online Order), authorized, captured, voided, refund pending, refunded or failed (a refund Stripe could not make). A payment is captured only after the Order is confirmed.
 
 **Payment attempt**:
 One Stripe Checkout Session and its payment intent for one proposal of a pay-online Order. Its `expires_at` is stored before Stripe is called and is also when the inventory hold expires.

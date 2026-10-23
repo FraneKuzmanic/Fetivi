@@ -1,4 +1,4 @@
-import { DateTime } from 'luxon';
+import { type CivilDate, startOfCivilDay } from '../time';
 
 /** The structured part of a cancellation policy, snapshotted on the Order. */
 export interface RefundRule {
@@ -31,5 +31,5 @@ export function refundFor(
 /** When an Order starts: the proposal's start, else the start of its civil day in the property zone. */
 export function orderStart(proposal: { date: string; startsAt: Date | null }, zone: string): Date {
   if (proposal.startsAt) return proposal.startsAt;
-  return DateTime.fromISO(proposal.date, { zone }).startOf('day').toJSDate();
+  return startOfCivilDay(proposal.date as CivilDate, zone);
 }

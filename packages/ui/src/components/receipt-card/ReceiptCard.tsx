@@ -55,8 +55,8 @@ export const Status = ({ tone, text }: { tone: Tone; text: string }) => (
   </span>
 );
 
-/** The refund's amount is shown with its status once one is decided. */
-const REFUND_SHOWN: readonly PaymentStatus[] = ['refund_pending', 'refunded'];
+/** The refund's amount is shown with its status once one is decided, a failed one too. */
+const REFUND_SHOWN: readonly PaymentStatus[] = ['refund_pending', 'refunded', 'failed'];
 
 /** One Order, read-only: in chat after the guest's tap, and in My trip. */
 export function ReceiptCard({

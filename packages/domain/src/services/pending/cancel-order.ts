@@ -8,7 +8,12 @@ import { stays } from '../../db/schema/stays';
 import { PAYMENT_MODES } from '../../offers/vocabulary';
 import { cancel, type OrderDeps } from '../../orders/machine';
 import { orderStart, refundFor } from '../../orders/refunds';
-import { isFinalOrderStatus, PAYMENT_STATUSES } from '../../orders/vocabulary';
+import {
+  isFinalOrderStatus,
+  type OrderStatus,
+  PAYMENT_STATUSES,
+  UNRESOLVED_ORDER_STATUSES,
+} from '../../orders/vocabulary';
 import { GUEST_LANGUAGES, type GuestLanguage } from '../../property/vocabulary';
 import { stayPhase } from '../../stays/rules';
 import { type CivilDate, toLocalDateTime } from '../../time';
@@ -69,9 +74,6 @@ export class CancelRuleError extends Error {
   }
 }
 
-/** The guest's Orders that are not settled yet: cancellable at any time, after checkout too. */
-const UNRESOLVED = ['awaiting_confirmation', 'pending_provider'];
-
 async function loadCancel(db: Executor, spaceId: string, orderId: string) {
   const [row] = await db
     .select({
@@ -101,7 +103,7 @@ function refusal(row: Loaded, now: Date): CancelRuleCode | null {
   const { status } = row.order;
   if (isFinalOrderStatus(status)) return 'not-cancellable';
   if (status === 'confirming') return 'being-confirmed';
-  if (UNRESOLVED.includes(status)) return null;
+  if ((UNRESOLVED_ORDER_STATUSES as readonly OrderStatus[]).includes(status)) return null;
   const stay = { checkIn: row.checkIn as CivilDate, activeUntil: row.activeUntil };
   if (stayPhase(stay, row.zone, now) === 'ended') return 'after-checkout';
   if (orderStart(row.proposal, row.zone) <= now) return 'started';

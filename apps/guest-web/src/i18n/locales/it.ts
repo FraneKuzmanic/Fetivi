@@ -334,7 +334,7 @@ export const it: Messages = {
     paymentVoided: 'Pagamento sbloccato',
     paymentRefundPending: 'Rimborso in arrivo',
     paymentRefunded: 'Rimborsato',
-    paymentFailed: 'Pagamento non riuscito',
+    paymentRefundFailed: 'Rimborso non riuscito',
     pay: 'Paga ora',
     payBy: 'Completa il pagamento entro le {{time}}',
     paying: 'Apro la pagina di pagamento sicura…',

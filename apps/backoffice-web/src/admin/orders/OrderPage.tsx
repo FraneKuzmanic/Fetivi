@@ -28,7 +28,7 @@ const PAYMENT_STATUS: Record<PaymentStatus, [string, Tone]> = {
   voided: ['Voided', 'neutral'],
   refund_pending: ['Refund pending', 'wait'],
   refunded: ['Refunded', 'neutral'],
-  failed: ['Payment failed', 'fail'],
+  failed: ['Refund failed', 'fail'],
 };
 
 const TRIGGERS: Record<OrderTrigger, string> = {

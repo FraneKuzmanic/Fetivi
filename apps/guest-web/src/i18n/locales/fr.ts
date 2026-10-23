@@ -338,7 +338,7 @@ export const fr: Messages = {
     paymentVoided: 'Paiement libéré',
     paymentRefundPending: 'Remboursement en cours',
     paymentRefunded: 'Remboursé',
-    paymentFailed: 'Échec du paiement',
+    paymentRefundFailed: 'Échec du remboursement',
     pay: 'Payer maintenant',
     payBy: 'À payer avant {{time}}',
     paying: 'Ouverture de la page de paiement sécurisée…',

@@ -200,7 +200,7 @@ describe('admin Order page API', () => {
       (e) => e.toStatus === 'cancelled' && e.fromStatus !== 'cancelled',
     );
     expect(cancelled).toMatchObject({ trigger: 'admin', actorId: adminId });
-    expect(cancelled?.note).toBe('refund override: 1234 of 5000 EUR; goodwill');
+    expect(cancelled?.note).toBe('refund override: 12.34 of 50.00 EUR; goodwill');
     expect(
       res.json().events.some((e: { actorEmail: string }) => e.actorEmail === 'admin@example.test'),
     ).toBe(true);
