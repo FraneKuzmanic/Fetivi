@@ -95,6 +95,12 @@ describe('answerTopics', () => {
     ).toEqual(['weather', 'beach', 'wifi']);
   });
 
+  it('gives every place category its own topic, not the places fallback', () => {
+    for (const c of PLACE_CATEGORIES) {
+      expect(answerTopics([tool('search_places', { input: { category: c } })])).toEqual([c]);
+    }
+  });
+
   it('covers every place category and day trips', () => {
     for (const c of [...PLACE_CATEGORIES, 'day_trip']) {
       expect(ANSWER_TOPICS).toContain(c);

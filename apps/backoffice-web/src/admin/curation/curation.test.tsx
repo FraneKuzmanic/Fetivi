@@ -64,6 +64,21 @@ const CLUSTER: CurationItem = {
   actions: ['approve', 'reject', 'needs_visit'],
 };
 
+const FLAGGED: CurationItem = {
+  ...BASE,
+  id: 'i-flagged',
+  kind: 'guest_flagged',
+  payload: { kind: 'guest_flagged', reason: 'outdated', count: 3 },
+  record: {
+    id: 'r9',
+    title: 'Plaža Pantan',
+    kind: 'place',
+    placeCategory: 'beach',
+    verifiedAt: null,
+  },
+  actions: ['approve', 'edit', 'reject', 'needs_visit'],
+};
+
 const WAITING: CurationItem = {
   ...BASE,
   id: 'i-waiting',
@@ -215,7 +230,7 @@ function stubApi() {
     if (url.endsWith('/verify')) return json({});
     if (url.startsWith('/api/admin/curation/staleness')) return json({ records: STALE });
     return json({
-      items: [DRAFT, PROVIDER, CLUSTER, WAITING, DRAFTED, FAILED, DIFF],
+      items: [DRAFT, PROVIDER, CLUSTER, FLAGGED, WAITING, DRAFTED, FAILED, DIFF],
       counts: COUNTS,
     });
   });
@@ -284,6 +299,11 @@ describe('CurationPage', () => {
     expect(cluster).toContain('Near okrug');
     expect(el.textContent).toContain('Host Provider suggestion (1)');
     expect(el.textContent).toContain('All kinds (3)');
+  });
+
+  it('counts guest flags by answer, not by guest', async () => {
+    await mount('/admin/curation');
+    expect(rowOf('Plaža Pantan')?.textContent).toContain('Flagged as outdated in 3 answers');
   });
 
   it('filters by kind', async () => {

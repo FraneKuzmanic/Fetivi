@@ -1,71 +1,9 @@
 import { useEffect, useId, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import {
-  type AnswerTotals,
-  host,
-  type TopicCount,
-  type UnitDetail,
-  type UnitStats,
-} from '../../api';
-import { ANSWER_TOPIC_LABELS } from '../../forms/labels';
+import { host, type UnitDetail, type UnitStats } from '../../api';
+import { Figures, TopTopics, thumbsRatio } from '../../stats/StatsWidgets';
 import { useAction } from '../../useAction';
 import { dateRange } from '../stays/format';
-
-/** Thumbs up over rated answers (43); "—" before any answer is rated. */
-export function thumbsRatio(up: number, down: number): string {
-  return up + down === 0 ? '—' : `${Math.round((up / (up + down)) * 100)}%`;
-}
-
-/** Conversations, answers and the helpful share as plain labelled figures, one row. */
-export function Figures({ totals }: { totals: AnswerTotals }) {
-  return (
-    <dl className="figures">
-      <div>
-        <dt>Conversations</dt>
-        <dd>{totals.conversations}</dd>
-      </div>
-      <div>
-        <dt>Answers</dt>
-        <dd>{totals.answers}</dd>
-      </div>
-      <div>
-        <dt>Helpful</dt>
-        <dd>
-          {thumbsRatio(totals.up, totals.down)}
-          <span className="figure-note">
-            {totals.up} up · {totals.down} down
-          </span>
-        </dd>
-      </div>
-    </dl>
-  );
-}
-
-/** What answers were about, most asked first, with a bar for scanning. */
-export function TopTopics({ topics }: { topics: TopicCount[] }) {
-  const headingId = useId();
-  const max = Math.max(1, ...topics.map((t) => t.count));
-  return (
-    <section className="panel" aria-labelledby={headingId}>
-      <h2 id={headingId}>Top topics</h2>
-      {topics.length > 0 ? (
-        <ol className="topic-list">
-          {topics.map((t) => (
-            <li key={t.topic} className="topic-row">
-              <span className="topic-name">{ANSWER_TOPIC_LABELS[t.topic]}</span>
-              <span className="topic-count">{t.count}</span>
-              <span className="topic-bar" aria-hidden="true">
-                <span style={{ width: `${(t.count / max) * 100}%` }} />
-              </span>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className="muted">No answers yet.</p>
-      )}
-    </section>
-  );
-}
 
 /** A unit's guest stats (43 AC 3): counts and topics only, never what guests wrote. */
 export function UnitStatsPage() {

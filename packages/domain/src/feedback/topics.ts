@@ -1,3 +1,4 @@
+import { PLACE_CATEGORIES } from '../catalog/vocabulary';
 import type { MessagePart } from '../db/schema/conversations';
 import type { AnswerTopic } from './vocabulary';
 
@@ -5,17 +6,8 @@ type Rec = Record<string, unknown>;
 const isRecord = (v: unknown): v is Rec => typeof v === 'object' && v !== null;
 
 const PROPERTY_INFO_TOPICS = ['arrival', 'wifi', 'checkout', 'contacts'] as const;
-const PLACE_TOPICS = [
-  'beach',
-  'restaurant',
-  'cafe_bar',
-  'sight',
-  'nature',
-  'activity',
-  'shop',
-  'nightlife',
-  'day_trip',
-] as const;
+/** Built from PLACE_CATEGORIES, so a new category gets its own topic or fails to typecheck. */
+const PLACE_TOPICS = [...PLACE_CATEGORIES, 'day_trip'] as const satisfies readonly AnswerTopic[];
 
 const oneOf = <T extends string>(list: readonly T[], v: unknown): T | null =>
   typeof v === 'string' && (list as readonly string[]).includes(v) ? (v as T) : null;

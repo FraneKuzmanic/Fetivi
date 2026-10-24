@@ -221,7 +221,7 @@ export const ANSWER_TOPIC_LABELS: Record<AnswerTopic, string> = {
   orders: 'Their orders',
   host_message: 'Messages to you',
   plan: 'Day plans',
-  about_me: 'Preferences',
+  about_me: 'About me',
   general: 'General chat',
 };
 

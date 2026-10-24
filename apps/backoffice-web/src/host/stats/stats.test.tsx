@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
 import type { AdminFeedbackStats, Me, UnitStats } from '../../api';
-import { thumbsRatio } from './UnitStatsPage';
+import { thumbsRatio } from '../../stats/StatsWidgets';
 
 const ZERO = { conversations: 0, answers: 0, up: 0, down: 0, wrong: 0, outdated: 0, notHelpful: 0 };
 

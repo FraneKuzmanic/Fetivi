@@ -2,13 +2,10 @@ import { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router';
 import { type AdminFeedbackStats, admin } from '../../api';
 import { FEEDBACK_REASON_LABELS } from '../../forms/labels';
-import { Figures, TopTopics, thumbsRatio } from '../../host/stats/UnitStatsPage';
+import { Figures, percent, TopTopics, thumbsRatio } from '../../stats/StatsWidgets';
 import { useAction } from '../../useAction';
 
 const FLAGGED = '/admin/curation?kind=guest_flagged';
-
-const percent = (part: number, whole: number) =>
-  whole === 0 ? '—' : `${Math.round((part / whole) * 100)}%`;
 
 /** Answer feedback across every unit (43 AC 4), with the PRD's proposed target beside it. */
 export function FeedbackStatsPage() {

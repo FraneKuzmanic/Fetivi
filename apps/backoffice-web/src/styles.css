@@ -2690,6 +2690,19 @@ button.danger[type="submit"]:hover {
   color: var(--gray-500);
 }
 
+/* Rows run to the panel's edges, so the list is not a bordered box inside the card. */
+.panel > .stats-stays-table {
+  margin: 0 -20px -20px;
+  border: 0;
+  border-top: 1px solid var(--gray-200);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.stats-stays-table .row-link,
+.stats-stays-table .table-head {
+  padding-inline: 20px;
+}
+
 @media (min-width: 700px) {
   .stats-stays-table .row-link,
   .stats-stays-table .table-head {

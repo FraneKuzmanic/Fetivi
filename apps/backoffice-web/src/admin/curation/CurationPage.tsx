@@ -81,7 +81,7 @@ function detail(item: CurationItem): string | null {
       return p.kind === 'draft' ? `Proposes ${names}` : `Changed: ${names}`;
     }
     case 'guest_flagged':
-      return `${p.count} ${p.count === 1 ? 'guest' : 'guests'} flagged it as ${p.reason}`;
+      return `Flagged as ${p.reason} in ${p.count} ${p.count === 1 ? 'answer' : 'answers'}`;
     case 'fallback_topic_cluster':
       return [
         p.topics.length > 1 ? `Asked as ${p.topics.join(', ')}` : null,
