@@ -19,6 +19,7 @@ import {
   type InboxEntry,
   splitInbox,
 } from './chat-api';
+import type { AnswerRating } from './feedback/feedback-api';
 import { asksToConfirm, MessageList } from './MessageList';
 import type { CardAnswer } from './render/ConfirmationPart';
 import { SavedPlacesProvider } from './render/SavedPlaces';
@@ -30,7 +31,12 @@ import { Welcome } from './Welcome';
 type History =
   | { status: 'loading' }
   | { status: 'offline' }
-  | { status: 'ready'; messages: UIMessage[]; inbox: InboxEntry[] };
+  | {
+      status: 'ready';
+      messages: UIMessage[];
+      inbox: InboxEntry[];
+      feedback: Record<string, AnswerRating>;
+    };
 
 /** The Chat tab: loads the history once, then hands it to the conversation. */
 export function ChatTab() {
@@ -44,9 +50,9 @@ export function ChatTab() {
   const load = useCallback(() => {
     setHistory({ status: 'loading' });
     getChatHistory().then(
-      ({ messages }) => {
+      ({ messages, feedback }) => {
         const { chat, inbox } = splitInbox(messages);
-        setHistory({ status: 'ready', messages: chat, inbox });
+        setHistory({ status: 'ready', messages: chat, inbox, feedback });
         // The guest now sees every inbox message: the badge counts from here.
         void markSeen();
       },
@@ -77,6 +83,7 @@ export function ChatTab() {
         <ChatView
           initial={history.messages}
           inbox={history.inbox}
+          feedback={history.feedback}
           failedAnswer={failedAnswer}
           onAnswerFailed={reloadAfterAnswer}
           onInboxGrew={load}
@@ -114,6 +121,7 @@ const askOf = (state: unknown): string | null => {
 export function ChatView({
   initial,
   inbox = [],
+  feedback = {},
   failedAnswer = null,
   onAnswerFailed = ignore,
   onInboxGrew = ignore,
@@ -121,6 +129,8 @@ export function ChatView({
   initial: UIMessage[];
   /** Inbox messages from the loaded history; new ones arrive with a reload. */
   inbox?: InboxEntry[];
+  /** The guest's ratings from the loaded history, by answer id. */
+  feedback?: Record<string, AnswerRating>;
   /** An answer that failed before this history was loaded. */
   failedAnswer?: Error | null;
   /** A failed answer: the server may have stored it, so the history is loaded again. */
@@ -262,6 +272,7 @@ export function ChatView({
         <MessageList
           messages={messages}
           inbox={inbox}
+          feedback={feedback}
           status={status}
           interactive={!busy && !closed}
           onSend={send}

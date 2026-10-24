@@ -128,6 +128,16 @@ export const hu: Messages = {
     step_free: 'Lépcsőmentes / kerekesszék',
     limited_mobility: 'Korlátozott mozgás',
   },
+  feedback: {
+    up: 'Hasznos',
+    down: 'Nem hasznos',
+    reasonsLabel: 'Mi nem volt jó?',
+    reasonWrong: 'Hibás',
+    reasonOutdated: 'Elavult',
+    reasonNotHelpful: 'Nem segített',
+    thanks: 'Köszönöm, ez segít fejlődni.',
+    failed: 'Nem sikerült menteni. Megpróbálod újra?',
+  },
   common: {
     close: 'Bezárás',
     loading: 'Betöltés…',

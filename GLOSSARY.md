@@ -130,6 +130,12 @@ _Avoid_: batch job, import (an import fetches open data, a drafting run reads ve
 The changed factual fields of a verified place (title, address, phone, website, opening hours, seasons) that the pre-season refresh found on its venue pages, queued as one Curation item with the previous values. A field the pages do not mention is not a change.
 _Avoid_: update, sync
 
+**Answer feedback**:
+A guest's thumbs up or down on one Fetivi answer, with an optional one-tap reason (wrong, outdated, not helpful). Stored per answer as counts and topics (`answer_feedback`), never with the guest's or Fetivi's wording; it outlives the conversation. Outdated or wrong on an answer that showed catalog places flags them on the curation queue.
+
+**Answer topic**:
+What an answer was about, derived from the tools it used (Wi-Fi, beaches, ferries…), never from the guest's words; host and admin stats count them.
+
 ## Services
 
 **Order**:

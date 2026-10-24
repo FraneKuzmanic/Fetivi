@@ -8,9 +8,14 @@ import {
 } from '@fetivi/ui/payloads';
 import { DefaultChatTransport, isToolUIPart, type UIMessage } from 'ai';
 import { api } from '../api';
+import type { AnswerRating } from './feedback/feedback-api';
 
-/** The guest's conversation so far: their messages, Fetivi's and inbox messages, oldest first. */
-export const getChatHistory = () => api<{ messages: UIMessage[] }>('/api/chat');
+/**
+ * The guest's conversation so far: their messages, Fetivi's and inbox messages, oldest first,
+ * with the guest's rating of each rated answer.
+ */
+export const getChatHistory = () =>
+  api<{ messages: UIMessage[]; feedback: Record<string, AnswerRating> }>('/api/chat');
 
 /** An inbox message (the host's reply) and the chat message it follows; null: before them all. */
 export interface InboxEntry {

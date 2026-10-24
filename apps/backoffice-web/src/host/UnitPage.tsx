@@ -1,5 +1,5 @@
 import { BED_TYPES, type HostBlockCategory, LIMITS } from '@fetivi/domain/vocabulary';
-import { CaretRight, DownloadSimple, Plus, Trash } from '@phosphor-icons/react';
+import { CaretRight, ChartBar, DownloadSimple, Plus, Trash } from '@phosphor-icons/react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import {
@@ -364,6 +364,10 @@ function StaysPanel({ detail }: { detail: UnitDetail }) {
             </Link>
             <Link className="button" to={`/stays?unit=${detail.id}`}>
               See Stays
+            </Link>
+            <Link className="button" to={`/units/${detail.id}/stats`}>
+              <ChartBar aria-hidden="true" />
+              See guest stats
             </Link>
           </div>
         </>

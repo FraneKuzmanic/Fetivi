@@ -7,6 +7,7 @@ import {
   type MessageRow,
   messages,
 } from '../db/schema/conversations';
+import { recordAnswers } from '../feedback/store';
 import type { GuestProjection } from '../projection/projection';
 
 export class ConversationRuleError extends Error {
@@ -98,14 +99,16 @@ async function nextSeq(tx: Executor, conversationId: string): Promise<number> {
 export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> {
   await db.transaction(async (tx) => {
     await lockConversation(tx, input.conversationId);
+    const answers: { id: string; parts: MessagePart[] }[] = [];
     for (const m of input.updated ?? []) {
       const [row] = await tx
         .update(messages)
         .set({ parts: m.parts })
         .where(and(eq(messages.id, m.id), eq(messages.conversationId, input.conversationId)))
-        .returning({ id: messages.id });
+        .returning({ id: messages.id, role: messages.role, kind: messages.kind });
       // Thrown inside the transaction, so nothing of the turn is written.
       if (!row) throw new ConversationRuleError('not-found');
+      if (row.role === 'assistant' && row.kind === 'chat') answers.push(m);
     }
     const start = await nextSeq(tx, input.conversationId);
     if (input.messages.length) {
@@ -120,6 +123,9 @@ export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> 
         })),
       );
     }
+    // 43: one feedback row per assistant answer, topics recomputed from the full parts.
+    answers.push(...input.messages.filter((m) => m.role === 'assistant'));
+    await recordAnswers(tx, input.conversationId, answers, input.now);
     await tx
       .update(conversations)
       .set({

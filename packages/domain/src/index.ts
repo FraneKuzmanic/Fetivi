@@ -8,6 +8,7 @@ export * from './db/client';
 export * from './db/migrate';
 export * from './db/schema';
 export * from './fallback';
+export * from './feedback';
 export * from './handoff';
 export * from './host-picks';
 export * from './jobs';

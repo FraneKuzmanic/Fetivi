@@ -131,6 +131,16 @@ export const de: Messages = {
     step_free: 'Stufenlos / Rollstuhl',
     limited_mobility: 'Eingeschränkte Mobilität',
   },
+  feedback: {
+    up: 'Hilfreich',
+    down: 'Nicht hilfreich',
+    reasonsLabel: 'Was hat nicht gepasst?',
+    reasonWrong: 'Falsch',
+    reasonOutdated: 'Veraltet',
+    reasonNotHelpful: 'Hat nicht geholfen',
+    thanks: 'Danke, das hilft mir, besser zu werden.',
+    failed: 'Das wurde nicht gespeichert. Nochmal versuchen?',
+  },
   common: {
     close: 'Schließen',
     loading: 'Wird geladen…',

@@ -401,7 +401,7 @@ describe('POST /api/chat guards', () => {
     const closed = await send(t, cookie, 'hi');
     expect([closed.statusCode, closed.json()]).toEqual([409, { error: 'space-closed' }]);
     const history = await get(t.app, '/api/chat', cookie);
-    expect([history.statusCode, history.json()]).toEqual([200, { messages: [] }]);
+    expect([history.statusCode, history.json()]).toEqual([200, { messages: [], feedback: {} }]);
   });
 
   it('answers 503 without a model', async () => {

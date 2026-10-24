@@ -128,6 +128,16 @@ export const pl: Messages = {
     step_free: 'Bez schodów / wózek',
     limited_mobility: 'Ograniczona mobilność',
   },
+  feedback: {
+    up: 'Pomocne',
+    down: 'Niepomocne',
+    reasonsLabel: 'Co było nie tak?',
+    reasonWrong: 'Błędne',
+    reasonOutdated: 'Nieaktualne',
+    reasonNotHelpful: 'Nie pomogło',
+    thanks: 'Dziękuję, to pomaga mi być lepszym.',
+    failed: 'Nie udało się zapisać. Spróbować ponownie?',
+  },
   common: {
     close: 'Zamknij',
     loading: 'Ładowanie…',

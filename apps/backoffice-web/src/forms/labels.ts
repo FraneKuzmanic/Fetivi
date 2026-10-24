@@ -12,6 +12,7 @@ import type {
   CurationStatus,
 } from '@fetivi/domain/curation-vocabulary';
 import type { DraftingTaskStatus } from '@fetivi/domain/drafting-vocabulary';
+import type { AnswerTopic, FeedbackReason } from '@fetivi/domain/feedback-vocabulary';
 import type {
   AdapterKind,
   AvailabilityMode,
@@ -193,6 +194,41 @@ export const PLACE_CATEGORY_LABELS: Record<PlaceCategory, string> = {
   activity: 'Activity',
   shop: 'Shop',
   nightlife: 'Nightlife',
+};
+
+/** What guests' answers were about, as host and admin stats count them (43). */
+export const ANSWER_TOPIC_LABELS: Record<AnswerTopic, string> = {
+  arrival: 'Arrival and access',
+  wifi: 'Wi-Fi',
+  checkout: 'Checkout and house rules',
+  contacts: 'Contacts',
+  places: 'Places (any)',
+  beach: PLACE_CATEGORY_LABELS.beach,
+  restaurant: PLACE_CATEGORY_LABELS.restaurant,
+  cafe_bar: PLACE_CATEGORY_LABELS.cafe_bar,
+  sight: PLACE_CATEGORY_LABELS.sight,
+  nature: PLACE_CATEGORY_LABELS.nature,
+  activity: PLACE_CATEGORY_LABELS.activity,
+  shop: PLACE_CATEGORY_LABELS.shop,
+  nightlife: PLACE_CATEGORY_LABELS.nightlife,
+  day_trip: 'Day trips',
+  host_picks: 'Your picks',
+  events: 'Events',
+  weather: 'Weather',
+  transport: 'Getting around',
+  web_search: 'Web search',
+  services: 'Booking services',
+  orders: 'Their orders',
+  host_message: 'Messages to you',
+  plan: 'Day plans',
+  about_me: 'Preferences',
+  general: 'General chat',
+};
+
+export const FEEDBACK_REASON_LABELS: Record<FeedbackReason, string> = {
+  wrong: 'Wrong',
+  outdated: 'Outdated',
+  not_helpful: 'Not helpful',
 };
 
 export const TRANSPORT_MODE_LABELS: Record<TransportMode, string> = {

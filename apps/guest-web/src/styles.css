@@ -807,6 +807,63 @@ input {
   color: var(--navy-900);
 }
 
+/* Answer feedback: quiet thumbs under Fetivi's answer, reasons after a thumbs down (43). */
+/* Lined up with the bubbles: past the avatar (2.25rem) and the row's gap (0.5rem). */
+.answer-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: -0.625rem 0 0 2.75rem;
+}
+
+.answer-feedback-thumbs {
+  display: flex;
+  margin-left: -0.75rem;
+}
+
+.answer-feedback-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--gray-500);
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+
+.answer-feedback-thumb:hover {
+  color: var(--blue-600);
+}
+
+.answer-feedback-thumb[aria-pressed="true"] {
+  color: var(--blue-600);
+}
+
+.answer-feedback-reasons .fv-chip {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.875rem;
+}
+
+.answer-feedback-reasons .fv-chip[aria-pressed="true"] {
+  background: var(--blue-600);
+  color: var(--white);
+}
+
+.answer-feedback-note {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 0.8125rem;
+}
+
+.answer-feedback-note.failed {
+  color: var(--danger);
+}
+
 /* A notice: Fetivi telling the guest about an Order or the Stay. */
 .bubble.notice {
   display: flex;

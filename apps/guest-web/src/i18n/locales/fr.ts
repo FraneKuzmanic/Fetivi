@@ -130,6 +130,16 @@ export const fr: Messages = {
     step_free: 'Sans marches / fauteuil roulant',
     limited_mobility: 'Mobilité réduite',
   },
+  feedback: {
+    up: 'Utile',
+    down: 'Pas utile',
+    reasonsLabel: "Qu'est-ce qui n'allait pas ?",
+    reasonWrong: 'Faux',
+    reasonOutdated: 'Plus à jour',
+    reasonNotHelpful: "Ça n'a pas aidé",
+    thanks: "Merci, ça m'aide à m'améliorer.",
+    failed: "Ça n'a pas été enregistré. Réessayer ?",
+  },
   common: {
     close: 'Fermer',
     loading: 'Chargement…',

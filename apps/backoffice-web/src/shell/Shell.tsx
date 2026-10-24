@@ -12,6 +12,7 @@ import {
   SealCheck,
   SignOut,
   Storefront,
+  ThumbsUp,
   Tray,
   UsersThree,
 } from '@phosphor-icons/react';
@@ -46,6 +47,7 @@ function navItems(me: Me, unread: number): NavItem[] {
         icon: ListChecks,
         prefixes: ['/admin/curation'],
       },
+      { to: '/admin/feedback', label: 'Feedback', icon: ThumbsUp, prefixes: [] },
       {
         to: '/admin/providers',
         label: 'Providers',

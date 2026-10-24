@@ -128,6 +128,16 @@ export const it: Messages = {
     step_free: 'Senza gradini / sedia a rotelle',
     limited_mobility: 'Mobilità ridotta',
   },
+  feedback: {
+    up: 'Utile',
+    down: 'Non utile',
+    reasonsLabel: 'Cosa non andava?',
+    reasonWrong: 'Sbagliato',
+    reasonOutdated: 'Non aggiornato',
+    reasonNotHelpful: 'Non mi ha aiutato',
+    thanks: 'Grazie, mi aiuta a migliorare.',
+    failed: 'Non è stato salvato. Riprovi?',
+  },
   common: {
     close: 'Chiudi',
     loading: 'Caricamento…',

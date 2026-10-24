@@ -7,6 +7,7 @@ import { NewRecordPage, RecordPage } from './admin/catalog/RecordPage';
 import { SeedingPage } from './admin/catalog/seeding/SeedingPage';
 import { CurationPage } from './admin/curation/CurationPage';
 import { StalenessPage } from './admin/curation/StalenessPage';
+import { FeedbackStatsPage } from './admin/feedback/FeedbackStatsPage';
 import { OrderLookupPage } from './admin/orders/OrderLookupPage';
 import { OrderPage } from './admin/orders/OrderPage';
 import { NewOfferPage, OfferPage } from './admin/providers/OfferPage';
@@ -26,6 +27,7 @@ import { ProvidersPage as HostProvidersPage } from './host/services/ProvidersPag
 import { NewServicePage, ServicePage } from './host/services/ServicePage';
 import { ServicesPage } from './host/services/ServicesPage';
 import { NotificationsPage } from './host/settings/notifications/NotificationsPage';
+import { UnitStatsPage } from './host/stats/UnitStatsPage';
 import { NewStayPage } from './host/stays/NewStayPage';
 import { ConfirmProposalPage } from './host/stays/proposed/ConfirmProposalPage';
 import { StayPage } from './host/stays/StayPage';
@@ -106,6 +108,14 @@ export function App() {
           element={
             <Page area="host">
               <UnitPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/units/:id/stats"
+          element={
+            <Page area="host">
+              <UnitStatsPage />
             </Page>
           }
         />
@@ -226,6 +236,14 @@ export function App() {
           element={
             <Page area="admin">
               <CurationPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/feedback"
+          element={
+            <Page area="admin">
+              <FeedbackStatsPage />
             </Page>
           }
         />

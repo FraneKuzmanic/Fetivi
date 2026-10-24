@@ -9,6 +9,7 @@ export * from './conversations';
 export * from './curation';
 export * from './drafting';
 export * from './fallback';
+export * from './feedback';
 export * from './handoff';
 export * from './host-places';
 export * from './info-blocks';

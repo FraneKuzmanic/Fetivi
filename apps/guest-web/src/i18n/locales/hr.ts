@@ -128,6 +128,16 @@ export const hr: Messages = {
     step_free: 'Bez stepenica / invalidska kolica',
     limited_mobility: 'Smanjena pokretljivost',
   },
+  feedback: {
+    up: 'Korisno',
+    down: 'Nije korisno',
+    reasonsLabel: 'Što nije bilo u redu?',
+    reasonWrong: 'Netočno',
+    reasonOutdated: 'Zastarjelo',
+    reasonNotHelpful: 'Nije pomoglo',
+    thanks: 'Hvala, tako postajem bolji.',
+    failed: 'Nije spremljeno. Pokušajte ponovno.',
+  },
   common: {
     close: 'Zatvori',
     loading: 'Učitavanje…',

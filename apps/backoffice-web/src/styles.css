@@ -2616,3 +2616,98 @@ button.danger[type="submit"]:hover {
 .events-table td:first-child {
   white-space: nowrap;
 }
+
+/* --- Guest stats and answer feedback (43) -------------------------------------------------- */
+
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  margin: 0;
+}
+
+.figures dt {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-500);
+}
+
+.figures dd {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.figure-note {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--gray-500);
+}
+
+.reasons-line {
+  margin: 0;
+  font-size: 14px;
+}
+
+.topic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.topic-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  font-size: 14px;
+}
+
+.topic-count {
+  font-weight: 500;
+}
+
+.topic-bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--gray-200);
+}
+
+.topic-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue-600);
+}
+
+.cell-label {
+  color: var(--gray-500);
+}
+
+@media (min-width: 700px) {
+  .stats-stays-table .row-link,
+  .stats-stays-table .table-head {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) 8rem 6rem 6rem;
+  }
+
+  .stats-stays-table .cell-label {
+    display: none;
+  }
+}
+
+.feedback-table td:nth-child(n + 2),
+.feedback-table th:nth-child(n + 2) {
+  text-align: right;
+}
+
+.cell-sub {
+  display: block;
+  color: var(--gray-500);
+  font-size: 13px;
+}

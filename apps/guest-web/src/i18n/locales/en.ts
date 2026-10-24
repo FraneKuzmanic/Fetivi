@@ -126,6 +126,16 @@ export const en = {
     step_free: 'Step-free / wheelchair',
     limited_mobility: 'Limited mobility',
   },
+  feedback: {
+    up: 'Helpful',
+    down: 'Not helpful',
+    reasonsLabel: 'What was off?',
+    reasonWrong: 'Wrong',
+    reasonOutdated: 'Outdated',
+    reasonNotHelpful: "Didn't help",
+    thanks: 'Thanks, that helps me get better.',
+    failed: "That didn't save. Try again?",
+  },
   common: {
     close: 'Close',
     loading: 'Loading…',

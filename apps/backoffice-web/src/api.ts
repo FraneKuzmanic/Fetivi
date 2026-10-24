@@ -15,6 +15,7 @@ import type {
   CurationTab,
 } from '@fetivi/domain/curation-vocabulary';
 import type { DraftingTaskStatus } from '@fetivi/domain/drafting-vocabulary';
+import type { AnswerTopic } from '@fetivi/domain/feedback-vocabulary';
 import type {
   HandoffReason,
   HandoffTranslationState,
@@ -776,6 +777,7 @@ export const admin = {
   properties: (status: 'pending' | 'approved') =>
     api<{ properties: AdminPropertyRow[] }>(`/api/admin/properties?status=${status}`),
   approve: (id: string) => post(`/api/admin/properties/${id}/approve`),
+  feedbackStats: () => api<AdminFeedbackStats>('/api/admin/feedback-stats'),
 };
 
 export const adminOrders = {
@@ -839,6 +841,55 @@ export interface StalenessRecord {
   /** In the last RECOMMENDATION_WINDOW_DAYS days. */
   recommendations: number;
   score: number;
+}
+
+/** Answer counts over a set of answers (43); mirrors the domain's AnswerTotals. */
+export interface AnswerTotals {
+  conversations: number;
+  answers: number;
+  up: number;
+  down: number;
+  wrong: number;
+  outdated: number;
+  notHelpful: number;
+}
+
+export interface TopicCount {
+  topic: AnswerTopic;
+  count: number;
+}
+
+/** One started Stay of the unit: dates, booker and counts only, never message content. */
+export interface StayAnswerStats {
+  stayId: string;
+  checkIn: string;
+  checkout: string;
+  bookerName: string | null;
+  conversations: number;
+  answers: number;
+  up: number;
+  down: number;
+}
+
+export interface UnitStats {
+  unit: { id: string; name: string };
+  totals: AnswerTotals;
+  topTopics: TopicCount[];
+  stays: StayAnswerStats[];
+}
+
+export interface UnitAnswerRow extends AnswerTotals {
+  unitId: string;
+  unitName: string;
+  propertyName: string;
+  hostEmail: string;
+  stays: number;
+}
+
+export interface AdminFeedbackStats {
+  totals: AnswerTotals;
+  topTopics: TopicCount[];
+  units: UnitAnswerRow[];
 }
 
 export const curation = {
@@ -1031,6 +1082,7 @@ export const host = {
     return api<{ stays: Stay[] }>(`/api/host/stays${search ? `?${search}` : ''}`);
   },
   stay: (id: string) => api<Stay>(`/api/host/stays/${id}`),
+  unitStats: (id: string) => api<UnitStats>(`/api/host/units/${id}/stats`),
   createStay: (unitId: string, body: StayInput) =>
     post<Stay>(`/api/host/units/${unitId}/stays`, body),
   updateStay: (id: string, body: StayPatch) => patch<Stay>(`/api/host/stays/${id}`, body),

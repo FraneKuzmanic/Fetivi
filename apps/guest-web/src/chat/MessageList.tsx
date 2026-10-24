@@ -12,6 +12,8 @@ import {
   isMcpAppPart,
   messageText,
 } from './chat-api';
+import { AnswerFeedback } from './feedback/AnswerFeedback';
+import type { AnswerRating } from './feedback/feedback-api';
 import { CancelOrderPart, isCancelOrderCard } from './render/CancelOrderPart';
 import { ComponentPart } from './render/ComponentPart';
 import { type CardAnswer, ConfirmationPart } from './render/ConfirmationPart';
@@ -121,6 +123,7 @@ const placesShown = (message: UIMessage) =>
 export function MessageList({
   messages,
   inbox = [],
+  feedback = {},
   status,
   interactive,
   onSend,
@@ -130,6 +133,8 @@ export function MessageList({
   messages: UIMessage[];
   /** Inbox messages (host replies), each shown after the chat message it followed. */
   inbox?: InboxEntry[];
+  /** The guest's ratings of answers, by message id. */
+  feedback?: Record<string, AnswerRating>;
   status: ChatStatus;
   /** False while a turn runs or after the Stay: the newest answer's chips and choices then hide. */
   interactive: boolean;
@@ -227,17 +232,51 @@ export function MessageList({
     // cancel the card, and after the tap its places left are out of date.
     const pickerLive = latest && !m.parts.some(isElicitationPart);
     let named = false;
+    // Rated by the stored id: the newest answer's id is final only once it has finished.
+    const rateable =
+      messageText(m).trim().length > 0 && !(isBusy(status) && i === messages.length - 1);
+    // Under the row, so the mascot stays beside the answer itself.
     return (
-      <div className="fetivi-row">
-        <span className="avatar">{firstOfRun && <Mascot className="avatar-mascot" />}</span>
-        <div className="fetivi-turn">
-          {segments.map((segment) => {
-            if ('card' in segment) {
-              // An open card acts only on the newest answer while the guest can reply.
-              if (segment.state === 'open' && !latest) return null;
-              if (isCancelOrderCard(segment.card)) {
+      <>
+        <div className="fetivi-row">
+          <span className="avatar">{firstOfRun && <Mascot className="avatar-mascot" />}</span>
+          <div className="fetivi-turn">
+            {segments.map((segment) => {
+              if ('card' in segment) {
+                // An open card acts only on the newest answer while the guest can reply.
+                if (segment.state === 'open' && !latest) return null;
+                if (isCancelOrderCard(segment.card)) {
+                  return (
+                    <CancelOrderPart
+                      key={segment.key}
+                      data={segment.card}
+                      state={segment.state}
+                      onAnswer={onAnswer}
+                    />
+                  );
+                }
+                if (isRespondOrderCard(segment.card)) {
+                  return (
+                    <RespondOrderPart
+                      key={segment.key}
+                      data={segment.card}
+                      state={segment.state}
+                      onAnswer={onAnswer}
+                    />
+                  );
+                }
+                if (isHostMessageCard(segment.card)) {
+                  return (
+                    <HostMessagePart
+                      key={segment.key}
+                      data={segment.card}
+                      state={segment.state}
+                      onAnswer={onAnswer}
+                    />
+                  );
+                }
                 return (
-                  <CancelOrderPart
+                  <ConfirmationPart
                     key={segment.key}
                     data={segment.card}
                     state={segment.state}
@@ -245,67 +284,40 @@ export function MessageList({
                   />
                 );
               }
-              if (isRespondOrderCard(segment.card)) {
+              if ('app' in segment) {
+                // Brought into view only while the newest answer streams, so history never jumps.
                 return (
-                  <RespondOrderPart
+                  <McpAppPart
                     key={segment.key}
-                    data={segment.card}
-                    state={segment.state}
-                    onAnswer={onAnswer}
+                    data={segment.app}
+                    reveal={i === messages.length - 1 && isBusy(status)}
                   />
                 );
               }
-              if (isHostMessageCard(segment.card)) {
+              if (!('text' in segment)) {
                 return (
-                  <HostMessagePart
+                  <ComponentPart
                     key={segment.key}
-                    data={segment.card}
-                    state={segment.state}
-                    onAnswer={onAnswer}
+                    data={segment.data}
+                    latest={isPicker(segment) ? pickerLive : latest}
+                    onSend={onSend}
+                    onSomethingElse={onSomethingElse}
                   />
                 );
               }
+              const name = !named;
+              named = true;
               return (
-                <ConfirmationPart
-                  key={segment.key}
-                  data={segment.card}
-                  state={segment.state}
-                  onAnswer={onAnswer}
-                />
+                <p key={segment.key} className="bubble fetivi">
+                  {name && <span className="visually-hidden">{`${t('chat.fetivi')}: `}</span>}
+                  {segment.text}
+                </p>
               );
-            }
-            if ('app' in segment) {
-              // Brought into view only while the newest answer streams, so history never jumps.
-              return (
-                <McpAppPart
-                  key={segment.key}
-                  data={segment.app}
-                  reveal={i === messages.length - 1 && isBusy(status)}
-                />
-              );
-            }
-            if (!('text' in segment)) {
-              return (
-                <ComponentPart
-                  key={segment.key}
-                  data={segment.data}
-                  latest={isPicker(segment) ? pickerLive : latest}
-                  onSend={onSend}
-                  onSomethingElse={onSomethingElse}
-                />
-              );
-            }
-            const name = !named;
-            named = true;
-            return (
-              <p key={segment.key} className="bubble fetivi">
-                {name && <span className="visually-hidden">{`${t('chat.fetivi')}: `}</span>}
-                {segment.text}
-              </p>
-            );
-          })}
+            })}
+          </div>
         </div>
-      </div>
+        {rateable && <AnswerFeedback messageId={m.id} initial={feedback[m.id]} />}
+      </>
     );
   }
 }
