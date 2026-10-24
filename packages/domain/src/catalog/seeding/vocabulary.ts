@@ -139,6 +139,21 @@ export const OSM_CATEGORY_RULES: readonly {
 ];
 
 /**
+ * Whole `_`-separated words of Overture's `basic_category` or `taxonomy.primary` that rule a row
+ * out before the keywords below: holiday lets ("holiday_rental_home" would match "rental"), car
+ * and RV hire, and boat dealers and services ("rv_park" would match "park").
+ */
+export const OVERTURE_EXCLUDED_KEYWORDS: readonly string[] = [
+  'lodging',
+  'vacation_rental_agent',
+  'rental_service',
+  'vehicle_dealer',
+  'vehicle_parts_store',
+  'vehicle_service',
+  'rv_park',
+];
+
+/**
  * Whole `_`-separated words of Overture's `basic_category` (then `taxonomy.primary`), first match
  * wins. The extra words (eatery, lounge, dance_club, place_of_worship, fort, gifts) come from the
  * values in the recorded Trogir extract.

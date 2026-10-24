@@ -207,21 +207,30 @@ export interface ViewRow {
   placeCategory: PlaceCategory;
 }
 
+type NamedRow = Pick<ViewRow, 'source' | 'name'>;
+
 const rank = (order: readonly SeedingSource[], s: SeedingSource) => order.indexOf(s);
-const pick = <T extends ViewRow>(rows: readonly T[], order: readonly SeedingSource[]): T => {
-  const [first] = [...rows].sort((a, b) => rank(order, a.source) - rank(order, b.source));
+/** Rows by source precedence; rows of one source by name, so the pick never depends on row order. */
+const byPrecedence =
+  (order: readonly SeedingSource[]) =>
+  (a: NamedRow, b: NamedRow): number =>
+    rank(order, a.source) - rank(order, b.source) || a.name.localeCompare(b.name);
+const pick = <T extends NamedRow>(rows: readonly T[], order: readonly SeedingSource[]): T => {
+  const [first] = [...rows].sort(byPrecedence(order));
   if (!first) throw new Error('candidate without rows');
   return first;
 };
 
+/** A candidate's shown name: the name of its first row by `NAME_PRECEDENCE`. */
+export const candidateName = (rows: readonly NamedRow[]): string =>
+  pick(rows, NAME_PRECEDENCE).name;
+
 /** A candidate's shown name, location and category, by source precedence; rows sorted the same. */
 export function candidateView<T extends ViewRow>(rows: readonly T[]) {
   return {
-    name: pick(rows, NAME_PRECEDENCE).name,
+    name: candidateName(rows),
     location: pick(rows, LOCATION_PRECEDENCE).location,
     placeCategory: pick(rows, CATEGORY_PRECEDENCE).placeCategory,
-    sources: [...rows].sort(
-      (a, b) => rank(NAME_PRECEDENCE, a.source) - rank(NAME_PRECEDENCE, b.source),
-    ),
+    sources: [...rows].sort(byPrecedence(NAME_PRECEDENCE)),
   };
 }

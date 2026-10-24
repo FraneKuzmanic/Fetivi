@@ -8,6 +8,7 @@ import { type Bbox, bboxAround, withinRadius } from './geo';
 import type { ImportArea, ImportedRow, ParseResult } from './types';
 import {
   OVERTURE_CATEGORY_KEYWORDS,
+  OVERTURE_EXCLUDED_KEYWORDS,
   OVERTURE_STAC_ROOT,
   SEEDING_LIMITS,
   SOURCE_LICENCES,
@@ -36,6 +37,15 @@ export function rangeOnlyFetch(fetch: Fetch): Fetch {
       throw new SourceError('unavailable');
     }
     return response;
+  };
+}
+
+/** A fetch that names Fetivi in every request's User-Agent, ranged ones included. */
+export function withUserAgent(fetch: Fetch, userAgent: string): Fetch {
+  return (url, init) => {
+    const headers = new Headers(init?.headers);
+    headers.set('User-Agent', userAgent);
+    return fetch(url, { ...init, headers });
   };
 }
 
@@ -233,12 +243,15 @@ const obj = (v: unknown): Record<string, unknown> | null =>
 function overtureCategory(row: Record<string, unknown>): PlaceCategory | null {
   const basic = typeof row.basic_category === 'string' ? row.basic_category : null;
   const primary = obj(row.taxonomy)?.primary;
-  for (const value of [basic, typeof primary === 'string' ? primary : null]) {
-    if (!value) continue;
-    const words = `_${value.toLowerCase()}_`;
+  // Whole words only, so "bar" never matches "barber".
+  const values = [basic, typeof primary === 'string' ? primary : null]
+    .filter((v): v is string => !!v)
+    .map((v) => `_${v.toLowerCase()}_`);
+  const has = (words: string, match: string) => words.includes(`_${match}_`);
+  if (values.some((words) => OVERTURE_EXCLUDED_KEYWORDS.some((m) => has(words, m)))) return null;
+  for (const words of values) {
     for (const { match, category } of OVERTURE_CATEGORY_KEYWORDS) {
-      // Whole words only, so "bar" never matches "barber".
-      if (words.includes(`_${match}_`)) return category;
+      if (has(words, match)) return category;
     }
   }
   return null;

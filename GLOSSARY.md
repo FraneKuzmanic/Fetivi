@@ -122,7 +122,6 @@ _Avoid_: suggestion (that is a host's)
 **Open-data row**:
 One place as one open-data source lists it, with its source, licence and fetch time; attached to a Seeding candidate or a Catalog record.
 
-
 ## Services
 
 **Order**:

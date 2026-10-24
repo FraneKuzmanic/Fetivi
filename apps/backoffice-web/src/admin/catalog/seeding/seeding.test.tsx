@@ -70,6 +70,8 @@ let root: Root | null = null;
 let el: HTMLElement;
 let calls: { url: string; method: string; body: unknown }[] = [];
 let lastImport: SeedingImport | null = DONE_RUN;
+/** Replaces the New tab's list and count when set. */
+let newList: { candidates: SeedingCandidate[]; count: number } | null = null;
 
 beforeAll(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -81,6 +83,7 @@ afterEach(() => {
   document.body.innerHTML = '';
   vi.unstubAllGlobals();
   lastImport = DONE_RUN;
+  newList = null;
 });
 
 const json = (body: unknown, status = 200) =>
@@ -90,9 +93,14 @@ function overview(status: string): SeedingOverview {
   return {
     destination: { id: DEST, name: 'Trogir', radiusM: 3000 },
     lastImport,
-    counts: { new: 2, ticked: 0, dismissed: 1 },
+    counts: { new: newList?.count ?? 2, ticked: 0, dismissed: 1 },
     matchedRecords: 6,
-    candidates: status === 'dismissed' ? [DISMISSED] : status === 'new' ? [SALDUN, PLAZA] : [],
+    candidates:
+      status === 'dismissed'
+        ? [DISMISSED]
+        : status === 'new'
+          ? (newList?.candidates ?? [SALDUN, PLAZA])
+          : [],
   };
 }
 
@@ -149,8 +157,8 @@ describe('SeedingPage', () => {
     expect(calls[0]?.url).toBe(`${BASE}?status=new`);
     const chips = [...(rowOf('Saldun')?.querySelectorAll('.chips .chip') ?? [])];
     expect(chips.map((c) => [c.textContent, c.getAttribute('title')])).toEqual([
-      ['Bathing water (EEA)', 'CC-BY-4.0'],
-      ['OpenStreetMap', 'ODbL-1.0'],
+      ['Bathing water (EEA)', 'Saldun · CC-BY-4.0'],
+      ['OpenStreetMap', 'Plaža Saldun · ODbL-1.0'],
     ]);
     expect(chips[1]?.getAttribute('href')).toBe('https://www.openstreetmap.org/way/1');
     expect(rowOf('Saldun')?.textContent).toContain('0.7 km from the centre');
@@ -184,7 +192,69 @@ describe('SeedingPage', () => {
       method: 'POST',
       body: { intoId: 'c-saldun' },
     });
-    expect(status()).toBe('Plaža Saldun merged into Saldun.');
+    expect(status()).toBe('Merged Saldun and Plaža Saldun.');
+  });
+
+  it('selects at most one request of candidates and says how many are listed', async () => {
+    const many = Array.from({ length: 250 }, (_, i) => ({
+      ...PLAZA,
+      id: `c${i}`,
+      name: `Place ${String(i).padStart(3, '0')}`,
+      possibleDuplicates: [],
+    }));
+    newList = { candidates: many, count: 2400 };
+    await mount();
+    expect(el.textContent).toContain('Showing the first 250 of 2400, by name.');
+    await click(button('Select first 200'));
+    await click(button('Send 200 to drafting'));
+    const draft = calls.find((c) => c.url === `${BASE}/draft`);
+    expect((draft?.body as { candidateIds: string[] } | undefined)?.candidateIds).toHaveLength(200);
+  });
+
+  it('filters the list by name, ignoring accents, and by category', async () => {
+    newList = {
+      candidates: [SALDUN, { ...PLAZA, name: 'Konoba Mare', placeCategory: 'restaurant' }],
+      count: 2,
+    };
+    await mount();
+    const search = el.querySelector('input[type="search"]') as HTMLInputElement;
+    await act(async () => {
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      set?.call(search, 'šal');
+      search.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(rowOf('Saldun')).toBeDefined();
+    expect(rowOf('Konoba Mare')).toBeUndefined();
+    await act(async () => {
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      set?.call(search, '');
+      search.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const select = el.querySelector('select') as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'restaurant';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(rowOf('Saldun')).toBeUndefined();
+    expect(rowOf('Konoba Mare')).toBeDefined();
+  });
+
+  it('numbers the chips of two rows from one source', async () => {
+    newList = {
+      candidates: [
+        {
+          ...PLAZA,
+          sources: [
+            { ...(PLAZA.sources[0] as SeedingCandidate['sources'][number]) },
+            { ...(PLAZA.sources[0] as SeedingCandidate['sources'][number]), id: 's4' },
+          ],
+        },
+      ],
+      count: 1,
+    };
+    await mount();
+    const chips = [...(rowOf('Plaža Saldun')?.querySelectorAll('.chips .chip') ?? [])];
+    expect(chips.map((c) => c.textContent)).toEqual(['OpenStreetMap 1', 'OpenStreetMap 2']);
   });
 
   it('splits a source row off a multi-source candidate', async () => {

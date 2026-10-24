@@ -107,12 +107,12 @@ describe('runImport', () => {
     const summary = await runImport(testDb.db, run.id, deps, () => NOW, importers());
     expect(summary).toMatchObject({
       status: 'done',
-      rows: 187 + 11 + 128,
-      candidates: 280,
+      rows: 187 + 11 + 123,
+      candidates: 275,
       sources: {
         osm: { outcome: 'ok', fetched: 242, kept: 187, skipped: 55 },
         bathing_water: { outcome: 'ok', fetched: 11, kept: 11, skipped: 0 },
-        overture: { outcome: 'ok', fetched: 334, kept: 128, skipped: 206 },
+        overture: { outcome: 'ok', fetched: 334, kept: 123, skipped: 211 },
       },
     });
     const [row] = await testDb.db
@@ -121,7 +121,7 @@ describe('runImport', () => {
       .where(eq(seedingImports.id, run.id));
     expect(row).toMatchObject({ status: 'done', finishedAt: NOW, sources: summary?.sources });
     const overview = await listCandidates(testDb.db, destinationId, 'new');
-    expect(overview.counts.new).toBe(280);
+    expect(overview.counts.new).toBe(275);
     expect(overview.candidates.some((c) => c.sources.length > 1)).toBe(true);
     expect(overview.lastImport?.id).toBe(run.id);
 

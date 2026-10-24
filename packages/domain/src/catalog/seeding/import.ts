@@ -7,7 +7,7 @@ import { type JobQueue, QUEUES, uuidFrom } from '../../jobs/queue';
 import { fetchBathingWater, parseBathingWater } from './bathing-water';
 import { SeedingRuleError, SourceError } from './errors';
 import { fetchOverpass, parseOverpass } from './osm';
-import { parseOvertureRows, readOvertureRows } from './overture';
+import { parseOvertureRows, readOvertureRows, withUserAgent } from './overture';
 import { groupUnassigned, upsertSourceRows } from './store';
 import type { ImportArea, ParseResult } from './types';
 import {
@@ -75,7 +75,10 @@ export const IMPORTERS: Record<SeedingSource, SourceImporter> = {
   osm: async (area, deps) => parseOverpass(await fetchOverpass(area, deps), area),
   bathing_water: async (area, deps) => parseBathingWater(await fetchBathingWater(area, deps), area),
   overture: async (area, deps) =>
-    parseOvertureRows(await readOvertureRows(area, { fetch: deps.fetch }), area),
+    parseOvertureRows(
+      await readOvertureRows(area, { fetch: withUserAgent(deps.fetch, deps.userAgent) }),
+      area,
+    ),
 };
 
 export interface ImportSummary {

@@ -11,12 +11,18 @@ import {
   seedingKeptApart,
 } from '../../db/schema/seeding';
 import type { PlaceCategory } from '../vocabulary';
-import { assignRows, candidateView, type PoolRow, pairKey, possibleDuplicates } from './dedupe';
+import {
+  assignRows,
+  candidateName,
+  candidateView,
+  type PoolRow,
+  pairKey,
+  possibleDuplicates,
+} from './dedupe';
 import { SeedingRuleError } from './errors';
 import { haversineM, type LatLng } from './geo';
 import type { ImportedRow } from './types';
 import {
-  NAME_PRECEDENCE,
   SEEDING_CANDIDATE_STATUSES,
   SEEDING_LIMITS,
   type SeedingCandidateStatus,
@@ -553,14 +559,12 @@ export async function candidateNames(
     })
     .from(placeOpenDataSources)
     .where(inArray(placeOpenDataSources.candidateId, [...new Set(ids)]));
-  const rank = (s: string) => NAME_PRECEDENCE.indexOf(s as SeedingSource);
-  const best = new Map<string, { rank: number; name: string }>();
+  const byCandidate = new Map<string, { source: SeedingSource; name: string }[]>();
   for (const r of rows) {
     if (!r.candidateId) continue;
-    const current = best.get(r.candidateId);
-    if (!current || rank(r.source) < current.rank) {
-      best.set(r.candidateId, { rank: rank(r.source), name: r.name });
-    }
+    const list = byCandidate.get(r.candidateId) ?? [];
+    list.push({ source: r.source as SeedingSource, name: r.name });
+    byCandidate.set(r.candidateId, list);
   }
-  return new Map([...best].map(([id, b]) => [id, b.name]));
+  return new Map([...byCandidate].map(([id, list]) => [id, candidateName(list)]));
 }

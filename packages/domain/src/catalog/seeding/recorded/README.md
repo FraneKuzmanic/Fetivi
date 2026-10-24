@@ -6,7 +6,7 @@ Real responses from the three open-data sources catalog seeding imports, fetched
 | --- | --- | --- |
 | `overpass-trogir.json` | OpenStreetMap, Overpass API (`POST https://overpass-api.de/api/interpreter`, the query `overpassQuery(TROGIR_AREA)` builds) | 242 elements (OSM base 2026-10-24T09:34:51Z). The parser keeps 187 and skips 55 (unnamed, or outside the radius). Includes the Šaldun beach as both a node and a way. |
 | `bathing-water-trogir.json` | EEA bathing-water layer, `BATHING_WATER_ENDPOINT` with the parameters of `bathingWaterUrl(TROGIR_AREA)` | 11 coastal bathing waters, all "Excellent" for the 2025 season (e.g. Saldun `HRBWC-COAST-HR4-2072`, Tri sestrice, Brigi). |
-| `overture-trogir.json` | Overture Maps Places, release `2026-10-21.0`, read with `readOvertureRows(TROGIR_AREA, …)` (24 HTTPS range requests, about 4 MB) | A trimmed extract: 334 rows. The parser keeps 128 and skips 206. |
+| `overture-trogir.json` | Overture Maps Places, release `2026-10-21.0`, read with `readOvertureRows(TROGIR_AREA, …)` (24 HTTPS range requests, about 4 MB) | A trimmed extract: 334 rows. The parser keeps 123 and skips 211. |
 
 `overpass-trogir.json` and `bathing-water-trogir.json` are as served, then formatted with Biome. `overture-trogir.json` is `JSON.stringify(rows.map(toJsonSafe))` of the rows read (8 551 rows in the touched row groups, 1 260 within 3 km), trimmed to: the 300 rows nearest the centre (all within 295 m, the old town), every other `basic_category = 'beach'` row within 3 km (14), and the first 20 rows beyond 3 km (so radius skipping is exercised). No row is edited.
 

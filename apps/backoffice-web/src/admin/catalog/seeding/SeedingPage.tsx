@@ -1,5 +1,7 @@
+import type { PlaceCategory } from '@fetivi/domain/catalog-vocabulary';
 import type { CurationStatus } from '@fetivi/domain/curation-vocabulary';
 import {
+  SEEDING_LIMITS,
   SEEDING_SOURCES,
   type SeedingCandidateStatus,
   SOURCE_ATTRIBUTION,
@@ -34,6 +36,10 @@ const DRAFT_LABELS: Record<CurationStatus, { label: string; tone: string }> = {
 };
 
 const POLL_MS = 3000;
+const SEND_MAX = SEEDING_LIMITS.draftPerRequest;
+
+/** Lower case without accents, so "saldun" finds "Šaldun". */
+const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 const km = (metres: number) =>
   (metres / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 });
@@ -67,6 +73,8 @@ export function SeedingPage() {
   const [overview, setOverview] = useState<SeedingOverview | null>(null);
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
   const [notice, setNotice] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<PlaceCategory | ''>('');
 
   const load = useCallback(async () => {
     setOverview(await seeding.overview(id, tab));
@@ -108,6 +116,15 @@ export function SeedingPage() {
 
   const { destination, lastImport, counts, candidates } = overview;
   const selected = candidates.filter((c) => ticked.has(c.id)).map((c) => c.id);
+  const shown = candidates.filter(
+    (c) =>
+      (category === '' || c.placeCategory === category) &&
+      fold(c.name).includes(fold(query.trim())),
+  );
+  const listedCategories = [...new Set(candidates.map((c) => c.placeCategory))].sort((a, b) =>
+    PLACE_CATEGORY_LABELS[a].localeCompare(PLACE_CATEGORY_LABELS[b]),
+  );
+  const tooMany = selected.length > SEND_MAX;
 
   const toggle = (candidateId: string) =>
     setTicked((current) => {
@@ -189,14 +206,44 @@ export function SeedingPage() {
         <span className="muted">{overview.matchedRecords} already in the catalog</span>
       </div>
 
-      {tab === 'new' && candidates.length > 0 ? (
+      {candidates.length > 0 ? (
+        <div className="filters">
+          <label className="field inline-field">
+            <span className="field-label">Name</span>
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </label>
+          <label className="field inline-field">
+            <span className="field-label">Category</span>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as PlaceCategory | '')}
+            >
+              <option value="">All categories</option>
+              {listedCategories.map((code) => (
+                <option key={code} value={code}>
+                  {PLACE_CATEGORY_LABELS[code]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      ) : null}
+
+      {counts[tab] > candidates.length ? (
+        <p className="muted">
+          Showing the first {candidates.length} of {counts[tab]}, by name. Send or dismiss some to
+          see the rest.
+        </p>
+      ) : null}
+
+      {tab === 'new' && shown.length > 0 ? (
         <div className="seeding-bar">
           <button
             type="button"
             disabled={busy}
-            onClick={() => setTicked(new Set(candidates.map((c) => c.id)))}
+            onClick={() => setTicked(new Set(shown.slice(0, SEND_MAX).map((c) => c.id)))}
           >
-            Select all
+            {shown.length > SEND_MAX ? `Select first ${SEND_MAX}` : 'Select all'}
           </button>
           <button type="button" disabled={busy} onClick={() => setTicked(new Set())}>
             Clear
@@ -204,11 +251,12 @@ export function SeedingPage() {
           <button
             type="button"
             className="primary"
-            disabled={busy || selected.length === 0}
+            disabled={busy || selected.length === 0 || tooMany}
             onClick={sendToDrafting}
           >
             Send {selected.length} to drafting
           </button>
+          {tooMany ? <span className="muted">Send up to {SEND_MAX} at a time.</span> : null}
         </div>
       ) : null}
 
@@ -219,9 +267,12 @@ export function SeedingPage() {
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
       {candidates.length === 0 ? <p className="muted">{empty}</p> : null}
-      {candidates.length > 0 ? (
+      {candidates.length > 0 && shown.length === 0 ? (
+        <p className="muted">No candidates match the filters.</p>
+      ) : null}
+      {shown.length > 0 ? (
         <ul className="rows">
-          {candidates.map((c) => (
+          {shown.map((c) => (
             <CandidateRow
               key={c.id}
               candidate={c}
@@ -280,31 +331,38 @@ function CandidateRow({
           ) : null}
         </span>
         <span className="chips">
-          {c.sources.map((s) =>
-            s.sourceUrl ? (
+          {c.sources.map((s) => {
+            // Two rows of one source get numbered chips, so they do not look like a repeat.
+            const same = c.sources.filter((o) => o.source === s.source);
+            const label =
+              same.length > 1
+                ? `${SEEDING_SOURCE_LABELS[s.source]} ${same.indexOf(s) + 1}`
+                : SEEDING_SOURCE_LABELS[s.source];
+            return s.sourceUrl ? (
               <a
                 key={s.id}
                 className="chip neutral"
                 href={s.sourceUrl}
                 target="_blank"
                 rel="noreferrer"
-                title={s.licence}
+                title={`${s.name} · ${s.licence}`}
               >
-                {SEEDING_SOURCE_LABELS[s.source]}
+                {label}
               </a>
             ) : (
-              <span key={s.id} className="chip neutral" title={s.licence}>
-                {SEEDING_SOURCE_LABELS[s.source]}
+              <span key={s.id} className="chip neutral" title={`${s.name} · ${s.licence}`}>
+                {label}
               </span>
-            ),
-          )}
+            );
+          })}
           <span className="muted">{km(c.distanceM)} km from the centre</span>
         </span>
         {reviewable
           ? c.possibleDuplicates.map((d) => (
               <span key={d.id} className="seeding-dup">
                 <span>
-                  Possibly the same place as {d.name} ({d.distanceM} m)
+                  Possibly the same place as {d.name}{' '}
+                  <span className="nowrap">({d.distanceM} m)</span>
                 </span>
                 <button
                   type="button"
@@ -312,7 +370,7 @@ function CandidateRow({
                   onClick={() =>
                     act(async () => {
                       await seeding.merge(d.id, c.id);
-                      return `${d.name} merged into ${c.name}.`;
+                      return `Merged ${c.name} and ${d.name}.`;
                     })
                   }
                 >

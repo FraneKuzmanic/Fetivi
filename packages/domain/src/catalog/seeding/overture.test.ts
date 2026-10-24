@@ -6,6 +6,7 @@ import {
   rangeOnlyFetch,
   rowGroupsInBbox,
   toJsonSafe,
+  withUserAgent,
 } from './overture';
 import { readRecorded, TROGIR_AREA } from './testing';
 
@@ -27,8 +28,8 @@ describe('parseOvertureRows', () => {
   const keptIds = new Set(rows.map((r) => r.externalId));
 
   it('keeps the open, confident, mapped places of the recording', () => {
-    expect(rows).toHaveLength(128);
-    expect(skipped).toBe(206);
+    expect(rows).toHaveLength(123);
+    expect(skipped).toBe(211);
     expect(rows.length + skipped).toBe(recorded.length);
   });
 
@@ -55,6 +56,30 @@ describe('parseOvertureRows', () => {
         sourceUrl: null,
       },
     );
+  });
+
+  it('skips holiday lets, car hire and boat dealers, but keeps boat hire', () => {
+    const place = (id: string, basic: string, primary: string) => ({
+      id,
+      names: { primary: id },
+      basic_category: basic,
+      taxonomy: { primary },
+      confidence: 0.9,
+      operating_status: 'open',
+      bbox: { xmin: 16.2516, xmax: 16.2516, ymin: 43.5167, ymax: 43.5167 },
+    });
+    const { rows: kept } = parseOvertureRows(
+      [
+        place('Apartman Lina', 'private_lodging', 'holiday_rental_home'),
+        place('Apartment 22', 'travel_service', 'vacation_rental_agent'),
+        place('Avis', 'rental_service', 'car_rental_service'),
+        place('Adriatica Marine', 'vehicle_dealer', 'boat_dealer'),
+        place('Salve Croatia', 'rv_park', 'rv_park'),
+        place('Trogir Boats', 'recreational_equipment_rental', 'jet_skis_rental'),
+      ],
+      TROGIR_AREA,
+    );
+    expect(kept.map((r) => [r.name, r.placeCategory])).toEqual([['Trogir Boats', 'activity']]);
   });
 
   it('puts no BigInt in any data', () => {
@@ -147,5 +172,19 @@ describe('rangeOnlyFetch', () => {
     await expect(fetch('https://x.test/f', { headers: { Range: 'bytes=0-2' } })).resolves.toBe(
       response,
     );
+  });
+});
+
+describe('withUserAgent', () => {
+  it('adds the User-Agent and keeps the Range header', async () => {
+    const seen = vi.fn(
+      async (_url: string, _init?: RequestInit) => new Response('', { status: 206 }),
+    );
+    await withUserAgent(seen, 'Fetivi/1 (test)')('https://x.test/f', {
+      headers: { Range: 'bytes=0-2' },
+    });
+    const headers = new Headers(seen.mock.calls[0]?.[1]?.headers);
+    expect(headers.get('User-Agent')).toBe('Fetivi/1 (test)');
+    expect(headers.get('Range')).toBe('bytes=0-2');
   });
 });

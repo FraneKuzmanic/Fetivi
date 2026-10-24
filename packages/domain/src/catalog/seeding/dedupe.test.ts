@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { assignRows, candidateView, type PoolRow, pairKey, possibleDuplicates } from './dedupe';
+import {
+  assignRows,
+  candidateName,
+  candidateView,
+  type PoolRow,
+  pairKey,
+  possibleDuplicates,
+} from './dedupe';
 import { haversineM, type LatLng } from './geo';
 import { parseRecorded } from './testing';
 import { SEEDING_SOURCES, type SeedingSource } from './vocabulary';
@@ -122,6 +129,23 @@ describe('candidateView', () => {
     expect(view.placeCategory).toBe('nature');
     expect(view.sources.map((s) => s.source)).toEqual(['bathing_water', 'osm', 'overture']);
   });
+
+  it('names a candidate with two rows of one source the same whatever the row order', () => {
+    const ace = {
+      source: 'osm',
+      name: 'Ace',
+      location: SALDUN,
+      placeCategory: 'activity',
+    } as const;
+    const club = { ...ace, name: 'Croatia Yacht Club' } as const;
+    expect(candidateView([club, ace]).name).toBe('Ace');
+    expect(candidateView([ace, club]).name).toBe('Ace');
+    expect(candidateName([club, ace])).toBe('Ace');
+    expect(candidateView([club, ace]).sources.map((s) => s.name)).toEqual([
+      'Ace',
+      'Croatia Yacht Club',
+    ]);
+  });
 });
 
 describe('the recorded Trogir set', () => {
@@ -139,7 +163,7 @@ describe('the recorded Trogir set', () => {
       rows: rows.length,
       groups: newCandidates.length,
       multiSource: multi.length,
-    }).toEqual({ rows: 326, groups: 280, multiSource: 46 });
+    }).toEqual({ rows: 321, groups: 275, multiSource: 46 });
     expect(newCandidates.flat()).toHaveLength(rows.length);
     for (const group of newCandidates) {
       const sources = group.map((id) => sourceOf.get(id));
