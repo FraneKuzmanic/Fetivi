@@ -14,7 +14,7 @@ const RELEASE_AT = '2026-10-19T22:00:00.000Z';
 function unit(
   released: boolean,
   blocks: GuestProjection['blocks'] = [],
-  pending = !released,
+  heldBack = !released,
 ): GuestProjection {
   return {
     language: 'en',
@@ -33,7 +33,7 @@ function unit(
       checkout: '2026-10-24',
       partySize: 2,
       arrivalDetailsReleased: released,
-      arrivalDetailsPending: pending,
+      arrivalDetailsHeldBack: heldBack,
       arrivalDetailsReleaseAt: RELEASE_AT,
     },
     checkInOut: { checkInTime: '15:00:00', checkoutTime: '10:00:00', checkInMethod: 'lockbox' },
@@ -208,6 +208,10 @@ describe('Arrival and access', () => {
     expect(host.querySelector('.fv-info-release')).toBeNull();
     expect(host.textContent).toContain('Lockbox');
     act(() => root?.unmount());
+    await mount('/guide/wifi');
+    expect(host.textContent).toContain('Mare');
+    expect(host.querySelector('.fv-info-release')).toBeNull();
+    act(() => root?.unmount());
     await mount('/guide/contacts');
     expect(host.querySelector('a[href="tel:112"]')).not.toBeNull();
     expect(host.querySelector('.fv-info-release')).toBeNull();
@@ -247,6 +251,7 @@ describe('Wi-Fi and essentials', () => {
     expect(host.textContent).toContain('Mare');
     expect(host.textContent).toContain('Washing machine');
     expect(host.textContent).toContain('Free street parking');
+    expect(host.querySelector('.fv-info-release')).not.toBeNull();
   });
 });
 

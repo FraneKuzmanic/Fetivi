@@ -36,21 +36,26 @@ export interface ProjectionInput {
 export function guestProjection(input: ProjectionInput): GuestProjection {
   const { unit: u, stay, language, now } = input;
   const released = now >= stay.arrivalReleaseAt;
-  const secret = <T>(value: T): T | null => (released ? value : null);
+  // Every gated value goes through `secret`, so the held-back check below cannot miss one.
+  const gatedValues: (string | null)[] = [];
+  const secret = (value: string | null): string | null => {
+    gatedValues.push(value);
+    return released ? value : null;
+  };
 
   const texts = new Map<string, ProjectionInput['translations'][number]>();
   for (const t of input.translations) {
     if (t.language === language) texts.set(`${t.blockId}:${t.revision}`, t);
   }
   const blocks: GuestProjection['blocks'] = [];
-  let blockPending = false;
+  let blockHeldBack = false;
   for (const b of u.blocks) {
     if (b.publishedRevision === null) continue;
     const text = texts.get(`${b.id}:${b.publishedRevision}`);
     if (!text) continue;
     // Checked after the translation lookup so only a block that would appear at the release counts.
     if (b.visibility === 'after_release' && !released) {
-      blockPending = true;
+      blockHeldBack = true;
       continue;
     }
     const published = b.publishedRevision;
@@ -61,20 +66,21 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
     blocks.push({ category: b.category, title: text.title, body: text.body, media });
   }
 
-  const filled = (v: string | null) => v !== null && v.trim() !== '';
-  const pending =
-    !released &&
-    (blockPending ||
-      [
-        u.accessInstructions,
-        u.buildingDoorCode,
-        u.doorCode,
-        u.lockboxCode,
-        u.hostPhone,
-        u.emergencyContactPhone,
-      ].some(filled) ||
-      // A noWifi unit never shows its password, so a stored one is not pending.
-      (!u.noWifi && filled(u.wifiPassword)));
+  const arrival = {
+    accessInstructions: secret(u.accessInstructions),
+    buildingDoorCode: secret(u.buildingDoorCode),
+    doorCode: secret(u.doorCode),
+    lockboxCode: secret(u.lockboxCode),
+  };
+  // A noWifi unit never shows its password, so a stored one is not held back.
+  const wifi = u.noWifi ? null : { network: u.wifiNetwork, password: secret(u.wifiPassword) };
+  const contacts = {
+    hostPhone: secret(u.hostPhone),
+    emergencyContactName: u.emergencyContactName,
+    emergencyContactPhone: secret(u.emergencyContactPhone),
+  };
+  const heldBack =
+    !released && (blockHeldBack || gatedValues.some((v) => v !== null && v.trim() !== ''));
 
   return {
     language,
@@ -99,7 +105,7 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
       checkout: stay.checkout,
       partySize: stay.partySize,
       arrivalDetailsReleased: released,
-      arrivalDetailsPending: pending,
+      arrivalDetailsHeldBack: heldBack,
       arrivalDetailsReleaseAt: stay.arrivalReleaseAt.toISOString(),
     },
     checkInOut: {
@@ -107,15 +113,8 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
       checkoutTime: u.checkoutTime,
       checkInMethod: u.checkInMethod,
     },
-    arrival: released
-      ? {
-          accessInstructions: u.accessInstructions,
-          buildingDoorCode: u.buildingDoorCode,
-          doorCode: u.doorCode,
-          lockboxCode: u.lockboxCode,
-        }
-      : null,
-    wifi: u.noWifi ? null : { network: u.wifiNetwork, password: secret(u.wifiPassword) },
+    arrival: released ? arrival : null,
+    wifi,
     parking: { type: u.parkingType, notes: u.parkingNotes },
     houseRules: {
       petsAllowed: u.petsAllowed,
@@ -125,11 +124,7 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
       quietHoursTo: u.quietHoursTo,
       notes: u.houseRulesNotes,
     },
-    contacts: {
-      hostPhone: secret(u.hostPhone),
-      emergencyContactName: u.emergencyContactName,
-      emergencyContactPhone: secret(u.emergencyContactPhone),
-    },
+    contacts,
     amenities: u.amenities.map((a) => ({ amenity: a.amenity, note: a.note })),
     blocks,
   };

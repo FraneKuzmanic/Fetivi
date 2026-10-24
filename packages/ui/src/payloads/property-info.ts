@@ -76,7 +76,7 @@ export function propertyInfo(p: GuestProjection, topic: PropertyInfoTopic): Prop
   const add = (key: PropertyInfoField, value: string | null, action: 'text' | 'copy' | 'tel') => {
     if (value !== null && value.trim() !== '') fields.push({ key, value, action });
   };
-  const gated = p.stay.arrivalDetailsPending ? p.stay.arrivalDetailsReleaseAt : null;
+  const gated = p.stay.arrivalDetailsHeldBack ? p.stay.arrivalDetailsReleaseAt : null;
   let releaseAt: string | null = null;
 
   switch (topic) {

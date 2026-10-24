@@ -258,7 +258,7 @@ Where a Space stands at a given moment — before arrival, in the Stay, or after
 _Avoid_: context, state
 
 **Guest projection**:
-The part of a Unit's record a guest may see at a given moment, in the guest's language: no private Host fields, and arrival details and codes only from the release time.
+The part of a Unit's record a guest may see at a given moment, in the guest's language: no private Host fields, and arrival details and codes only from the release time. Before then it says only whether anything is **held back** (some gated item has a value), never which item or what it holds.
 _Avoid_: guest view, public record
 
 **Conversation**:

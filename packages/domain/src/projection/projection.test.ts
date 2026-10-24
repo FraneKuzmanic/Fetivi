@@ -183,7 +183,7 @@ describe('guestProjection release gate', () => {
       expect(json.includes(value)).toBe(released);
     }
     expect(p.stay.arrivalDetailsReleased).toBe(released);
-    expect(p.stay.arrivalDetailsPending).toBe(!released);
+    expect(p.stay.arrivalDetailsHeldBack).toBe(!released);
     if (released) {
       expect(p.arrival).toEqual({
         accessInstructions: ACCESS,
@@ -205,7 +205,7 @@ describe('guestProjection release gate', () => {
   });
 });
 
-describe('guestProjection arrivalDetailsPending', () => {
+describe('guestProjection arrivalDetailsHeldBack', () => {
   const before = new Date(RELEASE.getTime() - 1);
   const quietProperty: PropertyRow = {
     ...property,
@@ -248,7 +248,7 @@ describe('guestProjection arrivalDetailsPending', () => {
   }
 
   it('is false before the release when every gated item is empty or blank', () => {
-    expect(project().stay.arrivalDetailsPending).toBe(false);
+    expect(project().stay.arrivalDetailsHeldBack).toBe(false);
   });
 
   const single = [
@@ -270,10 +270,10 @@ describe('guestProjection arrivalDetailsPending', () => {
 
   it.each(single)('is true when only $item has a value, and reveals nothing else', ({ over }) => {
     const p = project(over);
-    expect(p.stay.arrivalDetailsPending).toBe(true);
+    expect(p.stay.arrivalDetailsHeldBack).toBe(true);
     // Apart from the flag, the projection is identical to one with nothing gated: no value, no
     // length and no hint of which item is set.
-    expect({ ...p, stay: { ...p.stay, arrivalDetailsPending: false } }).toEqual(project());
+    expect({ ...p, stay: { ...p.stay, arrivalDetailsHeldBack: false } }).toEqual(project());
     const json = JSON.stringify(p);
     for (const value of [...unreleased, ...afterReleaseTexts('en')]) {
       expect(json).not.toContain(value);
@@ -282,7 +282,7 @@ describe('guestProjection arrivalDetailsPending', () => {
 
   it('ignores a stored Wi-Fi password when the unit has no Wi-Fi', () => {
     const p = project({ unit: { noWifi: true, wifiPassword: SECRETS.wifiPassword } });
-    expect(p.stay.arrivalDetailsPending).toBe(false);
+    expect(p.stay.arrivalDetailsHeldBack).toBe(false);
   });
 
   it('ignores an after_release block with no translation in the guest language', () => {
@@ -291,7 +291,7 @@ describe('guestProjection arrivalDetailsPending', () => {
       language: 'pl',
       translations: translations.filter((t) => !(t.blockId === BLOCK_AFTER && t.language === 'pl')),
     });
-    expect(p.stay.arrivalDetailsPending).toBe(false);
+    expect(p.stay.arrivalDetailsHeldBack).toBe(false);
   });
 
   it('ignores an unpublished after_release block', () => {
@@ -301,12 +301,12 @@ describe('guestProjection arrivalDetailsPending', () => {
         block(BLOCK_AFTER, { visibility: 'after_release', publishedRevision: null }),
       ],
     });
-    expect(p.stay.arrivalDetailsPending).toBe(false);
+    expect(p.stay.arrivalDetailsHeldBack).toBe(false);
   });
 
   it('is false from the release instant on, even with values', () => {
     const p = project({ unit: { doorCode: SECRETS.doorCode }, blocks, now: RELEASE });
-    expect(p.stay.arrivalDetailsPending).toBe(false);
+    expect(p.stay.arrivalDetailsHeldBack).toBe(false);
     expect(p.arrival?.doorCode).toBe(SECRETS.doorCode);
   });
 });
@@ -412,7 +412,7 @@ describe('guestProjection content', () => {
       checkout: '2026-10-24',
       partySize: 2,
       arrivalDetailsReleased: true,
-      arrivalDetailsPending: false,
+      arrivalDetailsHeldBack: false,
       arrivalDetailsReleaseAt: RELEASE.toISOString(),
     });
     expect(p.amenities).toEqual([{ amenity: 'wifi', note: 'fast' }]);

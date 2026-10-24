@@ -16,7 +16,7 @@ const projection = {
   property: { timezone: 'Europe/Zagreb' },
   stay: {
     arrivalDetailsReleased: false,
-    arrivalDetailsPending: true,
+    arrivalDetailsHeldBack: true,
     arrivalDetailsReleaseAt: '2026-10-20T22:00:00.000Z',
   },
   wifi: { network: 'Mare', password: null },

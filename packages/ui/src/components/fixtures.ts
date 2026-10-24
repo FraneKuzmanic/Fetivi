@@ -59,7 +59,7 @@ export function projection(
       checkout: '2026-10-24',
       partySize: 2,
       arrivalDetailsReleased: released,
-      arrivalDetailsPending: !released,
+      arrivalDetailsHeldBack: !released,
       arrivalDetailsReleaseAt: '2026-10-19T22:00:00.000Z',
     },
     checkInOut: { checkInTime: '15:00:00', checkoutTime: '10:00:00', checkInMethod: 'lockbox' },

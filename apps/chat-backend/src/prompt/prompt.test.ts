@@ -39,7 +39,7 @@ const projection: GuestProjection = {
     checkout: '2026-10-26',
     partySize: 2,
     arrivalDetailsReleased: false,
-    arrivalDetailsPending: true,
+    arrivalDetailsHeldBack: true,
     arrivalDetailsReleaseAt: '2026-10-21T22:00:00.000Z',
   },
   checkInOut: { checkInTime: '15:00', checkoutTime: '10:00', checkInMethod: null },
@@ -61,7 +61,7 @@ const projection: GuestProjection = {
 
 const released: GuestProjection = {
   ...projection,
-  stay: { ...projection.stay, arrivalDetailsReleased: true, arrivalDetailsPending: false },
+  stay: { ...projection.stay, arrivalDetailsReleased: true, arrivalDetailsHeldBack: false },
   arrival: {
     accessInstructions: 'Blue gate',
     buildingDoorCode: '1',
@@ -95,7 +95,7 @@ describe('system text', () => {
   });
 
   it('says details will appear only when something is held back (49)', () => {
-    expect(INSTRUCTIONS).toContain('If "arrivalDetailsPending" is true');
+    expect(INSTRUCTIONS).toContain('If "arrivalDetailsHeldBack" is true');
     expect(INSTRUCTIONS).toContain('If it is false, nothing is held back.');
   });
 

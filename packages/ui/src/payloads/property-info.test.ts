@@ -20,7 +20,7 @@ describe('propertyInfo', () => {
 
   it('says nothing about a release when nothing is held back', () => {
     const quiet = projection(false, {
-      stay: { ...projection(false).stay, arrivalDetailsPending: false },
+      stay: { ...projection(false).stay, arrivalDetailsHeldBack: false },
     });
     for (const topic of ['arrival', 'wifi', 'contacts'] as const) {
       const card = propertyInfo(quiet, topic);
