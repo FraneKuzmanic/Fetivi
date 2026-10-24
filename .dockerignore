@@ -1,0 +1,17 @@
+# A whitelist: the build context holds only what the images need, never secrets or local files.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!tsconfig.json
+!tsconfig.base.json
+!apps
+!packages
+!deploy/postgres
+!deploy/Caddyfile
+!deploy/*.sh
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/*.tsbuildinfo

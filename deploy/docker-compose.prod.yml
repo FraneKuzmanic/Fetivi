@@ -1,0 +1,249 @@
+# Production stack on one VPS. Run it through deploy/lib.sh's compose() (deploy.sh, restore.sh),
+# which adds --env-file deploy/.env. Secrets live in deploy/env/*.env on the server, never here.
+#
+# Inside the network the four public names are aliases of Caddy, so internal hops use the same
+# https URLs as outside callers (egress allows plain http only for localhost). The subnet and
+# Caddy's IP are fixed so TRUST_PROXY can name exactly one proxy; change both together if the
+# subnet collides with another network (RUNBOOK.md).
+name: fetivi-prod
+
+x-node: &node
+  image: fetivi-node:${FETIVI_TAG:-latest}
+  pull_policy: never
+  init: true
+  restart: unless-stopped
+  networks: [internal]
+  depends_on:
+    postgres:
+      condition: service_healthy
+    caddy:
+      condition: service_started
+
+x-otel: &otel
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+
+services:
+  caddy:
+    image: fetivi-web:${FETIVI_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: web
+      args:
+        VITE_SANDBOX_URL: https://sandbox.${DOMAIN}/sandbox.html
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      internal:
+        ipv4_address: 172.31.47.10
+        aliases:
+          - app.${DOMAIN}
+          - host.${DOMAIN}
+          - mcp.${DOMAIN}
+          - sandbox.${DOMAIN}
+    restart: unless-stopped
+
+  postgres:
+    image: fetivi-postgres:${FETIVI_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: deploy/postgres/Dockerfile
+    # backup.env carries the WAL-G storage settings archive_command needs.
+    env_file: [env/postgres.env, env/backup.env]
+    environment:
+      # A subdirectory, so an in-place restore can move the old cluster aside inside the volume.
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+      - postgres
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=wal-g wal-push %p
+      - -c
+      - archive_timeout=60
+      - -c
+      - max_connections=100
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+
+  # Daily base backup + media snapshot. Same uid and PGDATA path as the server, so WAL-G can
+  # read the cluster files from the shared volume.
+  backup:
+    image: fetivi-postgres:${FETIVI_TAG:-latest}
+    pull_policy: never
+    user: postgres
+    env_file: [env/postgres.env, env/backup.env]
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      PGHOST: postgres
+    entrypoint: ["backup-loop.sh"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - media:/media:ro
+    networks: [internal]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  chat-backend:
+    <<: *node
+    # The one service that builds the shared Node image; the others reuse the tag.
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: node
+    env_file: [env/common.env, env/chat-backend.env]
+    environment: &chat-env
+      <<: *otel
+      PORT: "3000"
+      APP_ORIGIN: https://app.${DOMAIN}
+      GUEST_TOKEN_ISSUER: https://app.${DOMAIN}
+      MCP_PUBLIC_URL: https://mcp.${DOMAIN}
+      TRUST_PROXY: 172.31.47.10
+      MEDIA_DIR: /data/media
+    working_dir: /app/apps/chat-backend
+    command: ["node", "--import", "tsx", "--import", "./src/instrumentation.ts", "src/index.ts"]
+    volumes:
+      - media:/data/media
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+  backoffice-api:
+    <<: *node
+    env_file: [env/common.env, env/backoffice-api.env]
+    environment:
+      <<: *otel
+      PORT: "3001"
+      WEB_ORIGIN: https://host.${DOMAIN}
+      GUEST_ORIGIN: https://app.${DOMAIN}
+      TRUST_PROXY: 172.31.47.10
+      MEDIA_DIR: /data/media
+    working_dir: /app/apps/backoffice-api
+    command: ["node", "--import", "tsx", "--import", "./src/instrumentation.ts", "src/index.ts"]
+    volumes:
+      - media:/data/media
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3001/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+  mcp-servers:
+    <<: *node
+    env_file: [env/common.env, env/mcp-servers.env]
+    environment:
+      <<: *otel
+      PORT: "3002"
+      MCP_ALLOWED_HOSTS: mcp.${DOMAIN}
+      MCP_PUBLIC_URL: https://mcp.${DOMAIN}
+      GUEST_TOKEN_ISSUER: https://app.${DOMAIN}
+      GUEST_TOKEN_JWKS_URL: https://app.${DOMAIN}/.well-known/jwks.json
+    working_dir: /app/apps/mcp-servers
+    command: ["node", "--import", "tsx", "--import", "./src/instrumentation.ts", "src/index.ts"]
+    healthcheck:
+      # The Host check covers /health too; send the allowed name rather than widen the list.
+      test: ["CMD", "curl", "-fsS", "-H", "Host: mcp.${DOMAIN}", "http://127.0.0.1:3002/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+  jobs:
+    <<: *node
+    env_file: [env/common.env, env/jobs.env]
+    environment:
+      <<: *otel
+      GUEST_ORIGIN: https://app.${DOMAIN}
+      WEB_ORIGIN: https://host.${DOMAIN}
+      PROVIDER_LINK_BASE_URL: https://host.${DOMAIN}
+    working_dir: /app/apps/jobs
+    command: ["node", "--import", "tsx", "--import", "./src/instrumentation.ts", "src/index.ts"]
+
+  sandbox-proxy:
+    image: fetivi-node:${FETIVI_TAG:-latest}
+    pull_policy: never
+    init: true
+    restart: unless-stopped
+    networks: [internal]
+    env_file: [env/common.env]
+    environment:
+      PORT: "5175"
+      APP_ORIGIN: https://app.${DOMAIN}
+    working_dir: /app/apps/sandbox-proxy
+    command: ["node", "--import", "tsx", "src/index.ts"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:5175/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  # One-off: compose run --rm migrate
+  migrate:
+    image: fetivi-node:${FETIVI_TAG:-latest}
+    pull_policy: never
+    profiles: [tools]
+    networks: [internal]
+    env_file: [env/common.env]
+    working_dir: /app/packages/domain
+    command: ["node", "--import", "tsx", "src/db/migrate-cli.ts"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # One-off shell on the network with the chat backend's settings: smoke check, admin:create.
+  tools:
+    image: fetivi-node:${FETIVI_TAG:-latest}
+    pull_policy: never
+    profiles: [tools]
+    networks: [internal]
+    env_file: [env/common.env, env/chat-backend.env]
+    environment:
+      <<: *chat-env
+      DOMAIN: ${DOMAIN}
+      SMOKE_UNIT_SLUG: ${SMOKE_UNIT_SLUG:-}
+      SMOKE_PIN: ${SMOKE_PIN:-}
+    working_dir: /app
+    entrypoint: ["bash"]
+
+  # In-memory traces (ADR 0022). The UI is on the server's loopback only: reach it by SSH tunnel.
+  jaeger:
+    image: jaegertracing/jaeger:2.22.0
+    ports:
+      - "127.0.0.1:16686:16686"
+    networks: [internal]
+    restart: unless-stopped
+
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 172.31.47.0/24
+
+volumes:
+  pgdata:
+  media:
+  caddy_data:
+  caddy_config:

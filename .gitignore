@@ -6,3 +6,5 @@ coverage/
 .env
 .env.*
 !.env.example
+# Server secrets for the production deploy; only the *.env.example files are tracked.
+deploy/env/*.env

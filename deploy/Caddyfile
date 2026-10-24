@@ -1,0 +1,58 @@
+# Four origins (architecture §4.1). Inside Compose these names are aliases of this container, so
+# the internal hops (chat backend -> MCP, MCP -> JWKS) take the same TLS route as outside callers.
+{
+	email {$ACME_EMAIL}
+}
+
+(spa) {
+	root * {args[0]}
+	# Only /assets/ is content-hashed. Everything else (index.html on any deep link, sw.js, the
+	# manifest) revalidates; header matches before try_files rewrites, so match by exclusion.
+	@nocache not path /assets/*
+	header @nocache Cache-Control "no-cache"
+	header /assets/* Cache-Control "public, max-age=31536000, immutable"
+	try_files {path} /index.html
+	file_server
+}
+
+app.{$DOMAIN} {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy chat-backend:3000
+	}
+	handle /health {
+		reverse_proxy chat-backend:3000
+	}
+	handle /.well-known/* {
+		reverse_proxy chat-backend:3000
+	}
+	handle {
+		import spa /srv/guest
+	}
+}
+
+host.{$DOMAIN} {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy backoffice-api:3001
+	}
+	handle /webhooks/* {
+		reverse_proxy backoffice-api:3001
+	}
+	handle /health {
+		reverse_proxy backoffice-api:3001
+	}
+	handle {
+		import spa /srv/host
+	}
+}
+
+# Host header passes through unchanged, so the servers' allowedHosts check sees mcp.<domain>.
+mcp.{$DOMAIN} {
+	reverse_proxy mcp-servers:3002
+}
+
+# No CSP here: the proxy sets the widget's CSP per request.
+sandbox.{$DOMAIN} {
+	reverse_proxy sandbox-proxy:5175
+}

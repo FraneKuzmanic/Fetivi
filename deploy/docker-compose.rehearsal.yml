@@ -1,0 +1,108 @@
+# Local stand-in for the server, layered on docker-compose.prod.yml by rehearse-local.sh:
+# MinIO replaces the off-site bucket, and the Node containers trust Caddy's internal CA, which
+# Caddy uses on its own for *.localhost names.
+#
+# MinIO no longer publishes community images; pgsty/minio is a maintained build of the same
+# server, and it ships mc, so it also creates the bucket.
+
+x-ca: &ca
+  NODE_EXTRA_CA_CERTS: /caddy-ca/root.crt
+
+# NODE_EXTRA_CA_CERTS is read once at start, so the Node services wait until the root exists.
+x-node-local: &node-local
+  volumes:
+    - caddy_ca:/caddy-ca:ro
+  depends_on:
+    caddy:
+      condition: service_healthy
+
+services:
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-rehearsal}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-rehearsal-secret}
+    volumes:
+      - minio_data:/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  minio-init:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-rehearsal}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-rehearsal-secret}
+    entrypoint:
+      - sh
+      - -c
+      - mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" && mc mb -p local/fetivi-backups
+    networks: [internal]
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+
+  # Caddy keeps its CA root-only; the healthcheck publishes the root certificate (public, not the
+  # key) to a world-readable volume, atomically and only when it changed, so the node user can
+  # trust it.
+  caddy:
+    volumes:
+      - caddy_ca:/ca
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          r=/data/caddy/pki/authorities/local/root.crt; test -f $$r &&
+          { cmp -s $$r /ca/root.crt || { cp $$r /ca/.new && chmod 644 /ca/.new && mv /ca/.new /ca/root.crt; }; }
+      interval: 1s
+      timeout: 3s
+      retries: 60
+
+  postgres:
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
+  backup:
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
+  chat-backend:
+    <<: *node-local
+    environment: *ca
+
+  backoffice-api:
+    <<: *node-local
+    environment: *ca
+
+  mcp-servers:
+    <<: *node-local
+    environment: *ca
+
+  jobs:
+    <<: *node-local
+    environment: *ca
+
+  sandbox-proxy:
+    <<: *node-local
+    environment: *ca
+
+  # The dev stack's Jaeger usually holds 16686 on this machine; the rehearsal publishes no port.
+  jaeger:
+    ports: !reset []
+
+  tools:
+    <<: *node-local
+    environment:
+      <<: *ca
+      SMOKE_CACERT: /caddy-ca/root.crt
+
+volumes:
+  minio_data:
+  caddy_ca:
