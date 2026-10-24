@@ -9,6 +9,7 @@ import { clusterFallbacksJob } from './cluster-fallbacks';
 import { type DailyTipsDeps, dailyTipsJob } from './daily-tips';
 import { guestNotifyJob, guestRemindersJob } from './guest-notify';
 import { hostDigestsJob, hostNotifyJob } from './host-notify';
+import { type ImportOpenDataDeps, importOpenDataJob } from './import-open-data';
 import { orderAdapterCancelJob } from './orders/adapter-cancel';
 import { orderNotifyJob } from './orders/notify';
 import { type OrderPaymentJobDeps, orderPaymentJob } from './orders/payment';
@@ -39,7 +40,8 @@ export function createJobs(
     SafetyAlertsDeps &
     DailyTipsDeps &
     OrderPaymentJobDeps &
-    ReconcileJobDeps,
+    ReconcileJobDeps &
+    ImportOpenDataDeps,
 ): JobDefinition[] {
   // The runner hands each handler the data its own queue was sent.
   return [
@@ -64,5 +66,6 @@ export function createJobs(
     dailyTipsJob(deps),
     reconcileJob(deps) as JobDefinition,
     clusterFallbacksJob(deps),
+    importOpenDataJob(deps) as JobDefinition,
   ];
 }

@@ -13,6 +13,7 @@ const BASE = {
   destination: DEST,
   host: null,
   record: null,
+  candidate: null,
   createdAt: '2026-10-20T10:00:00Z',
   reviewedAt: null,
 };
@@ -60,6 +61,15 @@ const CLUSTER: CurationItem = {
     weekStart: '2026-10-12',
   },
   actions: ['approve', 'reject', 'needs_visit'],
+};
+
+const WAITING: CurationItem = {
+  ...BASE,
+  id: 'i-waiting',
+  kind: 'draft',
+  payload: { kind: 'draft', changes: {}, candidateId: 'c1' },
+  candidate: { id: 'c1', name: 'Saldun' },
+  actions: ['reject'],
 };
 
 const COUNTS = {
@@ -127,7 +137,7 @@ function stubApi() {
     if (url.endsWith('/approve')) return json({ ...DRAFT, status: 'approved', actions: [] });
     if (url.endsWith('/verify')) return json({});
     if (url.startsWith('/api/admin/curation/staleness')) return json({ records: STALE });
-    return json({ items: [DRAFT, PROVIDER, CLUSTER], counts: COUNTS });
+    return json({ items: [DRAFT, PROVIDER, CLUSTER, WAITING], counts: COUNTS });
   });
 }
 
@@ -217,6 +227,14 @@ describe('CurationPage', () => {
     await click(buttonIn(rowOf('Kayak Bros'), 'Needs a visit'));
     expect(rowOf('Kayak Bros')).toBeUndefined();
     expect(status()).toBe('Kayak Bros moved to Needs a visit.');
+  });
+
+  it('shows a waiting seeding draft by its candidate name, with Reject only', async () => {
+    await mount('/admin/curation?kind=draft');
+    expect(calls[0]?.url).toBe('/api/admin/curation?status=open&kind=draft');
+    const row = rowOf('Saldun');
+    expect(row?.textContent).toContain('Waiting for the drafting job');
+    expect(buttonsOf(row)).toEqual(['Reject']);
   });
 
   it('opens the record editor on Edit', async () => {

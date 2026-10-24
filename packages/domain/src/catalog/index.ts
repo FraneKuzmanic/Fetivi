@@ -3,6 +3,7 @@ export * from './destination';
 export * from './ranking';
 export * from './search';
 export * from './seed/trogir';
+export * from './seeding';
 export * from './staleness';
 export * from './store';
 export * from './translation';

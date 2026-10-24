@@ -25,6 +25,7 @@ export const QUEUES = {
   dailyTips: 'daily-tips',
   reconcile: 'reconcile',
   clusterFallbacks: 'cluster-fallbacks',
+  importOpenData: 'import-open-data',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -74,6 +75,9 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   reconcile: { policy: 'singleton', retryLimit: 1, expireInSeconds: 600 },
   // Weekly; the dedupe key makes a retry add nothing.
   clusterFallbacks: { retryLimit: 2, retryDelay: 60, expireInSeconds: 300 },
+  // One import per admin click; a crash leaves the run 'running' until it goes stale and the admin
+  // imports again.
+  importOpenData: { retryLimit: 0, expireInSeconds: 900 },
 };
 
 /**

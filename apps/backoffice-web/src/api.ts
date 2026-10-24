@@ -44,6 +44,12 @@ import type {
   ReconcileTrigger,
 } from '@fetivi/domain/payments-vocabulary';
 import type {
+  SeedingCandidateStatus,
+  SeedingImportStatus,
+  SeedingSource,
+  SourceRunResult,
+} from '@fetivi/domain/seeding-vocabulary';
+import type {
   Amenity,
   Bed,
   BlockCategory,
@@ -810,6 +816,8 @@ export interface CurationItem {
     placeCategory: PlaceCategory | null;
     verifiedAt: string | null;
   } | null;
+  /** The Seeding candidate a waiting draft is for (41); null otherwise. */
+  candidate: { id: string; name: string } | null;
   /** Empty once the item is approved or rejected. */
   actions: CurationAction[];
   createdAt: string;
@@ -849,6 +857,64 @@ export const curation = {
         ? `/api/admin/curation/staleness?${new URLSearchParams({ destinationId })}`
         : '/api/admin/curation/staleness',
     ),
+};
+
+export interface SeedingImport {
+  id: string;
+  status: SeedingImportStatus;
+  startedAt: string;
+  finishedAt: string | null;
+  /** Empty while the run is running. */
+  sources: Partial<Record<SeedingSource, SourceRunResult>>;
+}
+
+export interface SeedingCandidate {
+  id: string;
+  status: SeedingCandidateStatus;
+  name: string;
+  placeCategory: PlaceCategory;
+  location: { lat: number; lng: number };
+  distanceM: number;
+  sources: {
+    id: string;
+    source: SeedingSource;
+    externalId: string;
+    name: string;
+    licence: string;
+    sourceUrl: string | null;
+  }[];
+  draft: { itemId: string; status: CurationStatus } | null;
+  possibleDuplicates: { id: string; name: string; distanceM: number; score: number }[];
+}
+
+export interface SeedingOverview {
+  destination: { id: string; name: string; radiusM: number };
+  lastImport: SeedingImport | null;
+  counts: Record<SeedingCandidateStatus, number>;
+  /** Distinct catalog records open-data rows were attached to. */
+  matchedRecords: number;
+  candidates: SeedingCandidate[];
+}
+
+export const seeding = {
+  overview: (destinationId: string, status: SeedingCandidateStatus) =>
+    api<SeedingOverview>(
+      `/api/admin/catalog/destinations/${destinationId}/seeding?${new URLSearchParams({ status })}`,
+    ),
+  startImport: (destinationId: string) =>
+    post<{ importId: string }>(`/api/admin/catalog/destinations/${destinationId}/seeding/import`),
+  draft: (destinationId: string, candidateIds: string[]) =>
+    post<{ drafted: number }>(`/api/admin/catalog/destinations/${destinationId}/seeding/draft`, {
+      candidateIds,
+    }),
+  dismiss: (id: string) => post(`/api/admin/seeding/candidates/${id}/dismiss`),
+  restore: (id: string) => post(`/api/admin/seeding/candidates/${id}/restore`),
+  merge: (id: string, intoId: string) =>
+    post<{ candidateId: string }>(`/api/admin/seeding/candidates/${id}/merge`, { intoId }),
+  keepApart: (id: string, otherId: string) =>
+    post(`/api/admin/seeding/candidates/${id}/keep-apart`, { otherId }),
+  split: (rowId: string) =>
+    post<{ candidateId: string }>(`/api/admin/seeding/sources/${rowId}/split`),
 };
 
 export const host = {

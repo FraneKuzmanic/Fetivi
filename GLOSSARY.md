@@ -115,6 +115,14 @@ A question the catalog could not answer, recorded as one `fallback_log` row per 
 **Fallback topic cluster**:
 The Curation gaps of one Destination and one ISO week whose topics share the same set of words ("kayak rental", "rental kayak"), grouped by a weekly job into one Curation item with counts and sample topics and places.
 
+**Seeding candidate**:
+A place found in open data (OpenStreetMap, the EEA bathing-water list, Overture Maps) for one Destination, grouping the Open-data rows that describe it. Its name and coordinates stay in the open-data table, apart from the curated catalog. The admin ticks it to send it to drafting.
+_Avoid_: suggestion (that is a host's)
+
+**Open-data row**:
+One place as one open-data source lists it, with its source, licence and fetch time; attached to a Seeding candidate or a Catalog record.
+
+
 ## Services
 
 **Order**:

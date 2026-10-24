@@ -1,12 +1,12 @@
 import {
   approveCurationItem,
   CatalogRuleError,
-  CURATION_KIND_ACTIONS,
   CURATION_KINDS,
   CURATION_TABS,
   type CurationListItem,
   CurationRuleError,
   countCurationItems,
+  curationItemActions,
   type Db,
   editCurationItem,
   getCurationItem,
@@ -47,7 +47,9 @@ function itemOut(item: CurationListItem) {
     destination: item.destination,
     host: item.host,
     record: item.record && { ...item.record, verifiedAt: iso(item.record.verifiedAt) },
-    actions: isReviewable(item.status) ? CURATION_KIND_ACTIONS[item.kind] : [],
+    candidate: item.candidate,
+    // A candidate's draft has no record until the drafting job (42) creates one: Reject only.
+    actions: isReviewable(item.status) ? curationItemActions(item.kind, item.record !== null) : [],
     createdAt: item.createdAt.toISOString(),
     reviewedAt: iso(item.reviewedAt),
   };

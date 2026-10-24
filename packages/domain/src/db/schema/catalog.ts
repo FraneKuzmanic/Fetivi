@@ -13,6 +13,7 @@ import {
   text,
   time,
   timestamp,
+  unique,
   uuid,
 } from 'drizzle-orm/pg-core';
 import {
@@ -26,6 +27,7 @@ import {
 import { accounts } from './accounts';
 import { sourceLanguage, translationError, translationStatus } from './info-blocks';
 import { wgs84Point } from './properties';
+import { seedingCandidates } from './seeding';
 import { guestLanguage, translationOrigin } from './translations';
 
 export const catalogKind = pgEnum('catalog_kind', CATALOG_KINDS);
@@ -226,21 +228,43 @@ export const placeImages = pgTable(
 
 /**
  * Open-data-derived fields (ODbL share-alike and others) live only here, never in
- * catalog_records' curated columns (PRD §11).
+ * catalog_records' curated columns (PRD §11). Every imported open-data row belongs to a Seeding
+ * candidate, a Catalog record, or neither (unassigned until grouped).
  */
 export const placeOpenDataSources = pgTable(
   'place_open_data_sources',
   {
-    recordId: uuid('record_id')
+    id: uuid('id').primaryKey().defaultRandom(),
+    destinationId: uuid('destination_id')
       .notNull()
-      .references(() => catalogRecords.id, { onDelete: 'cascade' }),
+      .references(() => destinations.id, { onDelete: 'cascade' }),
+    /** Set null, not cascade: a deleted record's rows return to the pool and are grouped again. */
+    recordId: uuid('record_id').references(() => catalogRecords.id, { onDelete: 'set null' }),
+    candidateId: uuid('candidate_id').references(() => seedingCandidates.id, {
+      onDelete: 'set null',
+    }),
     source: openDataSource('source').notNull(),
     externalId: text('external_id').notNull(),
     licence: text('licence').notNull(),
+    name: text('name').notNull(),
+    location: wgs84Point('location').notNull(),
+    placeCategory: placeCategory('place_category').notNull(),
+    sourceUrl: text('source_url'),
     data: jsonb('data').$type<Record<string, unknown>>().notNull(),
     fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.recordId, t.source] })],
+  (t) => [
+    unique('place_open_data_sources_source_key').on(t.destinationId, t.source, t.externalId),
+    check(
+      'place_open_data_sources_link_check',
+      sql`not (${t.recordId} is not null and ${t.candidateId} is not null)`,
+    ),
+    index('place_open_data_sources_candidate_idx').on(t.candidateId),
+    index('place_open_data_sources_record_idx').on(t.recordId),
+    index('place_open_data_sources_location_gist').using('gist', t.location),
+  ],
 );
 
 /** How often a place was recommended, per day in the destination's zone (feeds the staleness queue). */
@@ -266,3 +290,4 @@ export type CatalogTranslationRow = typeof catalogTranslations.$inferSelect;
 export type CatalogSeasonRow = typeof catalogSeasons.$inferSelect;
 export type CatalogOpeningHoursRow = typeof catalogOpeningHours.$inferSelect;
 export type PlaceImageRow = typeof placeImages.$inferSelect;
+export type PlaceOpenDataSourceRow = typeof placeOpenDataSources.$inferSelect;

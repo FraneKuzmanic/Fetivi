@@ -1,0 +1,159 @@
+{
+  "displayFieldName": "bathingWaterName",
+  "fieldAliases": {
+    "bathingWaterIdentifier": "Bathing water identifier",
+    "bathingWaterName": "Name",
+    "bwWaterCategory": "Water type",
+    "qualityStatus": "2025",
+    "longitude": "Longitude",
+    "latitude": "Latitude",
+    "bwProfileLink": "National bathing water profile"
+  },
+  "fields": [
+    {
+      "name": "bathingWaterIdentifier",
+      "type": "esriFieldTypeString",
+      "alias": "Bathing water identifier",
+      "length": 50
+    },
+    { "name": "bathingWaterName", "type": "esriFieldTypeString", "alias": "Name", "length": 255 },
+    {
+      "name": "bwWaterCategory",
+      "type": "esriFieldTypeString",
+      "alias": "Water type",
+      "length": 255
+    },
+    { "name": "qualityStatus", "type": "esriFieldTypeString", "alias": "2025", "length": 50 },
+    { "name": "longitude", "type": "esriFieldTypeDouble", "alias": "Longitude" },
+    { "name": "latitude", "type": "esriFieldTypeDouble", "alias": "Latitude" },
+    {
+      "name": "bwProfileLink",
+      "type": "esriFieldTypeString",
+      "alias": "National bathing water profile",
+      "length": 500
+    }
+  ],
+  "features": [
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2069",
+        "bathingWaterName": "Tri sestrice",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.286860000000001,
+        "latitude": 43.513910000000003,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2069"
+      }
+    },
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2072",
+        "bathingWaterName": "Saldun",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.25093,
+        "latitude": 43.510460000000002,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2072"
+      }
+    },
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2070",
+        "bathingWaterName": "Miševac",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.276330000000002,
+        "latitude": 43.515129999999999,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2070"
+      }
+    },
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2071",
+        "bathingWaterName": "Duhanska Stanica",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.264230000000001,
+        "latitude": 43.51793,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2071"
+      }
+    },
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2074",
+        "bathingWaterName": "Uvala Milićevo",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.257829999999998,
+        "latitude": 43.502369999999999,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2074"
+      }
+    },
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2073",
+        "bathingWaterName": "Marinova Draga",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.258220000000001,
+        "latitude": 43.50667,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2073"
+      }
+    },
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2075",
+        "bathingWaterName": "Toć",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.259720000000002,
+        "latitude": 43.496690000000001,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2075"
+      }
+    },
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2160",
+        "bathingWaterName": "Brigi",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.259720000000002,
+        "latitude": 43.519770000000001,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2160"
+      }
+    },
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2159",
+        "bathingWaterName": "Staro Selo",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.22578,
+        "latitude": 43.517299999999999,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2159"
+      }
+    },
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2076",
+        "bathingWaterName": "Kuzmića Uvala",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.255579999999998,
+        "latitude": 43.493510000000001,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2076"
+      }
+    },
+    {
+      "attributes": {
+        "bathingWaterIdentifier": "HRBWC-COAST-HR4-2077",
+        "bathingWaterName": "Hotel Jadran",
+        "bwWaterCategory": "Coastal",
+        "qualityStatus": "Excellent",
+        "longitude": 16.22101,
+        "latitude": 43.517139999999998,
+        "bwProfileLink": "https://vrtlac.izor.hr/ords/kakvoca/profil_plaze_url?p_jezik=eng&plok=2077"
+      }
+    }
+  ]
+}

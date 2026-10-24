@@ -21,6 +21,11 @@ import type {
   PriceUnit,
   ProviderLanguage,
 } from '@fetivi/domain/offer-vocabulary';
+import {
+  type SeedingSource,
+  SOURCE_LABELS,
+  type SourceFailure,
+} from '@fetivi/domain/seeding-vocabulary';
 import type {
   Amenity,
   BedType,
@@ -322,4 +327,12 @@ export const CURATION_STATUS_LABELS: Record<CurationStatus, string> = {
   needs_visit: 'Needs a visit',
   approved: 'Approved',
   rejected: 'Rejected',
+};
+
+export const SEEDING_SOURCE_LABELS: Record<SeedingSource, string> = SOURCE_LABELS;
+
+export const SEEDING_FAILURE_LABELS: Record<SourceFailure, string> = {
+  unavailable: 'did not answer',
+  'unexpected-response': 'answered in an unexpected format',
+  'too-large': 'returned too much for one import',
 };

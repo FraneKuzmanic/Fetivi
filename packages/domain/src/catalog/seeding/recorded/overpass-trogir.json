@@ -1,0 +1,3166 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-10-24T09:34:51Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 435609459,
+      "lat": 43.5158201,
+      "lon": 16.2493976,
+      "tags": {
+        "name": "Kula Sveti Nikola",
+        "tourism": "attraction"
+      }
+    },
+    {
+      "type": "node",
+      "id": 746526995,
+      "lat": 43.5166022,
+      "lon": 16.2320217,
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "international",
+        "name": "Yachtclub"
+      }
+    },
+    {
+      "type": "node",
+      "id": 746526997,
+      "lat": 43.517189,
+      "lon": 16.2271657,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Frankie"
+      }
+    },
+    {
+      "type": "node",
+      "id": 746526998,
+      "lat": 43.5174468,
+      "lon": 16.2273345,
+      "tags": {
+        "addr:city": "Seget Donji",
+        "addr:housenumber": "16",
+        "addr:postcode": "21218",
+        "addr:street": "Obala dr. Nikole Lozovine",
+        "amenity": "restaurant",
+        "name": "Konoba Rico"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1359384953,
+      "lat": 43.5175334,
+      "lon": 16.2511373,
+      "tags": {
+        "amenity": "cafe",
+        "internet_access": "wlan",
+        "name:en": "Romanika"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1359384956,
+      "lat": 43.51764,
+      "lon": 16.2512232,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "4",
+        "addr:postcode": "21219",
+        "addr:street": "Blaža Jurjeva Trogiranina",
+        "amenity": "cafe",
+        "name": "Caffe Bar Valentino"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1359384958,
+      "lat": 43.5173172,
+      "lon": 16.2500082,
+      "tags": {
+        "amenity": "cafe"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1359384960,
+      "lat": 43.5175019,
+      "lon": 16.2503167,
+      "tags": {
+        "addr:housenumber": "2",
+        "addr:postcode": "21220",
+        "addr:street": "Ulica hrvatskih mučenika",
+        "amenity": "cafe",
+        "name": "Café Bar Martinino"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1359384970,
+      "lat": 43.5164427,
+      "lon": 16.2514441,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Konoba Elf"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1403171484,
+      "lat": 43.5285912,
+      "lon": 16.2434793,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Autopraonica"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1606474184,
+      "lat": 43.5065581,
+      "lon": 16.2707558,
+      "tags": {
+        "ele": "155",
+        "name": "Kobijak",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1606490989,
+      "lat": 43.5304122,
+      "lon": 16.2686361,
+      "tags": {
+        "ele": "149",
+        "name": "Sv.Ostak",
+        "natural": "peak",
+        "source": "U.S. Defense"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1831484938,
+      "lat": 43.5135946,
+      "lon": 16.248916,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Caffe Galija"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1831484968,
+      "lat": 43.516022,
+      "lon": 16.2498247,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Kaleta"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1911911342,
+      "lat": 43.515015,
+      "lon": 16.2524757,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:postcode": "21220",
+        "addr:street": "Obala Kralja Zvonimira",
+        "amenity": "fast_food",
+        "name": "Fast Food Gricko",
+        "phone": "+385 91 885 075"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1911911347,
+      "lat": 43.5160879,
+      "lon": 16.2487245,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Konoba Debo"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1911911350,
+      "lat": 43.5148839,
+      "lon": 16.2522461,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "7",
+        "addr:postcode": "21220",
+        "addr:street": "Obala Kralja Zvonimira 7",
+        "amenity": "nightclub",
+        "name": "Disco Club Monaco",
+        "phone": "+385 91 571 1185"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1911911352,
+      "lat": 43.5158982,
+      "lon": 16.2501331,
+      "tags": {
+        "air_conditioning": "yes",
+        "amenity": "restaurant",
+        "indoor_seating": "yes",
+        "name": "Pizza Mirkec",
+        "outdoor_seating": "yes",
+        "smoking": "outside",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2296335635,
+      "lat": 43.5141521,
+      "lon": 16.2508392,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Ambis"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2296335724,
+      "lat": 43.5144478,
+      "lon": 16.2509894,
+      "tags": {
+        "amenity": "pub",
+        "name": "Buffet Tudor"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2365902264,
+      "lat": 43.516673,
+      "lon": 16.2511396,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Trogir"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2625945590,
+      "lat": 43.5189817,
+      "lon": 16.232848,
+      "tags": {
+        "air_conditioning": "yes",
+        "amenity": "cafe",
+        "indoor_seating": "yes",
+        "name": "Jurica",
+        "outdoor_seating": "yes",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2625947507,
+      "lat": 43.5189467,
+      "lon": 16.2344413,
+      "tags": {
+        "air_conditioning": "yes",
+        "amenity": "cafe",
+        "indoor_seating": "yes",
+        "name": "The Best",
+        "outdoor_seating": "yes",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2629614394,
+      "lat": 43.4954868,
+      "lon": 16.2608561,
+      "tags": {
+        "amenity": "restaurant",
+        "contact:phone": "+385 98 976 9486",
+        "name": "Leonardo",
+        "payment:cash": "only",
+        "website": "https://restaurantleonardo.hr/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2629647105,
+      "lat": 43.49281,
+      "lon": 16.2634528,
+      "tags": {
+        "amenity": "restaurant",
+        "contact:facebook": "https://www.facebook.com/p/Konoba-pizzeria-Pape-100070182247128",
+        "contact:instagram": "https://www.instagram.com/konoba_pape/",
+        "name": "Pape",
+        "opening_hours": "Mo-Su 07:00-24:00"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2642426099,
+      "lat": 43.5222665,
+      "lon": 16.252904,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Favorit"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2650121979,
+      "lat": 43.4954784,
+      "lon": 16.2603747,
+      "tags": {
+        "addr:city": "Okrug Gornji",
+        "addr:housenumber": "1",
+        "addr:postcode": "21220",
+        "addr:street": "Toć",
+        "amenity": "restaurant",
+        "name": "Rarita restoran",
+        "phone": "+385 21 887 115",
+        "website": "https://www.facebook.com/Rarita-Korni%C5%BEa-693386860697423/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2650121981,
+      "lat": 43.4960555,
+      "lon": 16.2610743,
+      "tags": {
+        "amenity": "restaurant",
+        "indoor_seating": "no",
+        "name": "Srdela",
+        "outdoor_seating": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2650141152,
+      "lat": 43.5049174,
+      "lon": 16.2579935,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "restaurant",
+        "indoor_seating": "no",
+        "name": "Restauran Rožac",
+        "outdoor_seating": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2753935003,
+      "lat": 43.518204,
+      "lon": 16.2502825,
+      "tags": {
+        "amenity": "cafe",
+        "check_date:opening_hours": "2023-10-22",
+        "indoor_seating": "no",
+        "name": "Nik",
+        "opening_hours:signed": "no",
+        "outdoor_seating": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2773663886,
+      "lat": 43.5245866,
+      "lon": 16.2672549,
+      "tags": {
+        "air_conditioning": "yes",
+        "amenity": "restaurant",
+        "indoor_seating": "yes",
+        "outdoor_seating": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2773663892,
+      "lat": 43.4967057,
+      "lon": 16.2604318,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "cafe",
+        "indoor_seating": "no",
+        "name": "Porto",
+        "outdoor_seating": "yes",
+        "smoking": "yes",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2974651840,
+      "lat": 43.5149716,
+      "lon": 16.2528878,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Pandora"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3018892289,
+      "lat": 43.5162145,
+      "lon": 16.249108,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "2",
+        "addr:postcode": "21220",
+        "addr:street": "Vukovarska",
+        "amenity": "restaurant",
+        "cuisine": "grill",
+        "email": "info@kamerlengo.hr",
+        "name": "Restaurant Kamerlengo",
+        "phone": "+385 21 884 772",
+        "website": "https://kamerlengo.hr/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3046456806,
+      "lat": 43.516424,
+      "lon": 16.2491669,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "6a",
+        "addr:postcode": "21220",
+        "addr:street": "Blaženog Augustina Kazotica",
+        "amenity": "restaurant",
+        "cuisine": "pizza",
+        "name": "Pizzeria Kristian",
+        "phone": "+385 21 885 172",
+        "toilets:wheelchair": "no",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3155551392,
+      "lat": 43.4938979,
+      "lon": 16.2636517,
+      "tags": {
+        "addr:housenumber": "9",
+        "amenity": "restaurant",
+        "cuisine": "regional",
+        "name": "Aldo",
+        "opening_hours": "08:00-00:00",
+        "phone": "+385994514299",
+        "website": "https://www.facebook.com/konobaAldo"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3155551393,
+      "lat": 43.4939793,
+      "lon": 16.2637168,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Genscher"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3424720530,
+      "lat": 43.4995986,
+      "lon": 16.2596617,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "fast_food",
+        "cuisine": "burger",
+        "indoor_seating": "no",
+        "name": "Surf'n'fries",
+        "outdoor_seating": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "smoking": "yes",
+        "takeaway": "yes",
+        "toilets": "no",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3625629157,
+      "lat": 43.4961399,
+      "lon": 16.2610327,
+      "tags": {
+        "amenity": "restaurant",
+        "indoor_seating": "yes",
+        "name": "TOC",
+        "outdoor_seating": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3744620118,
+      "lat": 43.5159141,
+      "lon": 16.2348942,
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "pizza",
+        "level": "0",
+        "name": "Casa Mia Pizzeria",
+        "opening_hours": "Fr 14:00-22:00; Sa 08:00-20:00"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3744620121,
+      "lat": 43.5158711,
+      "lon": 16.2354205,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Dream Yacht Worldwide",
+        "office": "charter",
+        "opening_hours": "Mo-Th 08:00-16:00; Fr,Sa 08:00-20:00; Su 08:00-13:30; PH 08:00-12:00",
+        "sailboat_rental": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3744620626,
+      "lat": 43.5158597,
+      "lon": 16.2355292,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Croatia Yacht Club",
+        "office": "charter",
+        "sailboat_rental": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3744620628,
+      "lat": 43.515963,
+      "lon": 16.2342905,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Yacht Charter Adriatic Managment d.o.o",
+        "office": "charter",
+        "opening_hours": "Mo-Th 08:00-16:00; Fr 12:00-20:00; Sa 08:00-20:00",
+        "sailboat_rental": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3744620630,
+      "lat": 43.515956,
+      "lon": 16.2343819,
+      "tags": {
+        "amenity": "boat_rental",
+        "check_date": "2025-06-20",
+        "check_date:opening_hours": "2025-06-20",
+        "contact:facebook": "https://www.facebook.com/baoticmarina/",
+        "contact:instagram": "https://www.instagram.com/marina_baotic",
+        "email": "seget@baotic-yachting.com",
+        "name": "Baotić Charter",
+        "office": "charter",
+        "opening_hours": "Mo-Th 08:00-16:00; Fr,Sa 08:00-20:00",
+        "operator": "Nautički centar Trogir d.o.o.",
+        "operator:type": "private",
+        "payment:cash": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "phone": "+385 21 880 791",
+        "sailboat_rental": "yes",
+        "website": "https://www.baotic-charter.com",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4005943593,
+      "lat": 43.5166495,
+      "lon": 16.2490984,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "8",
+        "addr:postcode": "21220",
+        "addr:street": "Blaženog Augustina Kazotica",
+        "amenity": "restaurant",
+        "cuisine": "regional",
+        "name": "Don Dino"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4212115090,
+      "lat": 43.5155921,
+      "lon": 16.2500771,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Cafe bar \"RIVA\""
+      }
+    },
+    {
+      "type": "node",
+      "id": 4293144290,
+      "lat": 43.5169241,
+      "lon": 16.2289963,
+      "tags": {
+        "amenity": "cafe",
+        "name": "JO-KI"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4293348193,
+      "lat": 43.5184561,
+      "lon": 16.2507707,
+      "tags": {
+        "amenity": "fast_food",
+        "name": "Big Mama's"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4293348195,
+      "lat": 43.5163365,
+      "lon": 16.250953,
+      "tags": {
+        "addr:housenumber": "15",
+        "addr:street": "Gradska Ulica",
+        "amenity": "cafe",
+        "cuisine": "ice_cream;coffee_shop",
+        "internet_access": "wlan",
+        "name": "Dovani",
+        "opening_hours": "Mo-Su 07:00-24:00"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4294304015,
+      "lat": 43.5180565,
+      "lon": 16.2428699,
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "pizza;croatian",
+        "name": "Coccolo"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4381921889,
+      "lat": 43.5294752,
+      "lon": 16.2240648,
+      "tags": {
+        "tourism": "viewpoint"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4696107112,
+      "lat": 43.5064346,
+      "lon": 16.2592544,
+      "tags": {
+        "name": "Plaża Okrug",
+        "natural": "beach",
+        "surface": "Żwirek"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4819562363,
+      "lat": 43.4921149,
+      "lon": 16.2479098,
+      "tags": {
+        "historic": "ruins"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4897197622,
+      "lat": 43.5157587,
+      "lon": 16.2503727,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "14",
+        "addr:postcode": "21220",
+        "addr:street": "Obala Bana Berislavića",
+        "amenity": "cafe",
+        "name": "Caffe Bar Big Daddy",
+        "phone": "+385 91 571 1185"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4897199125,
+      "lat": 43.5157743,
+      "lon": 16.2501611,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "15",
+        "addr:postcode": "21220",
+        "addr:street": "Obala Bana Berislavića",
+        "amenity": "restaurant",
+        "name": "Restaurant Pizzeria Riva",
+        "phone": "+385 91 582 5931"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4910367423,
+      "lat": 43.5164387,
+      "lon": 16.2476342,
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "pasta;barbecue;seafood;pizza",
+        "name": "Trogir",
+        "name:en": "Trogir",
+        "name:hr": "Trogir",
+        "outdoor_seating": "yes",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4936711972,
+      "lat": 43.5186391,
+      "lon": 16.2340326,
+      "tags": {
+        "air_conditioning": "yes",
+        "amenity": "cafe",
+        "indoor_seating": "yes",
+        "name": "Dišpet",
+        "outdoor_seating": "yes",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5004336626,
+      "lat": 43.5169347,
+      "lon": 16.250814,
+      "tags": {
+        "amenity": "restaurant",
+        "name:en": "Konoba Trs"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012478263,
+      "lat": 43.5174578,
+      "lon": 16.2512649,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Royal"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012478264,
+      "lat": 43.5172894,
+      "lon": 16.2514165,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "8",
+        "addr:postcode": "21220",
+        "addr:street": "Radovanov trg",
+        "amenity": "bar",
+        "brewery": "yes",
+        "name": "Caffe bar Galion"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012478265,
+      "lat": 43.5173403,
+      "lon": 16.2512863,
+      "tags": {
+        "addr:housenumber": "6",
+        "addr:street": "Radovanov tg",
+        "amenity": "restaurant",
+        "name": "Royal",
+        "website": "https://www.restaurant-royal.com/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012794524,
+      "lat": 43.5157669,
+      "lon": 16.2492249,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "1",
+        "addr:postcode": "21220",
+        "addr:street": "Blaženog Augustina Kazotica",
+        "amenity": "restaurant",
+        "email": "info@svdominik.com",
+        "name": "Restoran Sv. Dominik",
+        "opening_hours": "Mo-Su 10:00-24:00",
+        "phone": "+385 21 881 857",
+        "website": "https://www.svdominik.com/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012794526,
+      "lat": 43.5156298,
+      "lon": 16.2483733,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "22",
+        "addr:postcode": "21220",
+        "addr:street": "Obala Bana Berislavića",
+        "amenity": "restaurant",
+        "email": "concordia-hotel@st.htnet.hr",
+        "fax": "+385 21 885 401",
+        "name": "Restoran Concordia",
+        "phone": "+385 21 885 400",
+        "website": "https://www.concordia-hotel.net/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012794527,
+      "lat": 43.5158418,
+      "lon": 16.2495763,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "1",
+        "addr:postcode": "21220",
+        "addr:street": "Obrov",
+        "amenity": "restaurant",
+        "name": "Dionis Restaurant & Bar",
+        "phone": "+385 21 884 811"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012794528,
+      "lat": 43.5160781,
+      "lon": 16.249292,
+      "tags": {
+        "name": "Marcella Art Studio",
+        "shop": "gift"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012794529,
+      "lat": 43.5161618,
+      "lon": 16.2492585,
+      "tags": {
+        "name": "Kamena.Oluga",
+        "opening_hours": "Mo-Su,PH 09:00-23:00",
+        "shop": "gift"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012794530,
+      "lat": 43.5162454,
+      "lon": 16.2492236,
+      "tags": {
+        "shop": "gift"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012794531,
+      "lat": 43.5162736,
+      "lon": 16.2490908,
+      "tags": {
+        "amenity": "ice_cream",
+        "name": "Plaisir de l'harmonie"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012794532,
+      "lat": 43.5163806,
+      "lon": 16.2490761,
+      "tags": {
+        "shop": "gift"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5012794533,
+      "lat": 43.5163305,
+      "lon": 16.2491977,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:postcode": "21220",
+        "addr:street": "Blaženog Augustina Kazotica",
+        "amenity": "restaurant",
+        "name": "Restoran Terazza",
+        "toilets:wheelchair": "no",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5025311221,
+      "lat": 43.5168073,
+      "lon": 16.250945,
+      "tags": {
+        "addr:street": "Kralija Tomislava 5",
+        "amenity": "cafe",
+        "cuisine": "ice_cream;sandwich;breakfast;coffee_shop",
+        "internet_access": "wlan",
+        "name": "Deboto",
+        "name:fr": "Deboto"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5026119217,
+      "lat": 43.5173588,
+      "lon": 16.2507549,
+      "tags": {
+        "shop": "gift"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5026119218,
+      "lat": 43.5173297,
+      "lon": 16.2506656,
+      "tags": {
+        "fee": "yes",
+        "name": "Muzej Grada Trogira",
+        "tourism": "museum",
+        "wikidata": "Q97352821",
+        "wikipedia": "hr:Muzej grada Trogira"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5026119324,
+      "lat": 43.5174723,
+      "lon": 16.2502399,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Martinino",
+        "toilets:wheelchair": "no",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5026119326,
+      "lat": 43.5172769,
+      "lon": 16.2499105,
+      "tags": {
+        "amenity": "bar",
+        "name": "Candy bar"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5026119328,
+      "lat": 43.5170874,
+      "lon": 16.2495502,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Grill house"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5026119329,
+      "lat": 43.5169991,
+      "lon": 16.2492822,
+      "tags": {
+        "amenity": "bar",
+        "cuisine": "international",
+        "name": "Don Dino - Wine bar"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5026119330,
+      "lat": 43.5169613,
+      "lon": 16.2491566,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Skrapa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5030944902,
+      "lat": 43.5173639,
+      "lon": 16.251012,
+      "tags": {
+        "shop": "gift"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5031155928,
+      "lat": 43.5165389,
+      "lon": 16.2504593,
+      "tags": {
+        "amenity": "restaurant"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5031155932,
+      "lat": 43.5173841,
+      "lon": 16.2511234,
+      "tags": {
+        "amenity": "fast_food"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5031155942,
+      "lat": 43.5161548,
+      "lon": 16.2505828,
+      "tags": {
+        "amenity": "restaurant"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5031155943,
+      "lat": 43.5161561,
+      "lon": 16.2507282,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Tri Volta",
+        "opening_hours": "PH,Mo-Su 10:00-22:00"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5031155944,
+      "lat": 43.5160958,
+      "lon": 16.2506256,
+      "tags": {
+        "amenity": "restaurant"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5031155945,
+      "lat": 43.5160112,
+      "lon": 16.2506349,
+      "tags": {
+        "amenity": "restaurant"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5031155947,
+      "lat": 43.515985,
+      "lon": 16.2508046,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Vrata o' grada"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5031155949,
+      "lat": 43.515922,
+      "lon": 16.2508106,
+      "tags": {
+        "name": "My Princess Boutique",
+        "shop": "gift"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5031174084,
+      "lat": 43.5148232,
+      "lon": 16.25248,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Pizza Cut Seven",
+        "opening_hours": "Mo-Sa 10:00-24:00; PH,Su 17:00-24:00 closed"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5031174087,
+      "lat": 43.5073773,
+      "lon": 16.259269,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Mediteraneo pizza"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5032816659,
+      "lat": 43.5167919,
+      "lon": 16.2505,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Marijana Restaurant"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5032816661,
+      "lat": 43.5164778,
+      "lon": 16.2507463,
+      "tags": {
+        "addr:housenumber": "23",
+        "addr:street": "Gradska Ulica",
+        "amenity": "restaurant",
+        "description": "Dalmatian and local cuisine.",
+        "name": "Calebotta",
+        "opening_hours": "Mo-Su 07:00-23:00",
+        "phone": "091 738 0454",
+        "website": "https://calebotta.com/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5032816664,
+      "lat": 43.5171701,
+      "lon": 16.2504692,
+      "tags": {
+        "shop": "gift"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5032816665,
+      "lat": 43.5171899,
+      "lon": 16.2503712,
+      "tags": {
+        "shop": "gift"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5034804895,
+      "lat": 43.4924392,
+      "lon": 16.2559896,
+      "tags": {
+        "amenity": "restaurant"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5034804896,
+      "lat": 43.4924136,
+      "lon": 16.2557559,
+      "tags": {
+        "amenity": "restaurant"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5083787095,
+      "lat": 43.5168766,
+      "lon": 16.248858,
+      "tags": {
+        "amenity": "restaurant",
+        "internet_access": "wlan",
+        "internet_access:fee": "no",
+        "name": "Konoba Bonaca",
+        "outdoor_seating": "yes",
+        "smoking": "yes",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5197900225,
+      "lat": 43.5168524,
+      "lon": 16.2288971,
+      "tags": {
+        "amenity": "restaurant"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5204300822,
+      "lat": 43.5168886,
+      "lon": 16.2509915,
+      "tags": {
+        "addr:street": "Trg Ivana Pavla II",
+        "amenity": "cafe",
+        "check_date": "2025-10-08",
+        "internet_access": "wlan",
+        "name": "Caffe Trogir"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5316678846,
+      "lat": 43.5164018,
+      "lon": 16.2510547,
+      "tags": {
+        "shop": "art"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5890940585,
+      "lat": 43.5160401,
+      "lon": 16.2484551,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Piccolo Ponte"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5890973385,
+      "lat": 43.5171765,
+      "lon": 16.2494088,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Konoba Poon Pijat"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5891221485,
+      "lat": 43.517252,
+      "lon": 16.2513442,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "9",
+        "addr:postcode": "21220",
+        "addr:street": "Radovanov trg",
+        "amenity": "cafe",
+        "name": "Smokvica"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5901754885,
+      "lat": 43.5168155,
+      "lon": 16.2508347,
+      "tags": {
+        "addr:housenumber": "3A",
+        "addr:postcode": "21220",
+        "addr:street": "Matije Gupca",
+        "amenity": "bar",
+        "name": "Porto"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5944362086,
+      "lat": 43.5167113,
+      "lon": 16.24897,
+      "tags": {
+        "addr:housenumber": "17",
+        "addr:postcode": "21220",
+        "addr:street": "Blaženog Augustina Kazotica",
+        "amenity": "ice_cream",
+        "name": "Don Dino Ice Shop",
+        "opening_hours": "Mo-Su 08:00-22:00",
+        "website": "http://www.facebook.com/pages/Don-Dino-Ice-Cream/467238153630255"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5961441120,
+      "lat": 43.5191062,
+      "lon": 16.2327542,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Konoba & Pizzeria Traina"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5961611302,
+      "lat": 43.5159917,
+      "lon": 16.2508702,
+      "tags": {
+        "addr:housenumber": "5",
+        "addr:street": "Gradska ulica",
+        "amenity": "restaurant",
+        "name": "Vrata O'Grada"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5961691706,
+      "lat": 43.5176137,
+      "lon": 16.2510043,
+      "tags": {
+        "amenity": "ice_cream",
+        "indoor_seating": "no",
+        "name": "Bella",
+        "outdoor_seating": "yes",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6188111668,
+      "lat": 43.5160999,
+      "lon": 16.2320232,
+      "tags": {
+        "amenity": "bar",
+        "name": "Glorijet Bar"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6695012251,
+      "lat": 43.5183739,
+      "lon": 16.2241338,
+      "tags": {
+        "amenity": "restaurant"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6695012253,
+      "lat": 43.517945,
+      "lon": 16.2255111,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Goldy"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6699306386,
+      "lat": 43.5169471,
+      "lon": 16.2489788,
+      "tags": {
+        "amenity": "restaurant",
+        "internet_access": "wlan",
+        "name:en": "Canoba Skrapa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6719056995,
+      "lat": 43.516436,
+      "lon": 16.249185,
+      "tags": {
+        "addr:housenumber": "12",
+        "addr:postcode": "21220",
+        "addr:street": "Ribarska",
+        "amenity": "bar",
+        "name": "Budalus",
+        "name:en": "Bubalus",
+        "name:hr": "Bubalus",
+        "phone": "+385992991984"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8297526650,
+      "lat": 43.5183767,
+      "lon": 16.2451607,
+      "tags": {
+        "amenity": "pub",
+        "name": "Bok"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8544784259,
+      "lat": 43.4941699,
+      "lon": 16.2650051,
+      "tags": {
+        "addr:city": "Okrug Gornji",
+        "addr:housenumber": "1",
+        "addr:postcode": "21223",
+        "addr:street": "Ul. Bana Jelačića",
+        "amenity": "restaurant",
+        "cuisine": "regional",
+        "delivery": "yes",
+        "internet_access": "wlan",
+        "internet_access:fee": "customers",
+        "lunch": "menu",
+        "name": "Bistro Mare's",
+        "opening_hours": "Mo-Su 07:00-23:00",
+        "outdoor_seating": "yes",
+        "phone": "+385996414937",
+        "reservation": "yes",
+        "takeaway": "yes",
+        "website": "https://bistro-mares-okrug-gornji.eatbu.hr"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8544828866,
+      "lat": 43.4943454,
+      "lon": 16.2637241,
+      "tags": {
+        "addr:city": "Okrug Gornji",
+        "addr:housenumber": "11c",
+        "addr:postcode": "21223",
+        "addr:street": "30.svibnja",
+        "amenity": "restaurant",
+        "cuisine": "regional;seafood",
+        "indoor_seating": "yes",
+        "name": "Restaurant Mali Raj",
+        "opening_hours": "Mo-Su 09:00-23:00",
+        "outdoor_seating": "yes",
+        "phone": "+385958036177",
+        "reservation": "recommended",
+        "toilets": "customer",
+        "website": "http://bluestar-hr.com/restaurant-mali-raj/restaurant-mali-raj-menu/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8689924517,
+      "lat": 43.5039925,
+      "lon": 16.2581758,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Arma"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8689960017,
+      "lat": 43.4983129,
+      "lon": 16.2602467,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "bar",
+        "indoor_seating": "no",
+        "name": "Beach bar Twins",
+        "opening_hours": "PH,Mo-Su 07:00-24:00",
+        "outdoor_seating": "yes",
+        "smoking": "yes",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8690040717,
+      "lat": 43.4936544,
+      "lon": 16.2640048,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Caffe bar Tomislav"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8839129789,
+      "lat": 43.5114047,
+      "lon": 16.2589091,
+      "tags": {
+        "ele": "93.2",
+        "name": "Balan",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8839129790,
+      "lat": 43.5117377,
+      "lon": 16.2570445,
+      "tags": {
+        "direction": "315",
+        "tourism": "viewpoint"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8839144749,
+      "lat": 43.5165539,
+      "lon": 16.2508533,
+      "tags": {
+        "amenity": "ice_cream",
+        "name": "7 palmi"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8839144750,
+      "lat": 43.5167362,
+      "lon": 16.250955,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Corte"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8848318517,
+      "lat": 43.5165581,
+      "lon": 16.2490383,
+      "tags": {
+        "addr:housenumber": "15",
+        "addr:postcode": "21220",
+        "addr:street": "Blaženog Augustina Kazotica",
+        "amenity": "restaurant",
+        "cuisine": "croatian;italian",
+        "name": "Alka Restaurant",
+        "website": "http://restaurant-alka.hr/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8999527674,
+      "lat": 43.5297391,
+      "lon": 16.2234675,
+      "tags": {
+        "ele": "305",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9007831215,
+      "lat": 43.4959115,
+      "lon": 16.2611449,
+      "tags": {
+        "addr:city": "Okrug Gornji",
+        "addr:housenumber": "20",
+        "addr:postcode": "21223",
+        "addr:street": "30. svibnja",
+        "amenity": "restaurant",
+        "cuisine": "burger;seafood;regional;barbecue;pizza",
+        "name": "Restaurant Mali Raj II BBQ & GRILL",
+        "opening_hours": "Mo-Su 09:00-23:59",
+        "outdoor_seating": "yes",
+        "phone": "+385 21 887 211",
+        "reservation": "recommended",
+        "website": "http://bluestar-hr.com/restaurant-mali-raj/mali-raj-ii-bbq-grill/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9007843025,
+      "lat": 43.4971143,
+      "lon": 16.2603417,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "bar",
+        "indoor_seating": "no",
+        "name": "Vagabundo",
+        "opening_hours": "Mo-Su 13:00-23:00",
+        "outdoor_seating": "yes",
+        "smoking": "yes",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9173742033,
+      "lat": 43.5161787,
+      "lon": 16.2503039,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "12",
+        "addr:postcode": "21220",
+        "addr:street": "Ribarska Ulica",
+        "amenity": "restaurant",
+        "cuisine": "american",
+        "diet:non-vegetarian": "yes",
+        "diet:vegan": "yes",
+        "diet:vegetarian": "yes",
+        "internet_access": "yes",
+        "name": "Bubalus Burger Bar",
+        "opening_hours": "Mo-Su 13:00-23:30",
+        "outdoor_seating": "yes",
+        "phone": "+385992991984",
+        "takeaway": "yes",
+        "website": "https://bubalus-burger-bar.eatbu.hr/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9176414346,
+      "lat": 43.5368135,
+      "lon": 16.2690844,
+      "tags": {
+        "ele": "202.6",
+        "name": "Plošnjak",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9176414347,
+      "lat": 43.5366448,
+      "lon": 16.2554496,
+      "tags": {
+        "ele": "309.9",
+        "name": "Kite",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9176414348,
+      "lat": 43.5315117,
+      "lon": 16.2498087,
+      "tags": {
+        "ele": "217.4",
+        "name": "Brnastrovica",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9407377401,
+      "lat": 43.5243909,
+      "lon": 16.2196078,
+      "tags": {
+        "tourism": "viewpoint"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9407377402,
+      "lat": 43.527181,
+      "lon": 16.2180533,
+      "tags": {
+        "tourism": "viewpoint"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9556147870,
+      "lat": 43.4984896,
+      "lon": 16.2691598,
+      "tags": {
+        "ele": "86",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9556147871,
+      "lat": 43.5070343,
+      "lon": 16.2776356,
+      "tags": {
+        "ele": "149.9",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9556147872,
+      "lat": 43.5125434,
+      "lon": 16.2704472,
+      "tags": {
+        "ele": "110.7",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9556147875,
+      "lat": 43.5113918,
+      "lon": 16.2500625,
+      "tags": {
+        "ele": "34.1",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9556147877,
+      "lat": 43.4913603,
+      "lon": 16.2500839,
+      "tags": {
+        "ele": "60.5",
+        "name": "Glavice",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9673776176,
+      "lat": 43.5167835,
+      "lon": 16.2321434,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Ultra Yacht Brokerage",
+        "office": "charter",
+        "opening_hours": "Mo-Fr 08:00-16:00",
+        "yacht_rental": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9974574171,
+      "lat": 43.4978129,
+      "lon": 16.2603968,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "restaurant",
+        "changing_table": "no",
+        "cuisine": "mediterranean",
+        "indoor_seating": "no",
+        "name": "CiaoCiao",
+        "outdoor_seating": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "smoking": "yes",
+        "toilets": "no",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9977131810,
+      "lat": 43.5001645,
+      "lon": 16.2602638,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "restaurant",
+        "cuisine": "mediterranean;pizza",
+        "indoor_seating": "yes",
+        "name": "Mirkec",
+        "opening_hours": "Mo-Su 11:00-23:00",
+        "outdoor_seating": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "smoking": "yes",
+        "toilets": "yes",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9977131811,
+      "lat": 43.4987272,
+      "lon": 16.2605997,
+      "tags": {
+        "air_conditioning": "yes",
+        "amenity": "cafe",
+        "indoor_seating": "yes",
+        "name": "Bobis",
+        "outdoor_seating": "yes",
+        "takeaway": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9977866773,
+      "lat": 43.4992386,
+      "lon": 16.2599853,
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "pancake",
+        "indoor_seating": "no",
+        "name": "Tomaka",
+        "opening_hours": "Mo-Su 10:00-24:00",
+        "outdoor_seating": "no",
+        "takeaway": "only",
+        "toilets": "no",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9979488498,
+      "lat": 43.4997459,
+      "lon": 16.2595553,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "restaurant",
+        "cuisine": "mediterranean;burger",
+        "indoor_seating": "no",
+        "name": "Bok",
+        "outdoor_seating": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "smoking": "yes",
+        "toilets": "no",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9979554728,
+      "lat": 43.4998799,
+      "lon": 16.2598867,
+      "tags": {
+        "amenity": "restaurant",
+        "indoor_seating": "yes",
+        "name": "Villa Okruk",
+        "outdoor_seating": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9980237126,
+      "lat": 43.499516,
+      "lon": 16.2597419,
+      "tags": {
+        "amenity": "ice_cream",
+        "name": "BOK Premium",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "takeaway": "only",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9980314522,
+      "lat": 43.5021029,
+      "lon": 16.2594074,
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "pizza",
+        "name": "Capo"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9980314523,
+      "lat": 43.4993721,
+      "lon": 16.2598685,
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "juice",
+        "name": "Navigare",
+        "takeaway": "only",
+        "toilets": "no",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9980314524,
+      "lat": 43.4998977,
+      "lon": 16.259469,
+      "tags": {
+        "amenity": "ice_cream",
+        "indoor_seating": "no",
+        "name": "ledo",
+        "outdoor_seating": "no",
+        "takeaway": "only"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9980314525,
+      "lat": 43.5014072,
+      "lon": 16.2590172,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Brada"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9980314526,
+      "lat": 43.5016283,
+      "lon": 16.2590387,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Tutti Frutti"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9980314528,
+      "lat": 43.5005543,
+      "lon": 16.2591729,
+      "tags": {
+        "amenity": "bar",
+        "name": "Aquarius"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9980314529,
+      "lat": 43.4993175,
+      "lon": 16.2599166,
+      "tags": {
+        "name": "Kamenčić",
+        "opening_hours": "Mo-Su 09:00-22:00",
+        "shop": "gift",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9981469738,
+      "lat": 43.4990381,
+      "lon": 16.2600703,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "bar",
+        "indoor_seating": "no",
+        "name": "Club Havana",
+        "outdoor_seating": "yes",
+        "smoking": "yes",
+        "toilets": "no",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9981469739,
+      "lat": 43.4986959,
+      "lon": 16.2601493,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "bar",
+        "indoor_seating": "no",
+        "name": "Favorit",
+        "outdoor_seating": "yes",
+        "toilets": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9981498900,
+      "lat": 43.4989017,
+      "lon": 16.2601148,
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "pancake",
+        "indoor_seating": "no",
+        "outdoor_seating": "no",
+        "takeaway": "only"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9982060489,
+      "lat": 43.4965397,
+      "lon": 16.2603712,
+      "tags": {
+        "amenity": "ice_cream",
+        "check_date:opening_hours": "2024-07-23",
+        "indoor_seating": "no",
+        "name": "Giuseppe Gelato",
+        "opening_hours": "Mo-Su 08:00-24:00",
+        "outdoor_seating": "no",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no",
+        "takeaway": "only",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9982060491,
+      "lat": 43.4983718,
+      "lon": 16.2602092,
+      "tags": {
+        "amenity": "ice_cream",
+        "indoor_seating": "no",
+        "name": "Carte d'Or",
+        "opening_hours": "Mo-Su 10:00-23:00",
+        "outdoor_seating": "no",
+        "takeaway": "only",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9982060492,
+      "lat": 43.4974351,
+      "lon": 16.26036,
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "fast_food",
+        "cuisine": "pancake",
+        "indoor_seating": "no",
+        "name": "Smile",
+        "opening_hours": "Mo-Su 10:30-24:00",
+        "outdoor_seating": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no",
+        "smoking": "no",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9983196941,
+      "lat": 43.4988544,
+      "lon": 16.2601215,
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "juice",
+        "takeaway": "only"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9983803407,
+      "lat": 43.5002208,
+      "lon": 16.2593054,
+      "tags": {
+        "amenity": "ice_cream",
+        "name": "Carte d'Or"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9983803408,
+      "lat": 43.5009146,
+      "lon": 16.2591212,
+      "tags": {
+        "amenity": "bar",
+        "name": "Papaya"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9983803410,
+      "lat": 43.5007412,
+      "lon": 16.2591569,
+      "tags": {
+        "amenity": "fast_food",
+        "name": "Papaya"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9983803411,
+      "lat": 43.5010468,
+      "lon": 16.2590833,
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "pancake"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9983803413,
+      "lat": 43.4979347,
+      "lon": 16.2604022,
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "pancake",
+        "indoor_seating": "no",
+        "name": "Pancakes",
+        "opening_hours": "Mo-Su 10:00-24:00",
+        "outdoor_seating": "no",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "takeaway": "only",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9983803414,
+      "lat": 43.4984334,
+      "lon": 16.2601908,
+      "tags": {
+        "amenity": "ice_cream",
+        "indoor_seating": "no",
+        "name": "ledo",
+        "outdoor_seating": "no",
+        "takeaway": "only",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9983803416,
+      "lat": 43.5018277,
+      "lon": 16.2591281,
+      "tags": {
+        "amenity": "bar",
+        "name": "Flashback"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9988970850,
+      "lat": 43.4985194,
+      "lon": 16.2601759,
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "pizza;burger;mediterranean",
+        "indoor_seating": "no",
+        "name": "Favorit",
+        "outdoor_seating": "yes",
+        "takeaway": "yes",
+        "toilets": "no",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10059234536,
+      "lat": 43.5167661,
+      "lon": 16.2481666,
+      "tags": {
+        "addr:city": "Trogir",
+        "amenity": "restaurant",
+        "check_date": "2026-07-06",
+        "cuisine": "regional",
+        "indoor_seating": "no",
+        "name": "Konoba Fortin",
+        "opening_hours": "Mo-Sa 11:00-23:00",
+        "outdoor_seating": "veranda",
+        "payment:cash": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "phone": "+385 98 383 942",
+        "website": "https://m.facebook.com/profile.php?id=100054601953321",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10103486966,
+      "lat": 43.5136404,
+      "lon": 16.2495529,
+      "tags": {
+        "amenity": "restaurant",
+        "indoor_seating": "yes",
+        "name": "Garden Drink and Food",
+        "outdoor_seating": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10249702022,
+      "lat": 43.5107495,
+      "lon": 16.2513021,
+      "tags": {
+        "lifeguard": "no",
+        "name": "Šaldun",
+        "natural": "beach",
+        "supervised": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10821576005,
+      "lat": 43.5165832,
+      "lon": 16.2501706,
+      "tags": {
+        "addr:housenumber": "14",
+        "addr:postcode": "21220",
+        "addr:street": "Budislavićeva ulica",
+        "name:en": "Trogir experience",
+        "opening_hours": "Mo-Fr 10:00-17:00",
+        "shop": "gift"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11017501405,
+      "lat": 43.5150401,
+      "lon": 16.2525983,
+      "tags": {
+        "amenity": "fast_food",
+        "name": "Fast Food Stari Most"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11161558705,
+      "lat": 43.5173569,
+      "lon": 16.2513661,
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "fish;fish_and_chips",
+        "name": "Tunaholic"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11163480605,
+      "lat": 43.5166858,
+      "lon": 16.2501913,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Konoba Monika",
+        "name:en": "Monika"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11183214500,
+      "lat": 43.5129228,
+      "lon": 16.2441632,
+      "tags": {
+        "amenity": "restaurant",
+        "contact:email": "restoranbocel@gmail.com",
+        "contact:phone": "+385 21 444 605",
+        "name": "Restaurant Bocel",
+        "name:hr": "Restoran Bocel"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11183214501,
+      "lat": 43.5171087,
+      "lon": 16.2497,
+      "tags": {
+        "addr:housenumber": "30",
+        "addr:street": "Šubićeva ulica",
+        "amenity": "restaurant",
+        "cuisine": "mediterranean",
+        "name": "Franka",
+        "website": "https://frankatrogir.com/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11183214503,
+      "lat": 43.5173304,
+      "lon": 16.2504584,
+      "tags": {
+        "addr:housenumber": "2A",
+        "addr:street": "Šubićeva ulica",
+        "amenity": "cafe",
+        "diet:vegetarian": "yes",
+        "indoor_seating": "yes",
+        "name": "Tinel Specialty Coffee Shop",
+        "opening_hours": "Mo-Su 07:00-24:00",
+        "outdoor_seating": "yes",
+        "website": "https://tineltrogir.business.site/"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11383212193,
+      "lat": 43.5116138,
+      "lon": 16.2513964,
+      "tags": {
+        "tourism": "viewpoint"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11898919169,
+      "lat": 43.5158214,
+      "lon": 16.2485762,
+      "tags": {
+        "addr:housenumber": "20",
+        "addr:postcode": "21220",
+        "addr:street": "Obala bana Berislavića",
+        "amenity": "restaurant",
+        "cuisine": "croatian",
+        "name": "Konoba Milla",
+        "opening_hours": "Mo-Su 17:00-00:00",
+        "phone": "021884748"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11947841769,
+      "lat": 43.5171033,
+      "lon": 16.2512581,
+      "tags": {
+        "name": "Bell tower",
+        "tourism": "viewpoint",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12101223901,
+      "lat": 43.5165615,
+      "lon": 16.2509486,
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Konoba Mirakul"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12927975854,
+      "lat": 43.5158915,
+      "lon": 16.2349929,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Ace - Adriatic Yachting",
+        "opening_hours": "Fr 12:00-20:00; Sa 08:00-20:00",
+        "yacht_rental": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12927994012,
+      "lat": 43.5159558,
+      "lon": 16.2342353,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Umbrella Yacht",
+        "opening_hours": "Mo-Th 08:00-16:00; Fr 12:00-20:00; Sa 08:00-20:00",
+        "yacht_rental": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12928000491,
+      "lat": 43.5158874,
+      "lon": 16.235044,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Free Wave"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12928009157,
+      "lat": 43.5158811,
+      "lon": 16.2350712,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Mk Yacht",
+        "opening_hours": "Fr 13:00-19:00; Sa 08:00-18:00"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12928010553,
+      "lat": 43.5159475,
+      "lon": 16.2344426,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Sail Club Croatia d.o.o",
+        "opening_hours": "Fr 12:00-20:00; Sa 08:00-20:00",
+        "yacht_rental": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12928011419,
+      "lat": 43.5158583,
+      "lon": 16.2355928,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Navigare Yachting",
+        "opening_hours": "Fr 12:00-20:00; Sa 08:00-20:00; Su 09:00-12:00"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12928039422,
+      "lat": 43.5177895,
+      "lon": 16.2311966,
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "pizza",
+        "name": "Pizzeria Samaria Hotels",
+        "opening_hours": "16:00-22:00"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12928040156,
+      "lat": 43.516912,
+      "lon": 16.2321548,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "Croatia Yachting",
+        "opening_hours": "Mo-Th 08:00-16:00; Fr 13:00-20:00; Sa 08:00-20:00",
+        "yacht_rental": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12928041829,
+      "lat": 43.5168473,
+      "lon": 16.2321535,
+      "tags": {
+        "amenity": "boat_rental",
+        "name": "AVS Charter",
+        "opening_hours": "Mo-Fr 08:00-16:00",
+        "yacht_rental": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13510894512,
+      "lat": 43.5163799,
+      "lon": 16.2492041,
+      "tags": {
+        "amenity": "restaurant",
+        "check_date": "2023-05-22",
+        "name": "JUMBO",
+        "source": "https://osm.org/note/3700937"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13719186690,
+      "lat": 43.523114,
+      "lon": 16.2647762,
+      "tags": {
+        "amenity": "cafe"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13719188981,
+      "lat": 43.5184006,
+      "lon": 16.2487417,
+      "tags": {
+        "amenity": "fast_food",
+        "indoor_seating": "no",
+        "outdoor_seating": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13730334208,
+      "lat": 43.5183949,
+      "lon": 16.2369271,
+      "tags": {
+        "air_conditioning": "yes",
+        "amenity": "restaurant",
+        "name": "Barba"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13970008028,
+      "lat": 43.5171507,
+      "lon": 16.251807,
+      "tags": {
+        "amenity": "ice_cream",
+        "name": "Amora"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13970008475,
+      "lat": 43.5168693,
+      "lon": 16.2506421,
+      "tags": {
+        "amenity": "restaurant",
+        "diet:vegetarian": "yes",
+        "name": "Don Dino Casa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14088103144,
+      "lat": 43.5161821,
+      "lon": 16.2680096,
+      "tags": {
+        "amenity": "bar",
+        "name": "Beach bar Music"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14105749201,
+      "lat": 43.5161085,
+      "lon": 16.2508697,
+      "tags": {
+        "addr:housenumber": "19",
+        "addr:postcode": "21220",
+        "addr:street": "Gradska Ulica",
+        "amenity": "restaurant",
+        "contact:instagram": "konobakairos",
+        "cuisine": "croatian",
+        "name": "Konoba Kairos"
+      }
+    },
+    {
+      "type": "node",
+      "id": 14271088668,
+      "lat": 43.5169153,
+      "lon": 16.2501991,
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "20",
+        "addr:postcode": "21220",
+        "addr:street": "Matije Gupca",
+        "amenity": "restaurant",
+        "name": "Konoba Stafileo"
+      }
+    },
+    {
+      "type": "way",
+      "id": 28058989,
+      "center": {
+        "lat": 43.4940178,
+        "lon": 16.2578361
+      },
+      "tags": {
+        "natural": "beach",
+        "surface": "pebblestone"
+      }
+    },
+    {
+      "type": "way",
+      "id": 37349348,
+      "center": {
+        "lat": 43.5171548,
+        "lon": 16.2486598
+      },
+      "tags": {
+        "leisure": "park",
+        "name": "Park Fortin"
+      }
+    },
+    {
+      "type": "way",
+      "id": 37349349,
+      "center": {
+        "lat": 43.5172299,
+        "lon": 16.2515255
+      },
+      "tags": {
+        "leisure": "park",
+        "name": "Park Žudika"
+      }
+    },
+    {
+      "type": "way",
+      "id": 37349350,
+      "center": {
+        "lat": 43.5156817,
+        "lon": 16.2476047
+      },
+      "tags": {
+        "leisure": "park",
+        "name": "Park Malarija"
+      }
+    },
+    {
+      "type": "way",
+      "id": 38102640,
+      "center": {
+        "lat": 43.4994794,
+        "lon": 16.2596101
+      },
+      "tags": {
+        "name": "Copacabana",
+        "natural": "beach",
+        "supervised": "no",
+        "surface": "pebblestone"
+      }
+    },
+    {
+      "type": "way",
+      "id": 39180977,
+      "center": {
+        "lat": 43.5194051,
+        "lon": 16.2507272
+      },
+      "tags": {
+        "leisure": "park",
+        "name": "Park Garagnin Fanfogna",
+        "tourism": "picnic_site"
+      }
+    },
+    {
+      "type": "way",
+      "id": 40522757,
+      "center": {
+        "lat": 43.5217857,
+        "lon": 16.263587
+      },
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:country": "HR",
+        "addr:housenumber": "40",
+        "addr:postcode": "21220",
+        "addr:street": "Kneza Trpimira",
+        "air_conditioning": "yes",
+        "amenity": "cafe",
+        "branch": "Trogir",
+        "brand": "Fresh Corner",
+        "brand:wikidata": "Q129256375",
+        "building": "retail",
+        "cuisine": "coffee_shop;hot_dog;sandwich;pastry",
+        "indoor_seating": "yes",
+        "name": "Fresh Corner",
+        "opening_hours": "24/7",
+        "operator": "INA",
+        "outdoor_seating": "yes",
+        "payment:american_express": "yes",
+        "payment:cash": "yes",
+        "payment:diners_club": "yes",
+        "payment:discover_card": "yes",
+        "payment:dkv": "yes",
+        "payment:maestro": "yes",
+        "payment:mastercard": "yes",
+        "payment:uta": "yes",
+        "payment:visa": "yes",
+        "payment:visa_electron": "yes",
+        "phone": "+385 91 4971 254",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled",
+        "shop": "convenience",
+        "takeaway": "yes",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "way",
+      "id": 41191364,
+      "center": {
+        "lat": 43.5228879,
+        "lon": 16.2260808
+      },
+      "tags": {
+        "addr:city": "Seget Donji",
+        "addr:housenumber": "18",
+        "addr:postcode": "21218",
+        "addr:street": "Petra Krešimira IV",
+        "amenity": "restaurant",
+        "building": "yes",
+        "name": "Belvedere",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled"
+      }
+    },
+    {
+      "type": "way",
+      "id": 41271061,
+      "center": {
+        "lat": 43.5295505,
+        "lon": 16.2773642
+      },
+      "tags": {
+        "air_conditioning": "yes",
+        "amenity": "restaurant",
+        "building": "yes",
+        "indoor_seating": "yes",
+        "name": "Mlinice Pantan",
+        "outdoor_seating": "yes",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled"
+      }
+    },
+    {
+      "type": "way",
+      "id": 46619947,
+      "center": {
+        "lat": 43.5134166,
+        "lon": 16.2499959
+      },
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "1A",
+        "addr:postcode": "21220",
+        "addr:street": "Ulica kralja Tomislava",
+        "amenity": "restaurant",
+        "building": "yes",
+        "contact:facebook": "https://www.facebook.com/p/WildWest_BurgerSteakHouse-100046525245241/",
+        "cuisine": "burger;steak_house",
+        "name": "Wild West",
+        "opening_hours": "Tu-Th 16:00-24:00, Fr-Su 14:00-24:00; Mo off",
+        "phone": "+38521317112",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled"
+      }
+    },
+    {
+      "type": "way",
+      "id": 46686564,
+      "center": {
+        "lat": 43.5234383,
+        "lon": 16.2709928
+      },
+      "tags": {
+        "name": "Pantana",
+        "natural": "beach",
+        "wikidata": "Q97446232"
+      }
+    },
+    {
+      "type": "way",
+      "id": 47326915,
+      "center": {
+        "lat": 43.5048008,
+        "lon": 16.2566747
+      },
+      "tags": {
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "way",
+      "id": 148870547,
+      "center": {
+        "lat": 43.5265718,
+        "lon": 16.2745987
+      },
+      "tags": {
+        "description": "special ichthyological and ornithological reserve",
+        "leisure": "nature_reserve",
+        "loc_name": "Blato",
+        "name": "Pantan",
+        "natural": "wetland",
+        "wetland": "marsh",
+        "wikidata": "Q12639275",
+        "wikipedia": "hr:Pantan"
+      }
+    },
+    {
+      "type": "way",
+      "id": 174828837,
+      "center": {
+        "lat": 43.5132166,
+        "lon": 16.2668909
+      },
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "91",
+        "addr:postcode": "21220",
+        "addr:street": "Ul. Bilin Dolac",
+        "amenity": "restaurant",
+        "building": "yes",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled"
+      }
+    },
+    {
+      "type": "way",
+      "id": 256728758,
+      "center": {
+        "lat": 43.4926983,
+        "lon": 16.2553191
+      },
+      "tags": {
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "way",
+      "id": 256729831,
+      "center": {
+        "lat": 43.493214,
+        "lon": 16.2545056
+      },
+      "tags": {
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "way",
+      "id": 256768713,
+      "center": {
+        "lat": 43.5053295,
+        "lon": 16.2558037
+      },
+      "tags": {
+        "amenity": "bar"
+      }
+    },
+    {
+      "type": "way",
+      "id": 272916186,
+      "center": {
+        "lat": 43.520341,
+        "lon": 16.2604017
+      },
+      "tags": {
+        "leisure": "park",
+        "name": "Park prijateljstva"
+      }
+    },
+    {
+      "type": "way",
+      "id": 341225750,
+      "center": {
+        "lat": 43.5166877,
+        "lon": 16.2511352
+      },
+      "tags": {
+        "building": "yes",
+        "heritage": "2",
+        "heritage:operator": "uzkb",
+        "name": "Gradska loža",
+        "name:de": "Stadtloggia",
+        "name:en": "Town Loggia",
+        "name:hr": "Gradska loža",
+        "name:it": "Loggia di Traù",
+        "ref:hr:uzkb": "Z-5104",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled",
+        "tourism": "attraction",
+        "wikidata": "Q97219509",
+        "wikipedia": "hr:Gradska loža u Trogiru"
+      }
+    },
+    {
+      "type": "way",
+      "id": 344441652,
+      "center": {
+        "lat": 43.5158059,
+        "lon": 16.2507937
+      },
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "12",
+        "addr:postcode": "21220",
+        "addr:street": "Obala Bana Berislavića",
+        "building": "yes",
+        "building:levels": "4",
+        "name": "Murex",
+        "opening_hours": "Mo-Su 09:00-24:00",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled",
+        "shop": "gift",
+        "wheelchair": "limited"
+      }
+    },
+    {
+      "type": "way",
+      "id": 344508450,
+      "center": {
+        "lat": 43.516691,
+        "lon": 16.2509326
+      },
+      "tags": {
+        "building": "yes",
+        "castle_type": "palace",
+        "historic": "castle",
+        "name": "Mala palača Ćipiko",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled",
+        "wikidata": "Q16116710",
+        "wikipedia": "hr:Palača Ćipiko"
+      }
+    },
+    {
+      "type": "way",
+      "id": 344946940,
+      "center": {
+        "lat": 43.5170519,
+        "lon": 16.2514404
+      },
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "10",
+        "addr:postcode": "21220",
+        "addr:street": "Trg Ivana Pavla II",
+        "amenity": "place_of_worship",
+        "building": "church",
+        "church:type": "parish",
+        "denomination": "roman_catholic",
+        "diocese": "Splitsko-makarska nadbiskupija",
+        "heritage": "2",
+        "heritage:operator": "uzkb",
+        "name": "katedrala svetog Lovre",
+        "name:cs": "Katedrála sv. Vavřince",
+        "name:en": "Cathedral of St. Lawrence",
+        "parish": "Župa svetog Lovre (Trogir)",
+        "ref:hr:uzkb": "Z-3489",
+        "religion": "christian",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled",
+        "tourism": "attraction",
+        "wikidata": "Q3434349",
+        "wikipedia": "hr:Trogirska katedrala"
+      }
+    },
+    {
+      "type": "way",
+      "id": 344946953,
+      "center": {
+        "lat": 43.5171344,
+        "lon": 16.2509784
+      },
+      "tags": {
+        "building": "yes",
+        "heritage": "2",
+        "heritage:operator": "uzkb",
+        "name": "Velika palača Ćipiko",
+        "name:de": "Großer Cipiko-Palast",
+        "name:en": "Great Cipiko Palace",
+        "ref:hr:uzkb": "Z-4379",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled",
+        "tourism": "attraction",
+        "wikidata": "Q16116710"
+      }
+    },
+    {
+      "type": "way",
+      "id": 345168500,
+      "center": {
+        "lat": 43.5158583,
+        "lon": 16.2510511
+      },
+      "tags": {
+        "addr:city": "Trogir",
+        "addr:housenumber": "11",
+        "addr:postcode": "21220",
+        "addr:street": "Obala Bana Berislavića",
+        "building": "roof",
+        "heritage": "2",
+        "heritage:operator": "uzkb",
+        "historic": "building",
+        "name": "Mala loža",
+        "name:de": "Kleine Loggia",
+        "name:en": "Small Loggia",
+        "ref:hr:uzkb": "Z-1409",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled",
+        "tourism": "attraction",
+        "wheelchair": "yes",
+        "wikidata": "Q112129115"
+      }
+    },
+    {
+      "type": "way",
+      "id": 377209224,
+      "center": {
+        "lat": 43.5201688,
+        "lon": 16.2518704
+      },
+      "tags": {
+        "leisure": "park"
+      }
+    },
+    {
+      "type": "way",
+      "id": 377209243,
+      "center": {
+        "lat": 43.5198584,
+        "lon": 16.2589733
+      },
+      "tags": {
+        "amenity": "cafe",
+        "building": "yes",
+        "internet_access": "wlan",
+        "name": "Baketina"
+      }
+    },
+    {
+      "type": "way",
+      "id": 377209244,
+      "center": {
+        "lat": 43.520093,
+        "lon": 16.259741
+      },
+      "tags": {
+        "amenity": "cafe",
+        "building": "yes",
+        "internet_access": "wlan",
+        "name": "Čokolada",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled"
+      }
+    },
+    {
+      "type": "way",
+      "id": 550458275,
+      "center": {
+        "lat": 43.5167018,
+        "lon": 16.2512576
+      },
+      "tags": {
+        "building": "yes",
+        "heritage": "2",
+        "heritage:operator": "uzkb",
+        "man_made": "tower",
+        "name": "Toranj sa satom",
+        "name:de": "Uhrenturm",
+        "name:en": "Clock tower",
+        "ref:hr:uzkb": "Z-1408",
+        "roof:material": "roof_tiles",
+        "roof:shape": "gabled",
+        "tourism": "attraction",
+        "tower:type": "clock",
+        "wikidata": "Q97192994"
+      }
+    },
+    {
+      "type": "way",
+      "id": 610820940,
+      "center": {
+        "lat": 43.5068825,
+        "lon": 16.2590679
+      },
+      "tags": {
+        "natural": "beach",
+        "surface": "gravel",
+        "wheelchair": "no"
+      }
+    },
+    {
+      "type": "way",
+      "id": 651954028,
+      "center": {
+        "lat": 43.5190877,
+        "lon": 16.2518029
+      },
+      "tags": {
+        "leisure": "park"
+      }
+    },
+    {
+      "type": "way",
+      "id": 651956089,
+      "center": {
+        "lat": 43.5218209,
+        "lon": 16.2532722
+      },
+      "tags": {
+        "leisure": "park"
+      }
+    },
+    {
+      "type": "way",
+      "id": 717639973,
+      "center": {
+        "lat": 43.512564,
+        "lon": 16.2125938
+      },
+      "tags": {
+        "natural": "beach",
+        "surface": "gravel"
+      }
+    },
+    {
+      "type": "way",
+      "id": 942556769,
+      "center": {
+        "lat": 43.5138297,
+        "lon": 16.2887395
+      },
+      "tags": {
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "way",
+      "id": 942556773,
+      "center": {
+        "lat": 43.5136123,
+        "lon": 16.2860347
+      },
+      "tags": {
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "way",
+      "id": 942560804,
+      "center": {
+        "lat": 43.5137156,
+        "lon": 16.2795812
+      },
+      "tags": {
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "way",
+      "id": 942560812,
+      "center": {
+        "lat": 43.515238,
+        "lon": 16.2727645
+      },
+      "tags": {
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "way",
+      "id": 942560814,
+      "center": {
+        "lat": 43.5164655,
+        "lon": 16.2602257
+      },
+      "tags": {
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1086815017,
+      "center": {
+        "lat": 43.5197968,
+        "lon": 16.2595624
+      },
+      "tags": {
+        "name": "Gradska plaža",
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1196163912,
+      "center": {
+        "lat": 43.5108502,
+        "lon": 16.2513969
+      },
+      "tags": {
+        "name": "Šaldun",
+        "natural": "beach",
+        "surface": "rock"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1453917823,
+      "center": {
+        "lat": 43.5157032,
+        "lon": 16.2463207
+      },
+      "tags": {
+        "leisure": "park"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1548911931,
+      "center": {
+        "lat": 43.516294,
+        "lon": 16.2682049
+      },
+      "tags": {
+        "name": "Beach bar Music",
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "relation",
+      "id": 8973194,
+      "center": {
+        "lat": 43.5152791,
+        "lon": 16.2473699
+      },
+      "tags": {
+        "building": "castle",
+        "castle_type": "fortress",
+        "heritage": "2",
+        "heritage:operator": "uzkb",
+        "historic": "castle",
+        "name": "Tvrđava Kamerlengo",
+        "name:de": "Festung Kamerlengo",
+        "name:en": "Kamerlengo Castle",
+        "ref:hr:uzkb": "Z-3634",
+        "type": "multipolygon",
+        "wikidata": "Q3182749",
+        "wikipedia": "hr:Kaštel Kamerlengo"
+      }
+    },
+    {
+      "type": "relation",
+      "id": 13261238,
+      "center": {
+        "lat": 43.5165259,
+        "lon": 16.2492806
+      },
+      "tags": {
+        "alt_name": "Trogir old town",
+        "heritage": "1",
+        "heritage:operator": "whc",
+        "landuse": "commercial",
+        "name": "Povijesni grad Trogir",
+        "name:de": "Altstadt von Trogir",
+        "name:en": "Historic City of Trogir",
+        "name:lt": "Istorinis Trogiro miestas",
+        "ref:hr:uzkb": "N-5",
+        "ref:whc": "810",
+        "start_date": "1997",
+        "tourism": "attraction",
+        "type": "multipolygon",
+        "whc:criteria": "(ii),(iv)",
+        "wikidata": "Q17132483"
+      }
+    }
+  ]
+}

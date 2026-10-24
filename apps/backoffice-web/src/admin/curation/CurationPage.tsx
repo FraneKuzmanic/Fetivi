@@ -6,7 +6,7 @@ import {
   type CurationTab,
 } from '@fetivi/domain/curation-vocabulary';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ApiError, type CurationItem, catalog, curation, type Destination } from '../../api';
 import {
   CURATION_ACTION_LABELS,
@@ -54,7 +54,7 @@ function headline(item: CurationItem): string {
     case 'fallback_topic_cluster':
       return `“${p.topic}”: ${p.count} ${p.count === 1 ? 'search' : 'searches'}, ${p.noResults} without results, week of ${calendarDay(p.weekStart)}`;
     default:
-      return item.record?.title ?? 'Record removed';
+      return item.record?.title ?? item.candidate?.name ?? 'Record removed';
   }
 }
 
@@ -65,7 +65,11 @@ function detail(item: CurationItem): string | null {
     case 'draft':
     case 'refresh_diff': {
       const fields = Object.keys(p.changes).filter((f) => f !== 'fieldSources');
-      if (fields.length === 0) return null;
+      if (fields.length === 0) {
+        return p.kind === 'draft' && !item.record && item.candidate
+          ? 'Waiting for the drafting job'
+          : null;
+      }
       const names = fields.map((f) => SOURCE_FIELD_LABELS[f as SourceField] ?? f).join(', ');
       return p.kind === 'draft' ? `Proposes ${names}` : `Changed: ${names}`;
     }
@@ -90,7 +94,7 @@ function subject(item: CurationItem): string {
   const p = item.payload;
   if (p.kind === 'fallback_topic_cluster') return `“${p.topic}”`;
   if ('name' in p) return p.name;
-  return item.record?.title ?? 'The item';
+  return item.record?.title ?? item.candidate?.name ?? 'The item';
 }
 
 const DONE: Partial<Record<CurationAction, string>> = {
@@ -112,9 +116,14 @@ function meta(item: CurationItem): string {
 /** /admin/curation: the one queue of everything waiting for the admin's review. */
 export function CurationPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const { busy, error, run } = useAction();
   const [tab, setTab] = useState<CurationTab>('open');
-  const [kind, setKind] = useState<CurationKind | null>(null);
+  // ?kind=draft, as the Seeding screen links it.
+  const [kind, setKind] = useState<CurationKind | null>(() => {
+    const k = params.get('kind');
+    return CURATION_KINDS.find((c) => c === k) ?? null;
+  });
   const [destinationId, setDestinationId] = useState('');
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [items, setItems] = useState<CurationItem[] | null>(null);

@@ -25,7 +25,8 @@
     "./fallback-vocabulary": "./src/fallback/vocabulary.ts",
     "./payments-vocabulary": "./src/payments/vocabulary.ts",
     "./curation-vocabulary": "./src/curation/vocabulary.ts",
-    "./host-picks-vocabulary": "./src/host-picks/vocabulary.ts"
+    "./host-picks-vocabulary": "./src/host-picks/vocabulary.ts",
+    "./seeding-vocabulary": "./src/catalog/seeding/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -37,6 +38,8 @@
     "@anthropic-ai/sdk": "0.133.0",
     "drizzle-orm": "0.45.4",
     "fast-xml-parser": "5.11.1",
+    "hyparquet": "1.31.2",
+    "hyparquet-compressors": "1.1.2",
     "luxon": "3.7.2",
     "mammoth": "1.13.0",
     "pg": "8.23.1",

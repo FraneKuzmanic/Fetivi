@@ -21,6 +21,7 @@ export * from './plan';
 export * from './properties';
 export * from './reconciliation';
 export * from './saved-places';
+export * from './seeding';
 export * from './sessions';
 export * from './spaces';
 export * from './stays';

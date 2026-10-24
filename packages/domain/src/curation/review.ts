@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
+import { candidateNames } from '../catalog/seeding/store';
 import { createCatalogRecord, markVerified, updateCatalogRecord } from '../catalog/store';
 import {
   PLACE_CATEGORIES,
@@ -59,6 +60,8 @@ export interface CurationListItem {
     placeCategory: PlaceCategory | null;
     verifiedAt: Date | null;
   } | null;
+  /** The Seeding candidate a draft waits to be drafted for (41); null once it is deleted. */
+  candidate: { id: string; name: string } | null;
   createdAt: Date;
   reviewedAt: Date | null;
 }
@@ -104,17 +107,29 @@ async function selectItems(
     .where(where)
     .orderBy(...order)
     .limit(limit);
-  return rows.map(({ item, record, destination, host }) => ({
-    id: item.id,
-    kind: item.kind,
-    status: item.status,
-    payload: item.payload as CurationPayload,
-    destination,
-    host,
-    record,
-    createdAt: item.createdAt,
-    reviewedAt: item.reviewedAt,
-  }));
+  const candidateIdOf = (payload: CurationPayload) =>
+    payload.kind === 'draft' ? (payload.candidateId ?? null) : null;
+  const names = await candidateNames(
+    db,
+    rows.flatMap(({ item }) => candidateIdOf(item.payload as CurationPayload) ?? []),
+  );
+  return rows.map(({ item, record, destination, host }) => {
+    const payload = item.payload as CurationPayload;
+    const candidateId = candidateIdOf(payload);
+    const name = candidateId ? names.get(candidateId) : undefined;
+    return {
+      id: item.id,
+      kind: item.kind,
+      status: item.status,
+      payload,
+      destination,
+      host,
+      record,
+      candidate: candidateId && name !== undefined ? { id: candidateId, name } : null,
+      createdAt: item.createdAt,
+      reviewedAt: item.reviewedAt,
+    };
+  });
 }
 
 /** Open and needs-a-visit items oldest first; done items newest reviewed first. */

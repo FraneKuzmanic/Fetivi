@@ -4,6 +4,7 @@ import { ApprovalsPage } from './admin/ApprovalsPage';
 import { DestinationPage, NewDestinationPage } from './admin/catalog/DestinationPage';
 import { DestinationsPage } from './admin/catalog/DestinationsPage';
 import { NewRecordPage, RecordPage } from './admin/catalog/RecordPage';
+import { SeedingPage } from './admin/catalog/seeding/SeedingPage';
 import { CurationPage } from './admin/curation/CurationPage';
 import { StalenessPage } from './admin/curation/StalenessPage';
 import { OrderLookupPage } from './admin/orders/OrderLookupPage';
@@ -281,6 +282,14 @@ export function App() {
           element={
             <Page area="admin">
               <DestinationPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/admin/catalog/destinations/:id/seeding"
+          element={
+            <Page area="admin">
+              <SeedingPage />
             </Page>
           }
         />

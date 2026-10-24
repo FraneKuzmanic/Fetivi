@@ -208,6 +208,9 @@ export function DestinationPage() {
       </nav>
       <div className="page-head">
         <h1>{destination.name}</h1>
+        <Link className="button" to={`/admin/catalog/destinations/${id}/seeding`}>
+          Seeding
+        </Link>
       </div>
       {error ? <p role="alert">{error}</p> : null}
 

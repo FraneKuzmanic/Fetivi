@@ -45,6 +45,17 @@ export const CURATION_KIND_ACTIONS = Object.fromEntries(
   ]),
 ) as Record<CurationKind, readonly CurationAction[]>;
 
+/**
+ * What the queue offers for one item. A draft without a record (a Seeding candidate waiting for
+ * the drafting job, ADR 0019) has nothing to approve or edit yet, so it offers only Reject.
+ */
+export function curationItemActions(
+  kind: CurationKind,
+  hasRecord: boolean,
+): readonly CurationAction[] {
+  return kind === 'draft' && !hasRecord ? ['reject'] : CURATION_KIND_ACTIONS[kind];
+}
+
 /** Approved and rejected are final; an item that needs a visit stays reviewable. */
 export const REVIEWABLE_STATUSES = [
   'open',
@@ -76,7 +87,12 @@ export type CuratedChanges = Partial<Record<CuratedTextField, string>> & {
 
 /** What each kind carries. */
 export type CurationPayload =
-  | { kind: 'draft'; changes: CuratedChanges }
+  | {
+      kind: 'draft';
+      changes: CuratedChanges;
+      /** The Seeding candidate it drafts (41); 42 creates the record on approve. */
+      candidateId?: string;
+    }
   | { kind: 'refresh_diff'; changes: CuratedChanges; previous: CuratedChanges }
   | { kind: 'guest_flagged'; reason: 'outdated' | 'wrong'; count: number }
   | {

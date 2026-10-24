@@ -11,6 +11,7 @@ import {
   placeImages,
   placeOpenDataSources,
 } from '../db/schema/catalog';
+import { seedingCandidates } from '../db/schema/seeding';
 import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../jobs/queue';
 import { createTestDatabase, type TestDatabase } from '../testing';
 import {
@@ -30,6 +31,24 @@ let queue: JobQueue;
 let destinationId: string;
 const NOW = new Date('2027-05-01T10:00:00Z');
 const LOC = { x: 16.2475, y: 43.5161 };
+
+const openDataRow = (link: {
+  recordId?: string | null;
+  candidateId?: string | null;
+  externalId: string;
+}) => ({
+  destinationId,
+  recordId: link.recordId ?? null,
+  candidateId: link.candidateId ?? null,
+  source: 'osm' as const,
+  externalId: link.externalId,
+  licence: 'ODbL-1.0',
+  name: 'Kamerlengo',
+  location: LOC,
+  placeCategory: 'sight' as const,
+  data: { tags: { name: 'Kamerlengo', opening_hours: 'Mo-Su 09:00-21:00' } },
+  fetchedAt: NOW,
+});
 
 beforeAll(async () => {
   testDb = await createTestDatabase();
@@ -132,26 +151,23 @@ describe('deletion', () => {
       body: 'y',
       origin: 'machine',
     });
-    await testDb.db.insert(placeOpenDataSources).values({
-      recordId: record.id,
-      source: 'osm',
-      externalId: 'node/1',
-      licence: 'ODbL-1.0',
-      data: {},
-      fetchedAt: NOW,
-    });
+    const [openData] = await testDb.db
+      .insert(placeOpenDataSources)
+      .values(openDataRow({ recordId: record.id, externalId: 'node/1' }))
+      .returning();
+    if (!openData) throw new Error('no open-data row');
 
     await testDb.db.delete(catalogRecords).where(eq(catalogRecords.id, record.id));
-    for (const table of [
-      catalogSeasons,
-      catalogOpeningHours,
-      placeImages,
-      catalogTranslations,
-      placeOpenDataSources,
-    ]) {
+    for (const table of [catalogSeasons, catalogOpeningHours, placeImages, catalogTranslations]) {
       const rows = await testDb.db.select().from(table).where(eq(table.recordId, record.id));
       expect(rows).toHaveLength(0);
     }
+    // Open-data rows return to the seeding pool instead of disappearing.
+    const [kept] = await testDb.db
+      .select()
+      .from(placeOpenDataSources)
+      .where(eq(placeOpenDataSources.id, openData.id));
+    expect(kept?.recordId).toBeNull();
   });
 
   it('refuses to delete a destination that has records', async () => {
@@ -255,23 +271,34 @@ describe('row replacement by kind', () => {
 });
 
 describe('open-data separation', () => {
-  it('keeps open-data fields in their own table, one row per source', async () => {
+  it('keeps open-data fields in their own table, one row per destination, source and id', async () => {
     const record = await create(place());
-    const osm = {
-      recordId: record.id,
-      source: 'osm' as const,
-      externalId: 'node/123',
-      licence: 'ODbL-1.0',
-      data: { name: 'Kamerlengo', opening_hours: 'Mo-Su 09:00-21:00' },
-      fetchedAt: NOW,
-    };
+    const osm = openDataRow({ recordId: record.id, externalId: 'node/123' });
     await testDb.db.insert(placeOpenDataSources).values(osm);
     const [after] = await testDb.db
       .select()
       .from(catalogRecords)
       .where(eq(catalogRecords.id, record.id));
     expect(after).toMatchObject(text);
-    await expect(testDb.db.insert(placeOpenDataSources).values(osm)).rejects.toThrow();
+    await expect(
+      testDb.db.insert(placeOpenDataSources).values({ ...osm, recordId: null }),
+    ).rejects.toThrow();
+  });
+
+  it('refuses a row linked to both a record and a candidate', async () => {
+    const record = await create(place());
+    const [candidate] = await testDb.db
+      .insert(seedingCandidates)
+      .values({ destinationId })
+      .returning();
+    if (!candidate) throw new Error('no candidate');
+    await expect(
+      testDb.db
+        .insert(placeOpenDataSources)
+        .values(
+          openDataRow({ recordId: record.id, candidateId: candidate.id, externalId: 'node/9' }),
+        ),
+    ).rejects.toThrow();
   });
 });
 

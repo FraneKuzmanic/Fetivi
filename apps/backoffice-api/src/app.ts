@@ -11,6 +11,7 @@ import { curationRoutes } from './admin/curation';
 import { adminOrderRoutes } from './admin/orders';
 import { reconciliationRoutes } from './admin/reconciliation';
 import { adminRoutes } from './admin/routes';
+import { seedingRoutes } from './admin/seeding';
 import { registerAuth } from './auth/plugin';
 import { authRoutes } from './auth/routes';
 import { calendarRoutes } from './calendars/routes';
@@ -78,6 +79,7 @@ export function buildApp(deps: AppDeps) {
   app.register(adminRoutes, { db, now });
   app.register(reconciliationRoutes, { db, queue, now });
   app.register(curationRoutes, { db, queue, now });
+  app.register(seedingRoutes, { db, queue, now });
   app.register(adminOrderRoutes, { db, queue, now });
   app.register(catalogRoutes, { db, queue, now });
   app.register(providerRoutes, { db, queue, now });

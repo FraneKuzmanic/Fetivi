@@ -1,9 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { searchPlaces } from '../catalog/search';
+import { draftCandidates, groupUnassigned, upsertSourceRows } from '../catalog/seeding/store';
 import { createCatalogRecord, updateCatalogRecord } from '../catalog/store';
 import { accounts } from '../db/schema/accounts';
-import { catalogRecords } from '../db/schema/catalog';
+import { catalogRecords, placeOpenDataSources } from '../db/schema/catalog';
 import { curationItems } from '../db/schema/curation';
 import { hostPlaces } from '../db/schema/host-places';
 import { createHostAddedPlace, deleteHostPlace } from '../host-picks/store';
@@ -22,6 +23,7 @@ import {
   CurationRuleError,
   countCurationItems,
   editCurationItem,
+  getCurationItem,
   listCurationItems,
   markNeedsVisit,
   rejectCurationItem,
@@ -219,6 +221,46 @@ describe('approveCurationItem', () => {
     await rejects(approveCurationItem(deps, orphan, adminId, LATER), 'invalid-input');
     await rejects(editCurationItem(deps, orphan, NOW), 'invalid-input');
     expect(await itemOf(orphan)).toMatchObject({ status: 'open', appliedAt: null });
+  });
+
+  it("names a seeding candidate's waiting draft, and nothing else", async () => {
+    await upsertSourceRows(
+      testDb.db,
+      destinationId,
+      [
+        {
+          source: 'bathing_water',
+          externalId: 'HRBWC-REVIEW-1',
+          name: 'Saldun',
+          location: { lat: 43.51046, lng: 16.25093 },
+          placeCategory: 'beach',
+          licence: 'CC-BY-4.0',
+          sourceUrl: null,
+          data: {},
+        },
+      ],
+      NOW,
+    );
+    await groupUnassigned(testDb.db, destinationId, NOW);
+    const [row] = await testDb.db.query.placeOpenDataSources.findMany({
+      where: (t, { eq }) => eq(t.externalId, 'HRBWC-REVIEW-1'),
+    });
+    const candidateId = row?.candidateId;
+    if (!candidateId) throw new Error('no candidate');
+    await draftCandidates(testDb.db, destinationId, [candidateId], adminId, NOW);
+    const [item] = await testDb.db.query.curationItems.findMany({
+      where: (t, { eq }) => eq(t.dedupeKey, `seeding-candidate:${candidateId}`),
+    });
+    if (!item) throw new Error('no item');
+    expect(await getCurationItem(testDb.db, item.id)).toMatchObject({
+      record: null,
+      candidate: { id: candidateId, name: 'Saldun' },
+    });
+    const other = await enqueue(draft('Nowhere else'));
+    expect((await getCurationItem(testDb.db, other))?.candidate).toBeNull();
+    // The candidate gone (merged away), the draft stays but names nothing.
+    await testDb.db.delete(placeOpenDataSources).where(eq(placeOpenDataSources.id, row.id));
+    expect((await getCurationItem(testDb.db, item.id))?.candidate).toBeNull();
   });
 
   it("drops source URLs for fields the record's kind does not have", async () => {
