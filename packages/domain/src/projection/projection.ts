@@ -56,7 +56,7 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
     if (t.language === language) texts.set(`${t.blockId}:${t.revision}`, t);
   }
   // Ticket 50: the translation is looked up on the owner the effective value came from.
-  const local = (field: TranslatedCoreField) =>
+  const localizedField = (field: TranslatedCoreField) =>
     localizeFieldText(
       u[field],
       u.inherited[field] ? 'property' : 'unit',
@@ -86,7 +86,7 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
   }
 
   const arrival = {
-    accessInstructions: secret(local('accessInstructions')),
+    accessInstructions: secret(localizedField('accessInstructions')),
     buildingDoorCode: secret(u.buildingDoorCode),
     doorCode: secret(u.doorCode),
     lockboxCode: secret(u.lockboxCode),
@@ -134,14 +134,14 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
     },
     arrival: released ? arrival : null,
     wifi,
-    parking: { type: u.parkingType, notes: local('parkingNotes') },
+    parking: { type: u.parkingType, notes: localizedField('parkingNotes') },
     houseRules: {
       petsAllowed: u.petsAllowed,
       smokingAllowed: u.smokingAllowed,
       partiesAllowed: u.partiesAllowed,
       quietHoursFrom: u.quietHoursFrom,
       quietHoursTo: u.quietHoursTo,
-      notes: local('houseRulesNotes'),
+      notes: localizedField('houseRulesNotes'),
     },
     contacts,
     amenities: u.amenities.map((a) => ({

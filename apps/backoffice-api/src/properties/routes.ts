@@ -2,7 +2,6 @@ import {
   correctTranslation,
   type Db,
   type Executor,
-  fieldTexts,
   findSecretLikeText,
   GUEST_LANGUAGES,
   infoBlocks,
@@ -19,7 +18,7 @@ import {
   unitHiddenBlocks,
   units,
 } from '@fetivi/domain';
-import { and, eq, inArray, or } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { HttpError } from '../http-error';
@@ -42,12 +41,12 @@ import {
   blockOut,
   countBlocks,
   findOwnedBlock,
+  findOwnedFieldText,
   findOwnedProperty,
   findOwnedUnit,
   listProperties,
   mediaByBlock,
   ownedPropertyIds,
-  ownedUnitIds,
   propertyDetail,
   replacePropertyAmenities,
   replaceUnitAmenities,
@@ -356,19 +355,7 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
   app.post('/api/host/field-texts/:id/translations/retry', host, async (request) => {
     const hostId = hostIdOf(request);
     const id = idOf(request);
-    const [owned] = await db
-      .select({ id: fieldTexts.id })
-      .from(fieldTexts)
-      .where(
-        and(
-          eq(fieldTexts.id, id),
-          or(
-            inArray(fieldTexts.propertyId, ownedPropertyIds(db, hostId)),
-            inArray(fieldTexts.unitId, ownedUnitIds(db, hostId)),
-          ),
-        ),
-      );
-    if (!owned) throw new HttpError(404, 'not-found');
+    await findOwnedFieldText(db, hostId, id);
     await withTranslationErrors(() => retryFieldTextTranslation(translationDeps, id));
     return { ok: true };
   });

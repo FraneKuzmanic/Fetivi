@@ -7,6 +7,7 @@ import {
   type EffectiveUnit,
   type Executor,
   enqueueTranslation,
+  fieldTexts,
   fieldTranslationStatuses,
   infoBlocks,
   type JobQueue,
@@ -71,6 +72,23 @@ export async function findOwnedBlock(db: Executor, hostId: string, id: string) {
     .where(and(eq(infoBlocks.id, id), ownedBlockCondition(db, hostId)));
   if (!block) throw notFound();
   return block;
+}
+
+export async function findOwnedFieldText(db: Executor, hostId: string, id: string) {
+  const [text] = await db
+    .select()
+    .from(fieldTexts)
+    .where(
+      and(
+        eq(fieldTexts.id, id),
+        or(
+          inArray(fieldTexts.propertyId, ownedPropertyIds(db, hostId)),
+          inArray(fieldTexts.unitId, ownedUnitIds(db, hostId)),
+        ),
+      ),
+    );
+  if (!text) throw notFound();
+  return text;
 }
 
 export function ownedBlockCondition(db: Executor, hostId: string) {

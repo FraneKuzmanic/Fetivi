@@ -27,6 +27,10 @@ _Avoid_: Attachment, upload
 **Translation**:
 One guest language's version of an Info block's title, text and Block media captions, for one revision: the host's own text, a machine translation, or the host's correction (which keeps the machine captions). A host's free-text field (access, parking, house-rule and amenity notes) also has a Translation per language, served only while it was made from the field's current text.
 
+**Field text**:
+A Property's or Unit's own short free-text note that guests see (access instructions, parking notes, other house rules, or the note on one amenity), with a revision that grows with every change of its text. Its Translations are made by machine only; the host corrects one by editing the note.
+_Avoid_: Free-text field (in code and API names), note (alone)
+
 **Published revision**:
 The revision of an Info block guests see; it moves forward only when all seven languages exist for a newer revision.
 
