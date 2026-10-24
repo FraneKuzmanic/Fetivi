@@ -267,9 +267,9 @@ describe('inheritance', () => {
     );
     const detail = (await get(t.app, `/api/host/units/${unit.id}`, hostA.cookie)).json();
     expect(detail.effective.amenities).toEqual([
-      { amenity: 'balcony', note: 'Sea view' },
-      { amenity: 'elevator', note: null },
-      { amenity: 'pool', note: 'Heated' },
+      { amenity: 'balcony', note: 'Sea view', noteFrom: 'unit' },
+      { amenity: 'elevator', note: null, noteFrom: null },
+      { amenity: 'pool', note: 'Heated', noteFrom: 'property' },
     ]);
     const duplicate = await put(
       t.app,

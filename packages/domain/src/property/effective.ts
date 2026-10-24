@@ -53,7 +53,8 @@ export type EffectiveUnit = SharedCore &
     /** True where the unit left the field null and the value is the property's. */
     inherited: Record<SharedCoreField, boolean>;
     blocks: EffectiveBlock[];
-    amenities: { amenity: Amenity; note: string | null }[];
+    /** `noteFrom`: whose note `note` is (ticket 50 serves that owner's translation). */
+    amenities: { amenity: Amenity; note: string | null; noteFrom: 'property' | 'unit' | null }[];
   };
 
 export interface EffectiveUnitInput {
@@ -97,12 +98,18 @@ export function effectiveUnit(input: EffectiveUnitInput): EffectiveUnit {
     ...input.unitBlocks.map((b) => ({ ...b, source: 'unit' as const })),
   ].sort(compareBlocks);
 
-  const notes = new Map<Amenity, string | null>();
-  for (const a of input.propertyAmenities) notes.set(a.amenity, a.note);
-  for (const a of input.unitAmenities) notes.set(a.amenity, a.note ?? notes.get(a.amenity) ?? null);
+  type Note = { note: string | null; noteFrom: 'property' | 'unit' | null };
+  const notes = new Map<Amenity, Note>();
+  for (const a of input.propertyAmenities) {
+    notes.set(a.amenity, { note: a.note, noteFrom: a.note === null ? null : 'property' });
+  }
+  for (const a of input.unitAmenities) {
+    if (a.note !== null) notes.set(a.amenity, { note: a.note, noteFrom: 'unit' });
+    else if (!notes.has(a.amenity)) notes.set(a.amenity, { note: null, noteFrom: null });
+  }
   const amenities = AMENITIES.filter((a) => notes.has(a)).map((amenity) => ({
     amenity,
-    note: notes.get(amenity) ?? null,
+    ...(notes.get(amenity) as Note),
   }));
 
   return {

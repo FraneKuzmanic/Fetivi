@@ -1,6 +1,7 @@
 import {
   accounts,
   actAsAudit,
+  fieldTexts,
   infoBlocks,
   loadEffectiveUnit,
   type ManualDraftItem,
@@ -332,11 +333,33 @@ describe('confirming drafts', () => {
     const effective = await loadEffectiveUnit(t.db, ids.unitId);
     expect(effective?.amenities).toEqual(
       expect.arrayContaining([
-        { amenity: 'ac', note: 'Bedroom only' },
-        { amenity: 'dishwasher', note: null },
-        { amenity: 'coffee_maker', note: null },
+        expect.objectContaining({ amenity: 'ac', note: 'Bedroom only' }),
+        expect.objectContaining({ amenity: 'dishwasher', note: null }),
+        expect.objectContaining({ amenity: 'coffee_maker', note: null }),
       ]),
     );
+  });
+
+  it('syncs the field texts of confirmed free text and amenity notes (ticket 50)', async () => {
+    const ids = await newUnit();
+    const items: Items = (await importWith(ids.unitId)).json().import.items;
+    const parking = findField(items, 'parking');
+    expect(
+      (await confirm(ids.unitId, parking?.id ?? '', { values: parking?.values })).statusCode,
+    ).toBe(200);
+    const amenities = items.find((i) => i.kind === 'amenities');
+    if (amenities?.kind !== 'amenities') throw new Error('no amenities draft');
+    await confirm(ids.unitId, amenities.id, { amenities: amenities.amenities });
+    const texts = await t.db
+      .select()
+      .from(fieldTexts)
+      .where(eq(fieldTexts.propertyId, ids.propertyId));
+    expect(texts.map((r) => [r.kind, r.amenity, r.source]).sort()).toEqual([
+      ['amenity_note', 'ac', 'In the living room and in the bedroom.'],
+      ['parking_notes', null, 'In July and August come before 18:00 to find a place.'],
+    ]);
+    const jobs = await t.boss.findJobs<{ fieldTextId: string }>(QUEUES.translateFieldText);
+    for (const r of texts) expect(jobs.some((j) => j.data.fieldTextId === r.id)).toBe(true);
   });
 
   it('dismisses a draft without writing, and refuses to confirm it after', async () => {

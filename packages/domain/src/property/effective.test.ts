@@ -193,10 +193,10 @@ describe('effectiveUnit amenities', () => {
       }),
     );
     expect(e.amenities).toEqual([
-      { amenity: 'balcony', note: 'Sea view' },
-      { amenity: 'elevator', note: null },
-      { amenity: 'pool', note: 'Heated May to October' },
-      { amenity: 'wifi', note: 'Own router' },
+      { amenity: 'balcony', note: 'Sea view', noteFrom: 'unit' },
+      { amenity: 'elevator', note: null, noteFrom: null },
+      { amenity: 'pool', note: 'Heated May to October', noteFrom: 'property' },
+      { amenity: 'wifi', note: 'Own router', noteFrom: 'unit' },
     ]);
   });
 });

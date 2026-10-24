@@ -180,6 +180,23 @@ export type TranslationStatus = (typeof TRANSLATION_STATUSES)[number];
 export const TRANSLATION_ERRORS = ['structure-mismatch', 'model-error', 'not-configured'] as const;
 export type TranslationError = (typeof TRANSLATION_ERRORS)[number];
 
+/** A host's free-text field that is translated for guests (ticket 50). */
+export const TRANSLATED_FIELD_KINDS = [
+  'access_instructions',
+  'parking_notes',
+  'house_rules_notes',
+  'amenity_note',
+] as const;
+export type TranslatedFieldKind = (typeof TRANSLATED_FIELD_KINDS)[number];
+
+/** The core fields a guest reads, and their field-text kind. */
+export const TRANSLATED_CORE_FIELDS = {
+  accessInstructions: 'access_instructions',
+  parkingNotes: 'parking_notes',
+  houseRulesNotes: 'house_rules_notes',
+} as const satisfies Partial<Record<SharedCoreField, TranslatedFieldKind>>;
+export type TranslatedCoreField = keyof typeof TRANSLATED_CORE_FIELDS;
+
 /** Where a house manual import came from. */
 export const MANUAL_SOURCES = ['paste', 'pdf', 'docx', 'txt'] as const;
 export type ManualSource = (typeof MANUAL_SOURCES)[number];

@@ -1,6 +1,6 @@
 import { BED_TYPES, type HostBlockCategory, LIMITS } from '@fetivi/domain/vocabulary';
 import { CaretRight, ChartBar, DownloadSimple, Plus, Trash } from '@phosphor-icons/react';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import {
   type Block,
@@ -19,6 +19,7 @@ import { BlockEditor, SecretWarnings } from './BlockEditor';
 import { BlockList, preview } from './BlockList';
 import { CORE_SECTIONS, CoreField } from './CoreFields';
 import { CalendarsPanel } from './stays/proposed/CalendarsPanel';
+import { FieldTranslationStatus } from './translations/FieldTranslationStatus';
 import { TranslationChip } from './translations/TranslationChip';
 import { usePendingRefresh } from './translations/usePendingRefresh';
 import { CompletenessBar } from './wizard/CompletenessBar';
@@ -64,8 +65,13 @@ export function UnitPage() {
     if (loaded && hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
   }, [loaded, hash]);
 
-  usePendingRefresh([...(detail?.blocks ?? []), ...(detail?.propertyBlocks ?? [])], async () =>
-    setDetail(await host.unit(id)),
+  usePendingRefresh(
+    [
+      ...(detail?.blocks ?? []),
+      ...(detail?.propertyBlocks ?? []),
+      ...(detail?.fieldTranslations ?? []).map((f) => ({ translation: { status: f.status } })),
+    ],
+    async () => setDetail(await host.unit(id)),
   );
 
   if (!detail || !draft) {
@@ -81,6 +87,11 @@ export function UnitPage() {
     const saved = await host.updateUnit(id, sectionBody(draft, keys));
     setDetail(saved);
     setDraft((d) => (d ? { ...d, ...sectionBody(saved, keys) } : d));
+  };
+
+  const reloadFieldTranslations = async () => {
+    const fresh = await host.unit(id);
+    setDetail((d) => (d ? { ...d, fieldTranslations: fresh.fieldTranslations } : d));
   };
 
   const refresh = async () => {
@@ -231,13 +242,18 @@ export function UnitPage() {
             onSave={saveFields(section.fields)}
           >
             {section.fields.map((field) => (
-              <CoreField
-                key={field}
-                field={field}
-                value={draft[field]}
-                inherited={detail.propertyValues}
-                onChange={(v) => setDraft((d) => (d ? { ...d, [field]: v } : d))}
-              />
+              <Fragment key={field}>
+                <CoreField
+                  field={field}
+                  value={draft[field]}
+                  inherited={detail.propertyValues}
+                  onChange={(v) => setDraft((d) => (d ? { ...d, [field]: v } : d))}
+                />
+                <FieldTranslationStatus
+                  translation={detail.fieldTranslations.find((f) => f.field === field)}
+                  onChanged={reloadFieldTranslations}
+                />
+              </Fragment>
             ))}
           </Section>
         ))}
@@ -245,7 +261,13 @@ export function UnitPage() {
         <AmenitiesEditor
           value={detail.amenities}
           inherited={detail.propertyAmenities}
-          onSave={async (list) => (await host.setUnitAmenities(id, list)).amenities}
+          fieldTranslations={detail.fieldTranslations}
+          onTranslationChanged={reloadFieldTranslations}
+          onSave={async (list) => {
+            const { amenities } = await host.setUnitAmenities(id, list);
+            await reloadFieldTranslations();
+            return amenities;
+          }}
         />
 
         <Section

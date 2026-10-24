@@ -66,6 +66,7 @@ import type {
   ParkingType,
   PropertyType,
   SourceLanguage,
+  TranslatedCoreField,
   TranslationError,
   TranslationOrigin,
   TranslationStatus,
@@ -239,6 +240,16 @@ export interface BlockResult {
   warnings: SecretWarning[];
 }
 
+/** The translation state of a host's free-text field or amenity note (ticket 50). */
+export interface FieldTranslation {
+  id: string;
+  /** The core field, or null for an amenity note. */
+  field: TranslatedCoreField | null;
+  amenity: Amenity | null;
+  status: TranslationStatus;
+  error: TranslationError | null;
+}
+
 export interface PropertySummary {
   id: string;
   name: string;
@@ -262,10 +273,11 @@ export interface PropertyDetail extends CoreValues {
   amenities: AmenityEntry[];
   blocks: Block[];
   units: { id: string; name: string; qrSlug: string | null }[];
+  fieldTranslations: FieldTranslation[];
 }
 
 export type PropertyPatch = Partial<
-  Omit<PropertyDetail, 'id' | 'approved' | 'amenities' | 'blocks' | 'units'>
+  Omit<PropertyDetail, 'id' | 'approved' | 'amenities' | 'blocks' | 'units' | 'fieldTranslations'>
 >;
 
 export interface UnitDetail extends CoreValues {
@@ -300,6 +312,8 @@ export interface UnitDetail extends CoreValues {
     blocks: (Block & { source: 'property' | 'unit' })[];
     amenities: AmenityEntry[];
   };
+  /** The unit's own field texts only; an inherited value's status is on the property. */
+  fieldTranslations: FieldTranslation[];
 }
 
 export type UnitPatch = Partial<
@@ -1177,6 +1191,7 @@ export const host = {
   deleteHostPlace: (id: string) => remove(`/api/host/host-places/${id}`),
   retryHostPlaceTranslation: (id: string) =>
     post<HostPicks>(`/api/host/host-places/${id}/translations/retry`),
+  retryFieldTranslation: (id: string) => post(`/api/host/field-texts/${id}/translations/retry`),
   payments: () => api<PaymentsStatus>('/api/host/payments'),
   paymentsLink: () =>
     post<{ url: string; expiresAt: string }>('/api/host/payments/stripe/onboarding-link'),

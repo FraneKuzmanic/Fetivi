@@ -26,6 +26,7 @@ function property(overrides: Partial<PropertyDetail> = {}): PropertyDetail {
     amenities: [],
     blocks: [],
     units: [],
+    fieldTranslations: [],
     ...overrides,
   };
 }
@@ -58,6 +59,7 @@ function unit(overrides: Partial<UnitDetail> = {}): UnitDetail {
     blocks: [],
     propertyBlocks: [],
     hiddenBlockIds: [],
+    fieldTranslations: [],
     effective: {
       inherited: Object.fromEntries(SHARED_CORE_FIELDS.map((f) => [f, true])) as Record<
         keyof CoreValues,

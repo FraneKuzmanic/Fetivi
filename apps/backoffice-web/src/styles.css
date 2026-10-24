@@ -939,6 +939,20 @@ button svg,
   color: var(--danger);
 }
 
+/* Ticket 50: the chip sits right under its field, not a full field gap away. */
+.field-translation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: -8px;
+  font-size: 14px;
+}
+
+.amenities .field-translation {
+  margin-top: 0;
+}
+
 .translation-failed {
   display: flex;
   flex-wrap: wrap;

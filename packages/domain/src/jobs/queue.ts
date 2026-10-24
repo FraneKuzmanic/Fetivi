@@ -8,6 +8,7 @@ export const QUEUES = {
   translateCatalogRecord: 'translate-catalog-record',
   translateOffer: 'translate-offer',
   translateHostPlace: 'translate-host-place',
+  translateFieldText: 'translate-field-text',
   orderTimer: 'order-timer',
   orderNotify: 'order-notify',
   orderPayment: 'order-payment',
@@ -45,6 +46,7 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   },
   translateOffer: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 600 },
   translateHostPlace: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 600 },
+  translateFieldText: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 600 },
   // Short database work; the machine makes a retried or duplicate run a no-op.
   orderTimer: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
   orderNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },

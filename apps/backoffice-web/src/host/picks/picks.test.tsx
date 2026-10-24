@@ -41,6 +41,7 @@ const PROPERTY: PropertyDetail = {
   amenities: [],
   blocks: [TIPS, { ...TIPS, id: 'b2', category: 'how_tos', title: 'Washer' }],
   units: [],
+  fieldTranslations: [],
   checkInTime: null,
   checkoutTime: null,
   checkInMethod: null,

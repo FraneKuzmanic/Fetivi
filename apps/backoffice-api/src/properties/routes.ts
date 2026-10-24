@@ -2,6 +2,7 @@ import {
   correctTranslation,
   type Db,
   type Executor,
+  fieldTexts,
   findSecretLikeText,
   GUEST_LANGUAGES,
   infoBlocks,
@@ -12,11 +13,13 @@ import {
   mediaFilesOf,
   properties,
   refreshStayTimes,
+  retryFieldTextTranslation,
   retryTranslation,
+  syncFieldTexts,
   unitHiddenBlocks,
   units,
 } from '@fetivi/domain';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { HttpError } from '../http-error';
@@ -44,6 +47,7 @@ import {
   listProperties,
   mediaByBlock,
   ownedPropertyIds,
+  ownedUnitIds,
   propertyDetail,
   replacePropertyAmenities,
   replaceUnitAmenities,
@@ -100,11 +104,16 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
   app.post('/api/host/properties', host, async (request, reply) => {
     const hostId = hostIdOf(request);
     const body = PropertyCreate.parse(request.body);
-    const [property] = await db
-      .insert(properties)
-      .values({ ...propertyValues(body), name: body.name, hostId })
-      .returning();
-    if (!property) throw new Error('property insert returned nothing');
+    const property = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(properties)
+        .values({ ...propertyValues(body), name: body.name, hostId })
+        .returning();
+      if (!row) throw new Error('property insert returned nothing');
+      // Ticket 50: field texts follow the saved row in the same transaction.
+      await syncFieldTexts(tx, queue, { propertyId: row.id }, row, deps.now());
+      return row;
+    });
     return reply.status(201).send(await propertyDetail(db, property));
   });
 
@@ -116,21 +125,19 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     const hostId = hostIdOf(request);
     const id = idOf(request);
     const body = PropertyPatch.parse(request.body);
-    const update = (tx: Executor) =>
-      tx
+    const property = await db.transaction(async (tx) => {
+      const [row] = await tx
         .update(properties)
         .set({ ...propertyValues(body), updatedAt: deps.now() })
         .where(and(eq(properties.id, id), eq(properties.hostId, hostId)))
         .returning();
-    // A new zone moves the derived instants of the property's active Stays.
-    const [property] =
-      body.timezone === undefined
-        ? await update(db)
-        : await db.transaction(async (tx) => {
-            const rows = await update(tx);
-            if (rows.length > 0) await refreshStayTimes(tx, { propertyId: id }, deps.now());
-            return rows;
-          });
+      if (!row) return undefined;
+      // A new zone moves the derived instants of the property's active Stays.
+      if (body.timezone !== undefined) await refreshStayTimes(tx, { propertyId: id }, deps.now());
+      // Ticket 50: synced from the saved row, so an untouched field heals a missing field text.
+      await syncFieldTexts(tx, queue, { propertyId: id }, row, deps.now());
+      return row;
+    });
     if (!property) throw new HttpError(404, 'not-found');
     return propertyDetail(db, property);
   });
@@ -150,7 +157,9 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
   app.put('/api/host/properties/:id/amenities', host, async (request) => {
     const property = await findOwnedProperty(db, hostIdOf(request), idOf(request));
     const { amenities } = AmenitiesBody.parse(request.body);
-    return { amenities: await replacePropertyAmenities(db, property.id, amenities) };
+    return {
+      amenities: await replacePropertyAmenities(db, queue, property.id, amenities, deps.now()),
+    };
   });
 
   // --- Units ----------------------------------------------------------------------------------
@@ -175,21 +184,21 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     const hostId = hostIdOf(request);
     const id = idOf(request);
     const body = UnitPatch.parse(request.body);
-    const update = (tx: Executor) =>
-      tx
+    const unit = await db.transaction(async (tx) => {
+      const [row] = await tx
         .update(units)
         .set({ ...body, updatedAt: deps.now() })
-        .where(and(eq(units.id, id), inArray(units.propertyId, ownedPropertyIds(db, hostId))))
+        .where(and(eq(units.id, id), inArray(units.propertyId, ownedPropertyIds(tx, hostId))))
         .returning();
-    // A new release offset moves the arrival release time of the unit's active Stays.
-    const [unit] =
-      body.arrivalReleaseDaysBefore === undefined
-        ? await update(db)
-        : await db.transaction(async (tx) => {
-            const rows = await update(tx);
-            if (rows.length > 0) await refreshStayTimes(tx, { unitId: id }, deps.now());
-            return rows;
-          });
+      if (!row) return undefined;
+      // A new release offset moves the arrival release time of the unit's active Stays.
+      if (body.arrivalReleaseDaysBefore !== undefined) {
+        await refreshStayTimes(tx, { unitId: id }, deps.now());
+      }
+      // Ticket 50: the unit's overrides get their own field texts; a cleared override drops its row.
+      await syncFieldTexts(tx, queue, { unitId: id }, row, deps.now());
+      return row;
+    });
     if (!unit) throw new HttpError(404, 'not-found');
     return unitDetail(db, await findOwnedUnit(db, hostId, id), guestOrigin);
   });
@@ -211,7 +220,7 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
   app.put('/api/host/units/:id/amenities', host, async (request) => {
     const { unit } = await findOwnedUnit(db, hostIdOf(request), idOf(request));
     const { amenities } = AmenitiesBody.parse(request.body);
-    return { amenities: await replaceUnitAmenities(db, unit.id, amenities) };
+    return { amenities: await replaceUnitAmenities(db, queue, unit.id, amenities, deps.now()) };
   });
 
   app.put('/api/host/units/:id/hidden-blocks', host, async (request) => {
@@ -341,5 +350,26 @@ export async function propertyRoutes(app: FastifyInstance, deps: PropertyDeps): 
     await findOwnedBlock(db, hostId, id);
     await withTranslationErrors(() => retryTranslation(translationDeps, id));
     return { view: await listTranslations(db, await findOwnedBlock(db, hostId, id)) };
+  });
+
+  // Ticket 50: a failed field text translation is retried; there are no corrections.
+  app.post('/api/host/field-texts/:id/translations/retry', host, async (request) => {
+    const hostId = hostIdOf(request);
+    const id = idOf(request);
+    const [owned] = await db
+      .select({ id: fieldTexts.id })
+      .from(fieldTexts)
+      .where(
+        and(
+          eq(fieldTexts.id, id),
+          or(
+            inArray(fieldTexts.propertyId, ownedPropertyIds(db, hostId)),
+            inArray(fieldTexts.unitId, ownedUnitIds(db, hostId)),
+          ),
+        ),
+      );
+    if (!owned) throw new HttpError(404, 'not-found');
+    await withTranslationErrors(() => retryFieldTextTranslation(translationDeps, id));
+    return { ok: true };
   });
 }

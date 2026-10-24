@@ -1,8 +1,10 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { blockMedia } from '../db/schema/block-media';
+import { fieldTexts, fieldTextTranslations } from '../db/schema/field-texts';
 import { stays } from '../db/schema/stays';
 import { blockTranslations } from '../db/schema/translations';
+import type { LocalizableText } from '../property/field-texts';
 import { loadEffectiveUnit } from '../property/load';
 import type { GuestLanguage } from '../property/vocabulary';
 import { type GuestProjection, guestProjection } from './projection';
@@ -78,6 +80,46 @@ export async function loadGuestProjection(
     language: input.language,
     translations,
     media,
+    fieldTexts: await loadFieldTexts(db, unit.propertyId, unit.unitId, input.language),
     now: input.now,
   });
+}
+
+/** The unit's and its property's field texts, with their translations in `language`. */
+async function loadFieldTexts(
+  db: Db,
+  propertyId: string,
+  unitId: string,
+  language: GuestLanguage,
+): Promise<LocalizableText[]> {
+  const rows = await db
+    .select()
+    .from(fieldTexts)
+    .where(or(eq(fieldTexts.propertyId, propertyId), eq(fieldTexts.unitId, unitId)));
+  if (rows.length === 0) return [];
+  const translations = await db
+    .select({
+      fieldTextId: fieldTextTranslations.fieldTextId,
+      revision: fieldTextTranslations.revision,
+      language: fieldTextTranslations.language,
+      text: fieldTextTranslations.text,
+    })
+    .from(fieldTextTranslations)
+    .where(
+      and(
+        inArray(
+          fieldTextTranslations.fieldTextId,
+          rows.map((r) => r.id),
+        ),
+        eq(fieldTextTranslations.language, language),
+      ),
+    );
+  return rows.map((r) => ({
+    owner: r.propertyId ? 'property' : 'unit',
+    kind: r.kind,
+    amenity: r.amenity,
+    source: r.source,
+    revision: r.revision,
+    translations: translations.filter((t) => t.fieldTextId === r.id),
+  }));
 }

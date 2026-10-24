@@ -15,6 +15,8 @@ import {
   properties,
   propertyAmenities,
   type SecretWarning,
+  syncAmenityNoteTexts,
+  syncFieldTexts,
   type UnitRow,
   units,
   type WizardPromptKey,
@@ -132,16 +134,21 @@ async function applyItem(
 ): Promise<{ item: ManualDraftItem; warnings: SecretWarning[] }> {
   if (item.kind === 'field' && input.kind === 'field') {
     const values = input.values;
+    // Ticket 50: field texts follow the saved row in the same transaction.
     if (fieldTarget(item.fieldId, target.unit) === 'unit') {
-      await tx
+      const [row] = await tx
         .update(units)
         .set({ ...values, updatedAt: now })
-        .where(eq(units.id, target.unit.id));
+        .where(eq(units.id, target.unit.id))
+        .returning();
+      if (row) await syncFieldTexts(tx, queue, { unitId: row.id }, row, now);
     } else {
-      await tx
+      const [row] = await tx
         .update(properties)
         .set({ ...values, updatedAt: now })
-        .where(eq(properties.id, target.property.id));
+        .where(eq(properties.id, target.property.id))
+        .returning();
+      if (row) await syncFieldTexts(tx, queue, { propertyId: row.id }, row, now);
     }
     return { item: { ...item, values }, warnings: [] };
   }
@@ -152,6 +159,12 @@ async function applyItem(
       .insert(propertyAmenities)
       .values(amenities.map((a) => ({ propertyId: target.property.id, ...a })))
       .onConflictDoNothing();
+    // Ticket 50: the full saved list, so no other note's field text is dropped.
+    const saved = await tx
+      .select({ amenity: propertyAmenities.amenity, note: propertyAmenities.note })
+      .from(propertyAmenities)
+      .where(eq(propertyAmenities.propertyId, target.property.id));
+    await syncAmenityNoteTexts(tx, queue, { propertyId: target.property.id }, saved, now);
     return { item: { ...item, amenities }, warnings: [] };
   }
   if (item.kind === 'block' && input.kind === 'block') {

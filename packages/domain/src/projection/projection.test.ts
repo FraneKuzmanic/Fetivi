@@ -6,6 +6,7 @@ import {
   type PropertyRow,
   type UnitRow,
 } from '../property/effective';
+import type { LocalizableText } from '../property/field-texts';
 import { GUEST_LANGUAGES, type GuestLanguage, SHARED_CORE_FIELDS } from '../property/vocabulary';
 import { guestProjection, type ProjectionInput } from './projection';
 
@@ -159,6 +160,7 @@ function input(overrides: Partial<ProjectionInput> & { unit?: ProjectionInput['u
     language: 'en' as GuestLanguage,
     translations,
     media: [] as ProjectionInput['media'],
+    fieldTexts: [] as LocalizableText[],
     now: RELEASE,
     ...overrides,
   };
@@ -497,5 +499,81 @@ describe('guestProjection media', () => {
   it('carries media ids but never block ids', () => {
     const json = JSON.stringify(guestProjection(input({ media })));
     for (const b of blocks) expect(json).not.toContain(b.id);
+  });
+});
+
+describe('guestProjection field text (ticket 50)', () => {
+  const PARKING = 'Parking iza zgrade.';
+  const RULES = 'Tiho nakon 22h.';
+  const NOTE = 'brz';
+  const localized = (over: Partial<LocalizableText>): LocalizableText => ({
+    owner: 'unit',
+    kind: 'access_instructions',
+    amenity: null,
+    source: ACCESS,
+    revision: 1,
+    translations: [{ revision: 1, language: 'de', text: `[de] ${over.source ?? ACCESS}` }],
+    ...over,
+  });
+  const unit = (overrides: Partial<UnitRow> = {}, propertyNote = NOTE) =>
+    effectiveUnit({
+      property: { ...property, parkingNotes: PARKING },
+      unit: unitRow({ houseRulesNotes: RULES, ...overrides }),
+      propertyBlocks: [],
+      unitBlocks: blocks,
+      hiddenBlockIds: [],
+      propertyAmenities: [{ amenity: 'wifi', note: propertyNote }],
+      unitAmenities: [],
+    });
+  const fieldTexts = [
+    localized({}),
+    localized({ owner: 'property', kind: 'parking_notes', source: PARKING }),
+    localized({ kind: 'house_rules_notes', source: RULES }),
+    localized({ owner: 'property', kind: 'amenity_note', amenity: 'wifi', source: NOTE }),
+  ];
+
+  it('serves the German access, parking, house-rules and amenity texts', () => {
+    const p = guestProjection(input({ unit: unit(), language: 'de', fieldTexts }));
+    expect(p.arrival?.accessInstructions).toBe(`[de] ${ACCESS}`);
+    expect(p.parking.notes).toBe(`[de] ${PARKING}`);
+    expect(p.houseRules.notes).toBe(`[de] ${RULES}`);
+    expect(p.amenities).toEqual([{ amenity: 'wifi', note: `[de] ${NOTE}` }]);
+  });
+
+  it('serves the source when the field changed since its translation', () => {
+    const p = guestProjection(
+      input({
+        unit: unit({ accessInstructions: 'Nova vrata.' }, 'spor'),
+        language: 'de',
+        fieldTexts,
+      }),
+    );
+    expect(p.arrival?.accessInstructions).toBe('Nova vrata.');
+    expect(p.amenities).toEqual([{ amenity: 'wifi', note: 'spor' }]);
+  });
+
+  it('keeps the translated access instructions gated before the release', () => {
+    const p = guestProjection(
+      input({ unit: unit(), language: 'de', fieldTexts, now: new Date(RELEASE.getTime() - 1) }),
+    );
+    expect(p.arrival).toBeNull();
+    expect(p.stay.arrivalDetailsHeldBack).toBe(true);
+    expect(JSON.stringify(p)).not.toContain(ACCESS);
+  });
+
+  it("uses the property's text for an inherited value and the unit's for an override", () => {
+    const both = [
+      localized({ owner: 'property', kind: 'parking_notes', source: PARKING }),
+      {
+        ...localized({ kind: 'parking_notes', source: PARKING }),
+        translations: [{ revision: 1, language: 'de' as const, text: 'unit DE' }],
+      },
+    ];
+    const inherited = guestProjection(input({ unit: unit(), language: 'de', fieldTexts: both }));
+    expect(inherited.parking.notes).toBe(`[de] ${PARKING}`);
+    const override = guestProjection(
+      input({ unit: unit({ parkingNotes: PARKING }), language: 'de', fieldTexts: both }),
+    );
+    expect(override.parking.notes).toBe('unit DE');
   });
 });

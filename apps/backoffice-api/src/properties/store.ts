@@ -7,6 +7,7 @@ import {
   type EffectiveUnit,
   type Executor,
   enqueueTranslation,
+  fieldTranslationStatuses,
   infoBlocks,
   type JobQueue,
   loadEffectiveUnit,
@@ -17,6 +18,7 @@ import {
   propertyAmenities,
   SHARED_CORE_FIELDS,
   type SharedCore,
+  syncAmenityNoteTexts,
   type UnitRow,
   unitAmenities,
   unitHiddenBlocks,
@@ -175,26 +177,40 @@ export interface AmenityInput {
   note?: string | null | undefined;
 }
 
-export async function replacePropertyAmenities(db: Db, propertyId: string, list: AmenityInput[]) {
+export async function replacePropertyAmenities(
+  db: Db,
+  queue: JobQueue,
+  propertyId: string,
+  list: AmenityInput[],
+  now: Date,
+) {
+  const rows = list.map((a) => ({ amenity: a.amenity, note: a.note ?? null }));
   await db.transaction(async (tx) => {
     await tx.delete(propertyAmenities).where(eq(propertyAmenities.propertyId, propertyId));
-    if (list.length > 0) {
-      await tx
-        .insert(propertyAmenities)
-        .values(list.map((a) => ({ propertyId, amenity: a.amenity, note: a.note ?? null })));
+    if (rows.length > 0) {
+      await tx.insert(propertyAmenities).values(rows.map((a) => ({ propertyId, ...a })));
     }
+    // Ticket 50: the notes' translations follow the saved list in the same transaction.
+    await syncAmenityNoteTexts(tx, queue, { propertyId }, rows, now);
   });
   return listPropertyAmenities(db, propertyId);
 }
 
-export async function replaceUnitAmenities(db: Db, unitId: string, list: AmenityInput[]) {
+export async function replaceUnitAmenities(
+  db: Db,
+  queue: JobQueue,
+  unitId: string,
+  list: AmenityInput[],
+  now: Date,
+) {
+  const rows = list.map((a) => ({ amenity: a.amenity, note: a.note ?? null }));
   await db.transaction(async (tx) => {
     await tx.delete(unitAmenities).where(eq(unitAmenities.unitId, unitId));
-    if (list.length > 0) {
-      await tx
-        .insert(unitAmenities)
-        .values(list.map((a) => ({ unitId, amenity: a.amenity, note: a.note ?? null })));
+    if (rows.length > 0) {
+      await tx.insert(unitAmenities).values(rows.map((a) => ({ unitId, ...a })));
     }
+    // Ticket 50: the notes' translations follow the saved list in the same transaction.
+    await syncAmenityNoteTexts(tx, queue, { unitId }, rows, now);
   });
   return listUnitAmenities(db, unitId);
 }
@@ -290,7 +306,7 @@ const blocksOf = (db: Executor, where: ReturnType<typeof eq>) =>
     .orderBy(asc(infoBlocks.position), asc(infoBlocks.createdAt));
 
 export async function propertyDetail(db: Executor, property: PropertyRow) {
-  const [amenities, blocks, unitRows] = await Promise.all([
+  const [amenities, blocks, unitRows, fieldTranslations] = await Promise.all([
     listPropertyAmenities(db, property.id),
     blocksOf(db, eq(infoBlocks.propertyId, property.id)),
     db
@@ -298,6 +314,7 @@ export async function propertyDetail(db: Executor, property: PropertyRow) {
       .from(units)
       .where(eq(units.propertyId, property.id))
       .orderBy(asc(units.createdAt)),
+    fieldTranslationStatuses(db, { propertyId: property.id }),
   ]);
   const media = await mediaByBlock(
     db,
@@ -322,6 +339,7 @@ export async function propertyDetail(db: Executor, property: PropertyRow) {
     amenities,
     blocks: blocks.map((b) => blockOut(b, media.get(b.id))),
     units: unitRows,
+    fieldTranslations,
   };
 }
 
@@ -340,18 +358,26 @@ export async function unitDetail(
   { unit, property }: { unit: UnitRow; property: PropertyRow },
   guestOrigin: string,
 ) {
-  const [amenities, inheritedAmenities, ownBlocks, propertyBlocks, hidden, effective] =
-    await Promise.all([
-      listUnitAmenities(db, unit.id),
-      listPropertyAmenities(db, property.id),
-      blocksOf(db, eq(infoBlocks.unitId, unit.id)),
-      blocksOf(db, eq(infoBlocks.propertyId, property.id)),
-      db
-        .select({ blockId: unitHiddenBlocks.blockId })
-        .from(unitHiddenBlocks)
-        .where(eq(unitHiddenBlocks.unitId, unit.id)),
-      loadEffectiveUnit(db, unit.id),
-    ]);
+  const [
+    amenities,
+    inheritedAmenities,
+    ownBlocks,
+    propertyBlocks,
+    hidden,
+    effective,
+    fieldTranslations,
+  ] = await Promise.all([
+    listUnitAmenities(db, unit.id),
+    listPropertyAmenities(db, property.id),
+    blocksOf(db, eq(infoBlocks.unitId, unit.id)),
+    blocksOf(db, eq(infoBlocks.propertyId, property.id)),
+    db
+      .select({ blockId: unitHiddenBlocks.blockId })
+      .from(unitHiddenBlocks)
+      .where(eq(unitHiddenBlocks.unitId, unit.id)),
+    loadEffectiveUnit(db, unit.id),
+    fieldTranslationStatuses(db, { unitId: unit.id }),
+  ]);
   if (!effective) throw notFound();
   const media = await mediaByBlock(db, [
     ...ownBlocks.map((b) => b.id),
@@ -390,6 +416,8 @@ export async function unitDetail(
     propertyBlocks: propertyBlocks.map((b) => blockOut(b, media.get(b.id))),
     hiddenBlockIds: hidden.map((h) => h.blockId),
     effective: effectiveOut(effective, media),
+    /** Ticket 50: the unit's own field texts only; an inherited value's status is the property's. */
+    fieldTranslations,
   };
 }
 

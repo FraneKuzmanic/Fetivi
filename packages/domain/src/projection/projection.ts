@@ -2,7 +2,12 @@ import type { BlockMediaRow } from '../db/schema/block-media';
 import type { StayRow } from '../db/schema/stays';
 import type { BlockTranslationRow } from '../db/schema/translations';
 import type { EffectiveUnit } from '../property/effective';
-import type { GuestLanguage } from '../property/vocabulary';
+import { type LocalizableText, localizeFieldText } from '../property/field-texts';
+import {
+  type GuestLanguage,
+  TRANSLATED_CORE_FIELDS,
+  type TranslatedCoreField,
+} from '../property/vocabulary';
 import type { GuestProjection } from './types';
 
 export type { GuestProjection } from './types';
@@ -21,6 +26,8 @@ export interface ProjectionInput {
     BlockMediaRow,
     'id' | 'blockId' | 'kind' | 'caption' | 'addedRevision' | 'position' | 'createdAt'
   >[];
+  /** Field texts of the unit and of its property, with their translations in `language`. */
+  fieldTexts: LocalizableText[];
   now: Date;
 }
 
@@ -31,7 +38,8 @@ export interface ProjectionInput {
  * Block text comes only from the published revision's translation, never from the block row,
  * which may hold an unpublished newer revision. Media appear with the publication of the revision
  * that added them; their ids are the only ids the projection carries. Before the release it says
- * only whether something is held back, never what.
+ * only whether something is held back, never what. Field text is the translation of the current
+ * source, else the source (ticket 50).
  */
 export function guestProjection(input: ProjectionInput): GuestProjection {
   const { unit: u, stay, language, now } = input;
@@ -47,6 +55,17 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
   for (const t of input.translations) {
     if (t.language === language) texts.set(`${t.blockId}:${t.revision}`, t);
   }
+  // Ticket 50: the translation is looked up on the owner the effective value came from.
+  const local = (field: TranslatedCoreField) =>
+    localizeFieldText(
+      u[field],
+      u.inherited[field] ? 'property' : 'unit',
+      TRANSLATED_CORE_FIELDS[field],
+      null,
+      input.fieldTexts,
+      language,
+    );
+
   const blocks: GuestProjection['blocks'] = [];
   let blockHeldBack = false;
   for (const b of u.blocks) {
@@ -67,7 +86,7 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
   }
 
   const arrival = {
-    accessInstructions: secret(u.accessInstructions),
+    accessInstructions: secret(local('accessInstructions')),
     buildingDoorCode: secret(u.buildingDoorCode),
     doorCode: secret(u.doorCode),
     lockboxCode: secret(u.lockboxCode),
@@ -115,17 +134,27 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
     },
     arrival: released ? arrival : null,
     wifi,
-    parking: { type: u.parkingType, notes: u.parkingNotes },
+    parking: { type: u.parkingType, notes: local('parkingNotes') },
     houseRules: {
       petsAllowed: u.petsAllowed,
       smokingAllowed: u.smokingAllowed,
       partiesAllowed: u.partiesAllowed,
       quietHoursFrom: u.quietHoursFrom,
       quietHoursTo: u.quietHoursTo,
-      notes: u.houseRulesNotes,
+      notes: local('houseRulesNotes'),
     },
     contacts,
-    amenities: u.amenities.map((a) => ({ amenity: a.amenity, note: a.note })),
+    amenities: u.amenities.map((a) => ({
+      amenity: a.amenity,
+      note: localizeFieldText(
+        a.note,
+        a.noteFrom,
+        'amenity_note',
+        a.amenity,
+        input.fieldTexts,
+        language,
+      ),
+    })),
     blocks,
   };
 }

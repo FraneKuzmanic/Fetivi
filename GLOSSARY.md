@@ -25,7 +25,7 @@ A photo or short video a host attaches to an Info block, with a caption that is 
 _Avoid_: Attachment, upload
 
 **Translation**:
-One guest language's version of an Info block's title, text and Block media captions, for one revision: the host's own text, a machine translation, or the host's correction (which keeps the machine captions).
+One guest language's version of an Info block's title, text and Block media captions, for one revision: the host's own text, a machine translation, or the host's correction (which keeps the machine captions). A host's free-text field (access, parking, house-rule and amenity notes) also has a Translation per language, served only while it was made from the field's current text.
 
 **Published revision**:
 The revision of an Info block guests see; it moves forward only when all seven languages exist for a newer revision.

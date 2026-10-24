@@ -1,8 +1,9 @@
 import { AMENITIES, type Amenity, LIMITS } from '@fetivi/domain/vocabulary';
 import { useState } from 'react';
-import type { AmenityEntry } from '../api';
+import type { AmenityEntry, FieldTranslation } from '../api';
 import { CheckboxField, Section } from '../forms/fields';
 import { AMENITY_LABELS } from '../forms/labels';
+import { FieldTranslationStatus } from './translations/FieldTranslationStatus';
 
 /**
  * Amenities from the controlled list, each with an optional note. On a unit, the property's
@@ -11,10 +12,15 @@ import { AMENITY_LABELS } from '../forms/labels';
 export function AmenitiesEditor({
   value,
   inherited = [],
+  fieldTranslations = [],
+  onTranslationChanged = async () => {},
   onSave,
 }: {
   value: AmenityEntry[];
   inherited?: AmenityEntry[];
+  /** The owner's amenity note translations (ticket 50), shown under each saved note. */
+  fieldTranslations?: FieldTranslation[];
+  onTranslationChanged?: () => Promise<void>;
   onSave: (amenities: AmenityEntry[]) => Promise<AmenityEntry[]>;
 }) {
   const [notes, setNotes] = useState(() => new Map(value.map((a) => [a.amenity, a.note ?? ''])));
@@ -85,6 +91,12 @@ export function AmenitiesEditor({
                   onChange={(e) =>
                     setNotes((current) => new Map(current).set(amenity, e.target.value))
                   }
+                />
+              ) : null}
+              {checked ? (
+                <FieldTranslationStatus
+                  translation={fieldTranslations.find((f) => f.amenity === amenity)}
+                  onChanged={onTranslationChanged}
                 />
               ) : null}
             </li>

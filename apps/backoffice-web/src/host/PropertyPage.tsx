@@ -1,6 +1,6 @@
 import { LIMITS, PROPERTY_TYPES } from '@fetivi/domain/vocabulary';
 import { CaretRight, Plus, QrCode, Star } from '@phosphor-icons/react';
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, Fragment, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { host, type PropertyDetail, type PropertyPatch } from '../api';
 import { NumberField, Section, SelectField, TextField } from '../forms/fields';
@@ -11,6 +11,7 @@ import { AmenitiesEditor } from './AmenitiesEditor';
 import { BlockList } from './BlockList';
 import { CORE_SECTIONS, CoreField } from './CoreFields';
 import { StatusChip } from './PropertiesPage';
+import { FieldTranslationStatus } from './translations/FieldTranslationStatus';
 import { usePendingRefresh } from './translations/usePendingRefresh';
 
 const ZONES = Intl.supportedValuesOf('timeZone');
@@ -63,7 +64,10 @@ export function NewPropertyPage() {
   );
 }
 
-type Draft = Omit<PropertyDetail, 'id' | 'approved' | 'amenities' | 'blocks' | 'units'>;
+type Draft = Omit<
+  PropertyDetail,
+  'id' | 'approved' | 'amenities' | 'blocks' | 'units' | 'fieldTranslations'
+>;
 
 export function PropertyPage() {
   const { id = '' } = useParams();
@@ -91,10 +95,18 @@ export function PropertyPage() {
     void load();
   }, [load]);
 
-  usePendingRefresh(detail?.blocks ?? [], async () => {
-    const fresh = await host.property(id);
-    setDetail((d) => (d ? { ...d, blocks: fresh.blocks } : d));
-  });
+  usePendingRefresh(
+    [
+      ...(detail?.blocks ?? []),
+      ...(detail?.fieldTranslations ?? []).map((f) => ({ translation: { status: f.status } })),
+    ],
+    async () => {
+      const fresh = await host.property(id);
+      setDetail((d) =>
+        d ? { ...d, blocks: fresh.blocks, fieldTranslations: fresh.fieldTranslations } : d,
+      );
+    },
+  );
 
   if (!detail || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
@@ -138,6 +150,11 @@ export function PropertyPage() {
   const reloadBlocks = async () => {
     const fresh = await host.property(id);
     setDetail((d) => (d ? { ...d, blocks: fresh.blocks } : d));
+  };
+
+  const reloadFieldTranslations = async () => {
+    const fresh = await host.property(id);
+    setDetail((d) => (d ? { ...d, fieldTranslations: fresh.fieldTranslations } : d));
   };
 
   return (
@@ -238,12 +255,17 @@ export function PropertyPage() {
           return (
             <Section key={section.title} title={section.title} onSave={saveFields(keys)}>
               {section.fields.map((field) => (
-                <CoreField
-                  key={field}
-                  field={field}
-                  value={draft[field]}
-                  onChange={(v) => setDraft((d) => (d ? { ...d, [field]: v } : d))}
-                />
+                <Fragment key={field}>
+                  <CoreField
+                    field={field}
+                    value={draft[field]}
+                    onChange={(v) => setDraft((d) => (d ? { ...d, [field]: v } : d))}
+                  />
+                  <FieldTranslationStatus
+                    translation={detail.fieldTranslations.find((f) => f.field === field)}
+                    onChanged={reloadFieldTranslations}
+                  />
+                </Fragment>
               ))}
               {isArrival ? (
                 <TextField
@@ -260,7 +282,13 @@ export function PropertyPage() {
 
         <AmenitiesEditor
           value={detail.amenities}
-          onSave={async (list) => (await host.setPropertyAmenities(id, list)).amenities}
+          fieldTranslations={detail.fieldTranslations}
+          onTranslationChanged={reloadFieldTranslations}
+          onSave={async (list) => {
+            const { amenities } = await host.setPropertyAmenities(id, list);
+            await reloadFieldTranslations();
+            return amenities;
+          }}
         />
 
         <Section

@@ -10,6 +10,7 @@ export * from './curation';
 export * from './drafting';
 export * from './fallback';
 export * from './feedback';
+export * from './field-texts';
 export * from './handoff';
 export * from './host-places';
 export * from './info-blocks';

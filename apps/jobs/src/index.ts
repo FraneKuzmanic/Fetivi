@@ -1,4 +1,5 @@
 import {
+  backfillFieldTexts,
   createAnthropicDraftingModel,
   createAnthropicHandoffTranslator,
   createAnthropicTranslationModel,
@@ -84,6 +85,9 @@ const boss = await startJobRunner({
     }),
 });
 console.log('job runner started');
+// Ticket 50: field text saved before translation existed gets its first job; idempotent.
+const queued = await backfillFieldTexts(db, createJobQueue(boss), new Date());
+console.log(JSON.stringify({ backfill: 'field-texts', queued }));
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {

@@ -3,8 +3,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { infoBlocks } from '../db/schema/info-blocks';
 import { units } from '../db/schema/properties';
 import { blockTranslations } from '../db/schema/translations';
-import { GUEST_LANGUAGES } from '../property/vocabulary';
-import { createTestDatabase, seedGuestUnit, type TestDatabase } from '../testing';
+import { runFieldTextTranslation, syncFieldTexts } from '../property/field-texts';
+import { GUEST_LANGUAGES, type GuestLanguage } from '../property/vocabulary';
+import { createTestDatabase, recordingQueue, seedGuestUnit, type TestDatabase } from '../testing';
+import type { TranslationModel } from '../translation/model';
 import { loadGuestProjection, ProjectionRuleError } from './load';
 
 let testDb: TestDatabase;
@@ -90,5 +92,46 @@ describe('loadGuestProjection', () => {
       .set({ publishedRevision: 2, translationStatus: 'published' })
       .where(eq(infoBlocks.id, blockId));
     expect((await loadGuestProjection(testDb.db, ids)).blocks[0]?.title).toBe('[hr] revised');
+  });
+});
+
+describe('loadGuestProjection field text (ticket 50)', () => {
+  const model: TranslationModel = {
+    async translate(source) {
+      const translations = Object.fromEntries(
+        GUEST_LANGUAGES.map((l) => [l, { title: source.title, body: `[${l}] ${source.body}` }]),
+      ) as Record<GuestLanguage, { title: string; body: string }>;
+      return { ok: true, output: { source_language: 'hr', translations } };
+    },
+  };
+
+  it('serves the translation, then the new source text while an edit is pending', async () => {
+    const seed = await seedGuestUnit(testDb.db, { now: NOW });
+    const ids = { unitId: seed.unitId, stayId: seed.stayId, language: 'de' as const };
+    const queue = recordingQueue();
+    const owner = { unitId: seed.unitId };
+    const save = (accessInstructions: string) =>
+      testDb.db.transaction(async (tx) => {
+        await tx.update(units).set({ accessInstructions }).where(eq(units.id, seed.unitId));
+        await syncFieldTexts(
+          tx,
+          queue,
+          owner,
+          { accessInstructions, parkingNotes: null, houseRulesNotes: null },
+          NOW,
+        );
+      });
+
+    await save('Uzmite plava vrata.');
+    const job = queue.jobs[0]?.data as { fieldTextId: string; revision: number };
+    expect(
+      await runFieldTextTranslation({ db: testDb.db, queue, model, now: () => NOW }, job),
+    ).toBe('published');
+    const translated = await loadGuestProjection(testDb.db, { ...ids, now: RELEASED });
+    expect(translated.arrival?.accessInstructions).toBe('[de] Uzmite plava vrata.');
+
+    await save('Uzmite zelena vrata.');
+    const pending = await loadGuestProjection(testDb.db, { ...ids, now: RELEASED });
+    expect(pending.arrival?.accessInstructions).toBe('Uzmite zelena vrata.');
   });
 });
