@@ -62,7 +62,7 @@ The client `tools/call` span minus the server `tools/call` span is the MCP trans
 Spans hold no guest text:
 
 - Route templates instead of paths, since paths carry access slugs and one-time link tokens. Incoming query strings are replaced by `redacted`.
-- Outgoing URLs without their query string, since a Brave search query is guest text.
+- Outgoing URLs as their origin only, with path and query replaced by `redacted`: a Brave search query is guest text and a web push endpoint path ends in the subscription token.
 - SQL statements without values.
 - No prompt, message, tool argument or tool result text. The AI SDK's own telemetry stays off.
 
@@ -77,4 +77,4 @@ Jaeger keeps traces in memory only: they are gone when the container restarts.
 
 ## Why one container
 
-Architecture §5 asks for "an OpenTelemetry collector and Jaeger in the Compose stack". Jaeger v2 (`jaegertracing/jaeger:2.22.0`) is an OpenTelemetry Collector distribution: it receives OTLP over HTTP on 4318 and serves the UI on 16686. A separate collector container would add configuration and nothing a local setup needs.
+Architecture §5 asks for "an OpenTelemetry collector and Jaeger in the Compose stack". Jaeger v2 (`jaegertracing/jaeger:2.22.0`) is an OpenTelemetry Collector distribution: it receives OTLP over HTTP on 4318 and serves the UI on 16686. A separate collector container would add configuration and nothing a local setup needs (ADR 0022).

@@ -6,14 +6,12 @@ import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { BatchSpanProcessor, NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 
-/** Origin and path only: outgoing queries can carry guest text (a Brave search). */
-export function withoutQuery(url: string): string {
-  try {
-    const parsed = new URL(url);
-    return `${parsed.origin}${parsed.pathname}`;
-  } catch {
-    return url;
-  }
+/**
+ * The URL attributes of an outgoing request, origin only: queries can carry guest text (a Brave
+ * search) and paths can carry secrets (a web push endpoint ends in the subscription token).
+ */
+export function outgoingUrl(origin: string): Record<string, string> {
+  return { 'url.full': origin, 'url.path': 'redacted', 'url.query': 'redacted' };
 }
 
 /**
@@ -32,11 +30,7 @@ export function startTelemetry(serviceName: string): NodeTracerProvider | null {
     instrumentations: [
       new HttpInstrumentation({ ignoreIncomingRequestHook: (req) => req.url === '/health' }),
       new UndiciInstrumentation({
-        requestHook: (span, request) =>
-          span.setAttributes({
-            'url.full': withoutQuery(`${request.origin}${request.path}`),
-            'url.query': '',
-          }),
+        requestHook: (span, request) => span.setAttributes(outgoingUrl(request.origin)),
       }),
       // pg-boss polls with no parent; only queries inside a trace are worth a span.
       new PgInstrumentation({ requireParentSpan: true }),

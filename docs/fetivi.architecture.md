@@ -222,7 +222,7 @@ Things the recommended approach depends on that do not exist yet or must be obta
 - A Bókun marketplace contract, or any other booking-engine access, for the live adapter. Without it, live mode is built against Bókun's sandbox and demonstrated with allotment and on-request Offers.
 - Stripe platform approval for a travel-reservation profile (Stripe lists it as restricted; a manual review may follow).
 - Brave Search API key; transactional email account; WhatsApp Business verification (optional).
-- OpenTelemetry collector and Jaeger in the Compose stack for the thesis figures.
+- OpenTelemetry collector and Jaeger in the Compose stack for the thesis figures (one Jaeger v2 container, which is the collector; ADR 0022).
 - Fixtures: a seeded Trogir destination, one real Provider per availability mode, the forty scenarios.
 
 ## 6. Spikes

@@ -1,19 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { startTelemetry, withoutQuery } from './start';
+import { outgoingUrl, startTelemetry } from './start';
 
 afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe('withoutQuery', () => {
-  it('keeps origin and path only', () => {
-    expect(withoutQuery('https://api.search.brave.com/res/v1/web/search?q=guest%20text')).toBe(
-      'https://api.search.brave.com/res/v1/web/search',
-    );
-  });
-
-  it('returns what does not parse unchanged', () => {
-    expect(withoutQuery('not a url')).toBe('not a url');
+describe('outgoingUrl', () => {
+  it('keeps the origin and redacts path and query', () => {
+    const attributes = outgoingUrl('https://fcm.googleapis.com');
+    expect(attributes).toEqual({
+      'url.full': 'https://fcm.googleapis.com',
+      'url.path': 'redacted',
+      'url.query': 'redacted',
+    });
   });
 });
 
