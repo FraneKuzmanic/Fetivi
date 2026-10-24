@@ -14,6 +14,7 @@ import type {
   CurationStatus,
   CurationTab,
 } from '@fetivi/domain/curation-vocabulary';
+import type { DraftingTaskStatus } from '@fetivi/domain/drafting-vocabulary';
 import type {
   HandoffReason,
   HandoffTranslationState,
@@ -818,6 +819,8 @@ export interface CurationItem {
   } | null;
   /** The Seeding candidate a waiting draft is for (41); null otherwise. */
   candidate: { id: string; name: string } | null;
+  /** A candidate draft the drafting job filled, so Approve can create its record (42). */
+  drafted: boolean;
   /** Empty once the item is approved or rejected. */
   actions: CurationAction[];
   createdAt: string;
@@ -904,9 +907,10 @@ export const seeding = {
   startImport: (destinationId: string) =>
     post<{ importId: string }>(`/api/admin/catalog/destinations/${destinationId}/seeding/import`),
   draft: (destinationId: string, candidateIds: string[]) =>
-    post<{ drafted: number }>(`/api/admin/catalog/destinations/${destinationId}/seeding/draft`, {
-      candidateIds,
-    }),
+    post<{ drafted: number; run: { queued: number; waiting: number } }>(
+      `/api/admin/catalog/destinations/${destinationId}/seeding/draft`,
+      { candidateIds },
+    ),
   dismiss: (id: string) => post(`/api/admin/seeding/candidates/${id}/dismiss`),
   restore: (id: string) => post(`/api/admin/seeding/candidates/${id}/restore`),
   merge: (id: string, intoId: string) =>
@@ -915,6 +919,40 @@ export const seeding = {
     post(`/api/admin/seeding/candidates/${id}/keep-apart`, { otherId }),
   split: (rowId: string) =>
     post<{ candidateId: string }>(`/api/admin/seeding/sources/${rowId}/split`),
+};
+
+/** The latest drafting or refresh run of a destination (42). */
+export interface DraftingRun {
+  id: string;
+  startedAt: string;
+  cap: number;
+  /** Left over the cap when the run started. */
+  waiting: number;
+  counts: Record<DraftingTaskStatus, number>;
+}
+
+export interface DraftingStatus {
+  /** Candidate drafts not yet drafted and not queued. */
+  waiting: number;
+  draft: DraftingRun | null;
+  refresh: DraftingRun | null;
+  /** Verified places a refresh would take now. */
+  refreshDue: number;
+}
+
+export interface DraftingRunStart {
+  runId: string | null;
+  queued: number;
+  waiting: number;
+}
+
+export const drafting = {
+  status: (destinationId: string) =>
+    api<DraftingStatus>(`/api/admin/catalog/destinations/${destinationId}/drafting`),
+  draftWaiting: (destinationId: string) =>
+    post<DraftingRunStart>(`/api/admin/catalog/destinations/${destinationId}/drafting`),
+  refresh: (destinationId: string) =>
+    post<DraftingRunStart>(`/api/admin/catalog/destinations/${destinationId}/refresh`),
 };
 
 export const host = {

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   CURATION_KIND_ACTIONS,
   CURATION_KINDS,
+  type CurationPayload,
   curationItemActions,
+  isDrafted,
   isRecordKind,
 } from './vocabulary';
 
@@ -20,6 +22,15 @@ describe('curationItemActions', () => {
     expect(curationItemActions('draft', false)).toEqual(['reject']);
   });
 
+  it('offers all four actions on a drafted candidate draft', () => {
+    expect(curationItemActions('draft', false, true)).toEqual(CURATION_KIND_ACTIONS.draft);
+    expect(CURATION_KIND_ACTIONS.draft).toHaveLength(4);
+  });
+
+  it('offers only Reject on an undrafted candidate draft', () => {
+    expect(curationItemActions('draft', false, false)).toEqual(['reject']);
+  });
+
   it('offers the kind actions otherwise', () => {
     for (const kind of CURATION_KINDS) {
       expect(curationItemActions(kind, true)).toEqual(CURATION_KIND_ACTIONS[kind]);
@@ -27,5 +38,35 @@ describe('curationItemActions', () => {
     expect(curationItemActions('fallback_topic_cluster', false)).toEqual(
       CURATION_KIND_ACTIONS.fallback_topic_cluster,
     );
+  });
+});
+
+describe('isDrafted', () => {
+  const drafted: CurationPayload = {
+    kind: 'draft',
+    candidateId: 'c1',
+    changes: { title: 'Konoba Trs', fieldSources: { title: 'https://konobatrs.hr/' } },
+    place: {
+      placeCategory: 'restaurant',
+      location: { lat: 43.5, lng: 16.2 },
+      locationSourceUrl: null,
+    },
+    drafting: {
+      status: 'drafted',
+      at: '2026-10-24T00:00:00.000Z',
+      pages: ['https://konobatrs.hr/'],
+    },
+  };
+
+  it('needs the drafted status, a title and a place', () => {
+    expect(isDrafted(drafted)).toBe(true);
+    expect(isDrafted({ ...drafted, drafting: { status: 'no_sources', at: '', pages: [] } })).toBe(
+      false,
+    );
+    expect(isDrafted({ ...drafted, changes: {} })).toBe(false);
+    expect(isDrafted({ kind: 'draft', changes: { title: 'x' }, drafting: drafted.drafting })).toBe(
+      false,
+    );
+    expect(isDrafted({ kind: 'refresh_diff', changes: {}, previous: {} })).toBe(false);
   });
 });

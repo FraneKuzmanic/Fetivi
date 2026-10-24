@@ -1,5 +1,6 @@
 import type { PlaceCategory } from '@fetivi/domain/catalog-vocabulary';
 import type { CurationStatus } from '@fetivi/domain/curation-vocabulary';
+import { DRAFTING_LIMITS } from '@fetivi/domain/drafting-vocabulary';
 import {
   SEEDING_LIMITS,
   SEEDING_SOURCES,
@@ -10,6 +11,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
   ApiError,
+  type DraftingStatus,
+  drafting,
   type SeedingCandidate,
   type SeedingImport,
   type SeedingOverview,
@@ -59,6 +62,37 @@ function sourceLines(run: SeedingImport): string[] {
   });
 }
 
+/**
+ * The last drafting run and what still waits, e.g. "Drafting: 18 drafted, 4 queued, 3 without a
+ * usable source. 5 wait for the next run."
+ */
+function draftingLine(status: DraftingStatus): string | null {
+  const counts = status.draft?.counts;
+  const parts = counts
+    ? [
+        counts.drafted > 0 ? `${counts.drafted} drafted` : null,
+        counts.queued > 0 ? `${counts.queued} queued` : null,
+        counts.no_sources > 0 ? `${counts.no_sources} without a usable source` : null,
+        counts.failed > 0 ? `${counts.failed} failed` : null,
+      ].filter(Boolean)
+    : [];
+  const waiting =
+    status.waiting === 0
+      ? ''
+      : status.waiting === 1
+        ? ' 1 waits for the next run.'
+        : ` ${status.waiting} wait for the next run.`;
+  if (parts.length === 0 && !waiting) return null;
+  return `Drafting: ${parts.length > 0 ? `${parts.join(', ')}.` : status.draft ? 'nothing running.' : 'not started yet.'}${waiting}`;
+}
+
+/** What the tick did: how many draft now and how many wait over the per-run cap. */
+function sentLine(drafted: number, run: { queued: number; waiting: number }): string {
+  const sent = `Sent ${drafted} to drafting.`;
+  if (run.waiting === 0) return `${sent} The drafts appear in the curation queue when done.`;
+  return `${sent} ${run.queued} are drafting now; ${run.waiting} wait for the next run (at most ${DRAFTING_LIMITS.recordsPerRun} per run).`;
+}
+
 function runLine(run: SeedingImport): string {
   if (run.status === 'running') return `Import running since ${dateTime(run.startedAt)}.`;
   const when = dateTime(run.finishedAt ?? run.startedAt);
@@ -71,13 +105,19 @@ export function SeedingPage() {
   const { busy, error, run } = useAction();
   const [tab, setTab] = useState<SeedingCandidateStatus>('new');
   const [overview, setOverview] = useState<SeedingOverview | null>(null);
+  const [status, setStatus] = useState<DraftingStatus | null>(null);
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
   const [notice, setNotice] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<PlaceCategory | ''>('');
 
   const load = useCallback(async () => {
-    setOverview(await seeding.overview(id, tab));
+    const [fresh, draftingStatus] = await Promise.all([
+      seeding.overview(id, tab),
+      drafting.status(id),
+    ]);
+    setOverview(fresh);
+    setStatus(draftingStatus);
   }, [id, tab]);
 
   useEffect(() => {
@@ -88,13 +128,15 @@ export function SeedingPage() {
   }, [run, load]);
 
   const running = overview?.lastImport?.status === 'running';
+  const draftingNow = (status?.draft?.counts.queued ?? 0) > 0;
 
-  // While an import runs, refresh until it is done. A failed poll is retried on the next tick.
+  // While an import or a drafting run runs, refresh until it is done. A failed poll is retried
+  // on the next tick.
   useEffect(() => {
-    if (!running) return;
+    if (!running && !draftingNow) return;
     const timer = setInterval(() => void load().catch(() => {}), POLL_MS);
     return () => clearInterval(timer);
-  }, [running, load]);
+  }, [running, draftingNow, load]);
 
   /** Runs one action, reloads, and says what happened; a 409 reloads first, then shows why. */
   const act = (action: () => Promise<string>) =>
@@ -125,6 +167,7 @@ export function SeedingPage() {
     PLACE_CATEGORY_LABELS[a].localeCompare(PLACE_CATEGORY_LABELS[b]),
   );
   const tooMany = selected.length > SEND_MAX;
+  const line = status ? draftingLine(status) : null;
 
   const toggle = (candidateId: string) =>
     setTicked((current) => {
@@ -142,11 +185,17 @@ export function SeedingPage() {
 
   const sendToDrafting = () =>
     act(async () => {
-      await seeding.draft(id, selected);
+      const sent = await seeding.draft(id, selected);
       setTicked(new Set());
-      return selected.length === 1
-        ? '1 sent to drafting. It waits in the curation queue as a draft.'
-        : `${selected.length} sent to drafting. They wait in the curation queue as drafts.`;
+      return sentLine(sent.drafted, sent.run);
+    });
+
+  const draftWaiting = () =>
+    act(async () => {
+      const started = await drafting.draftWaiting(id);
+      return started.waiting > 0
+        ? `${started.queued} are drafting now; ${started.waiting} still wait.`
+        : `${started.queued} are drafting now.`;
     });
 
   const empty = TABS.find((t) => t.tab === tab)?.empty;
@@ -186,6 +235,18 @@ export function SeedingPage() {
               <li key={line}>{line}</li>
             ))}
           </ul>
+        ) : null}
+        {line ? (
+          <div className="seeding-import">
+            <span>{line}</span>
+            {status && status.waiting > 0 ? (
+              <button type="button" disabled={busy} onClick={draftWaiting}>
+                {status.waiting > DRAFTING_LIMITS.recordsPerRun
+                  ? `Draft ${DRAFTING_LIMITS.recordsPerRun} of ${status.waiting} waiting`
+                  : `Draft ${status.waiting} waiting`}
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </section>
 

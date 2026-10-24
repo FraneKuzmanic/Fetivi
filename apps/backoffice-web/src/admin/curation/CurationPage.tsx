@@ -1,10 +1,15 @@
 import type { PlaceCategory, SourceField } from '@fetivi/domain/catalog-vocabulary';
 import {
+  CURATED_TEXT_FIELDS,
   CURATION_KINDS,
+  type CuratedChanges,
   type CurationAction,
   type CurationKind,
   type CurationTab,
+  type DraftedHours,
+  type DraftedSeason,
 } from '@fetivi/domain/curation-vocabulary';
+import { SOURCE_LABELS } from '@fetivi/domain/seeding-vocabulary';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ApiError, type CurationItem, catalog, curation, type Destination } from '../../api';
@@ -14,6 +19,7 @@ import {
   CURATION_STATUS_LABELS,
   PLACE_CATEGORY_LABELS,
   SOURCE_FIELD_LABELS,
+  WEEKDAY_LABELS,
 } from '../../forms/labels';
 import { useAction } from '../../useAction';
 
@@ -64,12 +70,13 @@ function detail(item: CurationItem): string | null {
   switch (p.kind) {
     case 'draft':
     case 'refresh_diff': {
-      const fields = Object.keys(p.changes).filter((f) => f !== 'fieldSources');
-      if (fields.length === 0) {
-        return p.kind === 'draft' && !item.record && item.candidate
-          ? 'Waiting for the drafting job'
-          : null;
+      if (p.kind === 'draft' && !item.record && item.candidate && !item.drafted) {
+        if (p.drafting?.status === 'no_sources') return 'No usable source found';
+        if (p.drafting?.status === 'failed') return 'Drafting failed';
+        return 'Waiting for the drafting job';
       }
+      const fields = proposedFields(p.changes);
+      if (fields.length === 0) return null;
       const names = fields.map((f) => SOURCE_FIELD_LABELS[f as SourceField] ?? f).join(', ');
       return p.kind === 'draft' ? `Proposes ${names}` : `Changed: ${names}`;
     }
@@ -87,6 +94,128 @@ function detail(item: CurationItem): string | null {
     case 'host_provider_suggestion':
       return [p.contact, p.note].filter(Boolean).join(' · ') || null;
   }
+}
+
+/** The record's field order; jsonb does not keep the order the job wrote. */
+const FIELD_ORDER: readonly string[] = [...CURATED_TEXT_FIELDS, 'openingHours', 'seasons'];
+
+/** The fields a draft or diff proposes, in the record's field order. */
+const proposedFields = (changes: CuratedChanges) =>
+  (Object.keys(changes).filter((f) => f !== 'fieldSources') as (keyof CuratedChanges)[]).sort(
+    (a, b) => FIELD_ORDER.indexOf(a) - FIELD_ORDER.indexOf(b),
+  );
+
+const dayMonth = (month: number, day: number) =>
+  new Date(Date.UTC(2000, month - 1, day)).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+
+const hoursText = (hours: DraftedHours[]) =>
+  hours
+    .map((h) => {
+      const dates =
+        h.validFrom || h.validTo
+          ? ` (${h.validFrom ? calendarDay(h.validFrom) : '…'} to ${h.validTo ? calendarDay(h.validTo) : '…'})`
+          : '';
+      return `${WEEKDAY_LABELS[h.weekday]?.slice(0, 3) ?? h.weekday} ${h.opens}–${h.closes}${dates}`;
+    })
+    .join(', ');
+
+const seasonsText = (seasons: DraftedSeason[]) =>
+  seasons
+    .map((s) => `${dayMonth(s.fromMonth, s.fromDay)} – ${dayMonth(s.toMonth, s.toDay)}`)
+    .join(', ');
+
+/** A proposed or previous value as plain text; never rendered as HTML. */
+function valueText(changes: CuratedChanges, field: keyof CuratedChanges): string | null {
+  const value = changes[field];
+  if (value === undefined) return null;
+  if (field === 'openingHours') return hoursText(value as DraftedHours[]) || 'None';
+  if (field === 'seasons') return seasonsText(value as DraftedSeason[]) || 'None';
+  return typeof value === 'string' ? value : null;
+}
+
+/** Only web links become links: a source URL came from a page, so it is checked again here. */
+const isWebUrl = (url: string | null | undefined): url is string =>
+  !!url && /^https?:\/\//i.test(url);
+
+function SourceLink({ url }: { url: string | null | undefined }) {
+  return isWebUrl(url) ? (
+    <a className="proposal-source" href={url} target="_blank" rel="noreferrer noopener">
+      source
+    </a>
+  ) : null;
+}
+
+/** Where a candidate draft's location came from (ADR 0020). */
+function locationSource(url: string | null): string {
+  if (url === null) return SOURCE_LABELS.overture;
+  return url.includes('openstreetmap.org') ? SOURCE_LABELS.osm : SOURCE_LABELS.bathing_water;
+}
+
+/** "Show proposal": each field a draft or diff proposes, with its source and previous value. */
+function Proposal({ item }: { item: CurationItem }) {
+  const p = item.payload;
+  if (p.kind !== 'draft' && p.kind !== 'refresh_diff') return null;
+  if (p.kind === 'draft' && !item.record && !item.drafted) return null;
+  const fields = proposedFields(p.changes);
+  if (fields.length === 0) return null;
+  const sources = p.changes.fieldSources ?? {};
+  return (
+    <details className="proposal">
+      <summary>Show proposal</summary>
+      <dl>
+        {fields.map((field) => {
+          const previous = p.kind === 'refresh_diff' ? valueText(p.previous, field) : null;
+          return (
+            <div key={field} className="proposal-field">
+              <dt>{SOURCE_FIELD_LABELS[field as SourceField] ?? field}</dt>
+              <dd>
+                {p.kind === 'refresh_diff' ? (
+                  previous === null ? (
+                    <span className="muted">Was empty. </span>
+                  ) : (
+                    <>
+                      <del>{previous}</del>{' '}
+                    </>
+                  )
+                ) : null}
+                <span>{valueText(p.changes, field)}</span> <SourceLink url={sources[field]} />
+              </dd>
+            </div>
+          );
+        })}
+        {p.kind === 'draft' && p.place ? (
+          <>
+            <div className="proposal-field">
+              <dt>{SOURCE_FIELD_LABELS.placeCategory}</dt>
+              <dd>{categoryLabel(p.place.placeCategory)}</dd>
+            </div>
+            <div className="proposal-field">
+              <dt>{SOURCE_FIELD_LABELS.location}</dt>
+              <dd>
+                From {locationSource(p.place.locationSourceUrl)}{' '}
+                <SourceLink url={p.place.locationSourceUrl} />
+              </dd>
+            </div>
+          </>
+        ) : null}
+        {p.kind === 'draft'
+          ? (p.images ?? []).map((image) => (
+              <div key={image.url} className="proposal-field">
+                <dt>Image</dt>
+                <dd>
+                  Wikimedia Commons, {image.attribution} · {image.licence}{' '}
+                  <SourceLink url={image.sourcePageUrl} />
+                </dd>
+              </div>
+            ))
+          : null}
+      </dl>
+    </details>
+  );
 }
 
 /** A short name for the item, for the status line after an action. */
@@ -257,6 +386,7 @@ export function CurationPage() {
                   </span>
                   {more ? <span className="muted">{more}</span> : null}
                   <span className="muted">{meta(item)}</span>
+                  <Proposal item={item} />
                 </div>
                 {item.actions.length > 0 ? (
                   <div className="actions queue-actions">

@@ -11,6 +11,7 @@ import type {
   CurationKind,
   CurationStatus,
 } from '@fetivi/domain/curation-vocabulary';
+import type { DraftingTaskStatus } from '@fetivi/domain/drafting-vocabulary';
 import type {
   AdapterKind,
   AvailabilityMode,
@@ -335,4 +336,13 @@ export const SEEDING_FAILURE_LABELS: Record<SourceFailure, string> = {
   unavailable: 'did not answer',
   'unexpected-response': 'answered in an unexpected format',
   'too-large': 'returned too much for one import',
+};
+
+export const DRAFTING_TASK_STATUS_LABELS: Record<DraftingTaskStatus, string> = {
+  queued: 'Queued',
+  drafted: 'Drafted',
+  diffed: 'Changes found',
+  unchanged: 'No changes',
+  no_sources: 'No usable source',
+  failed: 'Failed',
 };

@@ -1,5 +1,6 @@
 import { JADROLINIJA_HOST } from '@fetivi/domain/alerts-vocabulary';
 import { CALENDAR_HOSTS } from '@fetivi/domain/calendar-vocabulary';
+import { COMMONS_HOST } from '@fetivi/domain/drafting-vocabulary';
 import { HOST_PUSH_HOSTS } from '@fetivi/domain/host-notification-vocabulary';
 import { PUSH_HOSTS } from '@fetivi/domain/notification-vocabulary';
 import { SEEDING_HOSTS } from '@fetivi/domain/seeding-vocabulary';
@@ -18,6 +19,9 @@ export const EGRESS_ALLOWLIST: readonly string[] = [
   'api.stripe.com',
   // Open-data seeding sources (41).
   ...SEEDING_HOSTS,
+  // Wikimedia Commons image metadata for drafted places (42). Venue hosts never join this list:
+  // each drafting task gets its own egress for its own sources.
+  COMMONS_HOST,
 ];
 
 /** The allowlist; Jadrolinija's host joins only when its feed is on (written permission). */

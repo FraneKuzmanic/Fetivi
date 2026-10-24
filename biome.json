@@ -11,7 +11,8 @@
       "tsconfig.base.json",
       "vitest.config.ts",
       "docker-compose.yml",
-      "!**/drizzle/meta"
+      "!**/drizzle/meta",
+      "!**/catalog/drafting/recorded/*.html"
     ]
   },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },

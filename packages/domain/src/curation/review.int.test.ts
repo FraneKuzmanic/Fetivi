@@ -4,9 +4,16 @@ import { searchPlaces } from '../catalog/search';
 import { draftCandidates, groupUnassigned, upsertSourceRows } from '../catalog/seeding/store';
 import { createCatalogRecord, updateCatalogRecord } from '../catalog/store';
 import { accounts } from '../db/schema/accounts';
-import { catalogRecords, placeOpenDataSources } from '../db/schema/catalog';
+import {
+  catalogOpeningHours,
+  catalogRecords,
+  catalogSeasons,
+  placeImages,
+  placeOpenDataSources,
+} from '../db/schema/catalog';
 import { curationItems } from '../db/schema/curation';
 import { hostPlaces } from '../db/schema/host-places';
+import { seedingCandidates } from '../db/schema/seeding';
 import { createHostAddedPlace, deleteHostPlace } from '../host-picks/store';
 import {
   createTestDatabase,
@@ -247,7 +254,7 @@ describe('approveCurationItem', () => {
     });
     const candidateId = row?.candidateId;
     if (!candidateId) throw new Error('no candidate');
-    await draftCandidates(testDb.db, destinationId, [candidateId], adminId, NOW);
+    await draftCandidates(testDb.db, noopQueue, destinationId, [candidateId], adminId, NOW);
     const [item] = await testDb.db.query.curationItems.findMany({
       where: (t, { eq }) => eq(t.dedupeKey, `seeding-candidate:${candidateId}`),
     });
@@ -502,5 +509,196 @@ describe('a host place suggestion from a host-added place (40)', () => {
     await deleteHostPlace(testDb.db, guest.propertyId, hostPlaceId);
     const row = await approveCurationItem(deps, itemId, adminId, LATER);
     expect((await recordOf(row.recordId as string)).title).toBe('Konoba Gone');
+  });
+});
+
+describe('a drafted Seeding candidate draft (42)', () => {
+  const VENUE = 'https://www.konoba.example/';
+  const CONTACT = `${VENUE}kontakt/`;
+  const OSM_URL = 'https://www.openstreetmap.org/node/42';
+  const HOURS = [{ weekday: 1, opens: '12:00', closes: '23:00', validFrom: null, validTo: null }];
+  const SEASONS = [{ fromMonth: 5, fromDay: 1, toMonth: 10, toDay: 15 }];
+  const IMAGE = {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Konoba.jpg',
+    licence: 'CC BY-SA 4.0',
+    attribution: 'A photographer',
+    sourcePageUrl: 'https://commons.wikimedia.org/wiki/File:Konoba.jpg',
+  };
+
+  /** A ticked candidate with two rows and its draft item, drafted unless told otherwise. */
+  async function candidateDraft(drafted = true) {
+    const destination = await seedDestination(testDb.db);
+    await upsertSourceRows(
+      testDb.db,
+      destination,
+      [
+        {
+          source: 'osm',
+          externalId: 'node/42',
+          name: 'Konoba',
+          location: { lat: 43.5168, lng: 16.2512 },
+          placeCategory: 'restaurant',
+          licence: 'ODbL-1.0',
+          sourceUrl: OSM_URL,
+          data: { tags: { website: VENUE } },
+        },
+        {
+          source: 'overture',
+          externalId: 'ov-42',
+          name: 'Konoba',
+          location: { lat: 43.51681, lng: 16.25121 },
+          placeCategory: 'restaurant',
+          licence: 'CDLA-Permissive-2.0',
+          sourceUrl: null,
+          data: {},
+        },
+      ],
+      NOW,
+    );
+    await groupUnassigned(testDb.db, destination, NOW);
+    const [row] = await testDb.db
+      .select({ candidateId: placeOpenDataSources.candidateId })
+      .from(placeOpenDataSources)
+      .where(eq(placeOpenDataSources.destinationId, destination));
+    const candidateId = row?.candidateId;
+    if (!candidateId) throw new Error('no candidate');
+    await draftCandidates(testDb.db, noopQueue, destination, [candidateId], adminId, NOW);
+    const [item] = await testDb.db
+      .select()
+      .from(curationItems)
+      .where(eq(curationItems.dedupeKey, `seeding-candidate:${candidateId}`));
+    if (!item) throw new Error('no item');
+    if (drafted) {
+      const payload: CurationPayload = {
+        kind: 'draft',
+        candidateId,
+        changes: {
+          title: 'Konoba Trs',
+          description: 'A family konoba.',
+          phone: '+385 21 000 000',
+          openingHours: HOURS,
+          seasons: SEASONS,
+          fieldSources: {
+            title: VENUE,
+            description: VENUE,
+            phone: CONTACT,
+            openingHours: CONTACT,
+            seasons: CONTACT,
+          },
+        },
+        place: {
+          placeCategory: 'restaurant',
+          location: { lat: 43.5168, lng: 16.2512 },
+          locationSourceUrl: OSM_URL,
+        },
+        images: [IMAGE],
+        drafting: { status: 'drafted', at: NOW.toISOString(), pages: [VENUE, CONTACT] },
+      };
+      await testDb.db.update(curationItems).set({ payload }).where(eq(curationItems.id, item.id));
+    }
+    return { destination, candidateId, itemId: item.id };
+  }
+
+  it('lists a drafted draft as drafted, and an undrafted one as not', async () => {
+    const drafted = await candidateDraft();
+    const waiting = await candidateDraft(false);
+    expect((await getCurationItem(testDb.db, drafted.itemId))?.drafted).toBe(true);
+    expect((await getCurationItem(testDb.db, waiting.itemId))?.drafted).toBe(false);
+  });
+
+  it('approve creates the place with its sources, hours, seasons and image, and retires the candidate', async () => {
+    const { destination, candidateId, itemId } = await candidateDraft();
+    const row = await approveCurationItem(deps, itemId, adminId, LATER);
+    const recordId = row.recordId;
+    if (!recordId) throw new Error('no record');
+    const record = await recordOf(recordId);
+    expect(record).toMatchObject({
+      destinationId: destination,
+      kind: 'place',
+      title: 'Konoba Trs',
+      description: 'A family konoba.',
+      phone: '+385 21 000 000',
+      placeCategory: 'restaurant',
+      location: { x: 16.2512, y: 43.5168 },
+      verifiedAt: LATER,
+      verifiedBy: adminId,
+    });
+    expect(record.fieldSources).toEqual({
+      title: VENUE,
+      description: VENUE,
+      phone: CONTACT,
+      openingHours: CONTACT,
+      seasons: CONTACT,
+      location: OSM_URL,
+    });
+    const hours = await testDb.db
+      .select()
+      .from(catalogOpeningHours)
+      .where(eq(catalogOpeningHours.recordId, recordId));
+    expect(hours).toEqual([expect.objectContaining({ weekday: 1, opens: '12:00:00' })]);
+    const seasons = await testDb.db
+      .select()
+      .from(catalogSeasons)
+      .where(eq(catalogSeasons.recordId, recordId));
+    expect(seasons).toEqual([expect.objectContaining(SEASONS[0])]);
+    const images = await testDb.db
+      .select()
+      .from(placeImages)
+      .where(eq(placeImages.recordId, recordId));
+    expect(images).toEqual([expect.objectContaining({ ...IMAGE, source: 'wikimedia_commons' })]);
+    const rows = await testDb.db
+      .select()
+      .from(placeOpenDataSources)
+      .where(eq(placeOpenDataSources.destinationId, destination));
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.recordId === recordId && r.candidateId === null)).toBe(true);
+    expect(
+      await testDb.db.select().from(seedingCandidates).where(eq(seedingCandidates.id, candidateId)),
+    ).toEqual([]);
+    expect(await getCurationItem(testDb.db, itemId)).toMatchObject({
+      status: 'approved',
+      record: { id: recordId, title: 'Konoba Trs' },
+    });
+  });
+
+  it('approve refuses an undrafted candidate draft', async () => {
+    const { itemId } = await candidateDraft(false);
+    await rejects(approveCurationItem(deps, itemId, adminId, LATER), 'invalid-input');
+  });
+
+  it('edit creates the record unverified, and a later approve only verifies it', async () => {
+    const { destination, itemId } = await candidateDraft();
+    const { recordId } = await editCurationItem(deps, itemId, LATER);
+    expect((await recordOf(recordId)).verifiedAt).toBeNull();
+    await updateCatalogRecord(testDb.db, noopQueue, recordId, { title: 'Konoba Trš' }, LATER);
+    const row = await approveCurationItem(deps, itemId, adminId, LATER);
+    expect(row.recordId).toBe(recordId);
+    expect(await recordOf(recordId)).toMatchObject({ title: 'Konoba Trš', verifiedAt: LATER });
+    const records = await testDb.db
+      .select()
+      .from(catalogRecords)
+      .where(eq(catalogRecords.destinationId, destination));
+    expect(records).toHaveLength(1);
+  });
+
+  it('approving a refresh diff of hours replaces them and verifies the record', async () => {
+    const recordId = await place('Konoba Hours');
+    const id = await enqueue(
+      {
+        kind: 'refresh_diff',
+        changes: { openingHours: HOURS, fieldSources: { openingHours: CONTACT } },
+        previous: { openingHours: [] },
+      },
+      { recordId },
+    );
+    await approveCurationItem(deps, id, adminId, LATER);
+    const hours = await testDb.db
+      .select()
+      .from(catalogOpeningHours)
+      .where(eq(catalogOpeningHours.recordId, recordId));
+    expect(hours).toHaveLength(1);
+    const record = await recordOf(recordId);
+    expect(record.verifiedAt).toEqual(LATER);
+    expect(record.fieldSources).toMatchObject({ openingHours: CONTACT });
   });
 });

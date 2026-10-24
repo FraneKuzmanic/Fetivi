@@ -153,9 +153,9 @@ describe('admin seeding', () => {
     const ids = picked.map((c) => c.id);
     const draft = await post(t.app, `${base()}/draft`, { candidateIds: ids }, adminCookie);
     expect(draft.statusCode).toBe(200);
-    expect(draft.json()).toEqual({ drafted: 2 });
+    expect(draft.json()).toEqual({ drafted: 2, run: { queued: 2, waiting: 0 } });
     const twice = await post(t.app, `${base()}/draft`, { candidateIds: ids }, adminCookie);
-    expect(twice.json()).toEqual({ drafted: 0 });
+    expect(twice.json()).toEqual({ drafted: 0, run: { queued: 0, waiting: 0 } });
 
     const ticked = await overview('ticked');
     expect(ticked.counts).toMatchObject({ new: 10, ticked: 2 });

@@ -3,11 +3,19 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { SeedingCandidate, SeedingImport, SeedingOverview } from '../../../api';
+import type {
+  DraftingStatus,
+  SeedingCandidate,
+  SeedingImport,
+  SeedingOverview,
+} from '../../../api';
 import { SeedingPage } from './SeedingPage';
 
 const DEST = 'd1';
 const BASE = '/api/admin/catalog/destinations/d1/seeding';
+const DRAFTING = '/api/admin/catalog/destinations/d1/drafting';
+
+const NO_DRAFTING: DraftingStatus = { waiting: 0, draft: null, refresh: null, refreshDue: 0 };
 
 const SALDUN: SeedingCandidate = {
   id: 'c-saldun',
@@ -72,6 +80,7 @@ let calls: { url: string; method: string; body: unknown }[] = [];
 let lastImport: SeedingImport | null = DONE_RUN;
 /** Replaces the New tab's list and count when set. */
 let newList: { candidates: SeedingCandidate[]; count: number } | null = null;
+let draftingStatus: DraftingStatus = NO_DRAFTING;
 
 beforeAll(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -84,6 +93,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   lastImport = DONE_RUN;
   newList = null;
+  draftingStatus = NO_DRAFTING;
 });
 
 const json = (body: unknown, status = 200) =>
@@ -113,7 +123,12 @@ function stubApi() {
     if (url.startsWith(`${BASE}?`)) {
       return json(overview(new URLSearchParams(url.split('?')[1]).get('status') ?? 'new'));
     }
-    if (url === `${BASE}/draft`) return json({ drafted: 2 });
+    if (url === `${BASE}/draft`) {
+      const n = (JSON.parse(String(init?.body)) as { candidateIds: string[] }).candidateIds.length;
+      return json({ drafted: n, run: { queued: Math.min(n, 25), waiting: Math.max(0, n - 25) } });
+    }
+    if (url === DRAFTING && method === 'GET') return json(draftingStatus);
+    if (url === DRAFTING) return json({ runId: 'run2', queued: 5, waiting: 0 }, 202);
     if (url.endsWith('/merge')) return json({ candidateId: 'c-saldun' });
     return new Response(null, { status: 204 });
   });
@@ -154,7 +169,7 @@ const status = () => el.querySelector('output[aria-live="polite"]')?.textContent
 describe('SeedingPage', () => {
   it('lists candidates with their source chips, licences and last run', async () => {
     await mount();
-    expect(calls[0]?.url).toBe(`${BASE}?status=new`);
+    expect(calls.map((c) => c.url)).toContain(`${BASE}?status=new`);
     const chips = [...(rowOf('Saldun')?.querySelectorAll('.chips .chip') ?? [])];
     expect(chips.map((c) => [c.textContent, c.getAttribute('title')])).toEqual([
       ['Bathing water (EEA)', 'Saldun · CC-BY-4.0'],
@@ -180,7 +195,7 @@ describe('SeedingPage', () => {
       method: 'POST',
       body: { candidateIds: ['c-saldun', 'c-plaza'] },
     });
-    expect(status()).toBe('2 sent to drafting. They wait in the curation queue as drafts.');
+    expect(status()).toBe('Sent 2 to drafting. The drafts appear in the curation queue when done.');
     expect(button('Send 0 to drafting')).toBeDefined();
   });
 
@@ -209,6 +224,31 @@ describe('SeedingPage', () => {
     await click(button('Send 200 to drafting'));
     const draft = calls.find((c) => c.url === `${BASE}/draft`);
     expect((draft?.body as { candidateIds: string[] } | undefined)?.candidateIds).toHaveLength(200);
+    expect(status()).toBe(
+      'Sent 200 to drafting. 25 are drafting now; 175 wait for the next run (at most 25 per run).',
+    );
+  });
+
+  it('shows the drafting status and drafts the waiting candidates', async () => {
+    draftingStatus = {
+      waiting: 5,
+      draft: {
+        id: 'run1',
+        startedAt: '2026-10-24T08:00:00Z',
+        cap: 25,
+        waiting: 5,
+        counts: { queued: 0, drafted: 18, diffed: 0, unchanged: 0, no_sources: 3, failed: 4 },
+      },
+      refresh: null,
+      refreshDue: 0,
+    };
+    await mount();
+    expect(el.textContent).toContain(
+      'Drafting: 18 drafted, 3 without a usable source, 4 failed. 5 wait for the next run.',
+    );
+    await click(button('Draft 5 waiting'));
+    expect(calls).toContainEqual({ url: DRAFTING, method: 'POST', body: undefined });
+    expect(status()).toBe('5 are drafting now.');
   });
 
   it('filters the list by name, ignoring accents, and by category', async () => {
@@ -275,7 +315,7 @@ describe('SeedingPage', () => {
     await click(
       [...el.querySelectorAll('[role="tab"]')].find((t) => t.textContent?.startsWith('Dismissed')),
     );
-    expect(calls.at(-1)?.url).toBe(`${BASE}?status=dismissed`);
+    expect(calls.map((c) => c.url)).toContain(`${BASE}?status=dismissed`);
     await click(button('Restore', rowOf('Parking lot')));
     expect(calls.some((c) => c.url === '/api/admin/seeding/candidates/c-junk/restore')).toBe(true);
     expect(status()).toBe('Parking lot restored to New.');

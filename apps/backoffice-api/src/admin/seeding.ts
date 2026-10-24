@@ -90,7 +90,7 @@ export async function seedingRoutes(app: FastifyInstance, deps: SeedingDeps): Pr
     const { candidateIds } = DraftBody.parse(request.body);
     const principal = principalOf(request);
     return withSeedingErrors(() =>
-      draftCandidates(db, id, candidateIds, principal.account.id, now()),
+      draftCandidates(db, queue, id, candidateIds, principal.account.id, now()),
     );
   });
 

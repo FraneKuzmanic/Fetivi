@@ -212,12 +212,24 @@ describe('draftCandidates', () => {
     ]);
     const a = await candidateOf(destinationId, 'way/1');
     const b = await candidateOf(destinationId, 'node/9');
-    expect(await draftCandidates(testDb.db, destinationId, [a, b], adminId, NOW)).toEqual({
+    expect(
+      await draftCandidates(testDb.db, noopQueue, destinationId, [a, b], adminId, NOW),
+    ).toEqual({
       drafted: 2,
+      run: { queued: 2, waiting: 0 },
     });
-    expect(await draftCandidates(testDb.db, destinationId, [a], adminId, LATER)).toEqual({
+    expect(await draftCandidates(testDb.db, noopQueue, destinationId, [a], adminId, NOW)).toEqual({
       drafted: 0,
+      run: { queued: 0, waiting: 0 },
     });
+    // A day on, the first run's tasks never ran (no worker here), so they count as lost and the
+    // next tick drafts them again.
+    expect(await draftCandidates(testDb.db, noopQueue, destinationId, [a], adminId, LATER)).toEqual(
+      {
+        drafted: 0,
+        run: { queued: 2, waiting: 0 },
+      },
+    );
     const [candidate] = await testDb.db
       .select()
       .from(seedingCandidates)
@@ -248,19 +260,21 @@ describe('draftCandidates', () => {
     const a = await candidateOf(destinationId, 'way/1');
     await dismissCandidate(testDb.db, a, NOW);
     await expect(
-      draftCandidates(testDb.db, destinationId, [a], adminId, NOW),
+      draftCandidates(testDb.db, noopQueue, destinationId, [a], adminId, NOW),
     ).rejects.toMatchObject({
       code: 'invalid-state',
     });
     const other = await seedDestination(testDb.db);
-    await expect(draftCandidates(testDb.db, other, [a], adminId, NOW)).rejects.toMatchObject({
+    await expect(
+      draftCandidates(testDb.db, noopQueue, other, [a], adminId, NOW),
+    ).rejects.toMatchObject({
       code: 'not-found',
     });
-    await expect(draftCandidates(testDb.db, destinationId, [], adminId, NOW)).rejects.toMatchObject(
-      {
-        code: 'invalid-input',
-      },
-    );
+    await expect(
+      draftCandidates(testDb.db, noopQueue, destinationId, [], adminId, NOW),
+    ).rejects.toMatchObject({
+      code: 'invalid-input',
+    });
   });
 });
 
@@ -303,7 +317,7 @@ describe('merge, split and keep apart', () => {
     expect(overview.candidates.find((c) => c.id === a)?.possibleDuplicates).toEqual([
       { id: b, name: 'Šaldun', distanceM: 20, score: 1 },
     ]);
-    await draftCandidates(testDb.db, destinationId, [b], adminId, NOW);
+    await draftCandidates(testDb.db, noopQueue, destinationId, [b], adminId, NOW);
     expect(await mergeCandidates(testDb.db, b, a, LATER)).toEqual({ candidateId: b });
     const rows = await rowsOf(destinationId);
     expect(rows.every((r) => r.candidateId === b)).toBe(true);
@@ -314,7 +328,7 @@ describe('merge, split and keep apart', () => {
 
   it('refuses to merge two ticked candidates', async () => {
     const { destinationId, a, b } = await twoNearby();
-    await draftCandidates(testDb.db, destinationId, [a, b], adminId, NOW);
+    await draftCandidates(testDb.db, noopQueue, destinationId, [a, b], adminId, NOW);
     await expect(mergeCandidates(testDb.db, a, b, LATER)).rejects.toMatchObject({
       code: 'invalid-state',
     });

@@ -25,7 +25,8 @@ const NAMED_ENTITIES: Record<string, string> = {
   nbsp: ' ',
 };
 
-function decodeEntities(s: string): string {
+/** Decodes numeric and the common named HTML entities. */
+export function decodeEntities(s: string): string {
   return s.replace(
     /&#x([0-9a-f]{1,6});|&#(\d{1,7});|&([a-z]+);/gi,
     (match, hex?: string, dec?: string, name?: string) => {

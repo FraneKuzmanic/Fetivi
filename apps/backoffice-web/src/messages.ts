@@ -57,6 +57,7 @@ const MESSAGES: Record<string, string> = {
   'not-reviewable': 'Someone already reviewed this item.',
   'invalid-state': 'This changed in the meantime. The list now shows it as it is.',
   'import-running': 'An import is already running for this destination.',
+  'run-running': 'A refresh is already running for this destination.',
   'already-picked': 'Already one of your picks.',
   'limit-reached': `You can share up to ${HOST_PLACE_LIMITS.perProperty} places.`,
   'outside-destination':

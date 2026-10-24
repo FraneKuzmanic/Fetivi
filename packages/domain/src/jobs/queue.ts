@@ -26,6 +26,8 @@ export const QUEUES = {
   reconcile: 'reconcile',
   clusterFallbacks: 'cluster-fallbacks',
   importOpenData: 'import-open-data',
+  draftPlace: 'draft-place',
+  refreshCatalog: 'refresh-catalog',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -78,6 +80,10 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   // One import per admin click; a crash leaves the run 'running' until it goes stale and the admin
   // imports again.
   importOpenData: { retryLimit: 0, expireInSeconds: 900 },
+  // One drafting task each; a failure is a code on the task, and the SDK already retries
+  // transient model errors, so a pg-boss retry would spend model credit twice.
+  draftPlace: { retryLimit: 0, expireInSeconds: 300 },
+  refreshCatalog: { retryLimit: 0, expireInSeconds: 300 },
 };
 
 /**

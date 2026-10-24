@@ -1,4 +1,5 @@
 import { CATALOG_KINDS, type CatalogKind } from '@fetivi/domain/catalog-vocabulary';
+import { DRAFTING_LIMITS } from '@fetivi/domain/drafting-vocabulary';
 import { LIMITS } from '@fetivi/domain/vocabulary';
 import { CaretRight, Plus } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
@@ -8,9 +9,15 @@ import {
   catalog,
   type Destination,
   type DestinationInput,
+  type DraftingStatus,
+  drafting,
 } from '../../api';
 import { NumberField, Section, SelectField, TextField } from '../../forms/fields';
-import { CATALOG_KIND_LABELS, PLACE_CATEGORY_LABELS } from '../../forms/labels';
+import {
+  CATALOG_KIND_LABELS,
+  DRAFTING_TASK_STATUS_LABELS,
+  PLACE_CATEGORY_LABELS,
+} from '../../forms/labels';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
 import { useAction } from '../../useAction';
@@ -217,6 +224,8 @@ export function DestinationPage() {
       <div className="editor">
         <RecordsPanel destinationId={id} records={records} />
 
+        <RefreshPanel destinationId={id} />
+
         <Section
           title="Area"
           description="A centre and a radius. Event times are entered in the time zone."
@@ -332,6 +341,98 @@ function RecordsPanel({
           Add {CATALOG_KIND_LABELS[addKind].toLowerCase()}
         </button>
       </div>
+    </section>
+  );
+}
+
+const dateTime = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
+/** "Last refresh 24 Oct 2026, 09:00: 3 Changes found, 20 No changes." */
+function refreshLine(run: NonNullable<DraftingStatus['refresh']>): string {
+  const counts = Object.entries(run.counts)
+    .filter(([, n]) => n > 0)
+    .map(
+      ([status, n]) =>
+        `${n} ${DRAFTING_TASK_STATUS_LABELS[status as keyof typeof run.counts].toLowerCase()}`,
+    );
+  return `Last refresh ${dateTime(run.startedAt)}: ${counts.length > 0 ? counts.join(', ') : 'nothing to do'}.`;
+}
+
+/** The pre-season refresh (42): re-drafts verified places and queues only what changed. */
+function RefreshPanel({ destinationId }: { destinationId: string }) {
+  const { busy, error, run } = useAction();
+  const [status, setStatus] = useState<DraftingStatus | null>(null);
+  const [notice, setNotice] = useState<{ text: string; started: boolean } | null>(null);
+
+  const load = useCallback(
+    async () => setStatus(await drafting.status(destinationId)),
+    [destinationId],
+  );
+
+  useEffect(() => {
+    void run(load);
+  }, [run, load]);
+
+  const queued = status?.refresh?.counts.queued ?? 0;
+
+  const start = () =>
+    void run(async () => {
+      setNotice(null);
+      try {
+        const started = await drafting.refresh(destinationId);
+        setNotice(
+          started.runId === null
+            ? { text: 'No verified place is due for a refresh.', started: false }
+            : {
+                text: `Refreshing ${started.queued} ${started.queued === 1 ? 'place' : 'places'}${
+                  started.waiting > 0 ? `; ${started.waiting} wait for the next run` : ''
+                }. Changes go to the curation queue.`,
+                started: true,
+              },
+        );
+      } finally {
+        await load();
+      }
+    });
+
+  return (
+    <section className="panel refresh-panel" aria-labelledby="refresh-heading">
+      <h2 id="refresh-heading">Pre-season refresh</h2>
+      <p className="muted">
+        Re-reads the venue sites of verified places and queues only what changed, at most{' '}
+        {DRAFTING_LIMITS.recordsPerRun} per run. Places refreshed in the last{' '}
+        {DRAFTING_LIMITS.refreshCooldownDays} days are skipped.
+      </p>
+      {status?.refresh ? <p>{refreshLine(status.refresh)}</p> : null}
+      <div className="seeding-import">
+        <button
+          type="button"
+          className="primary"
+          disabled={busy || status === null || queued > 0 || status.refreshDue === 0}
+          onClick={start}
+        >
+          Start refresh
+        </button>
+        {status ? (
+          <span className="muted">
+            {queued > 0
+              ? `A refresh is running (${queued} queued).`
+              : status.refreshDue === 0
+                ? 'No verified place is due.'
+                : `${status.refreshDue} ${status.refreshDue === 1 ? 'place is' : 'places are'} due.`}
+          </span>
+        ) : null}
+      </div>
+      {notice && !error ? (
+        <output className="saved" aria-live="polite">
+          {notice.text}{' '}
+          {notice.started ? (
+            <Link to="/admin/curation?kind=refresh_diff">Open refresh diffs</Link>
+          ) : null}
+        </output>
+      ) : null}
+      {error ? <p role="alert">{error}</p> : null}
     </section>
   );
 }

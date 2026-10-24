@@ -1,8 +1,16 @@
 import { and, asc, count, desc, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { candidateNames } from '../catalog/seeding/store';
-import { createCatalogRecord, markVerified, updateCatalogRecord } from '../catalog/store';
 import {
+  createCatalogRecord,
+  markVerified,
+  replaceOpeningHours,
+  replacePlaceImages,
+  replaceSeasons,
+  updateCatalogRecord,
+} from '../catalog/store';
+import {
+  type CatalogKind,
   PLACE_CATEGORIES,
   type PlaceCategory,
   SOURCE_FIELDS,
@@ -10,9 +18,10 @@ import {
 } from '../catalog/vocabulary';
 import type { Db, Executor } from '../db/client';
 import { accounts } from '../db/schema/accounts';
-import { catalogRecords, destinations } from '../db/schema/catalog';
+import { catalogRecords, destinations, placeOpenDataSources } from '../db/schema/catalog';
 import { type CurationItemRow, curationItems } from '../db/schema/curation';
 import { hostPlaces } from '../db/schema/host-places';
+import { seedingCandidates } from '../db/schema/seeding';
 import type { JobQueue } from '../jobs/queue';
 import {
   CURATED_TEXT_FIELDS,
@@ -24,6 +33,7 @@ import {
   type CurationPayload,
   type CurationStatus,
   type CurationTab,
+  isDrafted,
   isRecordKind,
   isReviewable,
   REVIEWABLE_STATUSES,
@@ -62,6 +72,8 @@ export interface CurationListItem {
   } | null;
   /** The Seeding candidate a draft waits to be drafted for (41); null once it is deleted. */
   candidate: { id: string; name: string } | null;
+  /** A candidate draft the drafting job filled, so Approve can create its record (42). */
+  drafted: boolean;
   createdAt: Date;
   reviewedAt: Date | null;
 }
@@ -126,6 +138,7 @@ async function selectItems(
       host,
       record,
       candidate: candidateId && name !== undefined ? { id: candidateId, name } : null,
+      drafted: isDrafted(payload),
       createdAt: item.createdAt,
       reviewedAt: item.reviewedAt,
     };
@@ -187,7 +200,17 @@ async function loadReviewable(db: Executor, id: string): Promise<CurationItemRow
   return item;
 }
 
-/** Writes a draft's or refresh diff's proposed fields into the record. */
+/** Only source URLs for fields this record's kind has. */
+function kindSources(kind: CatalogKind, fieldSources: CuratedChanges['fieldSources']) {
+  const allowed: readonly string[] = SOURCE_FIELDS[kind];
+  return Object.fromEntries(
+    Object.entries(fieldSources ?? {}).filter(
+      ([field, url]) => allowed.includes(field) && typeof url === 'string',
+    ),
+  ) as Partial<Record<SourceField, string>>;
+}
+
+/** Writes a draft's or refresh diff's proposed fields into the record, hours and seasons too. */
 async function applyChanges(
   { db, queue }: ReviewDeps,
   recordId: string,
@@ -204,13 +227,7 @@ async function applyChanges(
     const value = changes[f];
     if (value !== undefined) fields[f] = value;
   }
-  // Only source URLs for fields this record's kind has.
-  const allowed: readonly string[] = SOURCE_FIELDS[record.kind];
-  const sources = Object.fromEntries(
-    Object.entries(changes.fieldSources ?? {}).filter(
-      ([field, url]) => allowed.includes(field) && typeof url === 'string',
-    ),
-  ) as Partial<Record<SourceField, string>>;
+  const sources = kindSources(record.kind, changes.fieldSources);
   await updateCatalogRecord(
     db,
     queue,
@@ -221,6 +238,75 @@ async function applyChanges(
     },
     now,
   );
+  if (changes.openingHours) await replaceOpeningHours(db, recordId, changes.openingHours, now);
+  if (changes.seasons) await replaceSeasons(db, recordId, changes.seasons, now);
+}
+
+/**
+ * Creates the place a drafted Seeding candidate's draft proposes, unverified (ADR 0020): the
+ * drafted fields with their sources, the location and category from the candidate's rows, the
+ * hours, seasons and Commons image. Then the candidate's rows move to the record and the
+ * candidate is deleted (ADR 0019).
+ */
+async function createFromCandidateDraft(
+  { db, queue }: ReviewDeps,
+  item: CurationItemRow,
+  payload: Extract<CurationPayload, { kind: 'draft' }>,
+  now: Date,
+): Promise<string> {
+  const { changes, place, candidateId } = payload;
+  const category = place?.placeCategory as PlaceCategory;
+  if (
+    !isDrafted(payload) ||
+    !place ||
+    !candidateId ||
+    changes.title === undefined ||
+    item.destinationId === null ||
+    !PLACE_CATEGORIES.includes(category)
+  ) {
+    throw new CurationRuleError('invalid-input');
+  }
+  const record = await createCatalogRecord(
+    db,
+    queue,
+    {
+      destinationId: item.destinationId,
+      kind: 'place',
+      title: changes.title,
+      description: changes.description ?? '',
+      placeCategory: category,
+      location: { x: place.location.lng, y: place.location.lat },
+      address: changes.address ?? null,
+      phone: changes.phone ?? null,
+      websiteUrl: changes.websiteUrl ?? null,
+      fieldSources: {
+        ...kindSources('place', changes.fieldSources),
+        ...(place.locationSourceUrl ? { location: place.locationSourceUrl } : {}),
+      },
+    },
+    now,
+  );
+  if (changes.openingHours?.length) {
+    await replaceOpeningHours(db, record.id, changes.openingHours, now);
+  }
+  if (changes.seasons?.length) await replaceSeasons(db, record.id, changes.seasons, now);
+  if (payload.images?.length) {
+    await replacePlaceImages(
+      db,
+      record.id,
+      payload.images.map((image) => ({ ...image, source: 'wikimedia_commons' as const })),
+      now,
+    );
+  }
+  // Only the rows still on the candidate; with none left (re-grouped since), the record stays.
+  await db.transaction(async (tx) => {
+    await tx
+      .update(placeOpenDataSources)
+      .set({ recordId: record.id, candidateId: null, updatedAt: now })
+      .where(eq(placeOpenDataSources.candidateId, candidateId));
+    await tx.delete(seedingCandidates).where(eq(seedingCandidates.id, candidateId));
+  });
+  return record.id;
 }
 
 /**
@@ -278,6 +364,9 @@ async function applyOnce(
 ): Promise<{ recordId: string | null; applied: boolean }> {
   const payload = item.payload as CurationPayload;
   if (item.appliedAt !== null) return { recordId: item.recordId, applied: false };
+  if (payload.kind === 'draft' && item.recordId === null && payload.candidateId) {
+    return { recordId: await createFromCandidateDraft(deps, item, payload, now), applied: true };
+  }
   if (payload.kind === 'draft' || payload.kind === 'refresh_diff') {
     // A proposal with no record to write it into would be approved with no effect.
     if (item.recordId === null) throw new CurationRuleError('invalid-input');

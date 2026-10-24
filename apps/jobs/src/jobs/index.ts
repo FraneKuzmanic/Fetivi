@@ -7,6 +7,7 @@ import type {
 import type { JobDefinition } from '../runner';
 import { clusterFallbacksJob } from './cluster-fallbacks';
 import { type DailyTipsDeps, dailyTipsJob } from './daily-tips';
+import { type DraftingJobDeps, draftPlaceJob } from './draft-place';
 import { guestNotifyJob, guestRemindersJob } from './guest-notify';
 import { hostDigestsJob, hostNotifyJob } from './host-notify';
 import { type ImportOpenDataDeps, importOpenDataJob } from './import-open-data';
@@ -21,6 +22,7 @@ import {
   stayNotifyJob,
 } from './poll-calendars';
 import { type ReconcileJobDeps, reconcileJob } from './reconcile';
+import { refreshCatalogJob } from './refresh-catalog';
 import { type SafetyAlertsDeps, safetyAlertsJob } from './safety-alerts';
 import { spaceEmailJob } from './space-email';
 import { translateBlockJob } from './translate-block';
@@ -41,7 +43,8 @@ export function createJobs(
     DailyTipsDeps &
     OrderPaymentJobDeps &
     ReconcileJobDeps &
-    ImportOpenDataDeps,
+    ImportOpenDataDeps &
+    DraftingJobDeps,
 ): JobDefinition[] {
   // The runner hands each handler the data its own queue was sent.
   return [
@@ -67,5 +70,7 @@ export function createJobs(
     reconcileJob(deps) as JobDefinition,
     clusterFallbacksJob(deps),
     importOpenDataJob(deps) as JobDefinition,
+    draftPlaceJob(deps) as JobDefinition,
+    refreshCatalogJob(deps) as JobDefinition,
   ];
 }

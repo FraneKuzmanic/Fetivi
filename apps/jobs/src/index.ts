@@ -1,4 +1,5 @@
 import {
+  createAnthropicDraftingModel,
   createAnthropicHandoffTranslator,
   createAnthropicTranslationModel,
   createDb,
@@ -8,6 +9,7 @@ import {
   createWeatherSource,
   createWebPushSender,
 } from '@fetivi/domain';
+import { createEgress } from '@fetivi/egress';
 import { loadConfig } from './config';
 import { createJobsEgress } from './egress';
 import { createJobs } from './jobs';
@@ -21,6 +23,10 @@ const model = createAnthropicTranslationModel({
   fetch: egress.fetch,
 });
 const handoffTranslator = createAnthropicHandoffTranslator({
+  apiKey: config.ANTHROPIC_API_KEY,
+  fetch: egress.fetch,
+});
+const draftingModel = createAnthropicDraftingModel({
   apiKey: config.ANTHROPIC_API_KEY,
   fetch: egress.fetch,
 });
@@ -70,6 +76,9 @@ const boss = await startJobRunner({
       gateway,
       jadrolinija: config.JADROLINIJA_RSS_ENABLED,
       userAgent: config.WEATHER_USER_AGENT,
+      draftingModel,
+      // Each drafting task reads only its own venue, social and tourist-board hosts.
+      fetchFor: (allowlist) => createEgress({ allowlist }).fetch,
     }),
 });
 console.log('job runner started');

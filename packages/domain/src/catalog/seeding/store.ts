@@ -10,6 +10,8 @@ import {
   seedingImports,
   seedingKeptApart,
 } from '../../db/schema/seeding';
+import type { JobQueue } from '../../jobs/queue';
+import { type DraftingRunStart, startDraftingRun } from '../drafting/runs';
 import type { PlaceCategory } from '../vocabulary';
 import {
   assignRows,
@@ -357,15 +359,17 @@ export async function listCandidates(
 
 /**
  * Ticks candidates and puts one open `draft` Curation item on the queue for each, with no record
- * (ADR 0019): ticket 42's drafting job fills it. Ticking a ticked candidate adds nothing.
+ * (ADR 0019), then starts a drafting run in the same transaction, which fills them (ADR 0020).
+ * Ticking a ticked candidate adds nothing.
  */
 export async function draftCandidates(
   db: Db,
+  queue: JobQueue,
   destinationId: string,
   candidateIds: readonly string[],
   adminId: string,
   now: Date,
-): Promise<{ drafted: number }> {
+): Promise<{ drafted: number; run: Omit<DraftingRunStart, 'runId'> }> {
   const ids = [...new Set(candidateIds)];
   if (ids.length === 0 || ids.length > SEEDING_LIMITS.draftPerRequest) {
     throw new SeedingRuleError('invalid-input');
@@ -401,7 +405,8 @@ export async function draftCandidates(
       );
       if (created) drafted++;
     }
-    return { drafted };
+    const { queued, waiting } = await startDraftingRun(tx, queue, destinationId, adminId, now);
+    return { drafted, run: { queued, waiting } };
   });
 }
 

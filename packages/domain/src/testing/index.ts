@@ -5,6 +5,15 @@ export {
   type StubResponse,
   stubFetch,
 } from '../calendar/fixtures';
+export {
+  EMPTY_EXTRACTION,
+  type RecordedAnswer,
+  type RecordedFetch,
+  readRecordedPage,
+  recordedPagesFetch,
+  type ScriptedDraftingModel,
+  scriptedDraftingModel,
+} from '../catalog/drafting/testing';
 export { parseRecorded, readRecorded, TROGIR_AREA } from '../catalog/seeding/testing';
 export { minimalDocx, minimalPdf, plainZip } from '../property/manual-import/fixtures';
 export {

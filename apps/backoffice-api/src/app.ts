@@ -8,6 +8,7 @@ import type {
 } from '@fetivi/domain';
 import Fastify from 'fastify';
 import { curationRoutes } from './admin/curation';
+import { draftingRoutes } from './admin/drafting';
 import { adminOrderRoutes } from './admin/orders';
 import { reconciliationRoutes } from './admin/reconciliation';
 import { adminRoutes } from './admin/routes';
@@ -80,6 +81,7 @@ export function buildApp(deps: AppDeps) {
   app.register(reconciliationRoutes, { db, queue, now });
   app.register(curationRoutes, { db, queue, now });
   app.register(seedingRoutes, { db, queue, now });
+  app.register(draftingRoutes, { db, queue, now });
   app.register(adminOrderRoutes, { db, queue, now });
   app.register(catalogRoutes, { db, queue, now });
   app.register(providerRoutes, { db, queue, now });

@@ -56,7 +56,8 @@ export type ErrorCode =
   | 'outside-destination'
   | 'limit-reached'
   | 'invalid-state'
-  | 'import-running';
+  | 'import-running'
+  | 'run-running';
 
 export class HttpError extends Error {
   override name = 'HttpError';

@@ -14,6 +14,7 @@ const BASE = {
   host: null,
   record: null,
   candidate: null,
+  drafted: false,
   createdAt: '2026-10-20T10:00:00Z',
   reviewedAt: null,
 };
@@ -70,6 +71,80 @@ const WAITING: CurationItem = {
   payload: { kind: 'draft', changes: {}, candidateId: 'c1' },
   candidate: { id: 'c1', name: 'Saldun' },
   actions: ['reject'],
+};
+
+const VENUE = 'https://svdominik.com/';
+const CONTACT = 'https://svdominik.com/kontakt';
+
+const DRAFTED: CurationItem = {
+  ...BASE,
+  id: 'i-drafted',
+  kind: 'draft',
+  payload: {
+    kind: 'draft',
+    candidateId: 'c2',
+    changes: {
+      title: 'Restoran Sv. Dominik',
+      phone: '+385 21 000 000',
+      openingHours: [
+        { weekday: 1, opens: '08:00', closes: '23:00', validFrom: null, validTo: null },
+      ],
+      fieldSources: { title: VENUE, phone: CONTACT, openingHours: CONTACT },
+    },
+    place: {
+      placeCategory: 'restaurant',
+      location: { lat: 43.5, lng: 16.25 },
+      locationSourceUrl: 'https://www.openstreetmap.org/node/9',
+    },
+    images: [
+      {
+        url: 'https://upload.wikimedia.org/a.jpg',
+        licence: 'CC BY-SA 4.0',
+        attribution: 'Jane Doe',
+        sourcePageUrl: 'https://commons.wikimedia.org/wiki/File:A.jpg',
+      },
+    ],
+    drafting: { status: 'drafted', at: '2026-10-24T08:00:00Z', pages: [VENUE, CONTACT] },
+  },
+  candidate: { id: 'c2', name: 'Sv. Dominik' },
+  drafted: true,
+  actions: ['approve', 'edit', 'reject', 'needs_visit'],
+};
+
+const FAILED: CurationItem = {
+  ...WAITING,
+  id: 'i-failed',
+  payload: {
+    kind: 'draft',
+    changes: {},
+    candidateId: 'c3',
+    drafting: { status: 'no_sources', at: '2026-10-24T08:00:00Z', pages: [] },
+  },
+  candidate: { id: 'c3', name: 'Parking Lokva' },
+};
+
+const DIFF: CurationItem = {
+  ...BASE,
+  id: 'i-diff',
+  kind: 'refresh_diff',
+  payload: {
+    kind: 'refresh_diff',
+    runId: 'run1',
+    changes: {
+      phone: '+385 21 111 111',
+      address: 'Obala 1',
+      fieldSources: { phone: CONTACT, address: 'javascript:alert(1)' },
+    },
+    previous: { phone: '+385 21 000 000' },
+  },
+  record: {
+    id: 'r2',
+    title: 'Konoba Diff',
+    kind: 'place',
+    placeCategory: 'restaurant',
+    verifiedAt: '2026-05-01T00:00:00Z',
+  },
+  actions: ['approve', 'edit', 'reject', 'needs_visit'],
 };
 
 const COUNTS = {
@@ -137,7 +212,10 @@ function stubApi() {
     if (url.endsWith('/approve')) return json({ ...DRAFT, status: 'approved', actions: [] });
     if (url.endsWith('/verify')) return json({});
     if (url.startsWith('/api/admin/curation/staleness')) return json({ records: STALE });
-    return json({ items: [DRAFT, PROVIDER, CLUSTER, WAITING], counts: COUNTS });
+    return json({
+      items: [DRAFT, PROVIDER, CLUSTER, WAITING, DRAFTED, FAILED, DIFF],
+      counts: COUNTS,
+    });
   });
 }
 
@@ -235,6 +313,52 @@ describe('CurationPage', () => {
     const row = rowOf('Saldun');
     expect(row?.textContent).toContain('Waiting for the drafting job');
     expect(buttonsOf(row)).toEqual(['Reject']);
+  });
+
+  it('shows a drafted candidate draft with all actions and its proposal with sources', async () => {
+    await mount('/admin/curation?kind=draft');
+    const row = rowOf('Sv. Dominik');
+    expect(buttonsOf(row)).toEqual(['Approve', 'Edit', 'Reject', 'Needs a visit']);
+    expect(row?.querySelector('summary')?.textContent).toBe('Show proposal');
+    const fields = [...(row?.querySelectorAll('.proposal dl > div') ?? [])].map((d) => [
+      d.querySelector('dt')?.textContent,
+      d.querySelector('dd')?.textContent,
+      d.querySelector('a')?.getAttribute('href') ?? null,
+    ]);
+    expect(fields).toEqual([
+      ['Title', 'Restoran Sv. Dominik source', VENUE],
+      ['Phone', '+385 21 000 000 source', CONTACT],
+      ['Opening hours', 'Mon 08:00–23:00 source', CONTACT],
+      ['Category', 'Restaurant', null],
+      ['Location', 'From OpenStreetMap source', 'https://www.openstreetmap.org/node/9'],
+      [
+        'Image',
+        'Wikimedia Commons, Jane Doe · CC BY-SA 4.0 source',
+        'https://commons.wikimedia.org/wiki/File:A.jpg',
+      ],
+    ]);
+    const link = row?.querySelector('.proposal a');
+    expect(link?.getAttribute('target')).toBe('_blank');
+    expect(link?.getAttribute('rel')).toBe('noreferrer noopener');
+  });
+
+  it('says why a candidate draft has nothing to approve', async () => {
+    await mount('/admin/curation?kind=draft');
+    const row = rowOf('Parking Lokva');
+    expect(row?.textContent).toContain('No usable source found');
+    expect(buttonsOf(row)).toEqual(['Reject']);
+    expect(row?.querySelector('.proposal')).toBeNull();
+  });
+
+  it('shows a refresh diff with its previous values, and links only web sources', async () => {
+    await mount('/admin/curation?kind=refresh_diff');
+    const row = rowOf('Konoba Diff');
+    expect(row?.textContent).toContain('Changed: Address, Phone');
+    const [address, phone] = [...(row?.querySelectorAll('.proposal dd') ?? [])];
+    expect(phone?.querySelector('del')?.textContent).toBe('+385 21 000 000');
+    expect(phone?.textContent).toContain('+385 21 111 111');
+    expect(address?.textContent).toContain('Was empty.');
+    expect(address?.querySelector('a')).toBeNull();
   });
 
   it('opens the record editor on Edit', async () => {

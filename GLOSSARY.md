@@ -49,7 +49,7 @@ A Host pastes or uploads an existing house manual; Fetivi turns it into Drafts f
 
 **Draft**:
 A value or Info block proposed from a house manual, marked "From your manual". Nothing in a Draft reaches guests until the Host confirms it; confirming a block starts its Translation.
-_Avoid_: suggestion (that is Suggestions' term)
+_Avoid_: suggestion (that is Suggestions' term). The catalog's `draft` Curation item, which the drafting job fills from a venue's own pages, is a different thing and is not a Draft.
 
 ## Local knowledge
 
@@ -121,6 +121,14 @@ _Avoid_: suggestion (that is a host's)
 
 **Open-data row**:
 One place as one open-data source lists it, with its source, licence and fetch time; attached to a Seeding candidate or a Catalog record.
+
+**Drafting run**:
+One admin-started batch of catalog drafting or pre-season refresh for a Destination: a tick sent to drafting, "Draft waiting" or "Start refresh". It takes at most 25 records; the rest wait for the next run the admin starts.
+_Avoid_: batch job, import (an import fetches open data, a drafting run reads venue pages)
+
+**Refresh diff**:
+The changed factual fields of a verified place (title, address, phone, website, opening hours, seasons) that the pre-season refresh found on its venue pages, queued as one Curation item with the previous values. A field the pages do not mention is not a change.
+_Avoid_: update, sync
 
 ## Services
 

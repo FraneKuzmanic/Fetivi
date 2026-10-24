@@ -26,7 +26,8 @@
     "./payments-vocabulary": "./src/payments/vocabulary.ts",
     "./curation-vocabulary": "./src/curation/vocabulary.ts",
     "./host-picks-vocabulary": "./src/host-picks/vocabulary.ts",
-    "./seeding-vocabulary": "./src/catalog/seeding/vocabulary.ts"
+    "./seeding-vocabulary": "./src/catalog/seeding/vocabulary.ts",
+    "./drafting-vocabulary": "./src/catalog/drafting/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -36,6 +37,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.133.0",
+    "@fetivi/egress": "workspace:*",
     "drizzle-orm": "0.45.4",
     "fast-xml-parser": "5.11.1",
     "hyparquet": "1.31.2",
@@ -50,7 +52,6 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@fetivi/egress": "workspace:*",
     "@types/luxon": "3.7.6",
     "@types/pg": "8.23.1",
     "@types/web-push": "3.6.4",

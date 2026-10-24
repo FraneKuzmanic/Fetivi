@@ -48,8 +48,11 @@ function itemOut(item: CurationListItem) {
     host: item.host,
     record: item.record && { ...item.record, verifiedAt: iso(item.record.verifiedAt) },
     candidate: item.candidate,
-    // A candidate's draft has no record until the drafting job (42) creates one: Reject only.
-    actions: isReviewable(item.status) ? curationItemActions(item.kind, item.record !== null) : [],
+    drafted: item.drafted,
+    // A candidate's draft offers Reject only until the drafting job (42) has filled it.
+    actions: isReviewable(item.status)
+      ? curationItemActions(item.kind, item.record !== null, item.drafted)
+      : [],
     createdAt: item.createdAt.toISOString(),
     reviewedAt: iso(item.reviewedAt),
   };
