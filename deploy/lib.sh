@@ -8,6 +8,8 @@ DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && { pwd -W 2>/dev/null || pwd
 # The Compose project (docker-compose.prod.yml `name:`): volumes and the network carry it as prefix.
 PROJECT=fetivi-prod
 PG_IMAGE="fetivi-postgres:${FETIVI_TAG:-latest}"
+# deploy/env/<name>.env, each copied from its .example (deploy.sh checks them all).
+ENV_FILES=(common chat-backend backoffice-api mcp-servers jobs postgres backup)
 # Git Bash on Windows would rewrite container paths like /restore in docker arguments.
 export MSYS_NO_PATHCONV=1
 

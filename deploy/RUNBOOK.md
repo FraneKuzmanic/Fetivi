@@ -100,7 +100,7 @@ Then:
    compose run --rm --no-deps backoffice-api node --import tsx src/cli/create-admin.ts --email you@example.com
    ```
 2. Webhooks (server only): in Stripe, add `https://host.<domain>/webhooks/stripe` and put its signing secret in `STRIPE_WEBHOOK_SECRET`. In Resend, add `https://host.<domain>/webhooks/resend` and put its secret in `RESEND_WEBHOOK_SECRET`. Both go in `backoffice-api.env`. Re-run `deploy.sh`.
-3. The smoke unit (server only): in the back office, create a unit called e.g. "Smoke check" with a Stay running about a year and its own PIN. Put its link slug and PIN in `deploy/.env` as `SMOKE_UNIT_SLUG` / `SMOKE_PIN`. Until then the smoke check prints `SKIPPED` for the guest PIN flow and the MCP Inspector step. Each smoke run opens one Space on that Stay. Retention deletes them 30 days after the Stay's checkout, so give the Stay a rolling end date.
+3. The smoke Unit (server only): in the back office, create a Unit called e.g. "Smoke check" with a Stay running about a year and its own PIN. Put its link slug and PIN in `deploy/.env` as `SMOKE_UNIT_SLUG` / `SMOKE_PIN`. Until then the smoke check prints `SKIPPED` for the guest PIN flow and the MCP Inspector step. Each smoke run opens one Space on that Stay, and no guest-facing endpoint deletes a Space (checked in ticket 47), so the smoke check leaves it. Retention deletes them 30 days after the Stay's checkout, so give the Stay a rolling end date.
 
 ## 7. Every deploy, and rollback
 
@@ -193,7 +193,7 @@ It is safe on production. It touches only a scratch table, a scratch media file 
 3. It round-trips one media file through restic.
 4. It prints PASS or FAIL with the restore time.
 
-The whole local stand-in (MinIO for the bucket, `fetivi.localhost` with Caddy's internal CA) runs with `bash deploy/rehearse-local.sh` from Git Bash or Linux. It writes throwaway env files, deploys, seeds a smoke unit, runs the full smoke check, runs `rehearse-restore.sh`, does one in-place point-in-time restore with `--media`, and runs the smoke check again. `KEEP=1` leaves the stack up. Reset with `docker compose -p fetivi-prod down -v`, then delete `deploy/.env` and `deploy/env/*.env`.
+The whole local stand-in (MinIO for the bucket, `fetivi.localhost` with Caddy's internal CA) runs with `bash deploy/rehearse-local.sh` from Git Bash or Linux. It writes throwaway env files, deploys, seeds a smoke Unit, runs the full smoke check, runs `rehearse-restore.sh`, does one in-place point-in-time restore with `--media`, and runs the smoke check again. `KEEP=1` leaves the stack up. Reset with `docker compose -p fetivi-prod down -v`, then delete `deploy/.env` and `deploy/env/*.env`.
 
 ### Rehearsal record
 
@@ -216,10 +216,9 @@ Traces are kept in memory and are lost when the container restarts (ADR 0022). T
 
 ## 12. Changing the internal subnet
 
-If `172.31.47.0/24` collides with another Docker or VPN network, change it in `deploy/docker-compose.prod.yml` in three places:
+If `172.31.47.0/24` collides with another Docker or VPN network, change it in `deploy/docker-compose.prod.yml` in two places:
 
 - the `networks.internal` subnet;
-- Caddy's `ipv4_address`;
-- the `TRUST_PROXY` value of chat-backend and backoffice-api (the Caddy IP).
+- `x-caddy-ip`, Caddy's address in that subnet (Caddy's `ipv4_address` and the `TRUST_PROXY` of chat-backend and backoffice-api use it).
 
 Then run `compose down` and `bash deploy/deploy.sh`.

@@ -3,7 +3,7 @@
 # media file, and restores into a throwaway container (restore.sh --scratch).
 #   1. marker A, then the target time T, then marker B, all archived
 #   2. point-in-time restore to T: A must be there, B must not, the schema must be there, and the
-#      copy must not archive
+#      copy must not archive (archive_mode is off, and the bucket's newest timeline is unchanged)
 #   3. a media file round-trips through restic
 # Run it before the first real payment and after any change to the backup setup (RUNBOOK.md).
 set -euo pipefail
@@ -25,6 +25,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# The newest WAL timeline in the bucket. A restored copy that archived would push a new one.
+newest_timeline() {
+  compose exec -T backup sh -c 'wal-g wal-show --detailed-json 2>/dev/null | jq -e "map(.id) | max"'
+}
+
 log "writing markers"
 psql_prod -c 'create table if not exists restore_rehearsal (id serial primary key, label text not null, at timestamptz not null default now())' >/dev/null
 psql_prod -c "insert into restore_rehearsal (label) values ('A-$id')" >/dev/null
@@ -34,6 +39,7 @@ sleep 2
 psql_prod -c "insert into restore_rehearsal (label) values ('B-$id')" >/dev/null
 echo "A-$id before, B-$id after the target $target"
 wal_switch_and_wait
+timeline_before="$(newest_timeline)" || die "wal-g wal-show failed; check deploy/env/backup.env"
 
 started=$SECONDS
 RESTORE_ID="$id" bash "$DEPLOY_DIR/restore.sh" --scratch --target-time "$target"
@@ -55,6 +61,12 @@ if [[ "$archive_mode" == "off" ]]; then
   pass "the scratch copy does not archive"
 else
   fail "the scratch copy does not archive (archive_mode=$archive_mode)"
+fi
+timeline_after="$(newest_timeline)" || true
+if [[ "$timeline_after" == "$timeline_before" ]]; then
+  pass "the bucket's newest timeline is unchanged ($timeline_before)"
+else
+  fail "the bucket's newest timeline is unchanged ($timeline_before -> '$timeline_after')"
 fi
 
 log "media round trip"

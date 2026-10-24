@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 # The whole deployment, rehearsed on this machine (RUNBOOK.md, "Rehearsal record"): MinIO stands in
 # for the off-site bucket and fetivi.localhost for the domain, with Caddy's internal CA.
-#   deploy -> seed a smoke unit -> full smoke check -> scratch restore rehearsal
+#   deploy -> seed a smoke Unit -> full smoke check -> scratch restore rehearsal
 #   -> in-place point-in-time restore -> smoke check again
 # Local only: it refuses a deploy/.env whose DOMAIN is not *.localhost. KEEP=1 leaves the stack up.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 export FETIVI_OVERLAY="$DEPLOY_DIR/docker-compose.rehearsal.yml"
 
-ENV_FILES=(common chat-backend backoffice-api mcp-servers jobs postgres backup)
 started_all=$SECONDS
 
 if [[ -f "$DEPLOY_DIR/.env" ]]; then
@@ -99,14 +98,14 @@ fi
 log "deploy"
 bash "$DEPLOY_DIR/deploy.sh"
 
-log "seeding a throwaway smoke unit"
+log "seeding a throwaway smoke Unit"
 seed="$(compose run --rm -T -e ALLOW_SMOKE_SEED=1 tools -c \
   "cd packages/domain && node --import tsx src/testing/smoke-seed-cli.ts" 2>/dev/null | grep '^SMOKE_' | tr -d '\r')"
 slug="$(sed -n 's/^SMOKE_UNIT_SLUG=//p' <<<"$seed")"
 pin="$(sed -n 's/^SMOKE_PIN=//p' <<<"$seed")"
 [[ -n "$slug" && -n "$pin" ]] || die "smoke:seed printed no unit"
 sed -i -e "s/^SMOKE_UNIT_SLUG=.*/SMOKE_UNIT_SLUG=$slug/" -e "s/^SMOKE_PIN=.*/SMOKE_PIN=$pin/" "$DEPLOY_DIR/.env"
-echo "smoke unit $slug"
+echo "smoke Unit $slug"
 
 log "full smoke check"
 smoke_log="$(mktemp)"

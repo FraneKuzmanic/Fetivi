@@ -5,8 +5,6 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-ENV_FILES=(common chat-backend backoffice-api mcp-servers jobs postgres backup)
-
 log "preflight"
 [[ -f "$DEPLOY_DIR/.env" ]] || die "missing deploy/.env (copy deploy/.env.example and fill it in)"
 for name in "${ENV_FILES[@]}"; do

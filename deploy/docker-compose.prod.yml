@@ -7,6 +7,8 @@
 # subnet collides with another network (RUNBOOK.md).
 name: fetivi-prod
 
+x-caddy-ip: &caddy-ip 172.31.47.10
+
 x-node: &node
   image: fetivi-node:${FETIVI_TAG:-latest}
   pull_policy: never
@@ -43,7 +45,7 @@ services:
       - caddy_config:/config
     networks:
       internal:
-        ipv4_address: 172.31.47.10
+        ipv4_address: *caddy-ip
         aliases:
           - app.${DOMAIN}
           - host.${DOMAIN}
@@ -116,7 +118,7 @@ services:
       APP_ORIGIN: https://app.${DOMAIN}
       GUEST_TOKEN_ISSUER: https://app.${DOMAIN}
       MCP_PUBLIC_URL: https://mcp.${DOMAIN}
-      TRUST_PROXY: 172.31.47.10
+      TRUST_PROXY: *caddy-ip
       MEDIA_DIR: /data/media
     working_dir: /app/apps/chat-backend
     command: ["node", "--import", "tsx", "--import", "./src/instrumentation.ts", "src/index.ts"]
@@ -137,7 +139,7 @@ services:
       PORT: "3001"
       WEB_ORIGIN: https://host.${DOMAIN}
       GUEST_ORIGIN: https://app.${DOMAIN}
-      TRUST_PROXY: 172.31.47.10
+      TRUST_PROXY: *caddy-ip
       MEDIA_DIR: /data/media
     working_dir: /app/apps/backoffice-api
     command: ["node", "--import", "tsx", "--import", "./src/instrumentation.ts", "src/index.ts"]
