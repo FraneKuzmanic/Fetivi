@@ -23,6 +23,7 @@ export function StalenessPage() {
   const [destinationId, setDestinationId] = useState('');
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [records, setRecords] = useState<StalenessRecord[] | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setRecords((await curation.staleness(destinationId || undefined)).records);
@@ -30,6 +31,7 @@ export function StalenessPage() {
 
   useEffect(() => {
     setRecords(null);
+    setNotice(null);
     void run(load);
   }, [run, load]);
 
@@ -37,10 +39,12 @@ export function StalenessPage() {
     void run(async () => setDestinations((await catalog.destinations()).destinations));
   }, [run]);
 
-  const verify = (id: string) =>
+  const verify = (record: StalenessRecord) =>
     run(async () => {
-      await catalog.verify(id);
-      setRecords((rows) => rows?.filter((r) => r.id !== id) ?? null);
+      setNotice(null);
+      await catalog.verify(record.id);
+      setRecords((rows) => rows?.filter((r) => r.id !== record.id) ?? null);
+      setNotice(`${record.title} marked verified.`);
     });
 
   return (
@@ -68,6 +72,11 @@ export function StalenessPage() {
           </select>
         </label>
       </div>
+      {notice && !error ? (
+        <output className="saved" aria-live="polite">
+          {notice}
+        </output>
+      ) : null}
       {error ? <p role="alert">{error}</p> : null}
       {records === null && !error ? <p className="muted">Loading…</p> : null}
       {records?.length === 0 ? <p className="muted">Every record is within its budget.</p> : null}
@@ -87,8 +96,8 @@ export function StalenessPage() {
                 </span>
                 <span className="muted">{recommended(r.recommendations)}</span>
               </div>
-              <div className="actions">
-                <button type="button" disabled={busy} onClick={() => void verify(r.id)}>
+              <div className="actions queue-actions">
+                <button type="button" disabled={busy} onClick={() => void verify(r)}>
                   Mark verified
                 </button>
               </div>

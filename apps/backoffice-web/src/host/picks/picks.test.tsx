@@ -246,8 +246,8 @@ describe('host picks page', () => {
     const form = el.querySelector('form[aria-label="Add a place"]');
     await submit(form);
     await vi.waitFor(() =>
-      expect(form?.querySelector('[role="alert"]')?.textContent).toContain(
-        "outside your property's destination",
+      expect(form?.querySelector('[role="alert"]')?.textContent).toBe(
+        "That spot is outside Trogir, your property's destination. Pick a place in the same area as your property.",
       ),
     );
     expect(calls.find((c) => c.method === 'POST')?.body).toEqual({

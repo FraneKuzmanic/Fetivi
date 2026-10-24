@@ -85,6 +85,20 @@ function detail(item: CurationItem): string | null {
   }
 }
 
+/** A short name for the item, for the status line after an action. */
+function subject(item: CurationItem): string {
+  const p = item.payload;
+  if (p.kind === 'fallback_topic_cluster') return `“${p.topic}”`;
+  if ('name' in p) return p.name;
+  return item.record?.title ?? 'The item';
+}
+
+const DONE: Partial<Record<CurationAction, string>> = {
+  approve: 'approved. It is under Done.',
+  reject: 'rejected. It is under Done.',
+  needs_visit: 'moved to Needs a visit.',
+};
+
 function meta(item: CurationItem): string {
   return [
     item.destination?.name ?? 'No destination',
@@ -105,6 +119,7 @@ export function CurationPage() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [items, setItems] = useState<CurationItem[] | null>(null);
   const [counts, setCounts] = useState<Record<CurationKind, number> | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const query = useCallback(
     () =>
@@ -124,6 +139,7 @@ export function CurationPage() {
 
   useEffect(() => {
     setItems(null);
+    setNotice(null);
     void run(load);
   }, [run, load]);
 
@@ -136,6 +152,7 @@ export function CurationPage() {
       return;
     }
     void run(async () => {
+      setNotice(null);
       try {
         if (action === 'edit') {
           const { recordId } = await curation.edit(item.id);
@@ -146,6 +163,7 @@ export function CurationPage() {
         if (action === 'reject') await curation.reject(item.id);
         if (action === 'needs_visit') await curation.needsVisit(item.id);
         setItems((rows) => rows?.filter((r) => r.id !== item.id) ?? null);
+        setNotice(`${subject(item)} ${DONE[action]}`);
         setCounts((await query()).counts);
       } catch (e) {
         // Another admin reviewed it first: show the list as it is now.
@@ -191,18 +209,27 @@ export function CurationPage() {
             ))}
           </select>
         </label>
+        <label className="field inline-field">
+          <span className="field-label">Kind</span>
+          <select
+            value={kind ?? ''}
+            onChange={(e) => setKind((e.target.value || null) as CurationKind | null)}
+          >
+            <option value="">All kinds{total === null ? '' : ` (${total})`}</option>
+            {CURATION_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {CURATION_KIND_LABELS[k]}
+                {counts ? ` (${counts[k]})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
-      <fieldset className="segmented wrap kind-filter" aria-label="Kind">
-        <button type="button" aria-pressed={kind === null} onClick={() => setKind(null)}>
-          All{total === null ? '' : ` ${total}`}
-        </button>
-        {CURATION_KINDS.map((k) => (
-          <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)}>
-            {CURATION_KIND_LABELS[k]}
-            {counts ? ` ${counts[k]}` : ''}
-          </button>
-        ))}
-      </fieldset>
+      {notice && !error ? (
+        <output className="saved" aria-live="polite">
+          {notice}
+        </output>
+      ) : null}
       {error ? <p role="alert">{error}</p> : null}
       {items === null && !error ? <p className="muted">Loading…</p> : null}
       {items?.length === 0 ? <p className="muted">{empty}</p> : null}
@@ -223,7 +250,7 @@ export function CurationPage() {
                   <span className="muted">{meta(item)}</span>
                 </div>
                 {item.actions.length > 0 ? (
-                  <div className="actions">
+                  <div className="actions queue-actions">
                     {item.actions.map((a) => (
                       <button
                         key={a}

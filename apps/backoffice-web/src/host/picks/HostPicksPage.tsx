@@ -153,10 +153,12 @@ function PickRow({
 
 function AddedRow({
   place,
+  destinationName,
   onChanged,
   reload,
 }: {
   place: HostAddedView;
+  destinationName: string;
   onChanged: Update;
   reload: () => Promise<void>;
 }) {
@@ -168,6 +170,7 @@ function AddedRow({
           initial={place}
           heading={`Edit ${place.name}`}
           submitLabel="Save place"
+          destinationName={destinationName}
           onSubmit={async (input) => {
             onChanged(await host.updateHostPlace(place.id, input));
             setEditing(false);
@@ -288,7 +291,13 @@ export function HostPicksPage() {
               {picks.added.length > 0 ? (
                 <ul className="rows" aria-label="Places you added">
                   {picks.added.map((p) => (
-                    <AddedRow key={p.id} place={p} onChanged={setPicks} reload={reloadPicks} />
+                    <AddedRow
+                      key={p.id}
+                      place={p}
+                      destinationName={destination.name}
+                      onChanged={setPicks}
+                      reload={reloadPicks}
+                    />
                   ))}
                 </ul>
               ) : null}
@@ -296,6 +305,7 @@ export function HostPicksPage() {
                 <AddedPlaceForm
                   heading="Add a place"
                   submitLabel="Add place"
+                  destinationName={destination.name}
                   onSubmit={async (input) => {
                     setPicks(await host.createAddedPlace(id, input));
                     setAdding(false);

@@ -165,6 +165,19 @@ async function click(button: Element | undefined) {
   });
 }
 
+async function choose(label: string, value: string) {
+  const select = [...el.querySelectorAll('label')]
+    .find((l) => l.querySelector('.field-label')?.textContent === label)
+    ?.querySelector('select') as HTMLSelectElement;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(select, value);
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  return select;
+}
+
+const status = () => el.querySelector('output[aria-live="polite"]')?.textContent;
+
 const buttonIn = (row: Element | undefined, name: string) =>
   [...(row?.querySelectorAll('button') ?? [])].find((b) => b.textContent === name);
 
@@ -179,25 +192,31 @@ describe('CurationPage', () => {
     const cluster = rowOf('kayak rental')?.textContent ?? '';
     expect(cluster).toContain('4 searches, 3 without results');
     expect(cluster).toContain('Near okrug');
-    expect(el.textContent).toContain('Host Provider suggestion 1');
+    expect(el.textContent).toContain('Host Provider suggestion (1)');
+    expect(el.textContent).toContain('All kinds (3)');
   });
 
   it('filters by kind', async () => {
     await mount('/admin/curation');
-    const draftFilter = [...el.querySelectorAll('fieldset button')].find((b) =>
-      b.textContent?.startsWith('Draft'),
-    );
-    await click(draftFilter);
+    const select = await choose('Kind', 'draft');
     expect(calls.at(-1)?.url).toBe('/api/admin/curation?status=open&kind=draft');
-    expect(draftFilter?.getAttribute('aria-pressed')).toBe('true');
+    expect(select.value).toBe('draft');
   });
 
-  it('approves an item and removes its row', async () => {
+  it('approves an item, removes its row and says so', async () => {
     await mount('/admin/curation');
     await click(buttonIn(rowOf('Konoba Old'), 'Approve'));
     expect(calls).toContainEqual({ url: '/api/admin/curation/i-draft/approve', method: 'POST' });
     expect(rowOf('Konoba Old')).toBeUndefined();
     expect(rowOf('Kayak Bros')).toBeDefined();
+    expect(status()).toBe('Konoba Old approved. It is under Done.');
+  });
+
+  it('says where an item went after Needs a visit', async () => {
+    await mount('/admin/curation');
+    await click(buttonIn(rowOf('Kayak Bros'), 'Needs a visit'));
+    expect(rowOf('Kayak Bros')).toBeUndefined();
+    expect(status()).toBe('Kayak Bros moved to Needs a visit.');
   });
 
   it('opens the record editor on Edit', async () => {
@@ -222,5 +241,6 @@ describe('StalenessPage', () => {
       method: 'POST',
     });
     expect(rowOf('Pantan beach')).toBeUndefined();
+    expect(status()).toBe('Pantan beach marked verified.');
   });
 });

@@ -991,16 +991,17 @@ fieldset.segmented {
   min-width: 0;
 }
 
-/* On a phone the curation kind filter scrolls sideways instead of wrapping into a tall block. */
+/* On a phone the curation queue's actions sit in an even two-column grid; an odd first one
+   (the primary) takes the whole row. */
 @media (max-width: 699px) {
-  .segmented.kind-filter {
-    flex-wrap: nowrap;
-    overflow-x: auto;
+  .queue-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex-basis: 100%;
   }
 
-  .segmented.kind-filter button {
-    flex: 0 0 auto;
-    white-space: nowrap;
+  .queue-actions > :first-child:nth-last-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 
