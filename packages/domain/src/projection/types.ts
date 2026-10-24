@@ -35,6 +35,11 @@ export interface GuestProjection {
     checkout: string;
     partySize: number;
     arrivalDetailsReleased: boolean;
+    /**
+     * True before the release when at least one gated item has a value, so the Guide can say details
+     * are coming. Never says which item or what it holds; false once released.
+     */
+    arrivalDetailsPending: boolean;
     /** ISO instant. */
     arrivalDetailsReleaseAt: string;
   };

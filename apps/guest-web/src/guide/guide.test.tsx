@@ -11,7 +11,11 @@ import { GuideTab } from './GuideTab';
 
 const RELEASE_AT = '2026-10-19T22:00:00.000Z';
 
-function unit(released: boolean, blocks: GuestProjection['blocks'] = []): GuestProjection {
+function unit(
+  released: boolean,
+  blocks: GuestProjection['blocks'] = [],
+  pending = !released,
+): GuestProjection {
   return {
     language: 'en',
     property: {
@@ -29,6 +33,7 @@ function unit(released: boolean, blocks: GuestProjection['blocks'] = []): GuestP
       checkout: '2026-10-24',
       partySize: 2,
       arrivalDetailsReleased: released,
+      arrivalDetailsPending: pending,
       arrivalDetailsReleaseAt: RELEASE_AT,
     },
     checkInOut: { checkInTime: '15:00:00', checkoutTime: '10:00:00', checkInMethod: 'lockbox' },
@@ -194,6 +199,18 @@ describe('Arrival and access', () => {
     );
     expect(host.textContent).toContain('Lockbox');
     expect(host.textContent).not.toContain('D-4412');
+  });
+
+  it('shows no release note when nothing is held back', async () => {
+    stubApi(unit(false, [], false));
+    await mount('/guide/arrival');
+    expect(host.querySelector('h1')?.textContent).toBe('Arrival and access');
+    expect(host.querySelector('.fv-info-release')).toBeNull();
+    expect(host.textContent).toContain('Lockbox');
+    act(() => root?.unmount());
+    await mount('/guide/contacts');
+    expect(host.querySelector('a[href="tel:112"]')).not.toBeNull();
+    expect(host.querySelector('.fv-info-release')).toBeNull();
   });
 
   it('shows the codes after the release, and Copy writes the exact code', async () => {

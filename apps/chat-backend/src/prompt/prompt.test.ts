@@ -39,6 +39,7 @@ const projection: GuestProjection = {
     checkout: '2026-10-26',
     partySize: 2,
     arrivalDetailsReleased: false,
+    arrivalDetailsPending: true,
     arrivalDetailsReleaseAt: '2026-10-21T22:00:00.000Z',
   },
   checkInOut: { checkInTime: '15:00', checkoutTime: '10:00', checkInMethod: null },
@@ -60,7 +61,7 @@ const projection: GuestProjection = {
 
 const released: GuestProjection = {
   ...projection,
-  stay: { ...projection.stay, arrivalDetailsReleased: true },
+  stay: { ...projection.stay, arrivalDetailsReleased: true, arrivalDetailsPending: false },
   arrival: {
     accessInstructions: 'Blue gate',
     buildingDoorCode: '1',
@@ -91,6 +92,11 @@ describe('system text', () => {
 
   it('asks the model to note a missing property fact for the host (44)', () => {
     expect(INSTRUCTIONS).toContain('also call note_missing_info with the closest topic');
+  });
+
+  it('says details will appear only when something is held back (49)', () => {
+    expect(INSTRUCTIONS).toContain('If "arrivalDetailsPending" is true');
+    expect(INSTRUCTIONS).toContain('If it is false, nothing is held back.');
   });
 
   it('keeps the day plan to what the guest asked for and never calls it a booking', () => {

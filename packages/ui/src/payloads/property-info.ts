@@ -40,9 +40,8 @@ const field = z.object({
 export const propertyInfoCard = z.object({
   topic: z.enum(PROPERTY_INFO_TOPICS),
   /**
-   * ISO instant when the topic's gated fields appear; null once released or for a topic with none.
-   * Before the release the projection does not say whether a gated value exists, so it is set
-   * even when the unit has none.
+   * ISO instant when held-back details appear; null once released, when nothing is held back, or
+   * for a topic with none.
    */
   releaseAt: z.string().nullable(),
   /** The property's zone, for showing `releaseAt`. */
@@ -77,7 +76,7 @@ export function propertyInfo(p: GuestProjection, topic: PropertyInfoTopic): Prop
   const add = (key: PropertyInfoField, value: string | null, action: 'text' | 'copy' | 'tel') => {
     if (value !== null && value.trim() !== '') fields.push({ key, value, action });
   };
-  const gated = p.stay.arrivalDetailsReleased ? null : p.stay.arrivalDetailsReleaseAt;
+  const gated = p.stay.arrivalDetailsPending ? p.stay.arrivalDetailsReleaseAt : null;
   let releaseAt: string | null = null;
 
   switch (topic) {

@@ -30,7 +30,8 @@ export interface ProjectionInput {
  * Arrival details, the six typed secrets and `after_release` blocks appear from the release time.
  * Block text comes only from the published revision's translation, never from the block row,
  * which may hold an unpublished newer revision. Media appear with the publication of the revision
- * that added them; their ids are the only ids the projection carries.
+ * that added them; their ids are the only ids the projection carries. Before the release it says
+ * only whether something is held back, never what.
  */
 export function guestProjection(input: ProjectionInput): GuestProjection {
   const { unit: u, stay, language, now } = input;
@@ -42,11 +43,16 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
     if (t.language === language) texts.set(`${t.blockId}:${t.revision}`, t);
   }
   const blocks: GuestProjection['blocks'] = [];
+  let blockPending = false;
   for (const b of u.blocks) {
     if (b.publishedRevision === null) continue;
-    if (b.visibility === 'after_release' && !released) continue;
     const text = texts.get(`${b.id}:${b.publishedRevision}`);
     if (!text) continue;
+    // Checked after the translation lookup so only a block that would appear at the release counts.
+    if (b.visibility === 'after_release' && !released) {
+      blockPending = true;
+      continue;
+    }
     const published = b.publishedRevision;
     const media = input.media
       .filter((m) => m.blockId === b.id && m.addedRevision <= published)
@@ -54,6 +60,21 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
       .map((m) => ({ id: m.id, kind: m.kind, caption: text.captions[m.id] ?? m.caption }));
     blocks.push({ category: b.category, title: text.title, body: text.body, media });
   }
+
+  const filled = (v: string | null) => v !== null && v.trim() !== '';
+  const pending =
+    !released &&
+    (blockPending ||
+      [
+        u.accessInstructions,
+        u.buildingDoorCode,
+        u.doorCode,
+        u.lockboxCode,
+        u.hostPhone,
+        u.emergencyContactPhone,
+      ].some(filled) ||
+      // A noWifi unit never shows its password, so a stored one is not pending.
+      (!u.noWifi && filled(u.wifiPassword)));
 
   return {
     language,
@@ -78,6 +99,7 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
       checkout: stay.checkout,
       partySize: stay.partySize,
       arrivalDetailsReleased: released,
+      arrivalDetailsPending: pending,
       arrivalDetailsReleaseAt: stay.arrivalReleaseAt.toISOString(),
     },
     checkInOut: {

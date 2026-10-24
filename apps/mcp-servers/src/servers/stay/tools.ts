@@ -49,7 +49,7 @@ export const draftHostMessageSpec: GuestToolSpec = guestTool({
           hostPhone: p.contacts.hostPhone,
           emergencyContactName: p.contacts.emergencyContactName,
           emergencyContactPhone: p.contacts.emergencyContactPhone,
-          releaseAt: p.stay.arrivalDetailsReleased ? null : p.stay.arrivalDetailsReleaseAt,
+          releaseAt: p.stay.arrivalDetailsPending ? p.stay.arrivalDetailsReleaseAt : null,
           timezone: p.property.timezone,
         },
       };

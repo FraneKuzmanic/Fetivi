@@ -14,7 +14,11 @@ const card = {
 /** Only the parts of a projection the Wi-Fi card reads. */
 const projection = {
   property: { timezone: 'Europe/Zagreb' },
-  stay: { arrivalDetailsReleased: false, arrivalDetailsReleaseAt: '2026-10-20T22:00:00.000Z' },
+  stay: {
+    arrivalDetailsReleased: false,
+    arrivalDetailsPending: true,
+    arrivalDetailsReleaseAt: '2026-10-20T22:00:00.000Z',
+  },
   wifi: { network: 'Mare', password: null },
   blocks: [],
 } as unknown as GuestProjection;

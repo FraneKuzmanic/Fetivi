@@ -18,6 +18,17 @@ describe('propertyInfo', () => {
     expect(card.fields[0]).toEqual({ key: 'checkInTime', value: '15:00', action: 'text' });
   });
 
+  it('says nothing about a release when nothing is held back', () => {
+    const quiet = projection(false, {
+      stay: { ...projection(false).stay, arrivalDetailsPending: false },
+    });
+    for (const topic of ['arrival', 'wifi', 'contacts'] as const) {
+      const card = propertyInfo(quiet, topic);
+      expect(card.releaseAt).toBeNull();
+      expect(card.fields).toEqual(propertyInfo(projection(false), topic).fields);
+    }
+  });
+
   it('shows the codes with copy buttons after the release', () => {
     const card = propertyInfo(projection(true), 'arrival');
     expect(card.releaseAt).toBeNull();
