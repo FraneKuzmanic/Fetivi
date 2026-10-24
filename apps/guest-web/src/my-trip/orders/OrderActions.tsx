@@ -55,7 +55,7 @@ export function OrderActions({
     item?.focus();
   };
 
-  const run = async (call: () => Promise<ActionReply>, onCard: ElicitationPayload | null) => {
+  const run = async (call: () => Promise<ActionReply>, restoreCard: ElicitationPayload | null) => {
     setOffline(false);
     try {
       const reply = await call();
@@ -68,7 +68,7 @@ export function OrderActions({
         return;
       }
       setOffline(true);
-      setView(onCard ? { kind: 'card', card: onCard, sending: false } : { kind: 'idle' });
+      setView(restoreCard ? { kind: 'card', card: restoreCard, sending: false } : { kind: 'idle' });
     }
   };
 

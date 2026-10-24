@@ -145,8 +145,35 @@ async function seedConversation(unit: SeededGuestUnit): Promise<string> {
       conversationId: conversation.id,
       seq: 3,
       role: 'assistant',
-      parts: [{ type: 'text', text: 'Five minutes west.' }],
+      parts: [
+        {
+          type: 'tool-get_about_me',
+          toolCallId: 'about',
+          state: 'output-available',
+          output: { diet: 'vegetarian' },
+        },
+        { type: 'text', text: 'Five minutes west.' },
+        {
+          type: 'tool-book_offer',
+          toolCallId: 'book',
+          state: 'output-available',
+          output: { email: 'guest@example.com', name: 'Ana', phone: '+385 91 000' },
+        },
+      ],
       createdAt: at(3),
+    },
+    {
+      id: `${conversation.id}-5`,
+      conversationId: conversation.id,
+      seq: 5,
+      role: 'user',
+      parts: [
+        {
+          type: 'data-elicitation-answer',
+          data: { email: 'guest@example.com', phone: '+385 91 000' },
+        },
+      ],
+      createdAt: at(5),
     },
     {
       id: `${conversation.id}-4`,
@@ -313,7 +340,7 @@ describe('runRetention', () => {
     expect(await spaceExists(unit.spaceId)).toBe(false);
   });
 
-  it("keeps an opted-in conversation's chat messages only", async () => {
+  it("keeps only the text of an opted-in conversation's chat messages", async () => {
     const optedIn = await seedGuestUnit(db, { now: SEED, spaceLanguage: 'de' });
     const optedOut = await seedGuestUnit(db, { now: SEED });
     await db.update(spaces).set({ evaluationOptInAt: SEED }).where(eq(spaces.id, optedIn.spaceId));

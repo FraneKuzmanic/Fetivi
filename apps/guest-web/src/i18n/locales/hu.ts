@@ -283,9 +283,9 @@ export const hu: Messages = {
       'E-mailben küldök egy linket, amely egy másik telefonon vagy számítógépen megnyitja a csevegésed és a foglalásaid. Amikor ott megnyitod, ez az eszköz kijelentkezik a Fetiviből.',
     sendLink: 'Küldj egy linket',
     linkSent: 'Elküldve. Nézd meg a postafiókod; a link 1 óráig érvényes.',
-    researchTitle: 'Segíts jobbá tenni a Fetivit',
-    research: 'A beszélgetésem megőrzése a Fetivi kutatásához',
-    researchNote:
+    evaluationTitle: 'Segíts jobbá tenni a Fetivit',
+    evaluation: 'A beszélgetésem megőrzése a Fetivi kutatásához',
+    evaluationNote:
       'Ki: a csevegés a kijelentkezés után 30 nappal törlődik. Be: egy másolatot az e-mail-címed és a beállításaid nélkül megőrzünk a Fetiviről szóló egyetemi kutatáshoz.',
   },
   cancelOrder: {

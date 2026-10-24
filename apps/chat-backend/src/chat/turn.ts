@@ -262,9 +262,9 @@ async function currentWeatherNote(
 
 /**
  * One guest turn, streamed. Throws HttpError before the stream starts, a 429 `message-cap` once
- * the Space has sent the admin's daily number of messages on the property's current day. The user message and the
- * answer are stored together only when the turn completes, so a failed turn leaves the history
- * (and the cached prompt prefix) as it was.
+ * the Space has sent the admin's daily number of messages on the property's current day. The user
+ * message and the answer are stored together only when the turn completes, so a failed turn leaves
+ * the history (and the cached prompt prefix) as it was.
  */
 export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Promise<Response> {
   return withTurn(deps, space, async (turn) => {

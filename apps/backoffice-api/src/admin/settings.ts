@@ -27,7 +27,6 @@ export async function platformSettingsRoutes(
 
   app.put('/api/admin/settings', { config: { access: 'admin' } }, async (request) => {
     const { dailyMessageCap } = settingsBody.parse(request.body);
-    await setDailyMessageCap(deps.db, dailyMessageCap, deps.now());
-    return getPlatformSettings(deps.db);
+    return setDailyMessageCap(deps.db, dailyMessageCap, deps.now());
   });
 }

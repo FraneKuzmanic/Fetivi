@@ -282,9 +282,9 @@ export const pl: Messages = {
       'Wyślę Ci e-mailem link, który otworzy Twój czat i rezerwacje na innym telefonie lub komputerze. Gdy otworzysz go tam, to urządzenie zostanie wylogowane z Fetivi.',
     sendLink: 'Wyślij mi link',
     linkSent: 'Wysłano. Sprawdź skrzynkę; link działa przez 1 godzinę.',
-    researchTitle: 'Pomóż ulepszyć Fetivi',
-    research: 'Zachowaj moją rozmowę do badań nad Fetivi',
-    researchNote:
+    evaluationTitle: 'Pomóż ulepszyć Fetivi',
+    evaluation: 'Zachowaj moją rozmowę do badań nad Fetivi',
+    evaluationNote:
       'Wyłączone: czat zostanie usunięty 30 dni po wymeldowaniu. Włączone: kopia bez Twojego e-maila i preferencji zostanie zachowana na potrzeby badania uniwersyteckiego o Fetivi.',
   },
   cancelOrder: {

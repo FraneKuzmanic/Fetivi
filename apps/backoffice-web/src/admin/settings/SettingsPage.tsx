@@ -4,7 +4,7 @@ import { admin } from '../../api';
 import { NumberField, Section } from '../../forms/fields';
 import { useAction } from '../../useAction';
 
-/** Platform-wide settings: the soft daily message cap per guest device (45 AC 5). */
+/** Platform-wide settings: the soft daily message cap per Space (45 AC 5). */
 export function SettingsPage() {
   const { error, run } = useAction();
   const [cap, setCap] = useState<number | null>(null);
@@ -20,7 +20,7 @@ export function SettingsPage() {
   if (!loaded) return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
 
   async function save() {
-    if (cap === null) throw new Error('Enter a daily message limit.');
+    if (cap === null) throw new Error('Enter a daily message cap.');
     setCap((await admin.saveSettings({ dailyMessageCap: cap })).dailyMessageCap);
   }
 
@@ -32,7 +32,7 @@ export function SettingsPage() {
       <div className="editor">
         <Section title="Guest chat" onSave={save}>
           <NumberField
-            label="Daily message limit per guest device"
+            label="Daily message cap per Space"
             hint="After this many messages in a day, chat pauses until midnight at the property. Guide and My trip keep working."
             value={cap}
             onChange={setCap}

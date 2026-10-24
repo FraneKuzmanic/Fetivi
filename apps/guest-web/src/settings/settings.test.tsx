@@ -77,7 +77,7 @@ const checkbox = (text: string) =>
     .find((l) => l.textContent?.includes(text))
     ?.querySelector<HTMLInputElement>('input[type="checkbox"]') ?? null;
 const tipsBox = () => checkbox('One local tip a day');
-const researchBox = () => checkbox('Keep my conversation');
+const evaluationBox = () => checkbox('Keep my conversation');
 
 const button = (text: string) =>
   [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(text));
@@ -134,24 +134,24 @@ describe('SettingsPage', () => {
     expect(tipsBox()).toBeNull();
   });
 
-  it('research: off by default, saves on the space, also after checkout', async () => {
+  it('evaluation opt-in: off by default, saves on the space, also after checkout', async () => {
     const calls = server({ email: null, verified: false, tips: false });
     await mount({ ...SPACE, closed: true });
     expect(host.textContent).toContain('your chat is deleted 30 days after checkout');
-    expect(researchBox()?.checked).toBe(false);
-    await act(async () => researchBox()?.click());
+    expect(evaluationBox()?.checked).toBe(false);
+    await act(async () => evaluationBox()?.click());
     expect(calls.find((c) => c.url === '/api/space')).toMatchObject({
       method: 'PATCH',
       body: { keepForEvaluation: true },
     });
-    expect(researchBox()?.checked).toBe(true);
+    expect(evaluationBox()?.checked).toBe(true);
   });
 
-  it('research: a failed save says so and leaves the box as it was', async () => {
+  it('evaluation opt-in: a failed save says so and leaves the box as it was', async () => {
     server({ email: null, verified: false, tips: false }, { spaceFails: true });
     await mount();
-    await act(async () => researchBox()?.click());
-    expect(researchBox()?.checked).toBe(false);
+    await act(async () => evaluationBox()?.click());
+    expect(evaluationBox()?.checked).toBe(false);
     expect(host.textContent).toContain(locales.en.error.network);
   });
 });

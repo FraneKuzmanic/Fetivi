@@ -131,19 +131,19 @@ export function SettingsPage() {
         </p>
       </section>
 
-      <section className="settings-section" aria-labelledby="settings-research">
-        <h2 id="settings-research">{t('settings.researchTitle')}</h2>
+      <section className="settings-section" aria-labelledby="settings-evaluation">
+        <h2 id="settings-evaluation">{t('settings.evaluationTitle')}</h2>
         <label className="email-check">
           <input
             type="checkbox"
             checked={keep}
-            aria-describedby="settings-research-note"
+            aria-describedby="settings-evaluation-note"
             onChange={(e) => toggleKeep(e.target.checked)}
           />
-          {t('settings.research')}
+          {t('settings.evaluation')}
         </label>
-        <p id="settings-research-note" className="settings-note">
-          {t('settings.researchNote')}
+        <p id="settings-evaluation-note" className="settings-note">
+          {t('settings.evaluationNote')}
         </p>
         <p className="status" role="status">
           {keepFailed ? t('error.network') : ''}

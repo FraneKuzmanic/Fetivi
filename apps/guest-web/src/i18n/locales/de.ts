@@ -289,9 +289,9 @@ export const de: Messages = {
       'Ich schicke Ihnen per E-Mail einen Link, der Ihren Chat und Ihre Buchungen auf einem anderen Handy oder Computer öffnet. Sobald Sie ihn dort öffnen, wird dieses Gerät von Fetivi abgemeldet.',
     sendLink: 'Link per E-Mail senden',
     linkSent: 'Gesendet. Schauen Sie in Ihr Postfach; der Link gilt 1 Stunde.',
-    researchTitle: 'Helfen Sie, Fetivi zu verbessern',
-    research: 'Mein Gespräch für die Forschung zu Fetivi aufbewahren',
-    researchNote:
+    evaluationTitle: 'Helfen Sie, Fetivi zu verbessern',
+    evaluation: 'Mein Gespräch für die Forschung zu Fetivi aufbewahren',
+    evaluationNote:
       'Aus: Ihr Chat wird 30 Tage nach dem Check-out gelöscht. An: Eine Kopie ohne Ihre E-Mail und Vorlieben wird für eine Universitätsstudie zu Fetivi aufbewahrt.',
   },
   cancelOrder: {

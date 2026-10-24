@@ -288,9 +288,9 @@ export const fr: Messages = {
       'Je vous enverrai par e-mail un lien qui ouvre votre conversation et vos réservations sur un autre téléphone ou ordinateur. Dès que vous l’ouvrez là-bas, cet appareil est déconnecté de Fetivi.',
     sendLink: 'M’envoyer un lien',
     linkSent: 'Envoyé. Regardez votre boîte mail ; le lien est valable 1 heure.',
-    researchTitle: 'Aidez à améliorer Fetivi',
-    research: 'Conserver ma conversation pour la recherche sur Fetivi',
-    researchNote:
+    evaluationTitle: 'Aidez à améliorer Fetivi',
+    evaluation: 'Conserver ma conversation pour la recherche sur Fetivi',
+    evaluationNote:
       'Désactivé : votre discussion est supprimée 30 jours après le départ. Activé : une copie sans votre e-mail ni vos préférences est conservée pour une étude universitaire sur Fetivi.',
   },
   cancelOrder: {

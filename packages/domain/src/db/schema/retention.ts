@@ -62,7 +62,7 @@ export interface KeptMessage {
 
 /**
  * Conversations the guest opted to keep for the thesis evaluation (PRD §6.5): the guest's and
- * Fetivi's chat messages only — no system notes, inbox items, email or preferences.
+ * Fetivi's chat text only — no system notes, inbox items, tool or card parts, email or preferences.
  */
 export const keptConversations = pgTable('kept_conversations', {
   /** Opaque: matches turn_metrics and answer_feedback. */

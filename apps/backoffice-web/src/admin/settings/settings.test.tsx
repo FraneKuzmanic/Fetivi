@@ -50,13 +50,13 @@ async function type(element: HTMLInputElement, value: string) {
 }
 
 describe('SettingsPage', () => {
-  it('loads the daily message limit and saves a new one', async () => {
+  it('loads the daily message cap and saves a new one', async () => {
     await mount();
     const input = el.querySelector<HTMLInputElement>('input[type="number"]');
     if (!input) throw new Error('no input');
     expect(input.value).toBe('60');
     expect([input.min, input.max]).toEqual(['1', '1000']);
-    expect(el.textContent).toContain('Daily message limit per guest device');
+    expect(el.textContent).toContain('Daily message cap per Space');
 
     await type(input, '25');
     await act(async () => {

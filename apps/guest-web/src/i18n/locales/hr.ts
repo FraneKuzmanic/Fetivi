@@ -280,9 +280,9 @@ export const hr: Messages = {
       'Poslat ću vam e-poštom poveznicu koja otvara vaš razgovor i rezervacije na drugom mobitelu ili računalu. Kad je tamo otvorite, ovaj će se uređaj odjaviti iz Fetivija.',
     sendLink: 'Pošalji mi poveznicu',
     linkSent: 'Poslano. Provjerite poštu; poveznica vrijedi 1 sat.',
-    researchTitle: 'Pomozite poboljšati Fetivi',
-    research: 'Sačuvaj moj razgovor za istraživanje o Fetiviju',
-    researchNote:
+    evaluationTitle: 'Pomozite poboljšati Fetivi',
+    evaluation: 'Sačuvaj moj razgovor za istraživanje o Fetiviju',
+    evaluationNote:
       'Isključeno: razgovor se briše 30 dana nakon odjave. Uključeno: kopija bez Vaše e-pošte i postavki čuva se za sveučilišno istraživanje o Fetiviju.',
   },
   cancelOrder: {

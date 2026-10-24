@@ -167,13 +167,18 @@ function retainSpace(db: Db, spaceId: string, now: Date): Promise<SpaceOutcome> 
             conversationId: conversation.id,
             language: space.language,
             startedAt: conversation.createdAt,
-            messages: chat.map(
-              (m): KeptMessage => ({
-                role: m.role as KeptMessage['role'],
-                parts: m.parts,
-                createdAt: m.createdAt.toISOString(),
-              }),
-            ),
+            // Text parts only: tool and card parts carry About me, contact details and Orders.
+            messages: chat.flatMap((m): KeptMessage[] => {
+              const parts = m.parts.filter((p) => p.type === 'text');
+              if (parts.length === 0) return [];
+              return [
+                {
+                  role: m.role as KeptMessage['role'],
+                  parts,
+                  createdAt: m.createdAt.toISOString(),
+                },
+              ];
+            }),
             keptAt: now,
           })
           .onConflictDoNothing({ target: keptConversations.conversationId })

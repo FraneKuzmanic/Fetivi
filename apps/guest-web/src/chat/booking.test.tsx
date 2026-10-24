@@ -365,6 +365,38 @@ describe('Pay now on a chat receipt', () => {
   });
 });
 
+describe('the daily message cap in the chat', () => {
+  it("says it in Fetivi's voice, not as an error, with no retry", async () => {
+    stubBackend(
+      () =>
+        new Response(JSON.stringify({ error: 'message-cap' }), {
+          status: 429,
+          headers: { 'content-type': 'application/json' },
+        }),
+    );
+    await mount([]);
+    const box = host.querySelector<HTMLTextAreaElement>('.composer textarea');
+    if (!box) throw new Error('no composer');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(
+        box,
+        'One more question',
+      );
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      box.form?.requestSubmit();
+    });
+    await vi.waitFor(() => {
+      expect(host.querySelector('.chat-note[role="status"] .speech')?.textContent).toContain(
+        "That's all the chatting I can do for today",
+      );
+    });
+    expect(host.querySelector('[role="alert"]')).toBeNull();
+    expect(host.querySelector('.chat-note button')).toBeNull();
+  });
+});
+
 describe('hasGuestAnswer', () => {
   it('ignores an ordinary answer that ends with a tool call', () => {
     const messages: UIMessage[] = [

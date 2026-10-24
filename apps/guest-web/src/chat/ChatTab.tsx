@@ -281,19 +281,27 @@ export function ChatView({
           onAnswer={answer}
         />
       </SavedPlacesProvider>
-      {errorKey && (
-        <div className="chat-error" role="alert">
-          <p>{t(errorKey)}</p>
-          {error && errorKey !== 'chat.errorClosed' && errorKey !== 'chat.errorCap' && (
-            <button type="button" className="text-button" onClick={() => send(pending.current)}>
-              {t('chat.retry')}
-            </button>
-          )}
+      {errorKey === 'chat.errorCap' ? (
+        // Not an error: Fetivi is done chatting for today; Guide and My trip still work.
+        <div className="chat-note" role="status">
+          <MascotSays>{t(errorKey)}</MascotSays>
         </div>
+      ) : (
+        errorKey && (
+          <div className="chat-error" role="alert">
+            <p>{t(errorKey)}</p>
+            {error && errorKey !== 'chat.errorClosed' && (
+              <button type="button" className="text-button" onClick={() => send(pending.current)}>
+                {t('chat.retry')}
+              </button>
+            )}
+          </div>
+        )
       )}
-      {closed && space ? (
-        <ClosedNote closedAt={space.closedAt} />
-      ) : closed ? null : (
+      {/* Until the Space loads it counts as closed, so no composer and no note. */}
+      {closed ? (
+        space && <ClosedNote closedAt={space.closedAt} />
+      ) : (
         <Composer value={draft} onChange={setDraft} onSend={send} busy={busy} />
       )}
     </div>
@@ -309,7 +317,7 @@ function ClosedNote({ closedAt }: { closedAt: string }) {
   const lastDay = new Date(readOnlyEndsAt(new Date(closedAt)).getTime() - 1);
   const date = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'long' }).format(lastDay);
   return (
-    <div className="chat-closed">
+    <div className="chat-note">
       <MascotSays>
         {t('chat.closedUntil', { date })} <Link to="/trip">{t('chat.openTrip')}</Link>
       </MascotSays>

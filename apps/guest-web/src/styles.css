@@ -997,8 +997,13 @@ input {
   color: var(--danger);
 }
 
-.chat-closed {
+.chat-note {
   padding-top: 0.5rem;
+}
+
+.speech a {
+  color: var(--blue-600);
+  font-weight: 500;
 }
 
 .composer {

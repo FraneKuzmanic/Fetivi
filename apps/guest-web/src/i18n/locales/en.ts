@@ -279,9 +279,9 @@ export const en = {
       "I'll email you a link that opens your chat and bookings on another phone or computer. When you open it there, this device signs out of Fetivi.",
     sendLink: 'Email me a link',
     linkSent: 'Sent. Check your inbox; the link works for 1 hour.',
-    researchTitle: 'Help improve Fetivi',
-    research: 'Keep my conversation to help research Fetivi',
-    researchNote:
+    evaluationTitle: 'Help improve Fetivi',
+    evaluation: 'Keep my conversation to help research Fetivi',
+    evaluationNote:
       'Off: your chat is deleted 30 days after checkout. On: a copy without your email or preferences is kept for a university study of Fetivi.',
   },
   cancelOrder: {

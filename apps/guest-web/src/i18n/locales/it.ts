@@ -284,9 +284,9 @@ export const it: Messages = {
       'Ti manderò via email un link che apre la chat e le prenotazioni su un altro telefono o computer. Quando lo apri lì, questo dispositivo esce da Fetivi.',
     sendLink: 'Mandami un link',
     linkSent: 'Inviato. Controlla la posta; il link vale 1 ora.',
-    researchTitle: 'Aiuta a migliorare Fetivi',
-    research: 'Conserva la mia conversazione per la ricerca su Fetivi',
-    researchNote:
+    evaluationTitle: 'Aiuta a migliorare Fetivi',
+    evaluation: 'Conserva la mia conversazione per la ricerca su Fetivi',
+    evaluationNote:
       'Spento: la chat viene cancellata 30 giorni dopo il check-out. Acceso: una copia senza la tua email né le tue preferenze viene conservata per uno studio universitario su Fetivi.',
   },
   cancelOrder: {
