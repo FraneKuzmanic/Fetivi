@@ -1,4 +1,4 @@
-import { and, countDistinct, desc, eq, gt, inArray, isNull, max, sql } from 'drizzle-orm';
+import { and, countDistinct, desc, eq, gt, inArray, isNull, lte, max, sql } from 'drizzle-orm';
 import type { Db, Executor } from '../../db/client';
 import { accounts } from '../../db/schema/accounts';
 import { conversations, type MessagePart } from '../../db/schema/conversations';
@@ -9,7 +9,7 @@ import { contentGaps, hostSuggestions } from '../../db/schema/suggestions';
 import { isFilled, type WizardFacts } from '../../property/completeness';
 import { wizardFacts } from '../../property/go-live';
 import { loadEffectiveUnit } from '../../property/load';
-import { type WizardStepId, wizardStepPath } from '../../property/wizard-config';
+import { wizardStepPath } from '../../property/wizard-config';
 import { suggestionText } from './copy';
 import { gapTopics } from './gaps';
 import { type GapTopic, gapTarget, MIN_GAP_STAYS } from './vocabulary';
@@ -38,17 +38,22 @@ export async function recordContentGaps(
   // A gap never fails the turn.
   if (!stay) return;
   for (const topic of topics) {
-    const inserted = await tx
-      .insert(contentGaps)
-      .values({ stayId: stay.stayId, unitId: stay.unitId, topic, createdAt: now })
-      .onConflictDoNothing({ target: [contentGaps.stayId, contentGaps.topic] })
-      .returning({ id: contentGaps.id });
-    // This Stay already counted for the topic (also a resumed turn re-reading its parts).
-    if (!inserted.length) continue;
     const [last] = await tx
       .select({ at: max(hostSuggestions.resolvedAt) })
       .from(hostSuggestions)
       .where(and(eq(hostSuggestions.unitId, stay.unitId), eq(hostSuggestions.topic, topic)));
+    // A Stay whose gap predates the last resolution counts afresh: its row moves to now.
+    const inserted = await tx
+      .insert(contentGaps)
+      .values({ stayId: stay.stayId, unitId: stay.unitId, topic, createdAt: now })
+      .onConflictDoUpdate({
+        target: [contentGaps.stayId, contentGaps.topic],
+        set: { createdAt: now },
+        setWhere: last?.at ? lte(contentGaps.createdAt, last.at) : sql`false`,
+      })
+      .returning({ id: contentGaps.id });
+    // This Stay already counted for the topic (also a resumed turn re-reading its parts).
+    if (!inserted.length) continue;
     const [counted] = await tx
       .select({ stays: countDistinct(contentGaps.stayId) })
       .from(contentGaps)
@@ -79,8 +84,6 @@ export interface HostSuggestion {
   unitName: string;
   propertyName: string;
   topic: GapTopic;
-  stepId: WizardStepId;
-  fieldId: GapTopic;
   stayCount: number;
   text: string;
   wizardPath: string;
@@ -149,8 +152,6 @@ export async function listHostSuggestions(
       const { stepId, fieldId } = gapTarget(s.topic);
       return {
         ...s,
-        stepId,
-        fieldId,
         text: suggestionText(lang, s.topic, s.stayCount),
         wizardPath: wizardStepPath(s.unitId, stepId, fieldId),
       };

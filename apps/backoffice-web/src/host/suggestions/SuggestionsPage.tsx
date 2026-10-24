@@ -40,7 +40,7 @@ export function SuggestionsPage() {
                   {s.propertyName} · {s.unitName}
                 </span>
               </div>
-              <Link className="button primary" to={s.wizardPath}>
+              <Link className="button" to={s.wizardPath}>
                 Add it in setup
               </Link>
             </li>

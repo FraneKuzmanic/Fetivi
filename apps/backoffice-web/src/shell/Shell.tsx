@@ -27,6 +27,8 @@ import { useAction } from '../useAction';
 interface NavItem {
   to: string;
   label: string;
+  /** The phone bottom nav's label, when `label` does not fit a sixth of a phone's width. */
+  short?: string;
   icon: Icon;
   /** Paths, besides `to` itself, under which the item is the current one. */
   prefixes: string[];
@@ -65,7 +67,13 @@ function navItems(me: Me, unread: number): NavItem[] {
     { to: '/stays', label: 'Stays', icon: CalendarCheck, prefixes: ['/stays'] },
     { to: '/services', label: 'Services', icon: Storefront, prefixes: ['/services'] },
     { to: '/inbox', label: 'Inbox', icon: Tray, prefixes: ['/inbox'], badge: unread },
-    { to: '/suggestions', label: 'Suggestions', icon: Lightbulb, prefixes: ['/suggestions'] },
+    {
+      to: '/suggestions',
+      label: 'Suggestions',
+      short: 'To add',
+      icon: Lightbulb,
+      prefixes: ['/suggestions'],
+    },
     { to: '/settings/notifications', label: 'Settings', icon: GearSix, prefixes: ['/settings'] },
   ];
 }
@@ -115,7 +123,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const isCurrent = (item: NavItem) =>
     pathname === item.to || item.prefixes.some((p) => pathname.startsWith(p));
 
-  const links = (className: string) =>
+  const links = (className: string, short = false) =>
     items.map((item) => (
       <Link
         key={item.to}
@@ -124,7 +132,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         aria-current={isCurrent(item) ? 'page' : undefined}
       >
         <item.icon aria-hidden="true" weight={isCurrent(item) ? 'fill' : 'regular'} />
-        <span>{item.label}</span>
+        <span>{(short && item.short) || item.label}</span>
         {item.badge ? (
           <span className="nav-badge" role="img" aria-label={`${item.badge} waiting`}>
             {item.badge > 99 ? '99+' : item.badge}
@@ -178,7 +186,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
       </div>
 
       <nav className="bottom-nav" aria-label="Main">
-        {links('bottom-link')}
+        {links('bottom-link', true)}
       </nav>
     </div>
   );

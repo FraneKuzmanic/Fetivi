@@ -195,8 +195,6 @@ describe('listing Suggestions (AC 2, AC 3, AC 4)', () => {
       unitId: s.unitId,
       unitName: s.unitName,
       topic: 'laundry',
-      stepId: 'how_tos',
-      fieldId: 'laundry',
       stayCount: 2,
       text: suggestionText('hr', 'laundry', 2),
       wizardPath: `/units/${s.unitId}/setup/how_tos#field-laundry`,
@@ -244,6 +242,37 @@ describe('listing Suggestions (AC 2, AC 3, AC 4)', () => {
     expect(fresh).toHaveLength(1);
     expect(fresh[0]?.stayCount).toBe(2);
     expect(fresh[0]?.id).not.toBe(resolved?.id);
+  });
+
+  it('counts a Stay again when it asks after the resolution, but only once', async () => {
+    const s = await seedGuestUnit(testDb.db, { now: NOW });
+    await turn(s, gapAnswer());
+    const second = await addStay(s.unitId);
+    const ongoing = { unitId: s.unitId, ...second };
+    await turn(ongoing, gapAnswer());
+    await testDb.db.insert(infoBlocks).values({
+      unitId: s.unitId,
+      category: 'how_tos',
+      title: 'Laundry',
+      body: 'Washing machine in the bathroom.',
+      visibility: 'always',
+      wizardKey: 'laundry',
+    });
+    const later = new Date(NOW.getTime() + DAY);
+    expect(await listHostSuggestions(testDb.db, s.hostId, later)).toEqual([]);
+    await testDb.db
+      .delete(infoBlocks)
+      .where(and(eq(infoBlocks.unitId, s.unitId), eq(infoBlocks.wizardKey, 'laundry')));
+
+    // Both Stays that counted before the resolution ask again, the second one twice.
+    const after = new Date(later.getTime() + DAY);
+    await turn(s, gapAnswer(), after);
+    await turn(ongoing, gapAnswer(), after);
+    await turn(ongoing, gapAnswer(), new Date(after.getTime() + DAY));
+    const fresh = await listHostSuggestions(testDb.db, s.hostId, after);
+    expect(fresh).toHaveLength(1);
+    expect(fresh[0]?.stayCount).toBe(2);
+    expect(await gapsOf(s.unitId)).toHaveLength(2);
   });
 
   it('resolves a column field through the property, the unit inheriting it', async () => {

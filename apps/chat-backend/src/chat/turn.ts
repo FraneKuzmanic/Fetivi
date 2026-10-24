@@ -138,11 +138,11 @@ async function withTurn(
     const listed = await turnTools.list();
     const calls: string[] = [];
     const mcpTools = toAiTools(listed, { tools: turnTools, onCall: (n) => calls.push(n) });
-    const shownTools = {
+    const hostSideTools = {
       ...presentationTools({ readProjection: () => turnTools.readProjection() }),
       ...gapTools(),
     };
-    for (const name of Object.keys(shownTools)) {
+    for (const name of Object.keys(hostSideTools)) {
       if (name in mcpTools) throw new Error(`A server exposes the host-side tool ${name}`);
     }
     return await body({
@@ -152,7 +152,7 @@ async function withTurn(
       startedAt,
       t0,
       turnTools,
-      tools: { ...mcpTools, ...shownTools },
+      tools: { ...mcpTools, ...hostSideTools },
       paused: pausedTools(listed),
       calls,
     });

@@ -900,8 +900,6 @@ export interface HostSuggestion {
   unitName: string;
   propertyName: string;
   topic: GapTopic;
-  stepId: WizardStepId;
-  fieldId: GapTopic;
   stayCount: number;
   text: string;
   wizardPath: string;

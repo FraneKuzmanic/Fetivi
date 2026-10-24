@@ -12,8 +12,6 @@ const SUGGESTION: HostSuggestion = {
   unitName: 'Apartment Mare',
   propertyName: 'Villa Mare',
   topic: 'laundry',
-  stepId: 'how_tos',
-  fieldId: 'laundry',
   stayCount: 3,
   text: 'Guests in 3 stays asked about “Laundry”, and Fetivi had no answer.',
   wizardPath: '/units/u1/setup/how_tos#field-laundry',
@@ -83,8 +81,12 @@ describe('SuggestionsPage', () => {
 
   it('has a Suggestions item in the host nav', async () => {
     await mount(json({ suggestions: [] }));
-    const labels = [...el.querySelectorAll('nav a')].map((a) => a.textContent?.trim());
-    expect(labels).toContain('Suggestions');
+    const labels = (nav: string) =>
+      [...el.querySelectorAll(`${nav} a`)].map((a) => a.textContent?.trim());
+    expect(labels('.side-nav')).toContain('Suggestions');
+    // A sixth of a phone's width does not fit "Suggestions".
+    expect(labels('.bottom-nav')).toContain('To add');
+    expect(labels('.bottom-nav')).not.toContain('Suggestions');
   });
 
   it('says so when nothing is missing', async () => {

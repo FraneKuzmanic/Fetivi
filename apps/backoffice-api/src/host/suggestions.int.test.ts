@@ -147,8 +147,6 @@ describe('GET /api/host/suggestions', () => {
           unitName: guest.unitName,
           propertyName: expect.any(String),
           topic: 'laundry',
-          stepId: 'how_tos',
-          fieldId: 'laundry',
           stayCount: 2,
           text: suggestionText('en', 'laundry', 2),
           wizardPath: `/units/${guest.unitId}/setup/how_tos#field-laundry`,
