@@ -49,7 +49,6 @@ export const de: Messages = {
     inputLabel: 'Nachricht an Fetivi',
     placeholder: 'Fragen Sie mich alles zu Ihrem Aufenthalt',
     send: 'Senden',
-    closed: 'Ihr Aufenthalt ist zu Ende. Sie können diesen Chat weiterhin lesen.',
     startersLabel: 'Ideen für den Anfang',
     starterWifi: 'Wie lautet das WLAN-Passwort?',
     starterTimes: 'Wann sind Check-in und Check-out?',
@@ -64,6 +63,11 @@ export const de: Messages = {
     errorTurn: 'Etwas ist schiefgelaufen. Versuchen Sie es erneut.',
     errorBusy: 'Ich beantworte noch Ihre letzte Nachricht.',
     errorClosed: 'Ihr Aufenthalt ist zu Ende, daher kann der Chat nur noch gelesen werden.',
+    errorCap:
+      'Für heute habe ich genug geplaudert. Morgen früh bin ich wieder da; Reiseführer und Meine Reise funktionieren wie gewohnt.',
+    closedUntil:
+      'Ihr Aufenthalt ist zu Ende. Sie können diesen Chat lesen und Meine Reise bis {{date}} nutzen. Danach lösche ich unser Gespräch.',
+    openTrip: 'Zu Meine Reise',
     retry: 'Erneut versuchen',
   },
   aboutMe: {
@@ -285,6 +289,10 @@ export const de: Messages = {
       'Ich schicke Ihnen per E-Mail einen Link, der Ihren Chat und Ihre Buchungen auf einem anderen Handy oder Computer öffnet. Sobald Sie ihn dort öffnen, wird dieses Gerät von Fetivi abgemeldet.',
     sendLink: 'Link per E-Mail senden',
     linkSent: 'Gesendet. Schauen Sie in Ihr Postfach; der Link gilt 1 Stunde.',
+    researchTitle: 'Helfen Sie, Fetivi zu verbessern',
+    research: 'Mein Gespräch für die Forschung zu Fetivi aufbewahren',
+    researchNote:
+      'Aus: Ihr Chat wird 30 Tage nach dem Check-out gelöscht. An: Eine Kopie ohne Ihre E-Mail und Vorlieben wird für eine Universitätsstudie zu Fetivi aufbewahrt.',
   },
   cancelOrder: {
     heading: 'Diese Buchung stornieren?',
@@ -397,6 +405,10 @@ export const de: Messages = {
     checkoutConfirming: 'Danke! Ich bestätige Ihre Buchung gerade beim Anbieter…',
     checkoutLate:
       'Die Zahlung kam erst nach Ablauf der Buchung an, deshalb wurde nichts abgebucht.',
+    cancel: 'Buchung stornieren',
+    answerTerms: 'Auf die neuen Bedingungen antworten',
+    actionFailed:
+      'Das hat nicht geklappt. Die Buchung hat sich vielleicht geändert, hier ist der aktuelle Stand.',
   },
   mcpApps: {
     frameTitle: 'Fährverbindungen von Ferryhopper',

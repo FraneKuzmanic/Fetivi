@@ -5,13 +5,14 @@ import {
   type ResolvedSpace,
   SPACE_COOKIE,
   SpaceRuleError,
+  setEvaluationOptIn,
   setSpaceLanguage,
 } from '@fetivi/domain';
 import type { FastifyPluginAsync } from 'fastify';
 import { HttpError } from '../http-error';
 import { deviceIdOf, rememberDevice, spaceCookieOptions } from './cookies';
 import { spaceOf } from './plugin';
-import { languageBody, pinBody, slugParams } from './schemas';
+import { pinBody, slugParams, spacePatchBody } from './schemas';
 
 export interface AccessRouteDeps {
   db: Db;
@@ -24,6 +25,7 @@ export const spaceView = (s: ResolvedSpace) => ({
   closedAt: s.space.closedAt.toISOString(),
   closed: s.closed,
   unitSlug: s.unitSlug,
+  keepForEvaluation: s.space.evaluationOptInAt !== null,
 });
 
 const seconds = (ms: number) => Math.ceil(ms / 1000);
@@ -69,10 +71,19 @@ export const accessRoutes: FastifyPluginAsync<AccessRouteDeps> = async (app, { d
     spaceView(spaceOf(request)),
   );
 
+  /**
+   * The language and the evaluation opt-in. Both stay changeable after checkout: consent can be
+   * given or withdrawn until the Space is deleted.
+   */
   app.patch('/api/space', { config: { access: 'space' } }, async (request) => {
     const resolved = spaceOf(request);
-    const { language } = languageBody.parse(request.body);
-    const space = await setSpaceLanguage(db, resolved.space.id, language, now());
+    const { language, keepForEvaluation } = spacePatchBody.parse(request.body);
+    const at = now();
+    let space = resolved.space;
+    if (language !== undefined) space = await setSpaceLanguage(db, space.id, language, at);
+    if (keepForEvaluation !== undefined) {
+      space = await setEvaluationOptIn(db, space.id, keepForEvaluation, at);
+    }
     return spaceView({ ...resolved, space });
   });
 };

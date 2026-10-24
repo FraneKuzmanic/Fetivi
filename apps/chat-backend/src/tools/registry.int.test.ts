@@ -106,6 +106,7 @@ const context = (over: Partial<SpaceContext>): SpaceContext => ({
   propertyId: randomUUID(),
   destinationId: randomUUID(),
   language: 'en',
+  timezone: ZONE,
   ...over,
 });
 

@@ -154,6 +154,7 @@ async function mount(initial: UIMessage[] | 'tab') {
               closedAt: '2099-01-01T00:00:00.000Z',
               closed: false,
               unitSlug: 'qrabc',
+              keepForEvaluation: false,
             },
           }}
         >
@@ -274,6 +275,7 @@ describe('Chat badge', () => {
                 closedAt: '2099-01-01T00:00:00.000Z',
                 closed: false,
                 unitSlug: 'qrabc',
+                keepForEvaluation: false,
               },
             }}
           >

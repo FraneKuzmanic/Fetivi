@@ -39,6 +39,8 @@ export interface Space {
   closedAt: string;
   closed: boolean;
   unitSlug: string;
+  /** The guest opted to keep the conversation for the thesis evaluation. Off by default. */
+  keepForEvaluation: boolean;
 }
 
 const path = (slug: string) => `/api/access/${encodeURIComponent(slug)}`;
@@ -53,3 +55,6 @@ export const getSpace = () => api<Space>('/api/space');
 
 export const setSpaceLanguage = (language: GuestLanguage) =>
   api<Space>('/api/space', { method: 'PATCH', body: { language } });
+
+export const setKeepForEvaluation = (keepForEvaluation: boolean) =>
+  api<Space>('/api/space', { method: 'PATCH', body: { keepForEvaluation } });

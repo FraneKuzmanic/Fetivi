@@ -30,6 +30,11 @@ export const spaces = pgTable(
     tipsEmailOptInAt: timestamp('tips_email_opt_in_at', { withTimezone: true }),
     /** Set the first time the push offer was answered; never offered again. */
     pushOfferedAt: timestamp('push_offered_at', { withTimezone: true }),
+    /**
+     * Set while the guest keeps the toggle on: the conversation is copied to kept_conversations
+     * before deletion. Off (null) by default.
+     */
+    evaluationOptInAt: timestamp('evaluation_opt_in_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
   },

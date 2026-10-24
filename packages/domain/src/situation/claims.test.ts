@@ -14,6 +14,7 @@ const ctx: SpaceContext = {
   propertyId: randomUUID(),
   destinationId: null,
   language: 'de',
+  timezone: 'Europe/Zagreb',
 };
 
 describe('guestClaimsFor', () => {

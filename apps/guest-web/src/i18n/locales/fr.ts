@@ -49,7 +49,6 @@ export const fr: Messages = {
     inputLabel: 'Message à Fetivi',
     placeholder: 'Posez-moi vos questions sur votre séjour',
     send: 'Envoyer',
-    closed: 'Votre séjour est terminé. Vous pouvez toujours lire cette discussion.',
     startersLabel: 'Des idées pour commencer',
     starterWifi: 'Quel est le mot de passe du Wi-Fi ?',
     starterTimes: "À quelle heure sont l'arrivée et le départ ?",
@@ -63,6 +62,11 @@ export const fr: Messages = {
     errorTurn: 'Un problème est survenu. Réessayez.',
     errorBusy: 'Je réponds encore à votre dernier message.',
     errorClosed: 'Votre séjour est terminé, la discussion est donc en lecture seule.',
+    errorCap:
+      'J’ai assez discuté pour aujourd’hui. Je reviens demain matin ; le Guide et Mon séjour fonctionnent comme d’habitude.',
+    closedUntil:
+      'Votre séjour est terminé. Vous pouvez lire cette discussion et utiliser Mon séjour jusqu’au {{date}}. Ensuite, je supprime notre conversation.',
+    openTrip: 'Aller à Mon séjour',
     retry: 'Réessayer',
   },
   aboutMe: {
@@ -284,6 +288,10 @@ export const fr: Messages = {
       'Je vous enverrai par e-mail un lien qui ouvre votre conversation et vos réservations sur un autre téléphone ou ordinateur. Dès que vous l’ouvrez là-bas, cet appareil est déconnecté de Fetivi.',
     sendLink: 'M’envoyer un lien',
     linkSent: 'Envoyé. Regardez votre boîte mail ; le lien est valable 1 heure.',
+    researchTitle: 'Aidez à améliorer Fetivi',
+    research: 'Conserver ma conversation pour la recherche sur Fetivi',
+    researchNote:
+      'Désactivé : votre discussion est supprimée 30 jours après le départ. Activé : une copie sans votre e-mail ni vos préférences est conservée pour une étude universitaire sur Fetivi.',
   },
   cancelOrder: {
     heading: 'Annuler cette réservation ?',
@@ -395,6 +403,10 @@ export const fr: Messages = {
     checkoutConfirming: 'Merci ! Je confirme votre réservation auprès du prestataire…',
     checkoutLate:
       'Le paiement est arrivé après la clôture de la réservation : rien n’a été débité.',
+    cancel: 'Annuler la réservation',
+    answerTerms: 'Répondre aux nouvelles conditions',
+    actionFailed:
+      'Cela n’a pas fonctionné. La réservation a peut-être changé : voici où elle en est.',
   },
   mcpApps: {
     frameTitle: 'Traversées en ferry de Ferryhopper',

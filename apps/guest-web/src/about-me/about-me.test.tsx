@@ -27,6 +27,7 @@ const space = (closed = false): Space => ({
   closedAt: '2026-10-26T23:00:00.000Z',
   closed,
   unitSlug: 'qrabc',
+  keepForEvaluation: false,
 });
 
 const render = (node: ReactNode, closed = false) =>

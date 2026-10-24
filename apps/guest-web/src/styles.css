@@ -998,8 +998,7 @@ input {
 }
 
 .chat-closed {
-  color: var(--gray-500);
-  text-align: center;
+  padding-top: 0.5rem;
 }
 
 .composer {
@@ -1113,6 +1112,21 @@ input {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* After checkout: the actions on an unresolved Order, and their card, under its receipt. */
+.trip-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.trip-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
 }
 
 /* Guide */

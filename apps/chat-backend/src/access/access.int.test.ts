@@ -1,4 +1,5 @@
-import { DEVICE_COOKIE, SPACE_COOKIE } from '@fetivi/domain';
+import { DEVICE_COOKIE, resolveSpace, SPACE_COOKIE, spaces } from '@fetivi/domain';
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { cookieFrom, createTestApp, get, seedLiveUnit, type TestApp, write } from '../testing';
 
@@ -94,6 +95,7 @@ describe('POST /api/access/:slug/pin', () => {
       closedAt: CLOSED_AT,
       closed: false,
       unitSlug: slug,
+      keepForEvaluation: false,
     });
     const header = [response.headers['set-cookie']].flat().find((h) => h?.startsWith(SPACE_COOKIE));
     expect(header).toMatch(/Path=\//);
@@ -112,6 +114,7 @@ describe('POST /api/access/:slug/pin', () => {
       closedAt: CLOSED_AT,
       closed: false,
       unitSlug: slug,
+      keepForEvaluation: false,
     });
     expect(resolved.body).not.toMatch(/Villa|Apartment|Booker/);
   });
@@ -200,6 +203,39 @@ describe('/api/space', () => {
     expect((await c.patchSpace({ language: 'xx' })).statusCode).toBe(400);
   });
 
+  it('keeps the conversation for evaluation only while the guest opts in', async () => {
+    const { slug, pin } = await seedLiveUnit(t.db);
+    const c = client();
+    const entered = await c.pin(slug, pin, 'en');
+    expect(entered.json()).toMatchObject({ keepForEvaluation: false });
+    const spaceRows = async () => {
+      const token = c.jar.get(SPACE_COOKIE)?.split('=')[1] ?? '';
+      const resolved = await resolveSpace(t.db, token, t.clock.now());
+      return t.db
+        .select()
+        .from(spaces)
+        .where(eq(spaces.id, resolved?.space.id ?? ''));
+    };
+
+    const on = await c.patchSpace({ keepForEvaluation: true });
+    expect([on.statusCode, on.json().keepForEvaluation, on.json().language]).toEqual([
+      200,
+      true,
+      'en',
+    ]);
+    const [row] = await spaceRows();
+    expect(row?.evaluationOptInAt).toEqual(t.clock.now());
+    expect((await c.space()).json().keepForEvaluation).toBe(true);
+
+    const both = await c.patchSpace({ language: 'hr', keepForEvaluation: false });
+    expect(both.json()).toMatchObject({ language: 'hr', keepForEvaluation: false });
+    expect((await spaceRows())[0]?.evaluationOptInAt).toBeNull();
+
+    expect((await c.patchSpace({})).statusCode).toBe(400);
+    expect((await c.patchSpace({ keepForEvaluation: 'yes' })).statusCode).toBe(400);
+    expect((await c.patchSpace({ language: 'de', extra: 1 })).statusCode).toBe(400);
+  });
+
   it('answers 401 without a space, and clears a cookie that resolves to none', async () => {
     expect((await get(t.app, '/api/space')).json()).toEqual({ error: 'no-space' });
     const patched = await write('PATCH', t.app, '/api/space', { language: 'de' });
@@ -221,6 +257,9 @@ describe('after checkout day', () => {
     await c.pin(slug, pin);
     t.clock.advance(Date.parse(CLOSED_AT) - t.clock.now().getTime());
     expect((await c.space()).json()).toMatchObject({ closed: true });
+    // Consent can still be given or withdrawn until the Space is deleted.
+    const optIn = await c.patchSpace({ keepForEvaluation: true });
+    expect([optIn.statusCode, optIn.json().keepForEvaluation]).toEqual([200, true]);
     const late = await client().pin(slug, pin);
     expect(late.statusCode).toBe(401);
     expect(late.json().error).toBe('wrong-pin');

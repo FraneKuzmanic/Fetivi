@@ -46,7 +46,6 @@ export const en = {
     inputLabel: 'Message Fetivi',
     placeholder: 'Ask me anything about your stay',
     send: 'Send',
-    closed: 'Your stay has ended. You can still read this chat.',
     startersLabel: 'Ideas to start with',
     starterWifi: "What's the Wi-Fi password?",
     starterTimes: 'When are check-in and checkout?',
@@ -60,6 +59,11 @@ export const en = {
     errorTurn: 'Something went wrong. Try again.',
     errorBusy: "I'm still answering your last message.",
     errorClosed: 'Your stay has ended, so the chat is read-only now.',
+    errorCap:
+      "That's all the chatting I can do for today. I'm back tomorrow morning; the Guide and My trip work as usual.",
+    closedUntil:
+      'Your stay has ended. You can read this chat and use My trip until {{date}}. After that I delete our conversation.',
+    openTrip: 'Go to My trip',
     retry: 'Try again',
   },
   aboutMe: {
@@ -275,6 +279,10 @@ export const en = {
       "I'll email you a link that opens your chat and bookings on another phone or computer. When you open it there, this device signs out of Fetivi.",
     sendLink: 'Email me a link',
     linkSent: 'Sent. Check your inbox; the link works for 1 hour.',
+    researchTitle: 'Help improve Fetivi',
+    research: 'Keep my conversation to help research Fetivi',
+    researchNote:
+      'Off: your chat is deleted 30 days after checkout. On: a copy without your email or preferences is kept for a university study of Fetivi.',
   },
   cancelOrder: {
     heading: 'Cancel this booking?',
@@ -384,6 +392,9 @@ export const en = {
     askText: 'Tell me more about "{{title}}" on {{day}}.',
     checkoutConfirming: "Thanks! I'm confirming your booking with the provider…",
     checkoutLate: 'The payment came in after the booking had closed, so nothing was charged.',
+    cancel: 'Cancel booking',
+    answerTerms: 'Answer the new terms',
+    actionFailed: "That didn't work. The booking may have changed, so here's how it stands now.",
   },
   mcpApps: {
     frameTitle: 'Ferry results from Ferryhopper',

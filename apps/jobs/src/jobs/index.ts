@@ -23,6 +23,7 @@ import {
 } from './poll-calendars';
 import { type ReconcileJobDeps, reconcileJob } from './reconcile';
 import { refreshCatalogJob } from './refresh-catalog';
+import { type RetentionDeps, retentionJob } from './retention';
 import { type SafetyAlertsDeps, safetyAlertsJob } from './safety-alerts';
 import { spaceEmailJob } from './space-email';
 import { translateBlockJob } from './translate-block';
@@ -31,7 +32,6 @@ import { type HandoffJobDeps, translateHandoffJob } from './translate-handoff';
 import { translateHostPlaceJob } from './translate-host-place';
 import { translateOfferJob } from './translate-offer';
 
-// Later tickets add retention.
 export function createJobs(
   deps: TranslationJobDeps &
     NotifyDeps &
@@ -44,7 +44,8 @@ export function createJobs(
     OrderPaymentJobDeps &
     ReconcileJobDeps &
     ImportOpenDataDeps &
-    DraftingJobDeps,
+    DraftingJobDeps &
+    RetentionDeps,
 ): JobDefinition[] {
   // The runner hands each handler the data its own queue was sent.
   return [
@@ -72,5 +73,6 @@ export function createJobs(
     importOpenDataJob(deps) as JobDefinition,
     draftPlaceJob(deps) as JobDefinition,
     refreshCatalogJob(deps) as JobDefinition,
+    retentionJob(deps),
   ];
 }

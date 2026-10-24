@@ -1,8 +1,9 @@
 import { useChat } from '@ai-sdk/react';
+import { readOnlyEndsAt } from '@fetivi/domain/space-vocabulary';
 import type { UIMessage } from 'ai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { TripFlow } from '../about-me/TripFlow';
 import { useEmail } from '../email/EmailProvider';
 import { useInbox } from '../inbox/InboxProvider';
@@ -283,18 +284,35 @@ export function ChatView({
       {errorKey && (
         <div className="chat-error" role="alert">
           <p>{t(errorKey)}</p>
-          {error && errorKey !== 'chat.errorClosed' && (
+          {error && errorKey !== 'chat.errorClosed' && errorKey !== 'chat.errorCap' && (
             <button type="button" className="text-button" onClick={() => send(pending.current)}>
               {t('chat.retry')}
             </button>
           )}
         </div>
       )}
-      {closed ? (
-        <p className="chat-closed">{t('chat.closed')}</p>
-      ) : (
+      {closed && space ? (
+        <ClosedNote closedAt={space.closedAt} />
+      ) : closed ? null : (
         <Composer value={draft} onChange={setDraft} onSend={send} busy={busy} />
       )}
+    </div>
+  );
+}
+
+/**
+ * After checkout: the chat stays readable, and Fetivi says until when. The date is the last day
+ * of the read-only period in the guest's own clock; the Space is deleted when it ends.
+ */
+function ClosedNote({ closedAt }: { closedAt: string }) {
+  const { t, i18n } = useTranslation();
+  const lastDay = new Date(readOnlyEndsAt(new Date(closedAt)).getTime() - 1);
+  const date = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'long' }).format(lastDay);
+  return (
+    <div className="chat-closed">
+      <MascotSays>
+        {t('chat.closedUntil', { date })} <Link to="/trip">{t('chat.openTrip')}</Link>
+      </MascotSays>
     </div>
   );
 }

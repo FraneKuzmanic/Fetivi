@@ -55,6 +55,7 @@ describe('loadSituation', () => {
       propertyId: seed.propertyId,
       destinationId,
       language: 'de',
+      timezone: 'Europe/Zagreb',
     });
   });
 

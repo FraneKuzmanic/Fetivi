@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { setKeepForEvaluation } from '../api';
 import { useEmail } from '../email/EmailProvider';
 import { resendVerification, setTips } from '../email/email-api';
 import { requestRecovery } from '../recovery/recovery-api';
@@ -8,18 +9,20 @@ import { useSpace } from '../space';
 type RequestStatus = 'idle' | 'busy' | 'sent' | 'failed';
 
 /**
- * The Space's email and how to open it on another device. The email is shown, never asked for
- * here: it is asked at booking or with the update offer.
+ * The Space's email, how to open it on another device, and the evaluation opt-in. The email is
+ * shown, never asked for here: it is asked at booking or with the update offer.
  */
 export function SettingsPage() {
   const { t } = useTranslation();
-  const { state: space } = useSpace();
+  const { state: space, setSpace } = useSpace();
   const closed = space.status === 'ready' ? space.space.closed : true;
+  const keep = space.status === 'ready' && space.space.keepForEvaluation;
   const { state, set } = useEmail();
   const heading = useRef<HTMLHeadingElement>(null);
   const [resend, setResend] = useState<RequestStatus>('idle');
   const [linkRequest, setLinkRequest] = useState<RequestStatus>('idle');
   const [tipsFailed, setTipsFailed] = useState(false);
+  const [keepFailed, setKeepFailed] = useState(false);
 
   useEffect(() => {
     heading.current?.focus();
@@ -41,6 +44,17 @@ export function SettingsPage() {
       set(await setTips(tips));
     } catch {
       setTipsFailed(true);
+    }
+  };
+
+  // Consent can be given or withdrawn until the Space is deleted, so this stays after checkout.
+  // A failed save leaves the space as it was, so the box shows its old state again.
+  const toggleKeep = async (next: boolean) => {
+    setKeepFailed(false);
+    try {
+      setSpace(await setKeepForEvaluation(next));
+    } catch {
+      setKeepFailed(true);
     }
   };
 
@@ -114,6 +128,25 @@ export function SettingsPage() {
             : linkRequest === 'failed'
               ? t('error.network')
               : ''}
+        </p>
+      </section>
+
+      <section className="settings-section" aria-labelledby="settings-research">
+        <h2 id="settings-research">{t('settings.researchTitle')}</h2>
+        <label className="email-check">
+          <input
+            type="checkbox"
+            checked={keep}
+            aria-describedby="settings-research-note"
+            onChange={(e) => toggleKeep(e.target.checked)}
+          />
+          {t('settings.research')}
+        </label>
+        <p id="settings-research-note" className="settings-note">
+          {t('settings.researchNote')}
+        </p>
+        <p className="status" role="status">
+          {keepFailed ? t('error.network') : ''}
         </p>
       </section>
     </section>

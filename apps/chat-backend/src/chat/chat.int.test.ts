@@ -396,10 +396,21 @@ describe('POST /api/chat guards', () => {
   });
 
   it('refuses a closed space but still shows its history', async () => {
-    const { t, cookie, space } = await setup(mockModel([]));
+    const model = mockModel([]);
+    const { t, cookie, space } = await setup(model);
     t.clock.advance(space.space.closedAt.getTime() - t.clock.now().getTime() + 60_000);
     const closed = await send(t, cookie, 'hi');
     expect([closed.statusCode, closed.json()]).toEqual([409, { error: 'space-closed' }]);
+    // A card answer is refused the same way: read-only mode cannot reach the model.
+    const answer = await write(
+      'POST',
+      t.app,
+      '/api/chat',
+      { answer: { toolCallId: 'call-1', action: 'accept', content: {} } },
+      { cookie },
+    );
+    expect([answer.statusCode, answer.json()]).toEqual([409, { error: 'space-closed' }]);
+    expect(model.doStreamCalls).toHaveLength(0);
     const history = await get(t.app, '/api/chat', cookie);
     expect([history.statusCode, history.json()]).toEqual([200, { messages: [], feedback: {} }]);
   });

@@ -1,9 +1,35 @@
-import type { OrderSummaryPayload } from '@fetivi/ui/payloads';
+import type { ElicitationPayload, OrderSummaryPayload } from '@fetivi/ui/payloads';
 import { useCallback, useState } from 'react';
 import { api } from '../../api';
 
 /** Every Order of the space, newest first; also after checkout. */
 export const getOrders = () => api<{ orders: OrderSummaryPayload[] }>('/api/orders');
+
+const orderPath = (id: string, action: string) => `/api/orders/${encodeURIComponent(id)}/${action}`;
+
+/** The card to show, or the answered action with the Order as it now stands. */
+export type ActionReply =
+  | { card: ElicitationPayload }
+  | { outcome: string; order: OrderSummaryPayload | null };
+
+/** After checkout: the cancel card of an unresolved Order, straight from the tool. */
+export const startCancel = (id: string) =>
+  api<{ card: ElicitationPayload }>(orderPath(id, 'cancel'), { method: 'POST' });
+
+/** After checkout: the card for a Provider's (or the admin's) new terms. */
+export const startRespond = (id: string) =>
+  api<{ card: ElicitationPayload }>(orderPath(id, 'respond'), { method: 'POST' });
+
+export interface OrderAnswer {
+  toolName: 'cancel_order' | 'respond_to_order_update';
+  requestState: string;
+  action: 'accept' | 'decline' | 'cancel';
+  content?: Record<string, string>;
+}
+
+/** The guest's tap on that card. A changed refund comes back as a new card. */
+export const answerOrder = (id: string, answer: OrderAnswer) =>
+  api<ActionReply>(orderPath(id, 'answer'), { method: 'POST', body: answer });
 
 export type CheckoutReply =
   | { state: 'ready'; url: string }

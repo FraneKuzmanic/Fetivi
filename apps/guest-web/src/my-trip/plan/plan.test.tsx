@@ -100,7 +100,13 @@ async function mount(closed = false) {
         <SpaceProvider
           initial={{
             status: 'ready',
-            space: { language: 'en', closedAt: '2026-10-24T22:00:00Z', closed, unitSlug: 's' },
+            space: {
+              language: 'en',
+              closedAt: '2026-10-24T22:00:00Z',
+              closed,
+              unitSlug: 's',
+              keepForEvaluation: false,
+            },
           }}
         >
           <Routes>

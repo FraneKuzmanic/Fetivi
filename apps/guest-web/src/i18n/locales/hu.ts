@@ -48,7 +48,6 @@ export const hu: Messages = {
     inputLabel: 'Üzenet Fetivinek',
     placeholder: 'Kérdezz bármit az ott-tartózkodásodról',
     send: 'Küldés',
-    closed: 'Az ott-tartózkodásod véget ért. Ezt a csevegést továbbra is elolvashatod.',
     startersLabel: 'Ötletek a kezdéshez',
     starterWifi: 'Mi a Wi-Fi jelszava?',
     starterTimes: 'Mikor van a bejelentkezés és a kijelentkezés?',
@@ -62,6 +61,11 @@ export const hu: Messages = {
     errorTurn: 'Valami hiba történt. Próbáld újra.',
     errorBusy: 'Még válaszolok az előző üzenetedre.',
     errorClosed: 'Az ott-tartózkodásod véget ért, így a csevegés most már csak olvasható.',
+    errorCap:
+      'Mára ennyi beszélgetésre volt keretem. Holnap reggel újra itt vagyok; az Útmutató és az Utazásom a szokásos módon működik.',
+    closedUntil:
+      'Az ott-tartózkodásod véget ért. Ezt a csevegést olvashatod, és az Utazásomat használhatod eddig: {{date}}. Utána törlöm a beszélgetésünket.',
+    openTrip: 'Ugrás az Utazásomhoz',
     retry: 'Újrapróbálás',
   },
   aboutMe: {
@@ -279,6 +283,10 @@ export const hu: Messages = {
       'E-mailben küldök egy linket, amely egy másik telefonon vagy számítógépen megnyitja a csevegésed és a foglalásaid. Amikor ott megnyitod, ez az eszköz kijelentkezik a Fetiviből.',
     sendLink: 'Küldj egy linket',
     linkSent: 'Elküldve. Nézd meg a postafiókod; a link 1 óráig érvényes.',
+    researchTitle: 'Segíts jobbá tenni a Fetivit',
+    research: 'A beszélgetésem megőrzése a Fetivi kutatásához',
+    researchNote:
+      'Ki: a csevegés a kijelentkezés után 30 nappal törlődik. Be: egy másolatot az e-mail-címed és a beállításaid nélkül megőrzünk a Fetiviről szóló egyetemi kutatáshoz.',
   },
   cancelOrder: {
     heading: 'Lemondja ezt a foglalást?',
@@ -388,6 +396,9 @@ export const hu: Messages = {
     askText: 'Mesélj még erről: „{{title}}” ({{day}}).',
     checkoutConfirming: 'Köszönöm! Most igazoltatom vissza a foglalásodat a szolgáltatóval…',
     checkoutLate: 'A fizetés a foglalás lezárása után érkezett, ezért semmit sem terheltünk meg.',
+    cancel: 'Foglalás lemondása',
+    answerTerms: 'Válasz az új feltételekre',
+    actionFailed: 'Ez nem sikerült. Lehet, hogy a foglalás megváltozott; így áll most.',
   },
   mcpApps: {
     frameTitle: 'Kompjáratok a Ferryhoppertől',

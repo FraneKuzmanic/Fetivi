@@ -30,6 +30,7 @@ const SPACE: Space = {
   closedAt: '2026-10-24T22:00:00.000Z',
   closed: false,
   unitSlug: 'abc',
+  keepForEvaluation: false,
 };
 
 const json = (body: unknown, status = 200) =>

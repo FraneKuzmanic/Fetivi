@@ -166,3 +166,25 @@ export async function setSpaceLanguage(
   if (!row) throw new SpaceRuleError('not-found');
   return row;
 }
+
+/**
+ * The evaluation opt-in (PRD §6.5): on keeps the first instant it was turned on, off clears it.
+ * Allowed until the Space is deleted, so consent can be given or withdrawn after checkout.
+ */
+export async function setEvaluationOptIn(
+  db: Db,
+  spaceId: string,
+  keep: boolean,
+  now: Date,
+): Promise<SpaceRow> {
+  const [row] = await db
+    .update(spaces)
+    .set({
+      evaluationOptInAt: keep ? sql`coalesce(${spaces.evaluationOptInAt}, ${now})` : null,
+      updatedAt: now,
+    })
+    .where(eq(spaces.id, spaceId))
+    .returning();
+  if (!row) throw new SpaceRuleError('not-found');
+  return row;
+}

@@ -123,12 +123,17 @@ export function lastUserText(messages: UIMessage[]): string {
   return last ? messageText(last) : '';
 }
 
-export type ChatErrorKey = 'chat.errorClosed' | 'chat.errorBusy' | 'chat.errorTurn';
+export type ChatErrorKey =
+  | 'chat.errorClosed'
+  | 'chat.errorBusy'
+  | 'chat.errorCap'
+  | 'chat.errorTurn';
 
 /** The transport puts the error body (`{"error":"<code>"}`) or the stream's error text in the message. */
 export function chatErrorKey(error: Error): ChatErrorKey {
   if (error.message.includes('space-closed')) return 'chat.errorClosed';
   if (error.message.includes('turn-in-progress')) return 'chat.errorBusy';
+  if (error.message.includes('message-cap')) return 'chat.errorCap';
   return 'chat.errorTurn';
 }
 

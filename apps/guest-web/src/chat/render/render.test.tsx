@@ -11,6 +11,7 @@ const space = (closed: boolean): Space => ({
   closedAt: '2026-10-26T23:00:00.000Z',
   closed,
   unitSlug: 'qrabc',
+  keepForEvaluation: false,
 });
 
 const render = (initial: UIMessage[], closed = false) =>

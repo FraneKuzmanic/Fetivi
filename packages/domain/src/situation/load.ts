@@ -15,6 +15,8 @@ export interface SpaceContext extends Situation {
   propertyId: string;
   destinationId: string | null;
   language: GuestLanguage;
+  /** The property's IANA zone: its civil day bounds the daily message cap. */
+  timezone: string;
 }
 
 /** The ids and situation behind a space at `now`; null when the space (or its Stay) is gone. */
@@ -77,5 +79,6 @@ export async function loadSituation(
     propertyId: row.propertyId,
     destinationId,
     language: row.language,
+    timezone: row.timezone,
   };
 }

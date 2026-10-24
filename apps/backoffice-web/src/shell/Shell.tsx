@@ -59,6 +59,7 @@ function navItems(me: Me, unread: number): NavItem[] {
       },
       { to: '/admin/orders', label: 'Orders', icon: Receipt, prefixes: ['/admin/orders'] },
       { to: '/admin/reconciliation', label: 'Reconciliation', icon: Scales, prefixes: [] },
+      { to: '/admin/settings', label: 'Settings', icon: GearSix, prefixes: [] },
       { to: '/admin/audit', label: 'Audit', icon: ClipboardText, prefixes: [] },
     ];
   }

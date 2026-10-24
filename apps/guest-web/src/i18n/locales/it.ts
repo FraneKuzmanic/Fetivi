@@ -48,7 +48,6 @@ export const it: Messages = {
     inputLabel: 'Messaggio a Fetivi',
     placeholder: 'Chiedimi qualsiasi cosa sul soggiorno',
     send: 'Invia',
-    closed: 'Il tuo soggiorno è terminato. Puoi ancora leggere questa chat.',
     startersLabel: 'Idee per iniziare',
     starterWifi: 'Qual è la password del Wi-Fi?',
     starterTimes: 'Quando sono il check-in e il check-out?',
@@ -62,6 +61,11 @@ export const it: Messages = {
     errorTurn: 'Qualcosa è andato storto. Riprova.',
     errorBusy: 'Sto ancora rispondendo al tuo ultimo messaggio.',
     errorClosed: 'Il tuo soggiorno è terminato, quindi ora la chat è di sola lettura.',
+    errorCap:
+      'Per oggi ho chiacchierato abbastanza. Torno domattina; la Guida e Il mio viaggio funzionano come sempre.',
+    closedUntil:
+      'Il tuo soggiorno è terminato. Puoi leggere questa chat e usare Il mio viaggio fino al {{date}}. Dopo cancello la nostra conversazione.',
+    openTrip: 'Vai a Il mio viaggio',
     retry: 'Riprova',
   },
   aboutMe: {
@@ -280,6 +284,10 @@ export const it: Messages = {
       'Ti manderò via email un link che apre la chat e le prenotazioni su un altro telefono o computer. Quando lo apri lì, questo dispositivo esce da Fetivi.',
     sendLink: 'Mandami un link',
     linkSent: 'Inviato. Controlla la posta; il link vale 1 ora.',
+    researchTitle: 'Aiuta a migliorare Fetivi',
+    research: 'Conserva la mia conversazione per la ricerca su Fetivi',
+    researchNote:
+      'Spento: la chat viene cancellata 30 giorni dopo il check-out. Acceso: una copia senza la tua email né le tue preferenze viene conservata per uno studio universitario su Fetivi.',
   },
   cancelOrder: {
     heading: 'Annullare questa prenotazione?',
@@ -391,6 +399,9 @@ export const it: Messages = {
     checkoutConfirming: 'Grazie! Sto confermando la tua prenotazione con il fornitore…',
     checkoutLate:
       'Il pagamento è arrivato dopo la chiusura della prenotazione, quindi non è stato addebitato nulla.',
+    cancel: 'Annulla prenotazione',
+    answerTerms: 'Rispondi alle nuove condizioni',
+    actionFailed: "Non ha funzionato. La prenotazione potrebbe essere cambiata: ecco com'è adesso.",
   },
   mcpApps: {
     frameTitle: 'Risultati dei traghetti da Ferryhopper',

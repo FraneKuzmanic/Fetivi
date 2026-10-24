@@ -155,7 +155,7 @@ describe('conversations', () => {
     expect((await loadMessages(testDb.db, cb.id))[0]?.parts).toEqual(text('other'));
   });
 
-  it('deleting the space removes its conversation, messages and metrics', async () => {
+  it('deleting the space removes its conversation and messages but keeps the metrics', async () => {
     const { spaceId, projection } = await seed();
     const c = await getOrCreateConversation(
       testDb.db,
@@ -192,8 +192,9 @@ describe('conversations', () => {
     expect(
       await testDb.db.select().from(messages).where(eq(messages.conversationId, c.id)),
     ).toEqual([]);
+    // Counts outlive the conversation (PRD §6.5).
     expect(
       await testDb.db.select().from(turnMetrics).where(eq(turnMetrics.conversationId, c.id)),
-    ).toEqual([]);
+    ).toHaveLength(1);
   });
 });

@@ -779,7 +779,16 @@ export const admin = {
     api<{ properties: AdminPropertyRow[] }>(`/api/admin/properties?status=${status}`),
   approve: (id: string) => post(`/api/admin/properties/${id}/approve`),
   feedbackStats: () => api<AdminFeedbackStats>('/api/admin/feedback-stats'),
+  settings: () => api<PlatformSettings>('/api/admin/settings'),
+  saveSettings: (settings: PlatformSettings) =>
+    put<PlatformSettings>('/api/admin/settings', settings),
 };
+
+/** The admin's platform-wide settings. */
+export interface PlatformSettings {
+  /** Guest chat messages per Space per property day. */
+  dailyMessageCap: number;
+}
 
 export const adminOrders = {
   get: (id: string) => api<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}`),

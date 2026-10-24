@@ -48,7 +48,6 @@ export const pl: Messages = {
     inputLabel: 'Wiadomość do Fetivi',
     placeholder: 'Zapytaj mnie o cokolwiek w sprawie pobytu',
     send: 'Wyślij',
-    closed: 'Twój pobyt się zakończył. Nadal możesz czytać ten czat.',
     startersLabel: 'Pomysły na początek',
     starterWifi: 'Jakie jest hasło do Wi-Fi?',
     starterTimes: 'Kiedy jest zameldowanie i wymeldowanie?',
@@ -62,6 +61,11 @@ export const pl: Messages = {
     errorTurn: 'Coś poszło nie tak. Spróbuj ponownie.',
     errorBusy: 'Wciąż odpowiadam na Twoją poprzednią wiadomość.',
     errorClosed: 'Twój pobyt się zakończył, więc czat jest teraz tylko do odczytu.',
+    errorCap:
+      'Na dziś to już wszystko, co mogę napisać. Wracam jutro rano; Przewodnik i Moja podróż działają jak zwykle.',
+    closedUntil:
+      'Twój pobyt się zakończył. Możesz czytać ten czat i korzystać z Mojej podróży do {{date}}. Potem usuwam naszą rozmowę.',
+    openTrip: 'Przejdź do Mojej podróży',
     retry: 'Spróbuj ponownie',
   },
   aboutMe: {
@@ -278,6 +282,10 @@ export const pl: Messages = {
       'Wyślę Ci e-mailem link, który otworzy Twój czat i rezerwacje na innym telefonie lub komputerze. Gdy otworzysz go tam, to urządzenie zostanie wylogowane z Fetivi.',
     sendLink: 'Wyślij mi link',
     linkSent: 'Wysłano. Sprawdź skrzynkę; link działa przez 1 godzinę.',
+    researchTitle: 'Pomóż ulepszyć Fetivi',
+    research: 'Zachowaj moją rozmowę do badań nad Fetivi',
+    researchNote:
+      'Wyłączone: czat zostanie usunięty 30 dni po wymeldowaniu. Włączone: kopia bez Twojego e-maila i preferencji zostanie zachowana na potrzeby badania uniwersyteckiego o Fetivi.',
   },
   cancelOrder: {
     heading: 'Anulować tę rezerwację?',
@@ -387,6 +395,9 @@ export const pl: Messages = {
     askText: 'Opowiedz mi więcej o „{{title}}” ({{day}}).',
     checkoutConfirming: 'Dziękuję! Potwierdzam Twoją rezerwację u usługodawcy…',
     checkoutLate: 'Płatność dotarła po zamknięciu rezerwacji, więc nic nie zostało pobrane.',
+    cancel: 'Anuluj rezerwację',
+    answerTerms: 'Odpowiedz na nowe warunki',
+    actionFailed: 'Nie udało się. Rezerwacja mogła się zmienić, oto jak wygląda teraz.',
   },
   mcpApps: {
     frameTitle: 'Wyniki promów z Ferryhopper',

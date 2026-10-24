@@ -202,7 +202,13 @@ describe('My trip offer', () => {
       <SpaceProvider
         initial={{
           status: 'ready',
-          space: { language: 'en', closedAt: '2026-10-24T22:00:00Z', closed: false, unitSlug: 's' },
+          space: {
+            language: 'en',
+            closedAt: '2026-10-24T22:00:00Z',
+            closed: false,
+            unitSlug: 's',
+            keepForEvaluation: false,
+          },
         }}
       >
         <TripTab />

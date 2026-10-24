@@ -9,7 +9,6 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { TOOL_TRANSPORTS } from '../../metrics/vocabulary';
-import { conversations } from './conversations';
 
 export const toolTransport = pgEnum('tool_transport', TOOL_TRANSPORTS);
 
@@ -18,9 +17,11 @@ export const turnMetrics = pgTable(
   'turn_metrics',
   {
     id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-    conversationId: uuid('conversation_id')
-      .notNull()
-      .references(() => conversations.id, { onDelete: 'cascade' }),
+    /**
+     * Opaque, no FK: the counts survive the 30-day deletion of the conversation (PRD §6.5
+     * "otherwise aggregate counts"), like answer_feedback.
+     */
+    conversationId: uuid('conversation_id').notNull(),
     model: text('model').notNull(),
     startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
     wallMs: integer('wall_ms').notNull(),

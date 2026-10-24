@@ -28,6 +28,7 @@ export const QUEUES = {
   importOpenData: 'import-open-data',
   draftPlace: 'draft-place',
   refreshCatalog: 'refresh-catalog',
+  retention: 'retention',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
@@ -84,6 +85,8 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   // transient model errors, so a pg-boss retry would spend model credit twice.
   draftPlace: { retryLimit: 0, expireInSeconds: 300 },
   refreshCatalog: { retryLimit: 0, expireInSeconds: 300 },
+  // The daily run; the next day's run picks up what a failure left.
+  retention: { retryLimit: 1, expireInSeconds: 900 },
 };
 
 /**

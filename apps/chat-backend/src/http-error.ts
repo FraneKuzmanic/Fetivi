@@ -26,7 +26,10 @@ export type ErrorCode =
   | 'widget-not-found'
   | 'widget-unavailable'
   | 'tool-blocked'
-  | 'tool-unavailable';
+  | 'tool-unavailable'
+  | 'not-permitted'
+  | 'action-refused'
+  | 'message-cap';
 
 export class HttpError extends Error {
   override name = 'HttpError';

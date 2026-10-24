@@ -21,6 +21,7 @@ const space = (closed = false): Space => ({
   closedAt: '2026-10-26T23:00:00.000Z',
   closed,
   unitSlug: 'qrabc',
+  keepForEvaluation: false,
 });
 
 const render = (initial: UIMessage[], closed = false) =>
@@ -90,7 +91,16 @@ describe('ChatView', () => {
   it('is read-only for a closed space', () => {
     const out = render([msg('1', 'user', 'Hi')], true);
     expect(out).not.toContain('<textarea');
-    expect(out).toContain('Your stay has ended. You can still read this chat.');
+    // The last read-only day (closedAt + 30 days, minus a moment) in the device's clock.
+    const lastDay = new Intl.DateTimeFormat('en', { dateStyle: 'long' }).format(
+      new Date(Date.parse(space().closedAt) + 30 * 86_400_000 - 1),
+    );
+    expect(lastDay).toMatch(/^November 2[56], 2026$/);
+    expect(out).toContain(
+      `Your stay has ended. You can read this chat and use My trip until ${lastDay}.`,
+    );
+    expect(out).toContain('href="/trip"');
+    expect(out).toContain('class="mascot-says"');
     expect(out).not.toContain('class="starter"');
     expect(render([], true)).not.toContain('trip-card');
   });
@@ -123,6 +133,7 @@ describe('chat helpers', () => {
   it('maps errors to messages', () => {
     expect(chatErrorKey(new Error('{"error":"space-closed"}'))).toBe('chat.errorClosed');
     expect(chatErrorKey(new Error('{"error":"turn-in-progress"}'))).toBe('chat.errorBusy');
+    expect(chatErrorKey(new Error('{"error":"message-cap"}'))).toBe('chat.errorCap');
     expect(chatErrorKey(new Error('turn-failed'))).toBe('chat.errorTurn');
     expect(chatErrorKey(new Error('Failed to fetch'))).toBe('chat.errorTurn');
   });

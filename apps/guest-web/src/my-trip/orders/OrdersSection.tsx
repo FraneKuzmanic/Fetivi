@@ -8,6 +8,7 @@ import { receiptLabels } from '../../chat/render/labels';
 import { EmailOffer } from '../../email/EmailOffer';
 import { AlertOffer } from '../../push/AlertOffer';
 import { MascotSays } from '../../shell/Mascot';
+import { type ActionNoticeKey, OrderActions } from './OrderActions';
 import { getOrders, usePay } from './orders-api';
 
 type Orders =
@@ -25,7 +26,8 @@ const settling = (o: OrderSummaryPayload) =>
 /**
  * Reservations & orders: every Order of the space with both statuses. A pay-online Order the
  * guest can still pay has Pay now. Back from Stripe (`?checkout=<id>`), the list is re-read every
- * 2 s for up to a minute until that Order's payment settles.
+ * 2 s for up to a minute until that Order's payment settles. After checkout an unresolved Order
+ * also has its actions (OrderActions).
  */
 export function OrdersSection() {
   const { t, i18n } = useTranslation();
@@ -50,6 +52,15 @@ export function OrdersSection() {
     void refresh();
   }, [refresh]);
   const { paying, notice, pay } = usePay(load);
+  const [actionNotice, setActionNotice] = useState<{
+    orderId: string;
+    key: ActionNoticeKey;
+  } | null>(null);
+  // The list is read again in place, so the receipt (and focus on it) stays.
+  const actionDone = (orderId: string) => async (key?: ActionNoticeKey) => {
+    setActionNotice(key ? { orderId, key } : null);
+    await refresh();
+  };
 
   useEffect(load, [load]);
 
@@ -79,6 +90,7 @@ export function OrdersSection() {
 
   const noticeFor = (order: OrderSummaryPayload) => {
     if (notice?.orderId === order.id) return t(notice.key);
+    if (actionNotice?.orderId === order.id) return t(actionNotice.key);
     // Paid after the booking had closed: the authorization was released.
     if (order.id === returned && !waiting && order.paymentStatus === 'voided') {
       return t('trip.checkoutLate');
@@ -111,7 +123,7 @@ export function OrdersSection() {
           )}
           <ul className="trip-orders">
             {orders.orders.map((order) => (
-              <li key={order.id}>
+              <li key={order.id} tabIndex={-1}>
                 <ReceiptCard
                   order={order}
                   labels={receiptLabels(t, i18n.language)}
@@ -120,6 +132,7 @@ export function OrdersSection() {
                   paying={paying === order.id}
                   notice={noticeFor(order)}
                 />
+                <OrderActions order={order} onDone={actionDone(order.id)} />
               </li>
             ))}
           </ul>

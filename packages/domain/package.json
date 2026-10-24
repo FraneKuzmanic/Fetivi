@@ -29,7 +29,9 @@
     "./seeding-vocabulary": "./src/catalog/seeding/vocabulary.ts",
     "./drafting-vocabulary": "./src/catalog/drafting/vocabulary.ts",
     "./feedback-vocabulary": "./src/feedback/vocabulary.ts",
-    "./suggestion-vocabulary": "./src/suggestions/host/vocabulary.ts"
+    "./suggestion-vocabulary": "./src/suggestions/host/vocabulary.ts",
+    "./settings-vocabulary": "./src/settings/vocabulary.ts",
+    "./space-vocabulary": "./src/spaces/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

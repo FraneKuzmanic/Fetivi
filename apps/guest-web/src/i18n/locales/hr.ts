@@ -48,7 +48,6 @@ export const hr: Messages = {
     inputLabel: 'Poruka za Fetivija',
     placeholder: 'Pitajte me bilo što o boravku',
     send: 'Pošalji',
-    closed: 'Vaš je boravak završio. Ovaj razgovor i dalje možete čitati.',
     startersLabel: 'Ideje za početak',
     starterWifi: 'Koja je lozinka za Wi-Fi?',
     starterTimes: 'Kada su prijava i odjava?',
@@ -62,6 +61,11 @@ export const hr: Messages = {
     errorTurn: 'Nešto nije u redu. Pokušajte ponovno.',
     errorBusy: 'Još odgovaram na vašu prethodnu poruku.',
     errorClosed: 'Vaš je boravak završio pa je razgovor sada samo za čitanje.',
+    errorCap:
+      'Za danas sam s razgovorom gotov. Vraćam se sutra ujutro; Vodič i Moje putovanje rade kao i inače.',
+    closedUntil:
+      'Vaš je boravak završio. Ovaj razgovor možete čitati i koristiti Moje putovanje do {{date}}. Nakon toga brišem naš razgovor.',
+    openTrip: 'Idi na Moje putovanje',
     retry: 'Pokušaj ponovno',
   },
   aboutMe: {
@@ -276,6 +280,10 @@ export const hr: Messages = {
       'Poslat ću vam e-poštom poveznicu koja otvara vaš razgovor i rezervacije na drugom mobitelu ili računalu. Kad je tamo otvorite, ovaj će se uređaj odjaviti iz Fetivija.',
     sendLink: 'Pošalji mi poveznicu',
     linkSent: 'Poslano. Provjerite poštu; poveznica vrijedi 1 sat.',
+    researchTitle: 'Pomozite poboljšati Fetivi',
+    research: 'Sačuvaj moj razgovor za istraživanje o Fetiviju',
+    researchNote:
+      'Isključeno: razgovor se briše 30 dana nakon odjave. Uključeno: kopija bez Vaše e-pošte i postavki čuva se za sveučilišno istraživanje o Fetiviju.',
   },
   cancelOrder: {
     heading: 'Otkazati ovu rezervaciju?',
@@ -386,6 +394,9 @@ export const hr: Messages = {
     askText: 'Recite mi više o „{{title}}” ({{day}}).',
     checkoutConfirming: 'Hvala! Potvrđujem vašu rezervaciju kod pružatelja usluge…',
     checkoutLate: 'Plaćanje je stiglo nakon što je rezervacija istekla, pa ništa nije naplaćeno.',
+    cancel: 'Otkaži rezervaciju',
+    answerTerms: 'Odgovori na nove uvjete',
+    actionFailed: 'To nije uspjelo. Rezervacija se možda promijenila, evo kako sada stoji.',
   },
   mcpApps: {
     frameTitle: 'Rezultati trajekata s Ferryhoppera',

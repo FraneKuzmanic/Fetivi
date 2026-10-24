@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import {
   appendTurn,
   type ConversationRow,
+  capReached,
   type Db,
   findConversation,
   type GuestProjection,
@@ -260,13 +261,18 @@ async function currentWeatherNote(
 }
 
 /**
- * One guest turn, streamed. Throws HttpError before the stream starts. The user message and the
+ * One guest turn, streamed. Throws HttpError before the stream starts, a 429 `message-cap` once
+ * the Space has sent the admin's daily number of messages on the property's current day. The user message and the
  * answer are stored together only when the turn completes, so a failed turn leaves the history
  * (and the cached prompt prefix) as it was.
  */
 export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Promise<Response> {
   return withTurn(deps, space, async (turn) => {
     const { db } = deps;
+    // The soft daily cap, counted under the Space's lock so parallel requests cannot both pass,
+    // and before any model work. Card answers (resumeTurn) are never capped.
+    const capInput = { spaceId: turn.spaceId, zone: turn.ctx.timezone, now: turn.startedAt };
+    if (await capReached(db, capInput)) throw new HttpError(429, 'message-cap');
     const projection = await turn.turnTools.readProjection();
     const conversation = await getOrCreateConversation(
       db,

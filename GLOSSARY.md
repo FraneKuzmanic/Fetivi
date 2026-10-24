@@ -172,6 +172,10 @@ _Avoid_: Refund policy, cancellation terms
 One disagreement between Fetivi and Stripe or a hold, found by the reconciliation job: what it was, and what was done about it.
 _Avoid_: Discrepancy, mismatch
 
+**Order ledger**:
+The minimal record of an Order kept for 11 years for commission accounting once its Space is deleted: Offer, date, quantity, price, both statuses, Provider and email (`order_ledger`). It has no foreign keys, so it outlives the Space, the Stay and the Offer.
+_Avoid_: archive, order history
+
 **Offer**:
 A service a Provider or host makes available to guests, with its category, availability mode, payment mode and cancellation policy.
 _Avoid_: Product, listing, upsell
@@ -230,8 +234,16 @@ The copy-ready text a Host sends a guest party with the Unit's link and the PIN,
 _Avoid_: Invitation, welcome message
 
 **Space**:
-One device's private world inside a Stay, opened by entering the Stay's PIN on that device; a new PIN entry always opens a new, empty Space. It closes at the end of the Stay's checkout day. A Recovery link moves it to another device.
+One device's private world inside a Stay, opened by entering the Stay's PIN on that device; a new PIN entry always opens a new, empty Space. It closes at the end of the Stay's checkout day, stays readable for the Read-only period and is then deleted with its Conversation, About me and Orders (each Order leaves an Order ledger row). A Recovery link moves it to another device.
 _Avoid_: Session, account, profile
+
+**Read-only period**:
+The 30 days after a Space closes. The chat can be read but not written; My trip, receipts and host replies stay, and an unresolved Order can still be cancelled or its new terms answered from My trip. When it ends the daily retention job deletes the Space, unless an Order or payment is still unsettled, in which case it waits for the next day's run.
+_Avoid_: grace period, archive
+
+**Evaluation opt-in**:
+The Settings toggle, off by default, that keeps a copy of a Space's Conversation (the guest's and Fetivi's messages only, no email or About me) for the thesis evaluation when the Space is deleted. It can be turned on or off until then.
+_Avoid_: research consent, data donation
 
 **Email opt-in**:
 The one consent, given on the first Order's card or when the guest asks for updates, that lets Fetivi use a Space's email for Order confirmations, recovery and updates. Updates are emailed only once the address is confirmed by link. Daily tips by email are a separate opt-in, off by default.
@@ -252,6 +264,10 @@ _Avoid_: guest view, public record
 **Conversation**:
 One Space's ongoing chat with Fetivi: the guest's messages, Fetivi's answers and the notes that tell the model what changed. Each Space has exactly one, read-only once the Space closes.
 _Avoid_: chat session, thread
+
+**Daily message cap**:
+How many messages a Space may send Fetivi in one day of the property's time zone, one number set by the admin (60 by default). After it the chat says so politely; card answers, the Guide and My trip keep working.
+_Avoid_: rate limit, quota
 
 **About me**:
 What a Space's guests chose to share about their trip — who is travelling, interests, pace, budget feel and Needs — kept per Space, always visible to them, and changeable and removable by them. Fetivi may save the ordinary preferences it hears in the Conversation; it never saves a Need.
