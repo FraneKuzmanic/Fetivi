@@ -10,6 +10,7 @@ export interface RefreshCurrent {
   address: string | null;
   phone: string | null;
   websiteUrl: string | null;
+  /** Times as HH:MM, like the drafted ones. */
   openingHours: DraftedHours[];
   seasons: DraftedSeason[];
 }
@@ -42,11 +43,9 @@ function foldUrl(s: string): string {
   }
 }
 
-/** The database returns times as HH:MM:SS. */
-const hhmm = (s: string) => s.slice(0, 5);
 const hoursKey = (rows: DraftedHours[]) =>
   rows
-    .map((r) => [r.weekday, hhmm(r.opens), hhmm(r.closes), r.validFrom, r.validTo].join('|'))
+    .map((r) => [r.weekday, r.opens, r.closes, r.validFrom, r.validTo].join('|'))
     .sort()
     .join(';');
 const seasonsKey = (rows: DraftedSeason[]) =>

@@ -124,7 +124,11 @@ export type CurationPayload =
       /** A candidate draft's category and location, from its open-data rows (ADR 0020). */
       place?: {
         placeCategory: string;
+        /** The URL of the open-data row the category came from; null for Overture. */
+        categorySourceUrl: string | null;
         location: { lat: number; lng: number };
+        /** The open-data source of the location, and its row's URL (null for Overture). */
+        locationSource: 'bathing_water' | 'overture' | 'osm';
         locationSourceUrl: string | null;
       };
       /** Wikimedia Commons only. */

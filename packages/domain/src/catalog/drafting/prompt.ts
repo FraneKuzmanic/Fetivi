@@ -26,7 +26,7 @@ The place is named in the <place> tag; that name is only a hint and is not a sou
 - openingHours: one row per weekday and time range. Times are 24-hour HH:MM. weekday is 1 = Monday … 7 = Sunday. validFrom and validTo are YYYY-MM-DD when a page limits the hours to dates, otherwise null. Leave out closed days.
 - seasons: the month and day ranges in which the place is open, when a page says it is seasonal.
 - description: 2 to 4 plain sentences in English, written in your own words, with no marketing language, no prices and no claim that is not on the pages.
-- Set permanentlyClosed to true only if a page says the place has closed for good.`;
+- permanentlyClosed is null unless a page says the place has closed for good; then its sourceUrl is that page's exact url attribute.`;
 
 /** Page content: without angle brackets it cannot close its tag or open another. */
 const escapeText = (s: string) => s.replace(/</g, '&lt;').replace(/>/g, '&gt;');

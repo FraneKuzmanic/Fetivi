@@ -75,5 +75,5 @@ export const EMPTY_EXTRACTION: DraftExtractionData = {
   websiteUrl: null,
   openingHours: null,
   seasons: null,
-  permanentlyClosed: false,
+  permanentlyClosed: null,
 };

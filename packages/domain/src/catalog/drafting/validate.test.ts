@@ -16,7 +16,7 @@ const empty: DraftExtractionData = {
   websiteUrl: null,
   openingHours: null,
   seasons: null,
-  permanentlyClosed: false,
+  permanentlyClosed: null,
 };
 
 const at = <T>(value: T, sourceUrl = VENUE) => ({ value, sourceUrl });
@@ -147,8 +147,19 @@ describe('validateDraft', () => {
     expect(changes.title).not.toContain('<');
   });
 
-  it('reports a permanent closure', () => {
-    expect(validateDraft({ ...empty, permanentlyClosed: true }, FETCHED).closed).toBe(true);
+  it('reports a permanent closure with the page that said so, only if it was fetched', () => {
+    const closed = (sourceUrl: string) =>
+      validateDraft({ ...empty, permanentlyClosed: { sourceUrl } }, FETCHED).closedSourceUrl;
+    expect(closed(CONTACT)).toBe(CONTACT);
+    expect(closed('https://x.example/')).toBeNull();
+    expect(validateDraft(empty, FETCHED).closedSourceUrl).toBeNull();
+  });
+
+  it('leaves no `<` that could start a tag, even in a run of them', () => {
+    for (const value of ['<<A', '<<<script>x', 'a <<!-- b', '<</p>']) {
+      const { changes } = validateDraft({ ...empty, title: at(value) }, FETCHED);
+      expect(changes.title ?? '').not.toMatch(/<[a-zA-Z!/?]/);
+    }
   });
 
   it('never keeps a field without its source, or markup in a value', () => {

@@ -31,7 +31,9 @@ const draftingModel = createAnthropicDraftingModel({
   fetch: egress.fetch,
 });
 if (!config.ANTHROPIC_API_KEY) {
-  console.warn('ANTHROPIC_API_KEY is not set: translations will fail as not-configured');
+  console.warn(
+    'ANTHROPIC_API_KEY is not set: translations and catalog drafting will fail as not-configured',
+  );
 }
 const push =
   config.VAPID_PUBLIC_KEY && config.VAPID_PRIVATE_KEY

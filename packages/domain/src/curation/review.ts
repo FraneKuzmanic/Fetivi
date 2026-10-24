@@ -281,6 +281,7 @@ async function createFromCandidateDraft(
       websiteUrl: changes.websiteUrl ?? null,
       fieldSources: {
         ...kindSources('place', changes.fieldSources),
+        ...(place.categorySourceUrl ? { placeCategory: place.categorySourceUrl } : {}),
         ...(place.locationSourceUrl ? { location: place.locationSourceUrl } : {}),
       },
     },

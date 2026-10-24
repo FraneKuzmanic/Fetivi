@@ -36,6 +36,7 @@ export const DraftExtraction = z.strictObject({
       }),
     ),
   ),
-  permanentlyClosed: z.boolean(),
+  /** Null unless a page says the place has closed for good; sourceUrl is that page. */
+  permanentlyClosed: z.strictObject({ sourceUrl: z.string() }).nullable(),
 });
 export type DraftExtractionData = z.infer<typeof DraftExtraction>;

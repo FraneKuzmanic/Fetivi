@@ -48,7 +48,9 @@ describe('isDrafted', () => {
     changes: { title: 'Konoba Trs', fieldSources: { title: 'https://konobatrs.hr/' } },
     place: {
       placeCategory: 'restaurant',
+      categorySourceUrl: null,
       location: { lat: 43.5, lng: 16.2 },
+      locationSource: 'overture',
       locationSourceUrl: null,
     },
     drafting: {

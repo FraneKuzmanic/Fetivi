@@ -12,17 +12,17 @@ export interface ValidatedDraft {
   changes: CuratedChanges;
   /** How many fields survived. */
   fieldCount: number;
-  /** A page said the place has closed for good. */
-  closed: boolean;
+  /** The fetched page that said the place has closed for good, or null. */
+  closedSourceUrl: string | null;
 }
 
 const TIME = /^(?:[01]\d|2[0-4]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Markup out, and no `<` left that could start a tag. */
+/** Markup out, and no `<` left that could start a tag (a run of them goes at once: `<<a`). */
 function clean(value: string, singleLine: boolean): string {
   return stripMarkup(value, { singleLine })
-    .replace(/<(?=[a-zA-Z!/?])/g, '')
+    .replace(/<+(?=[a-zA-Z!/?])/g, '')
     .replace(singleLine ? /\s+/g : /[ \t]+/g, ' ')
     .trim();
 }
@@ -138,5 +138,7 @@ export function validateDraft(
 
   const fieldCount = Object.keys(fieldSources).length;
   if (fieldCount > 0) changes.fieldSources = fieldSources;
-  return { changes, fieldCount, closed: raw.permanentlyClosed };
+  const closed = raw.permanentlyClosed;
+  const closedSourceUrl = closed && pages.has(closed.sourceUrl) ? closed.sourceUrl : null;
+  return { changes, fieldCount, closedSourceUrl };
 }

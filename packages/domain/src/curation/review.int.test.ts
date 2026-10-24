@@ -588,7 +588,9 @@ describe('a drafted Seeding candidate draft (42)', () => {
         },
         place: {
           placeCategory: 'restaurant',
+          categorySourceUrl: OSM_URL,
           location: { lat: 43.5168, lng: 16.2512 },
+          locationSource: 'osm',
           locationSourceUrl: OSM_URL,
         },
         images: [IMAGE],
@@ -629,6 +631,7 @@ describe('a drafted Seeding candidate draft (42)', () => {
       phone: CONTACT,
       openingHours: CONTACT,
       seasons: CONTACT,
+      placeCategory: OSM_URL,
       location: OSM_URL,
     });
     const hours = await testDb.db

@@ -12,7 +12,7 @@ import {
 import { type CurationItemRow, curationItems } from '../../db/schema/curation';
 import { draftingRuns, draftingTasks } from '../../db/schema/drafting';
 import { candidateView } from '../seeding/dedupe';
-import type { SeedingSource } from '../seeding/vocabulary';
+import { CATEGORY_PRECEDENCE, type SeedingSource } from '../seeding/vocabulary';
 import { commonsFileFromTags, fetchCommonsImage } from './commons';
 import { diffRefresh } from './diff';
 import { fetchPages } from './fetch-pages';
@@ -87,6 +87,7 @@ async function finishWith(
 }
 
 type DraftPayload = Extract<CurationPayload, { kind: 'draft' }>;
+type DraftPlace = NonNullable<DraftPayload['place']>;
 
 /** Writes the draft item's payload while it is still an open candidate draft. */
 const writeItem =
@@ -112,18 +113,16 @@ async function readPages(deps: DraftingDeps, refs: ReturnType<typeof candidateSo
 }
 
 /**
- * A page said the place closed for good: the description leads with that, citing the page of
- * the description or else the title, so the admin sees it before approving.
+ * A page said the place closed for good: the description leads with that, naming the page that
+ * said so, so the admin sees it before approving. A description of its own keeps its source.
  */
-function withClosedNote(changes: CuratedChanges): CuratedChanges {
+function withClosedNote(changes: CuratedChanges, url: string): CuratedChanges {
   const sources = changes.fieldSources ?? {};
-  const url = sources.description ?? sources.title;
-  if (!url) return changes;
   const note = `Permanently closed according to ${url}.`;
   return {
     ...changes,
     description: changes.description ? `${note}\n\n${changes.description}` : note,
-    fieldSources: { ...sources, description: url },
+    fieldSources: { ...sources, description: sources.description ?? url },
   };
 }
 
@@ -197,10 +196,15 @@ export async function draftCandidateTask(
   const draft = validateDraft(result.output, urls);
   // No page names the venue: there is nothing to make a record of.
   if (draft.changes.title === undefined) return outcome('no_sources', null, urls);
-  const changes = draft.closed ? withClosedNote(draft.changes) : draft.changes;
+  const changes = draft.closedSourceUrl
+    ? withClosedNote(draft.changes, draft.closedSourceUrl)
+    : draft.changes;
 
   const located = LOCATION_SOURCES.flatMap((s) => rows.filter((r) => r.source === s))[0];
   if (!located) return gone();
+  const categorised = CATEGORY_PRECEDENCE.flatMap((s) => rows.filter((r) => r.source === s)).find(
+    (r) => r.placeCategory === view.placeCategory,
+  );
   const osm = rows.find((r) => r.source === 'osm');
   const file = commonsFileFromTags(osm?.data.tags as Record<string, unknown> | undefined);
   const image = file ? await fetchCommonsImage(deps.commonsFetch, deps.userAgent, file) : null;
@@ -210,7 +214,9 @@ export async function draftCandidateTask(
     changes,
     place: {
       placeCategory: view.placeCategory,
+      categorySourceUrl: categorised?.sourceUrl ?? null,
       location: { lat: located.location.y, lng: located.location.x },
+      locationSource: located.source as DraftPlace['locationSource'],
       locationSourceUrl: located.source === 'overture' ? null : located.sourceUrl,
     },
     images: image ? [image] : [],

@@ -149,12 +149,6 @@ function SourceLink({ url }: { url: string | null | undefined }) {
   ) : null;
 }
 
-/** Where a candidate draft's location came from (ADR 0020). */
-function locationSource(url: string | null): string {
-  if (url === null) return SOURCE_LABELS.overture;
-  return url.includes('openstreetmap.org') ? SOURCE_LABELS.osm : SOURCE_LABELS.bathing_water;
-}
-
 /** "Show proposal": each field a draft or diff proposes, with its source and previous value. */
 function Proposal({ item }: { item: CurationItem }) {
   const p = item.payload;
@@ -191,12 +185,15 @@ function Proposal({ item }: { item: CurationItem }) {
           <>
             <div className="proposal-field">
               <dt>{SOURCE_FIELD_LABELS.placeCategory}</dt>
-              <dd>{categoryLabel(p.place.placeCategory)}</dd>
+              <dd>
+                {categoryLabel(p.place.placeCategory)}{' '}
+                <SourceLink url={p.place.categorySourceUrl} />
+              </dd>
             </div>
             <div className="proposal-field">
               <dt>{SOURCE_FIELD_LABELS.location}</dt>
               <dd>
-                From {locationSource(p.place.locationSourceUrl)}{' '}
+                From {SOURCE_LABELS[p.place.locationSource]}{' '}
                 <SourceLink url={p.place.locationSourceUrl} />
               </dd>
             </div>

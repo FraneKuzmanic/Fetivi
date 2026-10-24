@@ -93,7 +93,9 @@ const DRAFTED: CurationItem = {
     },
     place: {
       placeCategory: 'restaurant',
+      categorySourceUrl: 'https://www.openstreetmap.org/node/9',
       location: { lat: 43.5, lng: 16.25 },
+      locationSource: 'osm',
       locationSourceUrl: 'https://www.openstreetmap.org/node/9',
     },
     images: [
@@ -329,7 +331,7 @@ describe('CurationPage', () => {
       ['Title', 'Restoran Sv. Dominik source', VENUE],
       ['Phone', '+385 21 000 000 source', CONTACT],
       ['Opening hours', 'Mon 08:00–23:00 source', CONTACT],
-      ['Category', 'Restaurant', null],
+      ['Category', 'Restaurant source', 'https://www.openstreetmap.org/node/9'],
       ['Location', 'From OpenStreetMap source', 'https://www.openstreetmap.org/node/9'],
       [
         'Image',

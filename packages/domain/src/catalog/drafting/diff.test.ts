@@ -9,8 +9,8 @@ const current: RefreshCurrent = {
   phone: '+385 21 796 956',
   websiteUrl: 'https://www.konobatrs.com/',
   openingHours: [
-    { weekday: 1, opens: '12:00:00', closes: '23:00:00', validFrom: null, validTo: null },
-    { weekday: 2, opens: '12:00:00', closes: '23:00:00', validFrom: null, validTo: null },
+    { weekday: 1, opens: '12:00', closes: '23:00', validFrom: null, validTo: null },
+    { weekday: 2, opens: '12:00', closes: '23:00', validFrom: null, validTo: null },
   ],
   seasons: [{ fromMonth: 4, fromDay: 1, toMonth: 10, toDay: 31 }],
 };

@@ -199,10 +199,12 @@ describe('draftCandidateTask', () => {
       description: VENUE,
       openingHours: CONTACT,
     });
-    // Overture before OSM: the permissive licence wins the location.
+    // Overture before OSM: the permissive licence wins the location; OSM's tags the category.
     expect(payload.place).toEqual({
       placeCategory: 'restaurant',
+      categorySourceUrl: 'https://www.openstreetmap.org/node/1',
       location: { lat: OVERTURE_POINT.y, lng: OVERTURE_POINT.x },
+      locationSource: 'overture',
       locationSourceUrl: null,
     });
     expect(payload.images).toEqual([
@@ -242,7 +244,9 @@ describe('draftCandidateTask', () => {
     const payload = await itemPayload(itemId);
     expect(payload.place).toEqual({
       placeCategory: 'restaurant',
+      categorySourceUrl: 'https://www.openstreetmap.org/node/1',
       location: { lat: OSM_POINT.y, lng: OSM_POINT.x },
+      locationSource: 'osm',
       locationSourceUrl: 'https://www.openstreetmap.org/node/1',
     });
     expect(payload.images).toEqual([]);
@@ -319,21 +323,22 @@ describe('draftCandidateTask', () => {
     expect(model.inputs[0]?.pages[0]?.text).not.toContain('never read me');
   });
 
-  it('notes a permanent closure at the top of the description', async () => {
+  it('notes a permanent closure atop the description, naming the page that said so', async () => {
     const { itemId, taskId } = await queuedCandidate({ osmTags: { website: VENUE } });
     const { deps: d } = deps(
       VENUE_PAGES,
       (input) =>
         ({
           ...venueDraft(input),
-          permanentlyClosed: true,
+          permanentlyClosed: { sourceUrl: CONTACT },
         }) as DraftExtractionData,
     );
     await draftCandidateTask(d, taskId, LATER);
     const payload = await itemPayload(itemId);
     expect(payload.changes.description).toMatch(
-      new RegExp(`^Permanently closed according to ${VENUE}\\.\\n\\n`),
+      new RegExp(`^Permanently closed according to ${CONTACT}\\.\\n\\n`),
     );
+    expect(payload.changes.fieldSources?.description).toBe(VENUE);
   });
 
   it('does nothing on a duplicate job, and nothing for an item rejected meanwhile', async () => {
