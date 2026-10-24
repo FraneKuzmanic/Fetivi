@@ -19,6 +19,14 @@ import {
 } from '@fetivi/domain';
 import { INBOX_PART_TYPE, inboxItem } from '@fetivi/ui/payloads';
 import {
+  type Context,
+  context,
+  isSpanContextValid,
+  type Span,
+  SpanStatusCode,
+  trace,
+} from '@opentelemetry/api';
+import {
   createUIMessageStream,
   createUIMessageStreamResponse,
   type LanguageModel,
@@ -56,6 +64,8 @@ export interface ChatDeps {
   weather: WeatherSource;
   log: FastifyBaseLogger;
 }
+
+const tracer = trace.getTracer('@fetivi/chat-backend');
 
 // Spaces with a turn running. In-process: there is one chat-backend process (architecture §4.1).
 const running = new Set<string>();
@@ -109,6 +119,12 @@ interface OpenTurn {
   paused: Map<string, FirstPartyListed>;
   /** Guest tool calls of this turn, for metrics. */
   calls: string[];
+  /** `chat.turn`: ended once, by the stream's end or by a throw before streaming. */
+  span: Span;
+  /** The context with `span` active; the stream re-enters it, as it may run outside the request. */
+  otel: Context;
+  /** The trace id for the metric row; null when tracing is off. */
+  traceId: string | null;
 }
 
 /**
@@ -119,6 +135,7 @@ interface OpenTurn {
 async function withTurn(
   deps: ChatDeps,
   space: ResolvedSpace,
+  kind: 'message' | 'answer',
   body: (turn: OpenTurn) => Promise<Response>,
 ): Promise<Response> {
   const { db, log, model } = deps;
@@ -128,10 +145,17 @@ async function withTurn(
   if (running.has(spaceId)) throw new HttpError(409, 'turn-in-progress');
   running.add(spaceId);
 
+  // Kind and transport only: no text, ids or tool arguments on the span.
+  const span = tracer.startSpan('chat.turn', {
+    attributes: { 'fetivi.turn.kind': kind, 'fetivi.tool_transport': deps.tools.transport },
+  });
+  const otel = trace.setSpan(context.active(), span);
+  const traceId = isSpanContextValid(span.spanContext()) ? span.spanContext().traceId : null;
   const startedAt = deps.now();
   const t0 = performance.now();
-  let opened: TurnTools | null = null;
-  try {
+  // Assigned inside the turn's context, so not narrowed here.
+  let opened = null as TurnTools | null;
+  const openAndRun = async (): Promise<Response> => {
     const ctx = await loadSituation(db, spaceId, startedAt);
     if (!ctx) throw new HttpError(401, 'no-space');
     const turnTools = await deps.tools.open(ctx, startedAt);
@@ -156,11 +180,25 @@ async function withTurn(
       tools: { ...mcpTools, ...hostSideTools },
       paused: pausedTools(listed),
       calls,
+      span,
+      otel,
+      traceId,
     });
+  };
+  try {
+    return await context.with(otel, openAndRun);
   } catch (error) {
     await opened?.close();
     running.delete(spaceId);
-    if (error instanceof HttpError) throw error;
+    if (error instanceof HttpError) {
+      span.setAttribute('http.response.status_code', error.statusCode);
+      if (error.statusCode >= 500) span.setStatus({ code: SpanStatusCode.ERROR });
+      span.end();
+      throw error;
+    }
+    span.recordException(error as Error);
+    span.setStatus({ code: SpanStatusCode.ERROR });
+    span.end();
     log.error({ err: error }, 'chat turn failed before streaming');
     throw new HttpError(502, 'turn-failed');
   }
@@ -182,22 +220,28 @@ function streamTurn(
   const stream = createUIMessageStream({
     originalMessages,
     generateId: randomUUID,
-    execute: async ({ writer }) => {
-      const done = await run(writer);
-      result = done;
-      writer.setOutcome(done.outcome);
-    },
+    execute: ({ writer }) =>
+      context.with(turn.otel, async () => {
+        const done = await run(writer);
+        result = done;
+        writer.setOutcome(done.outcome);
+      }),
     onEnd: async ({ responseMessage, outcome }) => {
       try {
-        if (outcome.status === 'completed' && result) await persist(responseMessage, result);
+        const done = result;
+        if (outcome.status === 'completed' && done) {
+          await context.with(turn.otel, () => persist(responseMessage, done));
+        }
       } catch (error) {
         deps.log.error({ err: error }, 'chat turn not stored');
       } finally {
         await turn.turnTools.close();
         running.delete(turn.spaceId);
+        turn.span.end();
       }
     },
     onError: (error) => {
+      turn.span.setStatus({ code: SpanStatusCode.ERROR });
       deps.log.error({ err: error }, 'chat turn failed');
       return 'turn-failed';
     },
@@ -225,6 +269,7 @@ async function recordMetrics(
     steps: result.steps,
     toolCalls: turn.calls.length,
     toolNames: turn.calls,
+    traceId: turn.traceId,
   });
 }
 
@@ -267,7 +312,7 @@ async function currentWeatherNote(
  * the history (and the cached prompt prefix) as it was.
  */
 export function runTurn(deps: ChatDeps, space: ResolvedSpace, text: string): Promise<Response> {
-  return withTurn(deps, space, async (turn) => {
+  return withTurn(deps, space, 'message', async (turn) => {
     const { db } = deps;
     // The soft daily cap, counted under the Space's lock so parallel requests cannot both pass,
     // and before any model work. Card answers (resumeTurn) are never capped.
@@ -347,7 +392,7 @@ export function resumeTurn(
   space: ResolvedSpace,
   guest: GuestAnswer,
 ): Promise<Response> {
-  return withTurn(deps, space, async (turn) => {
+  return withTurn(deps, space, 'answer', async (turn) => {
     const { db } = deps;
     const conversation = await findConversation(db, turn.spaceId);
     if (!conversation) throw new HttpError(409, 'nothing-to-answer');

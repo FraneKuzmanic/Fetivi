@@ -40,6 +40,8 @@ export const turnMetrics = pgTable(
     toolCalls: integer('tool_calls').notNull(),
     /** One entry per call, in call order, with repeats. */
     toolNames: text('tool_names').array().notNull(),
+    /** The turn's OpenTelemetry trace id (32 hex), to open it in Jaeger; null when tracing was off. */
+    traceId: text('trace_id'),
   },
   (t) => [index('turn_metrics_conversation_idx').on(t.conversationId)],
 );

@@ -1,5 +1,6 @@
 import type { Db, JobQueue, MediaStore, WeatherSource } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
+import { traceRoutes } from '@fetivi/telemetry';
 import type { LanguageModel } from 'ai';
 import Fastify from 'fastify';
 import { aboutMeRoutes } from './about-me/routes';
@@ -58,6 +59,7 @@ export interface AppDeps {
 
 export function buildApp(deps: AppDeps) {
   const app = Fastify({ logger: deps.logger ?? true, trustProxy: deps.trustProxy ?? false });
+  traceRoutes(app);
   const now = deps.now ?? (() => new Date());
   const { db, appOrigin } = deps;
 

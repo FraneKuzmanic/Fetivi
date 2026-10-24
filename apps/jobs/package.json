@@ -4,12 +4,13 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "dev": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx --watch src/index.ts",
-    "start": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx src/index.ts"
+    "dev": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx --import ./src/instrumentation.ts --watch src/index.ts",
+    "start": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx --import ./src/instrumentation.ts src/index.ts"
   },
   "dependencies": {
     "@fetivi/domain": "workspace:*",
     "@fetivi/egress": "workspace:*",
+    "@fetivi/telemetry": "workspace:*",
     "pg-boss": "12.38.0",
     "zod": "4.6.7"
   }

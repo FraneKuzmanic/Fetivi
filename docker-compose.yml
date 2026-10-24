@@ -18,5 +18,12 @@ services:
       timeout: 3s
       retries: 30
       start_period: 10s
+  # Traces from the four server processes (docs/observability.md). Jaeger v2 is an OpenTelemetry
+  # Collector distribution: it takes OTLP directly. In-memory: traces go when it restarts.
+  jaeger:
+    image: jaegertracing/jaeger:2.22.0
+    ports:
+      - "16686:16686" # UI
+      - "4318:4318" # OTLP over HTTP
 volumes:
   pgdata:

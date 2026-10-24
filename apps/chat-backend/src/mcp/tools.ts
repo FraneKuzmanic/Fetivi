@@ -28,7 +28,12 @@ export function createToolCatalog(): ToolCatalog {
       let tools = cache.get(key);
       if (!tools) {
         // listTools() without a cursor walks every page; the server's own order is kept.
-        tools = clients.timed(async () => (await (await clients.get(server)).listTools()).tools);
+        tools = clients.call(
+          server,
+          'tools/list',
+          null,
+          async (c, _meta) => (await c.listTools({ _meta })).tools,
+        );
         cache.set(key, tools);
         // A failed listing is not remembered, so the next turn tries again.
         tools.catch(() => cache.delete(key));

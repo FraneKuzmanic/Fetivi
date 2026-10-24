@@ -111,13 +111,8 @@ export function mcpTurnTools(
         }
         return outputOf(result);
       }
-      const result = (await clients.timed(async () =>
-        (
-          await clients.get(server)
-        ).callTool({
-          name: tool.name,
-          arguments: input as Record<string, unknown>,
-        }),
+      const result = (await clients.call(server, 'tools/call', tool.name, (c, _meta) =>
+        c.callTool({ name: tool.name, arguments: input as Record<string, unknown>, _meta }),
       )) as CallToolResult;
       return outputOf(result);
     },
@@ -125,8 +120,8 @@ export function mcpTurnTools(
     firstHalf: (call) => firstHalf({ ...call, clients }),
     answer: (call) => answer({ ...call, clients }),
     async readProjection() {
-      const result = await clients.timed(async () =>
-        (await clients.get('stay')).readResource({ uri: UNIT_RESOURCE_URI }),
+      const result = await clients.call('stay', 'resources/read', UNIT_RESOURCE_URI, (c, _meta) =>
+        c.readResource({ uri: UNIT_RESOURCE_URI, _meta }),
       );
       const content = result.contents[0];
       if (!content || !('text' in content) || typeof content.text !== 'string') {

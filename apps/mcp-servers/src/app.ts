@@ -11,6 +11,7 @@ import {
   type WeatherSource,
   type WebSearch,
 } from '@fetivi/domain';
+import { traceRoutes } from '@fetivi/telemetry';
 import { createMcpFastifyApp } from '@modelcontextprotocol/fastify';
 import type { McpServer } from '@modelcontextprotocol/server';
 import type { FastifyInstance } from 'fastify';
@@ -52,6 +53,7 @@ export function buildApp(deps: AppDeps) {
   const { config, db, keys, queue } = deps;
   const now = deps.now ?? (() => new Date());
   const app = createMcpFastifyApp({ host: config.HOST, allowedHosts: config.MCP_ALLOWED_HOSTS });
+  traceRoutes(app);
   app.get('/health', async () => ({ status: 'ok', service: 'mcp-servers' }));
   mountServers(app, {
     db,

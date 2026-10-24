@@ -24,6 +24,7 @@ function fakeClients(
     get: async (server) => ({ listTools: () => listTools(server), callTool }) as unknown as Client,
     mcpMs: 0,
     timed: (run) => run(),
+    call: async (server, _method, _target, run) => run(await clients.get(server), {}),
     close: async () => {},
   };
   return {
@@ -92,7 +93,7 @@ describe('toAiTools', () => {
     expect(tools.find?.description).toBe('find tool');
     const out = await tools.find?.execute?.({ q: 'x' }, execOptions);
     expect(out).toEqual({ echoed: { q: 'x' } });
-    expect(callTool).toHaveBeenCalledWith({ name: 'find', arguments: { q: 'x' } });
+    expect(callTool).toHaveBeenCalledWith({ name: 'find', arguments: { q: 'x' }, _meta: {} });
     expect(names).toEqual(['find']);
   });
 

@@ -6,6 +6,7 @@ import type {
   MediaStore,
   PaymentGateway,
 } from '@fetivi/domain';
+import { traceRoutes } from '@fetivi/telemetry';
 import Fastify from 'fastify';
 import { curationRoutes } from './admin/curation';
 import { draftingRoutes } from './admin/drafting';
@@ -69,6 +70,7 @@ export interface AppDeps {
 
 export function buildApp(deps: AppDeps) {
   const app = Fastify({ logger: deps.logger ?? true, trustProxy: deps.trustProxy ?? false });
+  traceRoutes(app);
   const now = deps.now ?? (() => new Date());
   const { db, mailer, queue, webOrigin, guestOrigin } = deps;
 

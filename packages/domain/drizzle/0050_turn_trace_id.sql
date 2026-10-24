@@ -1,0 +1,1 @@
+ALTER TABLE "turn_metrics" ADD COLUMN "trace_id" text;

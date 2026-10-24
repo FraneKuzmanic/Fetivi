@@ -135,11 +135,15 @@ async function run(
   // without it. The server validates its own output.
   const { outputSchema: _, ...definition } = call.listed.tool;
   try {
-    const result = await call.clients.timed(async () =>
-      (await call.clients.get(call.listed.server)).callTool(params, {
-        allowInputRequired: true,
-        toolDefinition: definition,
-      }),
+    const result = await call.clients.call(
+      call.listed.server,
+      'tools/call',
+      call.toolName,
+      (c, _meta) =>
+        c.callTool(
+          { ...params, _meta: { ...params._meta, ..._meta } },
+          { allowInputRequired: true, toolDefinition: definition },
+        ),
     );
     return toOutcome(call, result);
   } catch (error) {

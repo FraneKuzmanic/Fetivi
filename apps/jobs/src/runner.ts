@@ -1,3 +1,4 @@
+import { W3CTraceContextPropagator } from '@fetivi/telemetry';
 import { PgBoss, type Queue } from 'pg-boss';
 
 export interface JobDefinition<T extends object = object> {
@@ -22,6 +23,9 @@ export async function startJobRunner(options: JobRunnerOptions): Promise<PgBoss>
   const { connectionString, fast = false } = options;
   const boss = new PgBoss({
     connectionString,
+    // A job sent inside a traced request continues that trace when it runs; only the W3C trace id
+    // is stored on the job, no baggage.
+    openTelemetry: { propagateContext: true, propagator: new W3CTraceContextPropagator() },
     ...(fast ? { cronWorkerIntervalSeconds: 1, cronMonitorIntervalSeconds: 1 } : {}),
   });
   // An unhandled 'error' event would crash the process.

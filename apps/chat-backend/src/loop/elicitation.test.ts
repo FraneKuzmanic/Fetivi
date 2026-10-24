@@ -57,6 +57,7 @@ function fake(reply: () => unknown) {
     get: async () => ({ callTool }) as unknown as Client,
     mcpMs: 0,
     timed: (run) => run(),
+    call: async (server, _method, _target, run) => run(await clients.get(server), {}),
     close: async () => {},
   };
   const call = {
@@ -94,7 +95,11 @@ describe('firstHalf', () => {
         respondOrder: null,
       },
     });
-    expect(callTool).toHaveBeenCalledWith({ name: 'create_order', arguments: call.input }, OPTIONS);
+    expect(callTool).toHaveBeenCalledWith(
+      // No provider registered: an empty trace context.
+      { name: 'create_order', arguments: call.input, _meta: {} },
+      OPTIONS,
+    );
   });
 
   it('carries a host message draft instead of an order draft', async () => {
@@ -228,6 +233,7 @@ describe('answer', () => {
         arguments: call.input,
         inputResponses: { confirm: { action: 'accept', content } },
         requestState: 'sealed.state',
+        _meta: {},
       },
       OPTIONS,
     );

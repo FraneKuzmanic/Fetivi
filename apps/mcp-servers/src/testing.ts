@@ -25,6 +25,7 @@ import {
 } from '@fetivi/domain/testing';
 import { createMcpFastifyApp } from '@modelcontextprotocol/fastify';
 import { McpServer } from '@modelcontextprotocol/server';
+import { trace } from '@opentelemetry/api';
 import type { FastifyInstance } from 'fastify';
 import {
   type CryptoKey,
@@ -225,7 +226,16 @@ export function buildProbeServer(identity: GuestIdentity): McpServer {
       }),
       annotations: { readOnlyHint: true },
     },
-    async ({ topic }) => ({ topic, language: identity.language, scopes: identity.scopes }),
+    // A span stands in for the queries a real tool makes, so tests can see work nested in the
+    // server's span.
+    async ({ topic }) =>
+      trace.getTracer('fetivi-probe').startActiveSpan('probe work', async (span) => {
+        try {
+          return { topic, language: identity.language, scopes: identity.scopes };
+        } finally {
+          span.end();
+        }
+      }),
   );
   return server;
 }

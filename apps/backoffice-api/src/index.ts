@@ -7,6 +7,7 @@ import {
   createStripeGateway,
   ensureQueues,
 } from '@fetivi/domain';
+import { W3CTraceContextPropagator } from '@fetivi/telemetry';
 import { PgBoss } from 'pg-boss';
 import { buildApp } from './app';
 import { loadConfig } from './config';
@@ -26,6 +27,7 @@ const boss = new PgBoss({
   connectionString: config.DATABASE_URL,
   supervise: false,
   schedule: false,
+  openTelemetry: { propagateContext: true, propagator: new W3CTraceContextPropagator() },
 });
 boss.on('error', (error) => console.error('pg-boss error', error));
 await boss.start();

@@ -1,6 +1,7 @@
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { type GuestIdentity, type McpServerName, type Scope, serverUrl } from '@fetivi/domain';
+import { contextFromMeta, mcpSpan } from '@fetivi/telemetry';
 import {
   type AuthInfo,
   bearerAuthChallengeResponse,
@@ -10,6 +11,7 @@ import {
   type OAuthTokenVerifier,
   verifyBearerToken,
 } from '@modelcontextprotocol/server';
+import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { identityFrom } from '../auth/claims';
 import { metadataPath, protectedResourceMetadata } from '../auth/metadata';
@@ -26,6 +28,14 @@ export interface MountOptions {
 
 // The body is handed over already parsed, so headers that describe the raw body are dropped.
 const BODY_HEADERS = new Set(['content-length', 'transfer-encoding', 'connection']);
+
+const tracer = trace.getTracer('@fetivi/mcp-servers');
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
 
 function webRequest(request: FastifyRequest): Request {
   const headers = new Headers();
@@ -78,11 +88,38 @@ export function mountServer(app: FastifyInstance, opts: MountOptions): void {
           bearerAuthChallengeResponse(error, { requiredScopes, resourceMetadataUrl }),
         );
       }
-      const response = await handler.fetch(webRequest(request), {
-        authInfo,
-        parsedBody: request.body,
+      // One SERVER span per MCP request, parented by the trace context in `params._meta`
+      // (SEP-414), not the HTTP header, so the hop is traced as the protocol defines it. Every
+      // query and job send the tool makes runs inside it. A batch or notification has no target.
+      const message = asRecord(request.body);
+      const params = asRecord(message.params);
+      const method = typeof message.method === 'string' ? message.method : 'mcp';
+      const rawTarget = params.name ?? params.uri;
+      const { name, attributes } = mcpSpan(
+        method,
+        typeof rawTarget === 'string' ? rawTarget : null,
+      );
+      const parent = contextFromMeta(params._meta);
+      const span = tracer.startSpan(
+        name,
+        { kind: SpanKind.SERVER, attributes: { ...attributes, 'fetivi.mcp.server': opts.name } },
+        parent,
+      );
+      // The response may stream: the span ends when it is done, not when fetch resolves.
+      reply.raw.once('close', () => span.end());
+      return context.with(trace.setSpan(parent, span), async () => {
+        try {
+          const response = await handler.fetch(webRequest(request), {
+            authInfo,
+            parsedBody: request.body,
+          });
+          return await sendWeb(reply, response);
+        } catch (error) {
+          span.recordException(error as Error);
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          throw error;
+        }
       });
-      return sendWeb(reply, response);
     },
   });
 
