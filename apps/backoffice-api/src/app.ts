@@ -21,6 +21,7 @@ import { catalogRoutes } from './catalog/routes';
 import { hostNotificationRoutes } from './host/notifications';
 import { hostRoutes } from './host/routes';
 import { hostStatsRoutes } from './host/stats';
+import { hostSuggestionRoutes } from './host/suggestions';
 import { hostOfferRoutes } from './host-offers/routes';
 import { hostOrderRoutes } from './host-orders/routes';
 import { hostPaymentRoutes } from './host-payments/routes';
@@ -77,6 +78,7 @@ export function buildApp(deps: AppDeps) {
   app.register(authRoutes, { db, mailer, webOrigin, now });
   app.register(hostRoutes, { db });
   app.register(hostStatsRoutes, { db, now });
+  app.register(hostSuggestionRoutes, { db, now });
   app.register(propertyRoutes, { db, queue, now, guestOrigin, media: deps.media });
   app.register(mediaRoutes, { db, queue, now, media: deps.media });
   app.register(manualImportRoutes, { db, queue, now, model: deps.manualImportModel });

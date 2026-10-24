@@ -27,4 +27,5 @@ export * from './seeding';
 export * from './sessions';
 export * from './spaces';
 export * from './stays';
+export * from './suggestions';
 export * from './translations';

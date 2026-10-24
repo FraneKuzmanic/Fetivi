@@ -89,6 +89,10 @@ describe('system text', () => {
     expect(INSTRUCTIONS).not.toContain('menu');
   });
 
+  it('asks the model to note a missing property fact for the host (44)', () => {
+    expect(INSTRUCTIONS).toContain('also call note_missing_info with the closest topic');
+  });
+
   it('keeps the day plan to what the guest asked for and never calls it a booking', () => {
     expect(INSTRUCTIONS).toContain('update_plan only when the guest asks or agrees');
     expect(INSTRUCTIONS).toContain('A plan item is not a booking.');

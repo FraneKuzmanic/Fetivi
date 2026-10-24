@@ -5,6 +5,7 @@ import {
   GearSix,
   Handshake,
   type Icon,
+  Lightbulb,
   ListChecks,
   MapTrifold,
   Receipt,
@@ -64,6 +65,7 @@ function navItems(me: Me, unread: number): NavItem[] {
     { to: '/stays', label: 'Stays', icon: CalendarCheck, prefixes: ['/stays'] },
     { to: '/services', label: 'Services', icon: Storefront, prefixes: ['/services'] },
     { to: '/inbox', label: 'Inbox', icon: Tray, prefixes: ['/inbox'], badge: unread },
+    { to: '/suggestions', label: 'Suggestions', icon: Lightbulb, prefixes: ['/suggestions'] },
     { to: '/settings/notifications', label: 'Settings', icon: GearSix, prefixes: ['/settings'] },
   ];
 }

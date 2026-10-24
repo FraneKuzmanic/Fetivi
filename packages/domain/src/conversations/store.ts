@@ -9,6 +9,7 @@ import {
 } from '../db/schema/conversations';
 import { recordAnswers } from '../feedback/store';
 import type { GuestProjection } from '../projection/projection';
+import { recordContentGaps } from '../suggestions/host/store';
 
 export class ConversationRuleError extends Error {
   override name = 'ConversationRuleError';
@@ -126,6 +127,8 @@ export async function appendTurn(db: Db, input: AppendTurnInput): Promise<void> 
     // 43: one feedback row per assistant answer, topics recomputed from the full parts.
     answers.push(...input.messages.filter((m) => m.role === 'assistant'));
     await recordAnswers(tx, input.conversationId, answers, input.now);
+    // 44: property facts Fetivi could not answer, as topic codes per Stay.
+    await recordContentGaps(tx, input.conversationId, answers, input.now);
     await tx
       .update(conversations)
       .set({

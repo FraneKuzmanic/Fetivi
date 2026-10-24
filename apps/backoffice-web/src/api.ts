@@ -51,6 +51,7 @@ import type {
   SeedingSource,
   SourceRunResult,
 } from '@fetivi/domain/seeding-vocabulary';
+import type { GapTopic } from '@fetivi/domain/suggestion-vocabulary';
 import type {
   Amenity,
   Bed,
@@ -892,6 +893,21 @@ export interface AdminFeedbackStats {
   units: UnitAnswerRow[];
 }
 
+/** A content-gap Suggestion (44): Fetivi's sentence and a wizard link, never guest wording. */
+export interface HostSuggestion {
+  id: string;
+  unitId: string;
+  unitName: string;
+  propertyName: string;
+  topic: GapTopic;
+  stepId: WizardStepId;
+  fieldId: GapTopic;
+  stayCount: number;
+  text: string;
+  wizardPath: string;
+  createdAt: string;
+}
+
 export const curation = {
   list: (filter: { status: CurationTab; kind?: CurationKind; destinationId?: string }) => {
     const query = new URLSearchParams({ status: filter.status });
@@ -1083,6 +1099,7 @@ export const host = {
   },
   stay: (id: string) => api<Stay>(`/api/host/stays/${id}`),
   unitStats: (id: string) => api<UnitStats>(`/api/host/units/${id}/stats`),
+  suggestions: () => api<{ suggestions: HostSuggestion[] }>('/api/host/suggestions'),
   createStay: (unitId: string, body: StayInput) =>
     post<Stay>(`/api/host/units/${unitId}/stays`, body),
   updateStay: (id: string, body: StayPatch) => patch<Stay>(`/api/host/stays/${id}`, body),

@@ -27,6 +27,7 @@ export * from './services';
 export * from './situation';
 export * from './spaces';
 export * from './stays';
+export * from './suggestions/host';
 export * from './time';
 export * from './tips';
 export * from './tokens';

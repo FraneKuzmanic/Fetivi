@@ -28,6 +28,7 @@ import {
 import type { FastifyBaseLogger } from 'fastify';
 import { HttpError } from '../http-error';
 import type { GuestAnswer } from '../loop/elicitation';
+import { gapTools } from '../loop/gap-topics';
 import { cancelOpenCalls, createLoop, type LoopResult, openCalls } from '../loop/run';
 import { type FirstPartyListed, pausedTools, toAiTools } from '../mcp/tools';
 import {
@@ -137,9 +138,12 @@ async function withTurn(
     const listed = await turnTools.list();
     const calls: string[] = [];
     const mcpTools = toAiTools(listed, { tools: turnTools, onCall: (n) => calls.push(n) });
-    const shownTools = presentationTools({ readProjection: () => turnTools.readProjection() });
+    const shownTools = {
+      ...presentationTools({ readProjection: () => turnTools.readProjection() }),
+      ...gapTools(),
+    };
     for (const name of Object.keys(shownTools)) {
-      if (name in mcpTools) throw new Error(`A server exposes the presentation tool ${name}`);
+      if (name in mcpTools) throw new Error(`A server exposes the host-side tool ${name}`);
     }
     return await body({
       model,

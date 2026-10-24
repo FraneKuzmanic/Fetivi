@@ -36,6 +36,17 @@ describe('endsWithPresentation', () => {
     ).toBe(false);
   });
 
+  it('stops after the silent gap note with text, and continues otherwise', async () => {
+    expect(await endsWithPresentation({ steps: [step('note_missing_info')] })).toBe(true);
+    expect(
+      await endsWithPresentation({ steps: [step('note_missing_info', 'suggest_replies')] }),
+    ).toBe(true);
+    expect(await endsWithPresentation({ steps: [silent('note_missing_info')] })).toBe(false);
+    expect(
+      await endsWithPresentation({ steps: [step('note_missing_info', 'search_places')] }),
+    ).toBe(false);
+  });
+
   it('lets the model write its answer when it showed chips without any text', async () => {
     expect(await endsWithPresentation({ steps: [silent('suggest_replies')] })).toBe(false);
     expect(

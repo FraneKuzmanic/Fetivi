@@ -32,6 +32,7 @@ import { NewStayPage } from './host/stays/NewStayPage';
 import { ConfirmProposalPage } from './host/stays/proposed/ConfirmProposalPage';
 import { StayPage } from './host/stays/StayPage';
 import { StaysPage } from './host/stays/StaysPage';
+import { SuggestionsPage } from './host/suggestions/SuggestionsPage';
 import { UnitPage } from './host/UnitPage';
 import { ImportPage } from './host/wizard/import/ImportPage';
 import { WizardPage } from './host/wizard/WizardPage';
@@ -188,6 +189,14 @@ export function App() {
           element={
             <Page area="host">
               <InboxPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/suggestions"
+          element={
+            <Page area="host">
+              <SuggestionsPage />
             </Page>
           }
         />

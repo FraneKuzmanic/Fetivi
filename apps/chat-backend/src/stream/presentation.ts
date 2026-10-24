@@ -1,4 +1,4 @@
-import type { GuestProjection } from '@fetivi/domain';
+import { GAP_TOOL_NAME, type GuestProjection } from '@fetivi/domain';
 import { choiceCard, followUpChips, PROPERTY_INFO_TOPICS, propertyInfo } from '@fetivi/ui/payloads';
 import {
   type PrepareStepFunction,
@@ -49,8 +49,12 @@ export function presentationTools(deps: {
 const answered = (steps: readonly StepResult<ToolSet>[]) =>
   steps.some((s) => s.text.trim().length > 0);
 
-/** Ends the turn like a presentation call: the card is the answer's last part. */
-const endsTurn = (name: string) => isPresentationTool(name) || name === 'show_property_info';
+/**
+ * Ends the turn like a presentation call: the card is the answer's last part. The silent gap note
+ * (44) also ends it, so "I don't have that" plus the note costs no extra round trip.
+ */
+const endsTurn = (name: string) =>
+  isPresentationTool(name) || name === 'show_property_info' || name === GAP_TOOL_NAME;
 
 /**
  * Stops the loop after a step whose calls are all presentation calls or the property card: the

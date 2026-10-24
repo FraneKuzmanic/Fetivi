@@ -51,6 +51,14 @@ A Host pastes or uploads an existing house manual; Fetivi turns it into Drafts f
 A value or Info block proposed from a house manual, marked "From your manual". Nothing in a Draft reaches guests until the Host confirms it; confirming a block starts its Translation.
 _Avoid_: suggestion (that is Suggestions' term). The catalog's `draft` Curation item, which the drafting job fills from a venue's own pages, is a different thing and is not a Draft.
 
+**Content gap**:
+A property fact a guest asked about that the Host never entered, noted by Fetivi as a topic code (a Setup wizard field such as laundry or parking) once per Stay, never with the guest's or Fetivi's wording (`content_gaps`). It outlives the Conversation.
+_Avoid_: missing question, unanswered question
+
+**Suggestion**:
+What a Host sees once the same Content gap has come up in at least two Stays of a Unit: one sentence written by Fetivi in the Host's back-office language, with a button to the Setup wizard field. It is resolved when the Host fills that field; later gaps count afresh. The code names it `HostSuggestion` / `host_suggestions`, since `suggestion` is taken by Plan items.
+_Avoid_: tip, recommendation, insight
+
 ## Local knowledge
 
 **Destination**:
