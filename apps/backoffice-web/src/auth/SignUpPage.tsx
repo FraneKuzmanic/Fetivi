@@ -32,7 +32,7 @@ export function SignUpPage() {
           <p className="muted">Not there in a minute? Check your spam folder.</p>
           <div className="auth-actions">
             <ResendConfirmation email={sentTo} label="Send it again" />
-            <button type="button" className="ghost" onClick={() => setSentTo(null)}>
+            <button type="button" onClick={() => setSentTo(null)}>
               Use a different email
             </button>
           </div>
@@ -51,7 +51,7 @@ export function SignUpPage() {
   }
 
   return (
-    <AuthPage title="Create a host account">
+    <AuthPage title="Create a host account" intro>
       <form onSubmit={submit}>
         <EmailField value={email} onChange={setEmail} invalid={!!error} errorId="sign-up-error" />
         <PasswordField

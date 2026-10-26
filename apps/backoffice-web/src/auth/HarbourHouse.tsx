@@ -6,10 +6,10 @@ const SHUTTER = '#2f9fdc';
 const SEA = '#afdbf5';
 const QUAY = '#c9d2e0';
 
-export function HarbourHouse() {
+export function HarbourHouse({ className = 'auth-illustration' }: { className?: string }) {
   return (
     <svg
-      className="auth-illustration"
+      className={className}
       viewBox="0 0 360 260"
       aria-hidden="true"
       focusable="false"

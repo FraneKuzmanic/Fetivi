@@ -22,8 +22,6 @@
   --warning-border: #f2d49b;
   --success: #0f7b4f;
   --success-bg: #e3f5ec;
-  /* The mascot's shirt stripe; the signed-out pages' band only. */
-  --stripe: #2f9fdc;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -258,13 +256,44 @@ button svg,
   background: var(--white);
 }
 
-/* The striped-shirt band along the top of the panel. */
+/* The striped-shirt band along the top of the header and the panel: 4px shirt blue, 4px white. */
+.auth-masthead::before,
 .auth-side::before {
   content: "";
   position: absolute;
   inset: 0 0 auto;
   height: 20px;
-  background: repeating-linear-gradient(to bottom, var(--stripe) 0 4px, var(--white) 4px 8px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='20'%3E%3Crect width='8' height='20' fill='%23fff'/%3E%3Cpath fill='%232f9fdc' d='M0 0h8v4H0zM0 8h8v4H0zM0 16h8v4H0z'/%3E%3C/svg%3E")
+    repeat-x;
+}
+
+/* On a phone: Fetivi on the quay, the wordmark and a small house as one header. */
+.auth-masthead {
+  position: relative;
+  padding: 32px 16px 14px;
+  background: var(--sky-100);
+  border-bottom: 1px solid var(--sky-200);
+}
+
+.auth-masthead-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auth-masthead-scene {
+  width: 140px;
+  flex: none;
+}
+
+.auth-masthead-line {
+  max-width: 24ch;
+  margin-top: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: balance;
 }
 
 .auth ::selection {
@@ -276,7 +305,7 @@ button svg,
   width: 100%;
   max-width: 26rem;
   margin: 0 auto;
-  padding: 32px 16px 48px;
+  padding: 24px 16px 48px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -298,6 +327,14 @@ button svg,
   width: 48px;
   height: 48px;
   flex: none;
+}
+
+.auth-masthead .wordmark {
+  margin: 0 0 8px;
+}
+
+.auth-main > .wordmark {
+  display: none;
 }
 
 .auth-main h1 {
@@ -396,6 +433,13 @@ button svg,
   padding-top: 8px;
 }
 
+.auth-guest {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-200);
+  font-size: 14px;
+}
+
 .auth-note {
   display: flex;
   flex-direction: column;
@@ -450,26 +494,8 @@ button svg,
   font-weight: 600;
 }
 
-/* On a phone the panel is a scene above the form: the picture only, the words come from 900px. */
 .auth-side {
-  order: -1;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40px 16px 20px;
-  background: var(--sky-100);
-  border-bottom: 1px solid var(--sky-200);
-}
-
-.auth-side h2,
-.auth-side p {
   display: none;
-}
-
-.auth-illustration {
-  width: 100%;
-  max-width: 260px;
 }
 
 @media (min-width: 900px) {
@@ -478,12 +504,17 @@ button svg,
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
+  .auth-masthead {
+    display: none;
+  }
+
   .auth-main {
     align-self: center;
     padding: 64px 32px;
   }
 
-  .wordmark {
+  .auth-main > .wordmark {
+    display: flex;
     gap: 14px;
     margin-bottom: 24px;
     font-size: 36px;
@@ -495,18 +526,14 @@ button svg,
   }
 
   .auth-side {
-    order: 0;
-    align-items: flex-start;
+    position: relative;
+    display: flex;
+    flex-direction: column;
     justify-content: center;
     gap: 16px;
     padding: 64px clamp(32px, 6vw, 96px);
-    border-bottom: 0;
+    background: var(--sky-100);
     border-left: 1px solid var(--sky-200);
-  }
-
-  .auth-side h2,
-  .auth-side p {
-    display: block;
   }
 
   .auth-side h2 {
@@ -521,6 +548,7 @@ button svg,
   }
 
   .auth-illustration {
+    width: 100%;
     max-width: 420px;
     margin-bottom: 16px;
   }

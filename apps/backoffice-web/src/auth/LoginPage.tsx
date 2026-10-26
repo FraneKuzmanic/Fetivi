@@ -68,6 +68,9 @@ export function LoginPage() {
       <p className="auth-alt">
         New host? <Link to="/sign-up">Create an account</Link>
       </p>
+      <p className="auth-guest muted">
+        Staying at a Fetivi property? Open the link or QR code from your host instead.
+      </p>
     </AuthPage>
   );
 }
