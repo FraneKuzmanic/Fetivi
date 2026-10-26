@@ -433,13 +433,6 @@ button svg,
   padding-top: 8px;
 }
 
-.auth-guest {
-  margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--gray-200);
-  font-size: 14px;
-}
-
 .auth-note {
   display: flex;
   flex-direction: column;
