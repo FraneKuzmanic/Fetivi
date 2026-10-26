@@ -13,9 +13,9 @@ const render = (path: string) =>
 describe('backoffice-web App', () => {
   it('renders the login page with the wordmark', () => {
     const html = render('/login');
-    expect(html).toContain('Fetivi');
-    expect(html).toContain('Back office');
-    expect(html).toContain('Log in');
+    expect(html).toMatch(/<p class="wordmark"><svg class="wordmark-mascot".*?<\/svg>Fetivi<\/p>/s);
+    expect(html).not.toContain('Back office');
+    expect(html).toMatch(/<h1[^>]*>Log in<\/h1>/);
   });
 
   it('shows the password hint on sign-up', () => {

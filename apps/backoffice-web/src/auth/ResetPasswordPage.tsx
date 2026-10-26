@@ -1,8 +1,9 @@
-import { Wordmark } from '@fetivi/ui';
 import { type FormEvent, type ReactNode, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { auth } from '../api';
 import { useAction } from '../useAction';
+import { AuthPage } from './AuthPage';
+import { PasswordField } from './fields';
 
 export function ResetPasswordPage() {
   const [params] = useSearchParams();
@@ -13,7 +14,7 @@ export function ResetPasswordPage() {
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (!token) return;
+    if (!token || busy) return;
     void run(async () => {
       await auth.confirmReset(token, password);
       setDone(true);
@@ -29,39 +30,43 @@ export function ResetPasswordPage() {
     );
   } else if (done) {
     body = (
-      <p>
-        Your password is changed. <Link to="/login">Log in</Link>
-      </p>
+      <Link className="button primary" to="/login">
+        Log in
+      </Link>
     );
   } else {
     body = (
       <form onSubmit={submit}>
-        <label>
-          New password
-          <input
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={10}
-            maxLength={128}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <small>Use at least 10 characters.</small>
-        </label>
-        {error ? <p role="alert">{error}</p> : null}
-        <button type="submit" disabled={busy}>
-          Set new password
+        <PasswordField
+          label="New password"
+          autoComplete="new-password"
+          isNew
+          hint="Use at least 10 characters."
+          value={password}
+          onChange={setPassword}
+          invalid={!!error}
+          errorId="reset-error"
+        />
+        {error ? (
+          <p role="alert" id="reset-error" className="form-error">
+            {error}
+          </p>
+        ) : null}
+        <button type="submit" className="primary" aria-disabled={busy || undefined}>
+          {busy ? 'Saving…' : 'Set new password'}
         </button>
       </form>
     );
   }
 
   return (
-    <main>
-      <Wordmark subtitle="Back office" />
-      <h2>Choose a new password</h2>
+    <AuthPage title={done ? 'Your password is changed' : 'Choose a new password'}>
       {body}
-    </main>
+      {done ? null : (
+        <p className="auth-alt">
+          <Link to="/login">Back to log in</Link>
+        </p>
+      )}
+    </AuthPage>
   );
 }

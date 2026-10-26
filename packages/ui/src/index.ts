@@ -35,4 +35,5 @@ export {
 } from './components/respond-order-card/RespondOrderCard';
 export { WebResults, type WebResultsLabels } from './components/source-chips/WebResults';
 export { WeatherCard, type WeatherLabels } from './components/weather-card/WeatherCard';
+export { Mascot } from './Mascot';
 export { Wordmark } from './Wordmark';

@@ -1,8 +1,9 @@
-import { Wordmark } from '@fetivi/ui';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { auth } from '../api';
 import { useAction } from '../useAction';
+import { AuthPage } from './AuthPage';
+import { EmailField } from './fields';
 
 export function VerifyEmailPage() {
   const [params] = useSearchParams();
@@ -23,47 +24,55 @@ export function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <main>
-      <Wordmark subtitle="Back office" />
-      <h2>Confirm your email</h2>
-      {state === 'checking' ? <p>Checking your link…</p> : null}
+    <AuthPage title={state === 'verified' ? 'Your email is confirmed' : 'Confirm your email'}>
+      {state === 'checking' ? <p role="status">Checking your link…</p> : null}
       {state === 'verified' ? (
-        <p>
-          Your email is confirmed. <Link to="/login">Log in</Link>
-        </p>
+        <Link className="button primary" to="/login">
+          Log in
+        </Link>
       ) : null}
       {state === 'invalid' ? <ResendForm /> : null}
-    </main>
+      {state === 'verified' ? null : (
+        <p className="auth-alt">
+          <Link to="/login">Back to log in</Link>
+        </p>
+      )}
+    </AuthPage>
   );
 }
 
 function ResendForm() {
   const { busy, error, run } = useAction();
   const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (busy) return;
     void run(async () => {
       await auth.resendVerification(email);
-      setSent(true);
+      setSentTo(email);
     });
   }
 
   return (
     <>
       <p>This link is invalid or has expired.</p>
-      {sent ? (
-        <p>If your account still needs confirming, we sent a new link.</p>
+      {sentTo ? (
+        <p role="status">
+          If <strong className="address">{sentTo}</strong> still needs confirming, we sent a new
+          link.
+        </p>
       ) : (
         <form onSubmit={submit}>
-          <label>
-            Email
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          </label>
-          {error ? <p role="alert">{error}</p> : null}
-          <button type="submit" disabled={busy}>
-            Send a new link
+          <EmailField value={email} onChange={setEmail} invalid={!!error} errorId="resend-error" />
+          {error ? (
+            <p role="alert" id="resend-error" className="form-error">
+              {error}
+            </p>
+          ) : null}
+          <button type="submit" className="primary" aria-disabled={busy || undefined}>
+            {busy ? 'Sending…' : 'Send a new link'}
           </button>
         </form>
       )}

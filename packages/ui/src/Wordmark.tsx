@@ -1,8 +1,11 @@
-export function Wordmark({ subtitle }: { subtitle?: string }) {
+import { Mascot } from './Mascot';
+
+/** The Fetivi name with the mascot as its logo mark; the page's own heading follows it. */
+export function Wordmark() {
   return (
-    <header>
-      <h1>Fetivi</h1>
-      {subtitle ? <p>{subtitle}</p> : null}
-    </header>
+    <p className="wordmark">
+      <Mascot className="wordmark-mascot" />
+      Fetivi
+    </p>
   );
 }
