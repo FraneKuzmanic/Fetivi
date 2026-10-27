@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { Settings } from 'luxon';
+import { afterEach, describe, expect, it } from 'vitest';
 import { digestSlotAt, dueDigestSlot } from './slots';
 
 const ZAGREB = 'Europe/Zagreb';
@@ -53,5 +54,31 @@ describe('digest slots in the property timezone', () => {
 
   it('is null only without times', () => {
     expect(dueDigestSlot([], ZAGREB, new Date('2026-07-10T12:00:00Z'))).toBeNull();
+  });
+
+  // Luxon guesses an ambiguous or missing local time from the zone's offset at the real "now", so
+  // the answer must not change with the season the code runs in.
+  describe.each([
+    ['in summer', '2026-07-10T12:00:00Z'],
+    ['in winter', '2026-01-15T12:00:00Z'],
+  ])('whatever the season the code runs %s', (_, now) => {
+    const realNow = Settings.now;
+    afterEach(() => {
+      Settings.now = realNow;
+    });
+
+    it('takes the first of the two 02:30s in the fall-back overlap', () => {
+      Settings.now = () => Date.parse(now);
+      expect(digestSlotAt('2026-10-25', '02:30', ZAGREB).toISOString()).toBe(
+        '2026-10-25T00:30:00.000Z',
+      );
+    });
+
+    it('moves a spring-forward gap time to 03:30 local', () => {
+      Settings.now = () => Date.parse(now);
+      expect(digestSlotAt('2026-03-29', '02:30', ZAGREB).toISOString()).toBe(
+        '2026-03-29T01:30:00.000Z',
+      );
+    });
   });
 });
