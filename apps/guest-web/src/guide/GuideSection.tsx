@@ -2,13 +2,13 @@ import type { GuestProjection } from '@fetivi/domain/projection-types';
 import type { BlockCategory } from '@fetivi/domain/vocabulary';
 import { InfoMedia, PropertyInfoCard } from '@fetivi/ui';
 import { type PropertyInfoTopic, propertyInfo, TOPIC_CATEGORY } from '@fetivi/ui/payloads';
-import { CaretLeft } from '@phosphor-icons/react';
-import { useEffect, useRef } from 'react';
+import { Car, CaretDown, CaretLeft, Check } from '@phosphor-icons/react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 import { MascotSays } from '../shell/Mascot';
 import { useSpace } from '../space';
-import { BlockBody } from './BlockBody';
+import { BlockBody, topicsOf } from './BlockBody';
 import { UnitGate } from './GuideTab';
 import { mediaUrl } from './guide-api';
 import { HostPicksSection } from './HostPicksSection';
@@ -21,20 +21,56 @@ const TOPIC_OF = Object.fromEntries(
   Object.entries(TOPIC_CATEGORY).map(([topic, category]) => [category, topic]),
 ) as Partial<Record<BlockCategory, PropertyInfoTopic>>;
 
-/** The host's blocks of one section: a title, the Markdown and the host's photos and videos. */
-function Blocks({ blocks }: { blocks: GuestProjection['blocks'] }) {
+/**
+ * The host's blocks of one section as topics that open in place: the title and, while closed,
+ * the topic lines inside it; open, the Markdown and the host's photos and videos. A section with
+ * a single block shows it open.
+ */
+export function Blocks({ blocks }: { blocks: GuestProjection['blocks'] }) {
+  if (blocks.length === 0) return null;
   return (
-    <>
+    <div className="guide-topics">
       {blocks.map((block, i) => (
         // Blocks carry no id; their order within a section is stable for one response.
         // biome-ignore lint/suspicious/noArrayIndexKey: see above.
-        <section key={i} className="guide-block">
-          <h2>{block.title}</h2>
-          <BlockBody markdown={block.body} />
-          <InfoMedia media={block.media} mediaUrl={mediaUrl} />
-        </section>
+        <Topic key={i} block={block} startOpen={blocks.length === 1} />
       ))}
-    </>
+    </div>
+  );
+}
+
+function Topic({
+  block,
+  startOpen,
+}: {
+  block: GuestProjection['blocks'][number];
+  startOpen: boolean;
+}) {
+  const [open, setOpen] = useState(startOpen);
+  const bodyId = useId();
+  const topics = topicsOf(block.body);
+  return (
+    <section className="guide-topic" data-open={open}>
+      <h2>
+        <button
+          type="button"
+          className="guide-topic-toggle"
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <span className="guide-topic-text">
+            <span className="guide-topic-title">{block.title}</span>
+            {topics.length > 0 && <span className="guide-topic-hint">{topics.join(' · ')}</span>}
+          </span>
+          <CaretDown size={20} aria-hidden="true" className="guide-topic-caret" />
+        </button>
+      </h2>
+      <div id={bodyId} className="guide-topic-body" hidden={!open}>
+        <BlockBody markdown={block.body} />
+        <InfoMedia media={block.media} mediaUrl={mediaUrl} />
+      </div>
+    </section>
   );
 }
 
@@ -49,19 +85,27 @@ function Essentials({ unit }: { unit: GuestProjection }) {
           <h2>{t('guide.amenities')}</h2>
           <ul className="guide-amenities">
             {amenities.map((a) => (
-              <li key={a.amenity}>
-                {t(`amenity.${a.amenity}`)}
-                {a.note ? <span className="guide-note"> · {a.note}</span> : null}
+              <li key={a.amenity} className="guide-amenity">
+                <Check aria-hidden="true" weight="bold" className="guide-amenity-check" />
+                <span>
+                  {t(`amenity.${a.amenity}`)}
+                  {a.note ? <span className="guide-note"> · {a.note}</span> : null}
+                </span>
               </li>
             ))}
           </ul>
         </section>
       ) : null}
       {hasParking ? (
-        <section className="guide-block">
-          <h2>{t('guide.parking')}</h2>
-          {parking.type ? <p>{t(`parkingType.${parking.type}`)}</p> : null}
-          {parking.notes ? <p className="guide-note">{parking.notes}</p> : null}
+        <section className="guide-block guide-parking">
+          <span className="guide-parking-icon">
+            <Car aria-hidden="true" />
+          </span>
+          <div>
+            <h2>{t('guide.parking')}</h2>
+            {parking.type ? <p>{t(`parkingType.${parking.type}`)}</p> : null}
+            {parking.notes ? <p className="guide-note">{parking.notes}</p> : null}
+          </div>
         </section>
       ) : null}
     </>
@@ -123,15 +167,24 @@ export function GuideSection() {
   }, [slug]);
 
   if (!section) return <Navigate to="/guide" replace />;
+  const SectionIcon = section.icon;
   return (
     <section className="guide" aria-labelledby="tab-title">
       <Link to="/guide" className="guide-back">
         <CaretLeft size={20} aria-hidden="true" />
         {t('guide.back')}
       </Link>
-      <h1 id="tab-title" ref={heading} tabIndex={-1}>
-        {t(`guide.${section.category}`)}
-      </h1>
+      <header className="guide-header">
+        <span className="guide-icon guide-icon-lg" data-group={section.group}>
+          <SectionIcon aria-hidden="true" />
+        </span>
+        <div className="guide-header-text">
+          <h1 id="tab-title" ref={heading} tabIndex={-1}>
+            {t(`guide.${section.category}`)}
+          </h1>
+          <p className="guide-header-hint">{t(`guide.hint_${section.category}`)}</p>
+        </div>
+      </header>
       <UnitGate state={state} reload={reload}>
         {(unit) => <SectionContent category={section.category} unit={unit} />}
       </UnitGate>

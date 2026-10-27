@@ -1,6 +1,7 @@
 import { isFinalOrderStatus } from '@fetivi/domain/order-vocabulary';
 import { ReceiptCard } from '@fetivi/ui';
 import type { OrderSummaryPayload } from '@fetivi/ui/payloads';
+import { Ticket } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
@@ -27,9 +28,9 @@ const settling = (o: OrderSummaryPayload) =>
  * Reservations & orders: every Order of the space with both statuses. A pay-online Order the
  * guest can still pay has Pay now. Back from Stripe (`?checkout=<id>`), the list is re-read every
  * 2 s for up to a minute until that Order's payment settles. After checkout an unresolved Order
- * also has its actions (OrderActions).
+ * also has its actions (OrderActions). `onEmpty` tells My trip whether there are no Orders.
  */
-export function OrdersSection() {
+export function OrdersSection({ onEmpty }: { onEmpty: (empty: boolean) => void }) {
   const { t, i18n } = useTranslation();
   const [orders, setOrders] = useState<Orders>({ status: 'loading' });
   const [params, setParams] = useSearchParams();
@@ -63,6 +64,9 @@ export function OrdersSection() {
   };
 
   useEffect(load, [load]);
+
+  const isEmpty = orders.status === 'ready' && orders.orders.length === 0;
+  useEffect(() => onEmpty(isEmpty), [isEmpty, onEmpty]);
 
   useEffect(() => {
     if (!params.has('checkout') && !params.has('order')) return;
@@ -100,7 +104,12 @@ export function OrdersSection() {
 
   return (
     <section className="trip-section" aria-labelledby="trip-orders">
-      <h2 id="trip-orders">{t('trip.orders')}</h2>
+      <h2 id="trip-orders" className="trip-heading">
+        <span className="trip-heading-icon">
+          <Ticket aria-hidden="true" />
+        </span>
+        {t('trip.orders')}
+      </h2>
       {waiting && <MascotSays>{t('trip.checkoutConfirming')}</MascotSays>}
       {orders.status === 'loading' ? (
         <p className="status">{t('common.loading')}</p>
@@ -111,8 +120,8 @@ export function OrdersSection() {
             {t('chat.retry')}
           </button>
         </div>
-      ) : orders.orders.length === 0 ? (
-        <MascotSays>{t('trip.noOrders')}</MascotSays>
+      ) : isEmpty ? (
+        <p className="trip-empty">{t('trip.nothingBooked')}</p>
       ) : (
         <>
           {orders.orders.some((o) => !isFinalOrderStatus(o.status)) && (

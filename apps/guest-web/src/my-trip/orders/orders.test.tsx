@@ -91,7 +91,7 @@ describe('My trip → Reservations & orders', () => {
   it('says nothing is booked yet', async () => {
     stubOrders(() => json({ orders: [] }));
     await mount();
-    await vi.waitFor(() => expect(host.textContent).toContain('Nothing booked yet.'));
+    await vi.waitFor(() => expect(host.textContent).toContain('Nothing booked yet'));
     expect(host.querySelector('h1')?.textContent).toBe('My trip');
     expect([...host.querySelectorAll('h2')].map((h) => h.textContent)).toEqual([
       'Plan',

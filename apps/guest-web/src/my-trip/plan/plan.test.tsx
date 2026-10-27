@@ -142,13 +142,22 @@ describe('My trip → Plan', () => {
     expect(host.textContent).toContain('Nothing planned yet');
     expect(askButtons()).toHaveLength(2);
     expect(host.querySelectorAll('.fv-plan input, .fv-plan textarea')).toHaveLength(0);
+    // With a plan, Fetivi says nothing; the empty bookings get only their quiet line.
+    expect(host.querySelector('.mascot-says')).toBeNull();
+    expect(host.querySelector('.trip-empty')?.textContent).toBe('Nothing booked yet');
   });
 
-  it('shows the mascot when nothing is planned', async () => {
+  it('has Fetivi speak once, with the way to Chat, when nothing is planned or booked', async () => {
     stubApi(() => json(planOf([])));
     await mount();
     await vi.waitFor(() => expect(host.textContent).toContain("Tell me in Chat what you'd like"));
     expect(host.querySelector('.fv-plan')).toBeNull();
+    expect(host.querySelectorAll('.mascot-says')).toHaveLength(1);
+    expect([...host.querySelectorAll('.trip-empty')].map((p) => p.textContent)).toEqual([
+      'Nothing planned yet',
+      'Nothing booked yet',
+    ]);
+    expect(host.querySelector('a[href="/chat"]')?.textContent).toBe('Plan with Fetivi');
   });
 
   it('offers a retry when offline', async () => {

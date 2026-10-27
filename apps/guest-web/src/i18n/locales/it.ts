@@ -3,13 +3,12 @@ import type { Messages } from './en';
 
 export const it: Messages = {
   picker: {
-    title: 'Scegli la lingua',
-    mascot: 'Bok! Sono Fetivi. In che lingua parliamo?',
+    mascot: 'In che lingua parliamo?',
     yourLanguage: 'La lingua del tuo telefono',
   },
   pin: {
     title: 'Inserisci il PIN',
-    hint: 'Il tuo host ti ha inviato un PIN di sei cifre.',
+    hint: 'Il tuo host ti ha inviato un PIN di sei cifre. Scrivilo qui e ci siamo.',
     label: 'PIN',
     submit: 'Continua',
     wrong: 'Questo PIN non corrisponde. Controlla il messaggio del tuo host e riprova.',
@@ -41,7 +40,7 @@ export const it: Messages = {
   chat: {
     title: 'Chat',
     welcome:
-      "Bok! Sono Fetivi, un assistente AI per il tuo soggiorno. Chiedimi dell'appartamento, per esempio il Wi-Fi, il check-in, le regole della casa o come funzionano le cose, e della zona intorno a te. Se non so qualcosa, posso chiederlo al tuo host per te.",
+      "Bok! Sono Fetivi, l'assistente AI per il tuo soggiorno. Chiedimi qualsiasi cosa sull'appartamento o sulla zona.",
     you: 'Tu',
     fetivi: 'Fetivi',
     typing: 'Fetivi sta scrivendo…',
@@ -251,7 +250,7 @@ export const it: Messages = {
     invalid: 'Questo link non funziona. Puoi disattivare i consigli nelle Impostazioni.',
   },
   recovery: {
-    ask: 'Hai già usato Fetivi su un altro telefono? Ricevi un link via email',
+    ask: 'Hai già usato Fetivi su un altro telefono? Sposta qui la tua chat',
     label: 'La tua email',
     send: 'Invia link',
     sending: 'Invio…',
@@ -281,13 +280,16 @@ export const it: Messages = {
     tips: 'Un consiglio locale al giorno via email',
     deviceTitle: 'Apri su un altro dispositivo',
     deviceIntro:
-      'Ti manderò via email un link che apre la chat e le prenotazioni su un altro telefono o computer. Quando lo apri lì, questo dispositivo esce da Fetivi.',
+      'Ti invio per email un link che apre la tua chat e le tue prenotazioni su un altro telefono o computer.',
     sendLink: 'Mandami un link',
     linkSent: 'Inviato. Controlla la posta; il link vale 1 ora.',
     evaluationTitle: 'Aiuta a migliorare Fetivi',
     evaluation: 'Conserva la mia conversazione per la ricerca su Fetivi',
-    evaluationNote:
-      'Spento: la chat viene cancellata 30 giorni dopo il check-out. Acceso: una copia senza la tua email né le tue preferenze viene conservata per uno studio universitario su Fetivi.',
+    deviceSignOut: 'Quando lo apri lì, questo dispositivo esce da Fetivi.',
+    needsEmail: 'Disponibile quando avrò la tua email.',
+    evaluationOff: 'Disattivato: la tua chat viene eliminata 30 giorni dopo il check-out.',
+    evaluationOn:
+      'Attivato: una copia senza la tua email né le tue preferenze viene conservata per uno studio universitario su Fetivi.',
   },
   cancelOrder: {
     heading: 'Annullare questa prenotazione?',
@@ -388,10 +390,6 @@ export const it: Messages = {
   trip: {
     plan: 'Piano',
     orders: 'Prenotazioni e ordini',
-    noOrders:
-      'Ancora niente di prenotato. Quando trovi un’escursione che ti piace, chiedimelo in Chat e la prenotiamo insieme.',
-    noPlan:
-      'Ancora niente in programma. Dimmi in Chat cosa ti piacerebbe fare e lo aggiungo alle tue giornate.',
     today: 'Oggi',
     anyTime: 'In qualsiasi momento',
     nothingPlanned: 'Ancora niente in programma',
@@ -406,6 +404,10 @@ export const it: Messages = {
     cancel: 'Annulla prenotazione',
     answerTerms: 'Rispondi alle nuove condizioni',
     actionFailed: "Non ha funzionato. La prenotazione potrebbe essere cambiata: ecco com'è adesso.",
+    empty:
+      'Qui compariranno le tue giornate e le tue prenotazioni. Dimmi in chat cosa ti piacerebbe fare e lo pianifico o lo prenoto con te.',
+    emptyAction: 'Pianifica con Fetivi',
+    nothingBooked: 'Ancora nessuna prenotazione',
   },
   mcpApps: {
     frameTitle: 'Risultati dei traghetti da Ferryhopper',
@@ -485,6 +487,9 @@ export const it: Messages = {
     tipsHeading: 'Consigli sul quartiere',
     amenities: "Nell'appartamento",
     parking: 'Parcheggio',
+    group_stay: 'Il tuo appartamento',
+    group_places: 'Luoghi',
+    group_help: 'Aiuto',
   },
   info: {
     topic_arrival: "Dettagli d'arrivo",
@@ -565,5 +570,10 @@ export const it: Messages = {
     free_street: 'Gratuito in strada',
     paid_street: 'A pagamento in strada',
     public_garage: 'Garage pubblico nelle vicinanze',
+  },
+  intro: {
+    title: 'Bok! Sono Fetivi.',
+    body: "Sono l'assistente AI per il tuo soggiorno. Conosco l'appartamento e la città e ti aiuterò a sentirti a casa.",
+    start: 'Andiamo',
   },
 };

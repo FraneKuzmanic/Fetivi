@@ -88,7 +88,7 @@ describe('RecoveryRequest', () => {
   it('sends the email for the unit and always shows the same message', async () => {
     const calls = server({});
     await mount(<RecoveryRequest slug="abc" />, '/u/abc');
-    await act(async () => button('Get a link by email')?.click());
+    await act(async () => button('Move your chat here')?.click());
     type(host.querySelector('input[name="email"]') as HTMLInputElement, 'ana@example.test');
     await act(async () => button('Send link')?.click());
     expect(calls).toEqual([
@@ -106,7 +106,7 @@ describe('RecoveryRequest', () => {
   ])('says what went wrong on a %i', async (status, message) => {
     server({ '/api/access/abc/recovery': () => json({ error: 'x' }, status) });
     await mount(<RecoveryRequest slug="abc" />, '/u/abc');
-    await act(async () => button('Get a link by email')?.click());
+    await act(async () => button('Move your chat here')?.click());
     type(host.querySelector('input[name="email"]') as HTMLInputElement, 'ana@example.test');
     await act(async () => button('Send link')?.click());
     expect(host.querySelector('.message')?.textContent).toBe(message);

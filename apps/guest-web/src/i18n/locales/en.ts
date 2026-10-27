@@ -1,13 +1,12 @@
 // The source strings. Every other locale has exactly these keys and placeholders.
 export const en = {
   picker: {
-    title: 'Choose your language',
-    mascot: "Bok! I'm Fetivi. Which language should we talk in?",
+    mascot: 'Which language should we talk in?',
     yourLanguage: "Your phone's language",
   },
   pin: {
     title: 'Enter your PIN',
-    hint: 'Your host sent you a six-digit PIN.',
+    hint: "Your host sent you a six-digit PIN. Type it here and we're in.",
     label: 'PIN',
     submit: 'Continue',
     wrong: "That PIN doesn't match. Check your host's message and try again.",
@@ -39,7 +38,7 @@ export const en = {
   chat: {
     title: 'Chat',
     welcome:
-      "Bok! I'm Fetivi, an AI assistant for your stay. Ask me about the apartment, like the Wi-Fi, check-in, house rules or how things work, and about the area around you. If I don't know something, I can ask your host for you.",
+      "Bok! I'm Fetivi, the AI assistant for your stay. Ask me anything about the apartment or the area.",
     you: 'You',
     fetivi: 'Fetivi',
     typing: 'Fetivi is typing…',
@@ -246,7 +245,7 @@ export const en = {
     invalid: "This link doesn't work. You can turn the tips off in Settings.",
   },
   recovery: {
-    ask: 'Already used Fetivi on another phone? Get a link by email',
+    ask: 'Used Fetivi on another phone? Move your chat here',
     label: 'Your email',
     send: 'Send link',
     sending: 'Sending…',
@@ -276,13 +275,16 @@ export const en = {
     tips: 'One local tip a day by email',
     deviceTitle: 'Open on another device',
     deviceIntro:
-      "I'll email you a link that opens your chat and bookings on another phone or computer. When you open it there, this device signs out of Fetivi.",
+      "I'll email you a link that opens your chat and bookings on another phone or computer.",
     sendLink: 'Email me a link',
     linkSent: 'Sent. Check your inbox; the link works for 1 hour.',
     evaluationTitle: 'Help improve Fetivi',
     evaluation: 'Keep my conversation to help research Fetivi',
-    evaluationNote:
-      'Off: your chat is deleted 30 days after checkout. On: a copy without your email or preferences is kept for a university study of Fetivi.',
+    deviceSignOut: 'When you open it there, this device signs out of Fetivi.',
+    needsEmail: 'Available once I have your email.',
+    evaluationOff: 'Off: your chat is deleted 30 days after checkout.',
+    evaluationOn:
+      'On: a copy without your email or preferences is kept for a university study of Fetivi.',
   },
   cancelOrder: {
     heading: 'Cancel this booking?',
@@ -382,10 +384,6 @@ export const en = {
   trip: {
     plan: 'Plan',
     orders: 'Reservations & orders',
-    noOrders:
-      "Nothing booked yet. When you find a trip you like, ask me in Chat and I'll book it with you.",
-    noPlan:
-      "Nothing planned yet. Tell me in Chat what you'd like to do and I'll put it on your days.",
     today: 'Today',
     anyTime: 'Any time',
     nothingPlanned: 'Nothing planned yet',
@@ -399,6 +397,10 @@ export const en = {
     cancel: 'Cancel booking',
     answerTerms: 'Answer the new terms',
     actionFailed: "That didn't work. The booking may have changed, so here's how it stands now.",
+    empty:
+      "Your days and bookings will show up here. Tell me in Chat what you'd like to do, and I'll plan it or book it with you.",
+    emptyAction: 'Plan with Fetivi',
+    nothingBooked: 'Nothing booked yet',
   },
   mcpApps: {
     frameTitle: 'Ferry results from Ferryhopper',
@@ -478,6 +480,9 @@ export const en = {
     tipsHeading: 'Neighbourhood tips',
     amenities: 'In the apartment',
     parking: 'Parking',
+    group_stay: 'Your apartment',
+    group_places: 'Places',
+    group_help: 'Help',
   },
   info: {
     topic_arrival: 'Arrival details',
@@ -558,6 +563,11 @@ export const en = {
     free_street: 'Free street parking',
     paid_street: 'Paid street parking',
     public_garage: 'Public garage nearby',
+  },
+  intro: {
+    title: "Bok! I'm Fetivi.",
+    body: "I'm the AI assistant for your stay. I know the apartment and the town, and I'll help you feel at home here.",
+    start: "Let's go",
   },
 } as const;
 

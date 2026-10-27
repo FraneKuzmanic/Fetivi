@@ -94,7 +94,8 @@ describe('component parts in the chat', () => {
     expect(html.indexOf('Konoba Mala is my pick.')).toBeLessThan(
       html.indexOf('class="fv-carousel"'),
     );
-    expect(html.match(/class="bubble fetivi"/g)).toHaveLength(1);
+    // The welcome's bubble, then the answer's words in one bubble.
+    expect(html.match(/class="bubble fetivi"/g)).toHaveLength(2);
   });
 
   it('puts chips after text written after them', () => {

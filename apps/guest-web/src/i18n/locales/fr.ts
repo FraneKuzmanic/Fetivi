@@ -4,13 +4,12 @@ import type { Messages } from './en';
 // French puts a no-break space (U+00A0) before ! and ?.
 export const fr: Messages = {
   picker: {
-    title: 'Choisissez votre langue',
-    mascot: 'Bok ! Je suis Fetivi. Dans quelle langue parlons-nous ?',
+    mascot: 'Dans quelle langue parlons-nous ?',
     yourLanguage: 'La langue de votre téléphone',
   },
   pin: {
     title: 'Saisissez votre PIN',
-    hint: 'Votre hôte vous a envoyé un PIN à six chiffres.',
+    hint: "Votre hôte vous a envoyé un PIN à six chiffres. Saisissez-le ici et c'est parti.",
     label: 'PIN',
     submit: 'Continuer',
     wrong: 'Ce PIN ne correspond pas. Vérifiez le message de votre hôte et réessayez.',
@@ -42,7 +41,7 @@ export const fr: Messages = {
   chat: {
     title: 'Discussion',
     welcome:
-      "Bok ! Je suis Fetivi, un assistant IA pour votre séjour. Posez-moi vos questions sur l'appartement, comme le Wi-Fi, l'arrivée, le règlement intérieur ou le fonctionnement des choses, et sur les environs. Si je ne sais pas quelque chose, je peux demander à votre hôte pour vous.",
+      "Bok ! Je suis Fetivi, l'assistant IA de votre séjour. Posez-moi toutes vos questions sur l'appartement ou les environs.",
     you: 'Vous',
     fetivi: 'Fetivi',
     typing: 'Fetivi écrit…',
@@ -254,7 +253,7 @@ export const fr: Messages = {
     invalid: 'Ce lien ne fonctionne pas. Vous pouvez désactiver les conseils dans les Réglages.',
   },
   recovery: {
-    ask: 'Déjà utilisé Fetivi sur un autre téléphone ? Recevez un lien par e-mail',
+    ask: 'Vous avez déjà utilisé Fetivi sur un autre téléphone ? Récupérez votre chat ici',
     label: 'Votre e-mail',
     send: 'Envoyer le lien',
     sending: 'Envoi…',
@@ -285,13 +284,16 @@ export const fr: Messages = {
     tips: 'Un conseil local par jour par e-mail',
     deviceTitle: 'Ouvrir sur un autre appareil',
     deviceIntro:
-      'Je vous enverrai par e-mail un lien qui ouvre votre conversation et vos réservations sur un autre téléphone ou ordinateur. Dès que vous l’ouvrez là-bas, cet appareil est déconnecté de Fetivi.',
+      'Je vous envoie par e-mail un lien qui ouvre votre chat et vos réservations sur un autre téléphone ou ordinateur.',
     sendLink: 'M’envoyer un lien',
     linkSent: 'Envoyé. Regardez votre boîte mail ; le lien est valable 1 heure.',
     evaluationTitle: 'Aidez à améliorer Fetivi',
     evaluation: 'Conserver ma conversation pour la recherche sur Fetivi',
-    evaluationNote:
-      'Désactivé : votre discussion est supprimée 30 jours après le départ. Activé : une copie sans votre e-mail ni vos préférences est conservée pour une étude universitaire sur Fetivi.',
+    deviceSignOut: "Dès que vous l'ouvrez là-bas, cet appareil se déconnecte de Fetivi.",
+    needsEmail: "Disponible dès que j'ai votre e-mail.",
+    evaluationOff: 'Désactivé : votre chat est supprimé 30 jours après le départ.',
+    evaluationOn:
+      'Activé : une copie sans votre e-mail ni vos préférences est conservée pour une étude universitaire sur Fetivi.',
   },
   cancelOrder: {
     heading: 'Annuler cette réservation ?',
@@ -392,10 +394,6 @@ export const fr: Messages = {
   trip: {
     plan: 'Plan',
     orders: 'Réservations et commandes',
-    noOrders:
-      'Rien de réservé pour l’instant. Quand une sortie vous plaît, demandez-moi dans le Chat et je la réserverai avec vous.',
-    noPlan:
-      'Rien de prévu pour l’instant. Dites-moi dans le Chat ce que vous aimeriez faire et je l’ajouterai à vos journées.',
     today: 'Aujourd’hui',
     anyTime: 'À tout moment',
     nothingPlanned: 'Rien de prévu pour l’instant',
@@ -411,6 +409,10 @@ export const fr: Messages = {
     answerTerms: 'Répondre aux nouvelles conditions',
     actionFailed:
       'Cela n’a pas fonctionné. La réservation a peut-être changé : voici où elle en est.',
+    empty:
+      'Vos journées et vos réservations apparaîtront ici. Dites-moi dans le chat ce que vous aimeriez faire, et je le planifie ou le réserve avec vous.',
+    emptyAction: 'Planifier avec Fetivi',
+    nothingBooked: "Rien de réservé pour l'instant",
   },
   mcpApps: {
     frameTitle: 'Traversées en ferry de Ferryhopper',
@@ -491,6 +493,9 @@ export const fr: Messages = {
     tipsHeading: 'Conseils sur le quartier',
     amenities: "Dans l'appartement",
     parking: 'Stationnement',
+    group_stay: 'Votre appartement',
+    group_places: 'Lieux',
+    group_help: 'Aide',
   },
   info: {
     topic_arrival: "Infos d'arrivée",
@@ -572,5 +577,10 @@ export const fr: Messages = {
     free_street: 'Gratuit dans la rue',
     paid_street: 'Payant dans la rue',
     public_garage: 'Parking public à proximité',
+  },
+  intro: {
+    title: 'Bok ! Je suis Fetivi.',
+    body: "Je suis l'assistant IA de votre séjour. Je connais l'appartement et la ville, et je vous aide à vous sentir ici comme chez vous.",
+    start: "C'est parti",
   },
 };

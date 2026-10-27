@@ -4,7 +4,7 @@ import type { Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { navigatorLanguages, pickBrowserLanguage } from '../i18n/browser-language';
 import { LANGUAGE_NAMES } from '../i18n/languages';
-import { MascotSays } from '../shell/Mascot';
+import { FetiviStage } from './FetiviStage';
 
 /** The seven languages in a fixed order, each under its own name; the phone's one is marked. */
 export function LanguageOptions({
@@ -60,10 +60,11 @@ export function LanguagePicker({
   const { t } = useTranslation();
   return (
     <>
-      <h1 ref={headingRef} tabIndex={-1}>
-        {t('picker.title')}
-      </h1>
-      <MascotSays>{t('picker.mascot')}</MascotSays>
+      <FetiviStage>
+        <h1 ref={headingRef} tabIndex={-1}>
+          {t('picker.mascot')}
+        </h1>
+      </FetiviStage>
       <LanguageOptions
         marked={pickBrowserLanguage(browserLanguages)}
         markedNote={t('picker.yourLanguage')}

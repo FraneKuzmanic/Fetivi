@@ -54,9 +54,13 @@ describe('guest-web App', () => {
     expect(html).not.toContain('<nav');
   });
 
-  it('opens the unit link on the language picker', () => {
-    expect(render('/u/abc')).toContain('Choose your language');
-    expect(render('/u/abc', { status: 'none' })).toContain('Choose your language');
+  it("opens the unit link on Fetivi's introduction, without the wordmark", () => {
+    for (const html of [render('/u/abc'), render('/u/abc', { status: 'none' })]) {
+      expect(html).toContain('<main class="onboarding" data-step="intro">');
+      expect(html).toMatch(/<h1 tabindex="-1">Bok! I&#x27;m Fetivi.<\/h1>/);
+      expect(html).toContain('the AI assistant for your stay');
+      expect(html).not.toContain('access-brand');
+    }
   });
 
   it('opens the shell with a space', () => {
@@ -69,7 +73,7 @@ describe('guest-web App', () => {
 
   it('asks for the PIN of another unit even with a space', () => {
     const html = render('/u/other', ready);
-    expect(html).toContain('Choose your language');
+    expect(html).toContain('data-step="intro"');
     expect(html).not.toContain('<nav');
   });
 });

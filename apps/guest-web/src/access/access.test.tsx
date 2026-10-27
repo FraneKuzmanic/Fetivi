@@ -32,7 +32,7 @@ describe('LanguagePicker', () => {
     expect(marked).toHaveLength(1);
     expect(marked[0]).toContain('lang="de"');
     expect(marked[0]).toContain('Your phone&#x27;s language');
-    expect(html).toContain('Choose your language');
+    expect(html).toContain('Which language should we talk in?');
   });
 
   it('marks English when the phone speaks none of our languages', () => {

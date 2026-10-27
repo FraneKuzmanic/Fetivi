@@ -3,13 +3,12 @@ import type { Messages } from './en';
 
 export const hr: Messages = {
   picker: {
-    title: 'Odaberite jezik',
-    mascot: 'Bok! Ja sam Fetivi. Na kojem ćemo jeziku razgovarati?',
+    mascot: 'Na kojem ćemo jeziku razgovarati?',
     yourLanguage: 'Jezik vašeg mobitela',
   },
   pin: {
     title: 'Unesite PIN',
-    hint: 'Domaćin vam je poslao šesteroznamenkasti PIN.',
+    hint: 'Domaćin vam je poslao šesteroznamenkasti PIN. Upišite ga ovdje i krećemo.',
     label: 'PIN',
     submit: 'Nastavi',
     wrong: 'Taj PIN ne odgovara. Provjerite poruku domaćina i pokušajte ponovno.',
@@ -41,7 +40,7 @@ export const hr: Messages = {
   chat: {
     title: 'Razgovor',
     welcome:
-      'Bok! Ja sam Fetivi, AI asistent za vaš boravak. Pitajte me o apartmanu, primjerice o Wi-Fiju, prijavi, kućnom redu ili kako što radi, i o okolici. Ako nešto ne znam, mogu za vas pitati domaćina.',
+      'Bok! Ja sam Fetivi, AI asistent za vaš boravak. Pitajte me bilo što o apartmanu ili okolici.',
     you: 'Vi',
     fetivi: 'Fetivi',
     typing: 'Fetivi piše…',
@@ -247,7 +246,7 @@ export const hr: Messages = {
     invalid: 'Ova poveznica ne radi. Savjete možete isključiti u Postavkama.',
   },
   recovery: {
-    ask: 'Već ste koristili Fetivi na drugom mobitelu? Zatražite poveznicu e-poštom',
+    ask: 'Koristili ste Fetivi na drugom mobitelu? Prebacite razgovor ovamo',
     label: 'Vaša e-pošta',
     send: 'Pošalji poveznicu',
     sending: 'Šaljem…',
@@ -277,13 +276,16 @@ export const hr: Messages = {
     tips: 'Jedan lokalni savjet dnevno e-poštom',
     deviceTitle: 'Otvori na drugom uređaju',
     deviceIntro:
-      'Poslat ću vam e-poštom poveznicu koja otvara vaš razgovor i rezervacije na drugom mobitelu ili računalu. Kad je tamo otvorite, ovaj će se uređaj odjaviti iz Fetivija.',
+      'Poslat ću vam e-poštom poveznicu koja otvara vaš razgovor i rezervacije na drugom mobitelu ili računalu.',
     sendLink: 'Pošalji mi poveznicu',
     linkSent: 'Poslano. Provjerite poštu; poveznica vrijedi 1 sat.',
     evaluationTitle: 'Pomozite poboljšati Fetivi',
     evaluation: 'Sačuvaj moj razgovor za istraživanje o Fetiviju',
-    evaluationNote:
-      'Isključeno: razgovor se briše 30 dana nakon odjave. Uključeno: kopija bez Vaše e-pošte i postavki čuva se za sveučilišno istraživanje o Fetiviju.',
+    deviceSignOut: 'Kad je ondje otvorite, ovaj se uređaj odjavljuje iz Fetivija.',
+    needsEmail: 'Dostupno čim budem imao vašu e-adresu.',
+    evaluationOff: 'Isključeno: vaš se razgovor briše 30 dana nakon odjave.',
+    evaluationOn:
+      'Uključeno: kopija bez vaše e-adrese i postavki čuva se za sveučilišno istraživanje o Fetiviju.',
   },
   cancelOrder: {
     heading: 'Otkazati ovu rezervaciju?',
@@ -384,10 +386,6 @@ export const hr: Messages = {
   trip: {
     plan: 'Plan',
     orders: 'Rezervacije i narudžbe',
-    noOrders:
-      'Još ništa nije rezervirano. Kad nađete izlet koji vam se sviđa, pitajte me u Chatu i rezervirat ću ga s vama.',
-    noPlan:
-      'Još ništa nije isplanirano. Recite mi u Chatu što biste voljeli raditi i dodat ću to u vaše dane.',
     today: 'Danas',
     anyTime: 'Bilo kada',
     nothingPlanned: 'Još ništa nije isplanirano',
@@ -401,6 +399,10 @@ export const hr: Messages = {
     cancel: 'Otkaži rezervaciju',
     answerTerms: 'Odgovori na nove uvjete',
     actionFailed: 'To nije uspjelo. Rezervacija se možda promijenila, evo kako sada stoji.',
+    empty:
+      'Ovdje će se pojaviti vaši dani i rezervacije. Recite mi u chatu što biste voljeli raditi, a ja ću to isplanirati ili rezervirati s vama.',
+    emptyAction: 'Planirajte s Fetivijem',
+    nothingBooked: 'Još ništa nije rezervirano',
   },
   mcpApps: {
     frameTitle: 'Rezultati trajekata s Ferryhoppera',
@@ -481,6 +483,9 @@ export const hr: Messages = {
     tipsHeading: 'Savjeti za okolicu',
     amenities: 'U apartmanu',
     parking: 'Parkiranje',
+    group_stay: 'Vaš apartman',
+    group_places: 'Mjesta',
+    group_help: 'Pomoć',
   },
   info: {
     topic_arrival: 'Podaci za dolazak',
@@ -561,5 +566,10 @@ export const hr: Messages = {
     free_street: 'Besplatno parkiranje na ulici',
     paid_street: 'Plaćeno parkiranje na ulici',
     public_garage: 'Javna garaža u blizini',
+  },
+  intro: {
+    title: 'Bok! Ja sam Fetivi.',
+    body: 'Ja sam AI asistent za vaš boravak. Poznajem apartman i grad i pomoći ću vam da se ovdje osjećate kao doma.',
+    start: 'Idemo',
   },
 };

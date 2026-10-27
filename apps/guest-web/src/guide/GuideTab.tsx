@@ -3,7 +3,7 @@ import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { MascotSays } from '../shell/Mascot';
-import { GUIDE_SECTIONS } from './sections';
+import { GUIDE_GROUPS, GUIDE_SECTIONS } from './sections';
 import { type UnitState, useUnit } from './useUnit';
 
 /** Loading and error states shared by the Guide pages; `children` once the unit is in. */
@@ -31,7 +31,7 @@ export function UnitGate({
   return children(state.unit);
 }
 
-/** The Guide's index: Fetivi's greeting and the seven sections. No model is involved. */
+/** The Guide's index: Fetivi's greeting and the seven sections in three groups. No model call. */
 export function GuideTab() {
   const { t } = useTranslation();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -51,23 +51,30 @@ export function GuideTab() {
         {(unit) => (
           <>
             <MascotSays>{t('guide.greeting', { name: unit.property.name })}</MascotSays>
-            <nav aria-label={t('guide.sectionsLabel')}>
-              <ul className="guide-index">
-                {GUIDE_SECTIONS.map(({ category, slug, icon: SectionIcon }) => (
-                  <li key={slug}>
-                    <Link to={`/guide/${slug}`} className="guide-row">
-                      <span className="guide-row-icon">
-                        <SectionIcon size={24} aria-hidden="true" />
-                      </span>
-                      <span className="guide-row-text">
-                        <span className="guide-row-name">{t(`guide.${category}`)}</span>
-                        <span className="guide-row-hint">{t(`guide.hint_${category}`)}</span>
-                      </span>
-                      <CaretRight size={20} aria-hidden="true" className="guide-row-caret" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            <nav aria-label={t('guide.sectionsLabel')} className="guide-nav">
+              {GUIDE_GROUPS.map((group) => (
+                <div key={group} className="guide-group">
+                  <h2 id={`guide-group-${group}`}>{t(`guide.group_${group}`)}</h2>
+                  <ul className="guide-index" aria-labelledby={`guide-group-${group}`}>
+                    {GUIDE_SECTIONS.filter((s) => s.group === group).map(
+                      ({ category, slug, icon: SectionIcon }) => (
+                        <li key={slug}>
+                          <Link to={`/guide/${slug}`} className="guide-row">
+                            <span className="guide-icon" data-group={group}>
+                              <SectionIcon aria-hidden="true" />
+                            </span>
+                            <span className="guide-row-text">
+                              <span className="guide-row-name">{t(`guide.${category}`)}</span>
+                              <span className="guide-row-hint">{t(`guide.hint_${category}`)}</span>
+                            </span>
+                            <CaretRight size={20} aria-hidden="true" className="guide-row-caret" />
+                          </Link>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </div>
+              ))}
             </nav>
           </>
         )}

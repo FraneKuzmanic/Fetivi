@@ -54,7 +54,7 @@ describe('ChatView', () => {
   it('opens with the welcome, five starter questions in order and the trip card', () => {
     const out = render([]);
     expect(out).toContain(html(locales.en.chat.welcome));
-    expect(out).toContain('an AI assistant');
+    expect(out).toContain('the AI assistant');
     const starters = [...out.matchAll(/<button type="button" class="starter">(.*?)<\/button>/g)];
     expect(starters.map((m) => m[1]?.replace(/<svg.*<\/svg>/, ''))).toEqual(STARTERS.map(html));
     expect(out).toContain('Tell me about your trip');

@@ -6,17 +6,21 @@ import { setLanguage } from '../i18n';
 import { navigatorLanguages, pickBrowserLanguage } from '../i18n/browser-language';
 import { RecoveryRequest } from '../recovery/RecoveryRequest';
 import { entryDecision, storedLanguage, storeLanguage, useSpace } from '../space';
+import { IntroStep } from './IntroStep';
 import { LanguagePicker } from './LanguagePicker';
 import { NoLinkPage } from './NoLinkPage';
 import { PinForm } from './PinForm';
 
-/** The unit link: language first, then the PIN. A space of this unit goes straight to Chat. */
+/**
+ * The unit link: Fetivi introduces himself, then the language, then the PIN. A space of this unit
+ * goes straight to Chat.
+ */
 export function AccessPage() {
   const { slug = '' } = useParams();
   const navigate = useNavigate();
   const { state, setSpace } = useSpace();
   const [linkMissing, setLinkMissing] = useState(false);
-  const [step, setStep] = useState<'language' | 'pin'>('language');
+  const [step, setStep] = useState<'intro' | 'language' | 'pin'>('intro');
   const [language, setChosen] = useState<GuestLanguage>(
     () => storedLanguage() ?? pickBrowserLanguage(navigatorLanguages()),
   );
@@ -47,9 +51,10 @@ export function AccessPage() {
   if (linkMissing) return <NoLinkPage reason="not-found" />;
 
   return (
-    <main className="access">
-      <p className="access-brand">Fetivi</p>
-      {step === 'language' ? (
+    <main className="onboarding" data-step={step}>
+      {step === 'intro' ? (
+        <IntroStep headingRef={heading} onStart={() => setStep('language')} />
+      ) : step === 'language' ? (
         <LanguagePicker
           headingRef={heading}
           onPick={(picked) => {

@@ -3,13 +3,12 @@ import type { Messages } from './en';
 
 export const hu: Messages = {
   picker: {
-    title: 'Válassz nyelvet',
-    mascot: 'Bok! Fetivi vagyok. Milyen nyelven beszélgessünk?',
+    mascot: 'Milyen nyelven beszéljünk?',
     yourLanguage: 'A telefonod nyelve',
   },
   pin: {
     title: 'Add meg a PIN-kódot',
-    hint: 'A szállásadód küldött egy hatjegyű PIN-kódot.',
+    hint: 'A szállásadód küldött egy hatjegyű PIN-kódot. Írd be ide, és indulhatunk.',
     label: 'PIN-kód',
     submit: 'Tovább',
     wrong: 'Ez a PIN-kód nem egyezik. Nézd meg a szállásadód üzenetét, és próbáld újra.',
@@ -41,7 +40,7 @@ export const hu: Messages = {
   chat: {
     title: 'Csevegés',
     welcome:
-      'Bok! Fetivi vagyok, egy AI-asszisztens az ott-tartózkodásodhoz. Kérdezz az apartmanról, például a Wi-Firől, a bejelentkezésről, a házirendről vagy arról, hogyan működnek a dolgok, és a környékről. Ha valamit nem tudok, megkérdezhetem helyetted a szállásadódat.',
+      'Bok! Fetivi vagyok, az AI-asszisztensed az itt-tartózkodásod alatt. Kérdezz bármit az apartmanról vagy a környékről.',
     you: 'Te',
     fetivi: 'Fetivi',
     typing: 'Fetivi ír…',
@@ -251,7 +250,7 @@ export const hu: Messages = {
     invalid: 'Ez a link nem működik. A tippeket a Beállításokban kapcsolhatod ki.',
   },
   recovery: {
-    ask: 'Használtad már a Fetivit egy másik telefonon? Kérj linket e-mailben',
+    ask: 'Használtad már a Fetivit egy másik telefonon? Hozd át ide a csevegést',
     label: 'Az e-mail-címed',
     send: 'Link küldése',
     sending: 'Küldés…',
@@ -280,13 +279,16 @@ export const hu: Messages = {
     tips: 'Napi egy helyi tipp e-mailben',
     deviceTitle: 'Megnyitás másik eszközön',
     deviceIntro:
-      'E-mailben küldök egy linket, amely egy másik telefonon vagy számítógépen megnyitja a csevegésed és a foglalásaid. Amikor ott megnyitod, ez az eszköz kijelentkezik a Fetiviből.',
+      'E-mailben küldök egy linket, amely egy másik telefonon vagy számítógépen nyitja meg a csevegésedet és a foglalásaidat.',
     sendLink: 'Küldj egy linket',
     linkSent: 'Elküldve. Nézd meg a postafiókod; a link 1 óráig érvényes.',
     evaluationTitle: 'Segíts jobbá tenni a Fetivit',
     evaluation: 'A beszélgetésem megőrzése a Fetivi kutatásához',
-    evaluationNote:
-      'Ki: a csevegés a kijelentkezés után 30 nappal törlődik. Be: egy másolatot az e-mail-címed és a beállításaid nélkül megőrzünk a Fetiviről szóló egyetemi kutatáshoz.',
+    deviceSignOut: 'Amikor ott megnyitod, ez az eszköz kijelentkezik a Fetiviből.',
+    needsEmail: 'Akkor érhető el, ha már megvan az e-mail-címed.',
+    evaluationOff: 'Ki: a csevegésed a kijelentkezés után 30 nappal törlődik.',
+    evaluationOn:
+      'Be: egy másolatot az e-mail-címed és a beállításaid nélkül megőrzünk a Fetivit vizsgáló egyetemi kutatáshoz.',
   },
   cancelOrder: {
     heading: 'Lemondja ezt a foglalást?',
@@ -386,10 +388,6 @@ export const hu: Messages = {
   trip: {
     plan: 'Terv',
     orders: 'Foglalások és rendelések',
-    noOrders:
-      'Még nincs foglalásod. Ha találsz egy tetsző programot, kérdezz a Chatben, és együtt lefoglaljuk.',
-    noPlan:
-      'Még nincs semmi betervezve. Írd meg a Chatben, mit szeretnél csinálni, és beteszem a napjaidba.',
     today: 'Ma',
     anyTime: 'Bármikor',
     nothingPlanned: 'Még nincs semmi betervezve',
@@ -403,6 +401,10 @@ export const hu: Messages = {
     cancel: 'Foglalás lemondása',
     answerTerms: 'Válasz az új feltételekre',
     actionFailed: 'Ez nem sikerült. Lehet, hogy a foglalás megváltozott; így áll most.',
+    empty:
+      'Itt jelennek majd meg a napjaid és a foglalásaid. Írd meg a csevegésben, mit szeretnél csinálni, és megtervezem vagy lefoglalom veled.',
+    emptyAction: 'Tervezz Fetivivel',
+    nothingBooked: 'Még nincs foglalás',
   },
   mcpApps: {
     frameTitle: 'Kompjáratok a Ferryhoppertől',
@@ -483,6 +485,9 @@ export const hu: Messages = {
     tipsHeading: 'Környékbeli tippek',
     amenities: 'Az apartmanban',
     parking: 'Parkolás',
+    group_stay: 'Az apartmanod',
+    group_places: 'Helyek',
+    group_help: 'Segítség',
   },
   info: {
     topic_arrival: 'Érkezési adatok',
@@ -563,5 +568,10 @@ export const hu: Messages = {
     free_street: 'Ingyenes az utcán',
     paid_street: 'Fizetős az utcán',
     public_garage: 'Közeli parkolóház',
+  },
+  intro: {
+    title: 'Bok! Fetivi vagyok.',
+    body: 'Én vagyok az AI-asszisztensed az itt-tartózkodásod alatt. Ismerem az apartmant és a várost, és segítek, hogy otthon érezd magad.',
+    start: 'Kezdjük',
   },
 };

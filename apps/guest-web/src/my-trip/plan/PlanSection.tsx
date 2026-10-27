@@ -1,5 +1,6 @@
 import { DayPlan } from '@fetivi/ui';
 import type { DayPlanPayload, PlanItemPayload } from '@fetivi/ui/payloads';
+import { CalendarDots } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -13,8 +14,11 @@ type PlanState =
   | { status: 'offline' }
   | { status: 'ready'; plan: DayPlanPayload };
 
-/** My trip → Plan: read-only; changes happen in chat, and "Ask Fetivi" takes an item there. */
-export function PlanSection() {
+/**
+ * My trip → Plan: read-only; changes happen in chat, and "Ask Fetivi" takes an item there.
+ * `onEmpty` tells My trip whether the plan has nothing on it.
+ */
+export function PlanSection({ onEmpty }: { onEmpty: (empty: boolean) => void }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { state: space } = useSpace();
@@ -34,6 +38,9 @@ export function PlanSection() {
 
   useEffect(load, [load]);
 
+  const isEmpty = plan.status === 'ready' && plan.plan.days.every((d) => d.items.length === 0);
+  useEffect(() => onEmpty(isEmpty), [isEmpty, onEmpty]);
+
   const ask = (item: PlanItemPayload) =>
     navigate('/chat', {
       state: { ask: t('trip.askText', { title: item.title, day: labels.day(item.date) }) },
@@ -41,7 +48,12 @@ export function PlanSection() {
 
   return (
     <section className="trip-section" aria-labelledby="trip-plan">
-      <h2 id="trip-plan">{t('trip.plan')}</h2>
+      <h2 id="trip-plan" className="trip-heading">
+        <span className="trip-heading-icon">
+          <CalendarDots aria-hidden="true" />
+        </span>
+        {t('trip.plan')}
+      </h2>
       {plan.status === 'loading' ? (
         <p className="status">{t('common.loading')}</p>
       ) : plan.status === 'offline' ? (
@@ -51,8 +63,8 @@ export function PlanSection() {
             {t('chat.retry')}
           </button>
         </div>
-      ) : plan.plan.days.every((d) => d.items.length === 0) ? (
-        <MascotSays>{t('trip.noPlan')}</MascotSays>
+      ) : isEmpty ? (
+        <p className="trip-empty">{t('trip.nothingPlanned')}</p>
       ) : (
         <DayPlan
           days={plan.plan.days}

@@ -3,13 +3,12 @@ import type { Messages } from './en';
 
 export const pl: Messages = {
   picker: {
-    title: 'Wybierz język',
-    mascot: 'Bok! Jestem Fetivi. W jakim języku rozmawiamy?',
+    mascot: 'W jakim języku rozmawiamy?',
     yourLanguage: 'Język Twojego telefonu',
   },
   pin: {
     title: 'Wpisz PIN',
-    hint: 'Gospodarz wysłał Ci sześciocyfrowy PIN.',
+    hint: 'Gospodarz wysłał Ci sześciocyfrowy PIN. Wpisz go tutaj i zaczynamy.',
     label: 'PIN',
     submit: 'Dalej',
     wrong: 'Ten PIN nie pasuje. Sprawdź wiadomość od gospodarza i spróbuj ponownie.',
@@ -41,7 +40,7 @@ export const pl: Messages = {
   chat: {
     title: 'Czat',
     welcome:
-      'Bok! Jestem Fetivi, asystent AI na czas Twojego pobytu. Pytaj mnie o apartament, na przykład o Wi-Fi, zameldowanie, zasady domu albo jak coś działa, a także o okolicę. Jeśli czegoś nie wiem, mogę zapytać za Ciebie gospodarza.',
+      'Bok! Jestem Fetivi, asystent AI na czas Twojego pobytu. Pytaj mnie o wszystko, co dotyczy apartamentu lub okolicy.',
     you: 'Ty',
     fetivi: 'Fetivi',
     typing: 'Fetivi pisze…',
@@ -250,7 +249,7 @@ export const pl: Messages = {
     invalid: 'Ten link nie działa. Wskazówki możesz wyłączyć w Ustawieniach.',
   },
   recovery: {
-    ask: 'Używałeś już Fetivi na innym telefonie? Otrzymaj link e-mailem',
+    ask: 'Używasz już Fetivi na innym telefonie? Przenieś tu swój czat',
     label: 'Twój e-mail',
     send: 'Wyślij link',
     sending: 'Wysyłanie…',
@@ -279,13 +278,16 @@ export const pl: Messages = {
     tips: 'Jedna lokalna wskazówka dziennie e-mailem',
     deviceTitle: 'Otwórz na innym urządzeniu',
     deviceIntro:
-      'Wyślę Ci e-mailem link, który otworzy Twój czat i rezerwacje na innym telefonie lub komputerze. Gdy otworzysz go tam, to urządzenie zostanie wylogowane z Fetivi.',
+      'Wyślę Ci e-mailem link, który otworzy Twój czat i rezerwacje na innym telefonie lub komputerze.',
     sendLink: 'Wyślij mi link',
     linkSent: 'Wysłano. Sprawdź skrzynkę; link działa przez 1 godzinę.',
     evaluationTitle: 'Pomóż ulepszyć Fetivi',
     evaluation: 'Zachowaj moją rozmowę do badań nad Fetivi',
-    evaluationNote:
-      'Wyłączone: czat zostanie usunięty 30 dni po wymeldowaniu. Włączone: kopia bez Twojego e-maila i preferencji zostanie zachowana na potrzeby badania uniwersyteckiego o Fetivi.',
+    deviceSignOut: 'Gdy go tam otworzysz, to urządzenie wyloguje się z Fetivi.',
+    needsEmail: 'Dostępne, gdy będę mieć Twój e-mail.',
+    evaluationOff: 'Wyłączone: Twój czat zostanie usunięty 30 dni po wymeldowaniu.',
+    evaluationOn:
+      'Włączone: kopia bez Twojego e-maila i preferencji jest przechowywana na potrzeby badania uniwersyteckiego o Fetivi.',
   },
   cancelOrder: {
     heading: 'Anulować tę rezerwację?',
@@ -385,10 +387,6 @@ export const pl: Messages = {
   trip: {
     plan: 'Plan',
     orders: 'Rezerwacje i zamówienia',
-    noOrders:
-      'Nic jeszcze nie zarezerwowano. Gdy znajdziesz wycieczkę, która ci się spodoba, zapytaj mnie na czacie, a zarezerwujemy ją razem.',
-    noPlan:
-      'Nic jeszcze nie zaplanowano. Napisz mi na czacie, co chcesz robić, a dodam to do twoich dni.',
     today: 'Dziś',
     anyTime: 'O dowolnej porze',
     nothingPlanned: 'Nic jeszcze nie zaplanowano',
@@ -402,6 +400,10 @@ export const pl: Messages = {
     cancel: 'Anuluj rezerwację',
     answerTerms: 'Odpowiedz na nowe warunki',
     actionFailed: 'Nie udało się. Rezerwacja mogła się zmienić, oto jak wygląda teraz.',
+    empty:
+      'Tutaj pojawią się Twoje dni i rezerwacje. Napisz mi na czacie, co chcesz robić, a zaplanuję to lub zarezerwuję razem z Tobą.',
+    emptyAction: 'Zaplanuj z Fetivi',
+    nothingBooked: 'Nic jeszcze nie zarezerwowano',
   },
   mcpApps: {
     frameTitle: 'Wyniki promów z Ferryhopper',
@@ -480,6 +482,9 @@ export const pl: Messages = {
     tipsHeading: 'Wskazówki o okolicy',
     amenities: 'W apartamencie',
     parking: 'Parking',
+    group_stay: 'Twój apartament',
+    group_places: 'Miejsca',
+    group_help: 'Pomoc',
   },
   info: {
     topic_arrival: 'Informacje o przyjeździe',
@@ -561,5 +566,10 @@ export const pl: Messages = {
     free_street: 'Bezpłatny na ulicy',
     paid_street: 'Płatny na ulicy',
     public_garage: 'Parking publiczny w pobliżu',
+  },
+  intro: {
+    title: 'Bok! Jestem Fetivi.',
+    body: 'Jestem asystentem AI na czas Twojego pobytu. Znam apartament i miasto i pomogę Ci poczuć się tu jak w domu.',
+    start: 'Zaczynamy',
   },
 };

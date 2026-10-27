@@ -13,11 +13,15 @@
   --gray-50: #f6f8fb;
   --gray-200: #e3e8f0;
   --gray-300: #c9d2e0;
+  /* Control borders that must reach 3:1 on white (WCAG 1.4.11). */
+  --gray-400: #8390a6;
   --gray-500: #5b6b82;
   --danger: #b42318;
   --danger-bg: #fdecea;
   --sun-500: #f7931e;
   --sun-100: #fff1df;
+  /* Dalmatian sun deepened to 4.5:1 on its wash, for icons on Sun Wash. */
+  --sun-ink: #b35400;
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
@@ -1100,8 +1104,50 @@ input {
   gap: 0.875rem;
 }
 
-.trip-section h2 {
+.trip-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
   font-size: 1.125rem;
+}
+
+.trip-heading-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--sky-100);
+  color: var(--blue-700);
+}
+
+.trip-heading-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Fetivi's one line while nothing is planned or booked, and the way to Chat. */
+.trip-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.trip-welcome-action {
+  margin-inline-start: 5.75rem;
+  text-decoration: none;
+}
+
+/* A section with nothing in it yet: one quiet line in a dashed frame. */
+.trip-empty {
+  padding: 0.875rem 1rem;
+  border: 1px dashed var(--gray-300);
+  border-radius: var(--radius-md);
+  color: var(--gray-500);
+  font-size: 0.9375rem;
 }
 
 .trip-offline {
@@ -1158,7 +1204,9 @@ input {
 
 .guide-index {
   margin: 0;
-  padding: 0;
+  padding: 0 1rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
   list-style: none;
 }
 
@@ -1176,7 +1224,9 @@ input {
   text-decoration: none;
 }
 
-.guide-row-icon {
+/* A section's icon, tinted by its group: sea for the apartment, sun for people's places, red
+   for help. */
+.guide-icon {
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -1186,6 +1236,68 @@ input {
   border-radius: 50%;
   background: var(--sky-100);
   color: var(--blue-700);
+}
+
+.guide-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.guide-icon[data-group="places"] {
+  background: var(--sun-100);
+  color: var(--sun-ink);
+}
+
+.guide-icon[data-group="help"] {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.guide-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.guide-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.guide-group h2 {
+  color: var(--gray-500);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* One section page's header: its icon beside the title and what the section holds. */
+.guide-header {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.guide-icon-lg {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.guide-icon-lg svg {
+  width: 1.875rem;
+  height: 1.875rem;
+}
+
+.guide-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.guide-header-hint {
+  color: var(--gray-500);
+  font-size: 0.9375rem;
 }
 
 .guide-row-text {
@@ -1246,11 +1358,130 @@ input {
 
 .guide-amenities {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-  gap: 0.375rem 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 0.5rem 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.guide-amenity {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.guide-amenity-check {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.1875rem;
+  color: var(--success);
+}
+
+.guide-parking {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.875rem;
+}
+
+.guide-parking-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--sky-100);
+  color: var(--blue-700);
+}
+
+.guide-parking-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.guide-parking > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.guide-parking .guide-note {
+  color: var(--navy-900);
+}
+
+/* The host's blocks as topics: one bordered list, each topic opening in place. */
+.guide-topics {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+}
+
+.guide-topic + .guide-topic {
+  border-top: 1px solid var(--gray-200);
+}
+
+.guide-topic h2 {
+  font-size: 1rem;
+}
+
+.guide-topic-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: calc(var(--tap) + 1rem);
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
+.guide-topic-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.guide-topic-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.guide-topic-toggle:hover .guide-topic-title {
+  color: var(--blue-700);
+}
+
+.guide-topic-hint {
+  color: var(--gray-500);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.guide-topic-caret {
+  flex: none;
+  color: var(--blue-600);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.guide-topic[data-open="true"] .guide-topic-caret {
+  transform: rotate(180deg);
+}
+
+.guide-topic-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0 1rem 1.25rem;
+}
+
+.guide-topic-body[hidden] {
+  display: none;
 }
 
 .block-body {
@@ -1272,6 +1503,17 @@ input {
 .block-body h6 {
   font-size: 1rem;
   font-weight: 600;
+}
+
+/* A topic line inside a block ("Washing machine") starts a sub-part under a hairline. */
+.block-body > h3:not(:first-child) {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.block-body > h3 + * {
+  margin-top: 0.375rem;
 }
 
 .block-body ul,
@@ -1369,17 +1611,133 @@ input {
   gap: 1rem;
 }
 
+.settings > h1 {
+  margin-bottom: 0.25rem;
+}
+
+/* One panel per group, its title beside an icon; nothing bordered inside it. */
 .settings-section {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--gray-200);
+  gap: 0.625rem;
+  padding: 1rem 1rem 0.5rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
 }
 
-.settings-section h2 {
+.settings-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
   font-size: 1.0625rem;
+}
+
+.settings-heading-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--sky-100);
+  color: var(--blue-700);
+}
+
+.settings-heading-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* A short fact with its own icon, so a rule reads at a glance. */
+.settings-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: var(--gray-500);
+  font-size: 0.9375rem;
+}
+
+.settings-fact svg {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.1875rem;
+  color: var(--navy-900);
+}
+
+.settings-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.settings-needs {
+  color: var(--gray-500);
+  font-size: 0.875rem;
+}
+
+/* An on/off choice: the words on the left, a switch on the right. */
+.settings-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-height: var(--tap);
+  padding-block: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.settings-switch input {
+  position: relative;
+  flex: none;
+  width: 3rem;
+  height: 1.75rem;
+  margin: 0;
+  border: 2px solid var(--gray-400);
+  border-radius: 999px;
+  background: var(--white);
+  appearance: none;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+.settings-switch input::before {
+  content: "";
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  background: var(--gray-500);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settings-switch input:checked {
+  border-color: var(--blue-600);
+  background: var(--blue-600);
+}
+
+.settings-switch input:checked::before {
+  background: var(--white);
+  transform: translateX(1.25rem);
 }
 
 .settings-note {
@@ -1415,4 +1773,244 @@ input {
 
 a.button {
   text-decoration: none;
+}
+
+/*
+ * Onboarding (unit link and "no link"): the one place the guest app is full-bleed Adriatic
+ * Cobalt, chosen by Frane on 2026-10-27 so Fetivi's welcome feels like arriving at the sea.
+ * Fetivi stands in the middle in a pale porthole; the shirt band runs along the bottom.
+ */
+body:has(.onboarding) {
+  background: var(--blue-600);
+}
+
+.onboarding {
+  --onb-ink: var(--white);
+  --onb-soft: var(--sky-200);
+  --onb-line: #5a86cc;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 30rem;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3.5rem;
+  color: var(--onb-ink);
+}
+
+/* The shirt band: 4px stripe blue, 4px white, as on the back office's signed-out pages. */
+.onboarding[data-step="language"] {
+  justify-content: center;
+}
+
+.onboarding::after {
+  content: "";
+  position: fixed;
+  inset: auto 0 0;
+  height: 1.25rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='4' fill='%232f9fdc'/%3E%3Crect y='4' width='8' height='4' fill='%23ffffff'/%3E%3C/svg%3E")
+    repeat;
+}
+
+.onboarding :focus-visible {
+  outline-color: var(--white);
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  text-align: center;
+}
+
+.stage[data-size="large"] {
+  flex: 1;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.stage-speech {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  max-width: 24rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  color: var(--navy-900);
+  font-size: 1.0625rem;
+}
+
+/* The balloon's tail points down at Fetivi. */
+.stage-speech::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -0.5rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.1875rem;
+  background: var(--white);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.stage-speech h1 {
+  font-size: 1.25rem;
+}
+
+.stage[data-size="large"] .stage-speech h1 {
+  font-size: 1.5rem;
+}
+
+.stage-porthole {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 7.5rem;
+  height: 7.5rem;
+  overflow: hidden;
+  border: 0.375rem solid var(--white);
+  border-radius: 50%;
+  background: var(--sky-100);
+}
+
+.stage[data-size="large"] .stage-porthole {
+  width: 15rem;
+  height: 15rem;
+  border-width: 0.5rem;
+}
+
+/* Sized past the porthole so the shirt runs off its bottom edge, like a portrait. */
+.stage-mascot {
+  flex: none;
+  width: 104%;
+  height: 104%;
+  margin-bottom: -12%;
+}
+
+/* The one authored moment: Fetivi's first words appear after he does. */
+.onboarding[data-step="intro"] .stage-speech {
+  animation: speech-in 520ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+}
+
+@keyframes speech-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.94);
+  }
+}
+
+.onboarding-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+.onboarding-button {
+  width: 100%;
+  border-color: var(--white);
+  background: var(--white);
+  color: var(--blue-600);
+}
+
+.onboarding-button:hover:not(:disabled) {
+  border-color: var(--sky-100);
+  background: var(--sky-100);
+  color: var(--blue-700);
+}
+
+.onboarding-button:disabled {
+  border-color: var(--onb-line);
+  background: transparent;
+  color: var(--onb-soft);
+}
+
+.onboarding-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  align-self: flex-start;
+  min-height: var(--tap);
+  padding: 0.375rem 1rem 0.375rem 0.75rem;
+  border: 1px solid var(--onb-line);
+  border-radius: 999px;
+  background: none;
+  color: var(--onb-ink);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.onboarding-back:hover {
+  border-color: var(--white);
+}
+
+.onboarding .language-list {
+  grid-template-columns: 1fr 1fr;
+}
+
+.onboarding .language-list li:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.onboarding .language-option {
+  border: 0;
+  color: var(--navy-900);
+}
+
+.onboarding .language-option:hover {
+  background: var(--sky-100);
+}
+
+.onboarding .language-option[data-suggested="true"] {
+  border: 0;
+  outline: 3px solid var(--sky-200);
+  outline-offset: 2px;
+}
+
+.onboarding .pin-form label {
+  color: var(--onb-soft);
+  font-weight: 500;
+  text-align: center;
+}
+
+.onboarding .pin-input {
+  border-color: var(--white);
+  color: var(--navy-900);
+}
+
+.onboarding .recovery-ask {
+  display: block;
+  margin-top: auto;
+  padding: 0.625rem 1rem;
+  color: var(--onb-soft);
+  font-size: 0.875rem;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.onboarding .recovery-ask:hover {
+  color: var(--onb-ink);
+}
+
+.onboarding .recovery-ask svg {
+  margin-inline-end: 0.375rem;
+  vertical-align: -0.125em;
+}
+
+.onboarding .recovery-form {
+  margin-top: auto;
+}
+
+.onboarding .recovery-form .settings-note,
+.onboarding .recovery-form .status {
+  color: var(--onb-soft);
+}
+
+.onboarding .recovery-form .button {
+  border-color: var(--white);
+  background: var(--white);
+  color: var(--blue-600);
 }

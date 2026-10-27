@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { MascotSays } from '../shell/Mascot';
+import { FetiviStage } from './FetiviStage';
 
 const MESSAGE = {
   none: 'link.none',
@@ -11,9 +11,11 @@ const MESSAGE = {
 export function NoLinkPage({ reason = 'none' }: { reason?: keyof typeof MESSAGE }) {
   const { t } = useTranslation();
   return (
-    <main className="access">
-      <h1 className="access-brand">Fetivi</h1>
-      <MascotSays>{t(MESSAGE[reason])}</MascotSays>
+    <main className="onboarding">
+      <h1 className="visually-hidden">Fetivi</h1>
+      <FetiviStage size="large">
+        <p>{t(MESSAGE[reason])}</p>
+      </FetiviStage>
     </main>
   );
 }

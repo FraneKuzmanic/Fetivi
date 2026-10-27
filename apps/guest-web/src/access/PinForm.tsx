@@ -1,10 +1,11 @@
 import type { GuestLanguage } from '@fetivi/domain/vocabulary';
-import { Translate } from '@phosphor-icons/react';
+import { CaretLeft, Translate } from '@phosphor-icons/react';
 import type { TFunction } from 'i18next';
 import { type FormEvent, type Ref, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, enterPin, type Space } from '../api';
-import { MascotSays } from '../shell/Mascot';
+import { LANGUAGE_NAMES } from '../i18n/languages';
+import { FetiviStage } from './FetiviStage';
 
 /** 75 → "1:15". */
 export function formatWait(seconds: number): string {
@@ -90,10 +91,18 @@ export function PinForm({
 
   return (
     <>
-      <h1 ref={headingRef} tabIndex={-1}>
-        {t('pin.title')}
-      </h1>
-      <MascotSays>{t('pin.hint')}</MascotSays>
+      <button type="button" className="onboarding-back" onClick={onChangeLanguage}>
+        <CaretLeft aria-hidden="true" weight="bold" />
+        <Translate aria-hidden="true" />
+        <span lang={language}>{LANGUAGE_NAMES[language]}</span>
+        <span className="visually-hidden">{t('pin.changeLanguage')}</span>
+      </button>
+      <FetiviStage>
+        <h1 ref={headingRef} tabIndex={-1}>
+          {t('pin.title')}
+        </h1>
+        <p>{t('pin.hint')}</p>
+      </FetiviStage>
       <form className="pin-form" onSubmit={submit} noValidate>
         <label htmlFor="pin">{t('pin.label')}</label>
         <input
@@ -117,16 +126,12 @@ export function PinForm({
         </p>
         <button
           type="submit"
-          className="button block"
+          className="button block onboarding-button"
           disabled={pin.length !== 6 || busy || waitLeft > 0}
         >
           {t('pin.submit')}
         </button>
       </form>
-      <button type="button" className="text-button" onClick={onChangeLanguage}>
-        <Translate aria-hidden="true" />
-        {t('pin.changeLanguage')}
-      </button>
     </>
   );
 }

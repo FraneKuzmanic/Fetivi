@@ -1,3 +1,12 @@
+import {
+  Archive,
+  DeviceMobile,
+  EnvelopeSimple,
+  GraduationCap,
+  type Icon,
+  SignOut,
+  Trash,
+} from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setKeepForEvaluation } from '../api';
@@ -67,7 +76,9 @@ export function SettingsPage() {
       </h1>
 
       <section className="settings-section" aria-labelledby="settings-email">
-        <h2 id="settings-email">{t('settings.emailTitle')}</h2>
+        <SettingsHeading id="settings-email" icon={EnvelopeSimple}>
+          {t('settings.emailTitle')}
+        </SettingsHeading>
         {state === null ? (
           <p className="status">{t('common.loading')}</p>
         ) : email === null ? (
@@ -91,13 +102,15 @@ export function SettingsPage() {
               </button>
             )}
             {!closed && (
-              <label className="email-check">
+              <label className="settings-switch">
+                <span>{t('settings.tips')}</span>
                 <input
                   type="checkbox"
+                  role="switch"
                   checked={state.tips}
+                  aria-checked={state.tips}
                   onChange={(e) => toggleTips(e.target.checked)}
                 />
-                {t('settings.tips')}
               </label>
             )}
             <p className="status" role="status">
@@ -112,16 +125,30 @@ export function SettingsPage() {
       </section>
 
       <section className="settings-section" aria-labelledby="settings-device">
-        <h2 id="settings-device">{t('settings.deviceTitle')}</h2>
-        <p className="settings-note">{t(email ? 'settings.deviceIntro' : 'settings.noEmail')}</p>
-        <button
-          type="button"
-          className="button settings-action"
-          disabled={!email || linkRequest === 'busy'}
-          onClick={() => send(requestRecovery, setLinkRequest)}
-        >
-          {t('settings.sendLink')}
-        </button>
+        <SettingsHeading id="settings-device" icon={DeviceMobile}>
+          {t('settings.deviceTitle')}
+        </SettingsHeading>
+        <p className="settings-note">{t('settings.deviceIntro')}</p>
+        <p className="settings-fact">
+          <SignOut aria-hidden="true" />
+          {t('settings.deviceSignOut')}
+        </p>
+        <div className="settings-action-row">
+          <button
+            type="button"
+            className="button settings-action"
+            disabled={!email || linkRequest === 'busy'}
+            aria-describedby={email ? undefined : 'settings-device-needs'}
+            onClick={() => send(requestRecovery, setLinkRequest)}
+          >
+            {t('settings.sendLink')}
+          </button>
+          {state !== null && !email && (
+            <p id="settings-device-needs" className="settings-needs">
+              {t('settings.needsEmail')}
+            </p>
+          )}
+        </div>
         <p className="status" role="status">
           {linkRequest === 'sent'
             ? t('settings.linkSent')
@@ -132,23 +159,54 @@ export function SettingsPage() {
       </section>
 
       <section className="settings-section" aria-labelledby="settings-evaluation">
-        <h2 id="settings-evaluation">{t('settings.evaluationTitle')}</h2>
-        <label className="email-check">
+        <SettingsHeading id="settings-evaluation" icon={GraduationCap}>
+          {t('settings.evaluationTitle')}
+        </SettingsHeading>
+        <label className="settings-switch">
+          <span>{t('settings.evaluation')}</span>
           <input
             type="checkbox"
+            role="switch"
             checked={keep}
+            aria-checked={keep}
             aria-describedby="settings-evaluation-note"
             onChange={(e) => toggleKeep(e.target.checked)}
           />
-          {t('settings.evaluation')}
         </label>
-        <p id="settings-evaluation-note" className="settings-note">
-          {t('settings.evaluationNote')}
-        </p>
+        <ul id="settings-evaluation-note" className="settings-facts">
+          <li className="settings-fact">
+            <Trash aria-hidden="true" />
+            {t('settings.evaluationOff')}
+          </li>
+          <li className="settings-fact">
+            <Archive aria-hidden="true" />
+            {t('settings.evaluationOn')}
+          </li>
+        </ul>
         <p className="status" role="status">
           {keepFailed ? t('error.network') : ''}
         </p>
       </section>
     </section>
+  );
+}
+
+/** A Settings group's title with its icon. */
+function SettingsHeading({
+  id,
+  icon: Icon,
+  children,
+}: {
+  id: string;
+  icon: Icon;
+  children: string;
+}) {
+  return (
+    <h2 id={id} className="settings-heading">
+      <span className="settings-heading-icon">
+        <Icon aria-hidden="true" />
+      </span>
+      {children}
+    </h2>
   );
 }
