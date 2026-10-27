@@ -268,7 +268,7 @@ describe('host inbox', () => {
   it('shows a short empty state', async () => {
     stubApi([]);
     await mount();
-    await vi.waitFor(() => expect(host.textContent).toContain('No guest messages yet.'));
+    await vi.waitFor(() => expect(host.textContent).toContain('No guest messages yet'));
     expect(host.querySelector('.mascot, img')).toBeNull();
   });
 

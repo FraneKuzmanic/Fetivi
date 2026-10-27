@@ -7,6 +7,7 @@ import {
   createMemoryMailer,
   type Db,
   ensureQueues,
+  type Geocoder,
   type ManualImportModel,
   type ManualModelResult,
   type PaymentGateway,
@@ -66,6 +67,7 @@ export async function createTestApp(
     resendWebhookSecret?: string;
     vapidPublicKey?: string;
     stripe?: { gateway: PaymentGateway; webhookSecret?: string };
+    geocoder?: Geocoder;
   } = {},
 ) {
   const testDb = await createTestDatabase();
@@ -96,6 +98,7 @@ export async function createTestApp(
     resendWebhookSecret: options.resendWebhookSecret,
     vapidPublicKey: options.vapidPublicKey,
     stripe: options.stripe,
+    geocoder: options.geocoder ?? null,
   });
   if (options.extraRoutes) app.register(options.extraRoutes);
   await app.ready();

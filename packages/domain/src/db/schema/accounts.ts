@@ -20,6 +20,8 @@ export const accounts = pgTable('accounts', {
   stripeAccountId: text('stripe_account_id').unique(),
   stripeCardPayments: providerCardStatus('stripe_card_payments'),
   stripeCheckedAt: timestamp('stripe_checked_at', { withTimezone: true }),
+  /** The last Disconnect; a new account after it needs a new idempotency key. */
+  stripeDisconnectedAt: timestamp('stripe_disconnected_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

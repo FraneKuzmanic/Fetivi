@@ -32,6 +32,7 @@ import type { OrderPaymentJobData } from './enqueue';
 import { applyStripeEvent, parseStripeEvent } from './events';
 import { type PaymentDeps, type PaymentJobResult, runPaymentJob } from './jobs';
 import {
+  disconnectHostPayments,
   hostOnboardingLink,
   OnboardingRuleError,
   providerOnboardingLink,
@@ -740,5 +741,71 @@ describe('host onboarding (38)', () => {
     await expect(refreshHostPayments(onboarding, host.hostId)).rejects.toEqual(
       new OnboardingRuleError('no-account'),
     );
+  });
+});
+
+describe('disconnecting a host account', () => {
+  it('waits for open card Orders, then unlinks the account and makes a new one on reconnect', async () => {
+    clock = NOW;
+    const w = world();
+    const host = await seedGuestUnit(testDb.db, { now: NOW });
+    const onboarding = { db: testDb.db, gateway: w.gateway, now: () => clock };
+    const urls = { returnUrl: 'http://admin.test/r', refreshUrl: 'http://admin.test/f' };
+    await hostOnboardingLink(onboarding, host.hostId, urls);
+    const [linked] = await testDb.db.select().from(accounts).where(eq(accounts.id, host.hostId));
+    const oldAccount = linked?.stripeAccountId as string;
+    await testDb.db
+      .update(accounts)
+      .set({ stripeCardPayments: 'active' })
+      .where(eq(accounts.id, host.hostId));
+
+    const offer = await seedOrderableOffer(testDb.db, {
+      hostId: host.hostId,
+      availabilityMode: 'allotment',
+      paymentMode: 'online',
+      priceMinor: 2500,
+      capacity: 2,
+      startsAt: SLOT_AT,
+      contactFields: 'name',
+    });
+    await publishOffer(testDb.db, offer.offerId);
+    const hostScope = {
+      spaceId: host.spaceId,
+      offerScope: { ...scope(), propertyId: host.propertyId },
+    };
+    const book = { offerId: offer.offerId, date: DAY, quantity: 1, slotId: offer.slotId as string };
+    const { pendingId } = await prepareOrder(deps(), hostScope, book);
+    const { order } = await completeOrder(deps(), {
+      pendingId,
+      ...hostScope,
+      contact: { email: 'guest@example.test', name: 'Ana' },
+    });
+
+    await expect(disconnectHostPayments(onboarding, host.hostId)).rejects.toEqual(
+      new OnboardingRuleError('open-card-orders'),
+    );
+
+    await testDb.db.update(orders).set({ status: 'completed' }).where(eq(orders.id, order.id));
+    clock = minutes(5);
+    await disconnectHostPayments(onboarding, host.hostId);
+    const [after] = await testDb.db.select().from(accounts).where(eq(accounts.id, host.hostId));
+    expect(after).toMatchObject({
+      stripeAccountId: null,
+      stripeCardPayments: null,
+      stripeCheckedAt: null,
+      stripeDisconnectedAt: clock,
+    });
+    // The earlier Order's attempt keeps the account it was paid on.
+    const [attempt] = await testDb.db
+      .select()
+      .from(paymentAttempts)
+      .where(eq(paymentAttempts.orderId, order.id));
+    expect(attempt?.stripeAccountId).toBe(oldAccount);
+
+    await hostOnboardingLink(onboarding, host.hostId, urls);
+    const creates = w.gateway.calls.filter((c) => c.op === 'create_account');
+    expect(creates.at(-1)?.idempotencyKey).toBe(`host:${host.hostId}:account:${clock.getTime()}`);
+    const [relinked] = await testDb.db.select().from(accounts).where(eq(accounts.id, host.hostId));
+    expect(relinked?.stripeAccountId).not.toBe(oldAccount);
   });
 });

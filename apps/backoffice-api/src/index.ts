@@ -4,6 +4,7 @@ import {
   createJobQueue,
   createLocalMediaStore,
   createMailer,
+  createPhotonGeocoder,
   createStripeGateway,
   ensureQueues,
 } from '@fetivi/domain';
@@ -52,6 +53,9 @@ const app = buildApp({
   resendWebhookSecret: config.RESEND_WEBHOOK_SECRET,
   vapidPublicKey: config.VAPID_PUBLIC_KEY,
   stripe: gateway ? { gateway, webhookSecret: config.STRIPE_WEBHOOK_SECRET } : undefined,
+  geocoder: config.GEOCODER_ENABLED
+    ? createPhotonGeocoder({ fetch: egress.fetch, userAgent: config.GEOCODER_USER_AGENT })
+    : null,
 });
 
 await app.listen({ host: config.HOST, port: config.PORT });

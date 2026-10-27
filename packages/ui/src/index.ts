@@ -21,6 +21,7 @@ export {
   type HostSentLabels,
 } from './components/host-draft-card/HostMessageSent';
 export { MapList, type MapListLabels } from './components/map-list/MapList';
+export { loadMapLibre, MAP_STYLE_URL } from './components/map-list/map';
 export { PlaceCard, type PlaceLabels } from './components/place-carousel/PlaceCard';
 export { PlaceCarousel } from './components/place-carousel/PlaceCarousel';
 export {

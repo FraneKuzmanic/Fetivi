@@ -300,7 +300,6 @@ export function ProviderPage() {
         </Section>
 
         <OnlinePaymentsPanel
-          subject="provider"
           status={provider}
           onLink={() => providers.stripeOnboardingLink(provider.id)}
           onRefresh={() => providers.stripeRefresh(provider.id)}

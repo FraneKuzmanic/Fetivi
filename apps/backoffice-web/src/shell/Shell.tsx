@@ -1,9 +1,12 @@
+import { Mascot } from '@fetivi/ui';
 import {
   Buildings,
   CalendarCheck,
+  CaretDown,
   ClipboardText,
   GearSix,
   Handshake,
+  House,
   type Icon,
   Lightbulb,
   ListChecks,
@@ -11,18 +14,20 @@ import {
   Receipt,
   Scales,
   SealCheck,
+  SidebarSimple,
   SignOut,
   Storefront,
   ThumbsUp,
   Tray,
   UsersThree,
 } from '@phosphor-icons/react';
-import { type ReactNode, useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { admin, host, type Me } from '../api';
 import { onInboxChanged, onPushMessage } from '../host/inbox/inbox-events';
 import { useSession } from '../session';
 import { useAction } from '../useAction';
+import { Menu } from './Menu';
 
 interface NavItem {
   to: string;
@@ -34,6 +39,8 @@ interface NavItem {
   prefixes: string[];
   /** A count shown on the item, such as unread messages. */
   badge?: number;
+  /** Kept apart at the bottom of the sidebar. */
+  foot?: boolean;
 }
 
 const isHostView = (me: Me) => me.account.role !== 'admin' || me.actingAs !== null;
@@ -59,12 +66,18 @@ function navItems(me: Me, unread: number): NavItem[] {
       },
       { to: '/admin/orders', label: 'Orders', icon: Receipt, prefixes: ['/admin/orders'] },
       { to: '/admin/reconciliation', label: 'Reconciliation', icon: Scales, prefixes: [] },
-      { to: '/admin/settings', label: 'Settings', icon: GearSix, prefixes: [] },
+      { to: '/admin/settings', label: 'Settings', icon: GearSix, prefixes: [], foot: true },
       { to: '/admin/audit', label: 'Audit', icon: ClipboardText, prefixes: [] },
     ];
   }
   return [
-    { to: '/', label: 'Properties', icon: Buildings, prefixes: ['/properties', '/units'] },
+    { to: '/', label: 'Today', icon: House, prefixes: [] },
+    {
+      to: '/properties',
+      label: 'Properties',
+      icon: Buildings,
+      prefixes: ['/properties', '/units'],
+    },
     { to: '/stays', label: 'Stays', icon: CalendarCheck, prefixes: ['/stays'] },
     { to: '/services', label: 'Services', icon: Storefront, prefixes: ['/services'] },
     { to: '/inbox', label: 'Inbox', icon: Tray, prefixes: ['/inbox'], badge: unread },
@@ -75,28 +88,72 @@ function navItems(me: Me, unread: number): NavItem[] {
       icon: Lightbulb,
       prefixes: ['/suggestions'],
     },
-    { to: '/settings/notifications', label: 'Settings', icon: GearSix, prefixes: ['/settings'] },
+    { to: '/settings', label: 'Settings', icon: GearSix, prefixes: ['/settings'], foot: true },
   ];
 }
 
 function Brand() {
   return (
-    <Link to="/" className="brand">
+    <Link to="/" className="brand" aria-label="Fetivi, home">
+      <Mascot className="brand-mascot" />
       <span className="brand-name">Fetivi</span>
-      <span className="brand-sub">Back office</span>
     </Link>
   );
 }
 
 const UNREAD_POLL_MS = 60_000;
+const WIDE = '(min-width: 900px)';
+/** How long the sidebar takes to fold; matches the grid transition in styles.css. */
+const FOLD_MS = 240;
+const COLLAPSED_KEY = 'fetivi.sidebar-collapsed';
+
+function storedCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function storeCollapsed(collapsed: boolean): void {
+  try {
+    localStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0');
+  } catch {
+    // Blocked storage: the choice lasts until the page reloads.
+  }
+}
+
+/** Whether the sidebar is showing (a wide screen), following the window as it resizes. */
+function useWide(): boolean {
+  const [wide, setWide] = useState(() => window.matchMedia?.(WIDE).matches ?? false);
+  useEffect(() => {
+    const query = window.matchMedia?.(WIDE);
+    if (!query) return;
+    const change = () => setWide(query.matches);
+    query.addEventListener('change', change);
+    return () => query.removeEventListener('change', change);
+  }, []);
+  return wide;
+}
+
+/** The signed-in person's initial, for the profile button. */
+const initialOf = (email: string) => (email.trim()[0] ?? '?').toUpperCase();
 
 export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const { setMe, logout } = useSession();
   const { busy, error, run } = useAction();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [unread, setUnread] = useState(0);
+  const [collapsed, setCollapsed] = useState(storedCollapsed);
+  const wide = useWide();
+  const [folding, setFolding] = useState(false);
+  const foldTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(foldTimer.current), []);
   const hostView = isHostView(me);
   const items = navItems(me, unread);
+  // Setup has its own sticky footer; the phone's bottom nav would squeeze the form between them.
+  const focused = /^\/units\/[^/]+\/setup(\/|$)/.test(pathname);
 
   // The unread count, checked on every page change, every minute and on a push to this phone.
   // biome-ignore lint/correctness/useExhaustiveDependencies: a page change is the trigger.
@@ -122,72 +179,159 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   }, [hostView, pathname]);
 
   const isCurrent = (item: NavItem) =>
-    pathname === item.to || item.prefixes.some((p) => pathname.startsWith(p));
+    item.to === '/'
+      ? pathname === '/'
+      : pathname === item.to || item.prefixes.some((p) => pathname.startsWith(p));
 
-  const links = (className: string, short = false) =>
-    items.map((item) => (
-      <Link
-        key={item.to}
-        to={item.to}
-        className={className}
-        aria-current={isCurrent(item) ? 'page' : undefined}
-      >
-        <item.icon aria-hidden="true" weight={isCurrent(item) ? 'fill' : 'regular'} />
-        <span>{(short && item.short) || item.label}</span>
-        {item.badge ? (
-          <span className="nav-badge" role="img" aria-label={`${item.badge} waiting`}>
-            {item.badge > 99 ? '99+' : item.badge}
+  const links = (list: NavItem[], className: string, short = false) =>
+    // On a phone a host reaches Settings from the profile menu, leaving room for six items.
+    list
+      .filter((item) => !(short && item.to === '/settings'))
+      .map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          className={className}
+          aria-current={isCurrent(item) ? 'page' : undefined}
+          title={collapsed && !short ? item.label : undefined}
+        >
+          <item.icon aria-hidden="true" weight={isCurrent(item) ? 'fill' : 'regular'} />
+          <span className="nav-label">{(short && item.short) || item.label}</span>
+          {item.badge ? (
+            <span className="nav-badge" role="img" aria-label={`${item.badge} waiting`}>
+              {item.badge > 99 ? '99+' : item.badge}
+            </span>
+          ) : null}
+        </Link>
+      ));
+
+  const toggle = () => {
+    setCollapsed(!collapsed);
+    storeCollapsed(!collapsed);
+    // While the width slides, the toggle is hidden so it never passes over the mascot.
+    if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setFolding(true);
+      clearTimeout(foldTimer.current);
+      foldTimer.current = setTimeout(() => setFolding(false), FOLD_MS);
+    }
+  };
+
+  const menuItems = [
+    // The sidebar has Settings at its foot; a host's phone has it only here.
+    ...(hostView && !wide
+      ? [
+          {
+            label: 'Settings',
+            icon: <GearSix aria-hidden="true" />,
+            onSelect: () => navigate('/settings'),
+          },
+        ]
+      : []),
+    {
+      label: 'Log out',
+      icon: <SignOut aria-hidden="true" />,
+      onSelect: () => void run(logout),
+    },
+  ];
+
+  const profile = (
+    <Menu
+      label="Account"
+      className="profile-button"
+      trigger={
+        <>
+          <span className="avatar" aria-hidden="true">
+            {initialOf(me.account.email)}
           </span>
-        ) : null}
-      </Link>
-    ));
-
-  const logOut = (
-    <button type="button" className="ghost" onClick={() => void run(logout)}>
-      <SignOut aria-hidden="true" />
-      <span>Log out</span>
-    </button>
+          <CaretDown aria-hidden="true" className="profile-caret" />
+        </>
+      }
+      header={
+        <>
+          <span className="menu-caption">Signed in as</span>
+          <strong className="menu-email">{me.account.email}</strong>
+        </>
+      }
+      items={menuItems}
+    />
   );
 
+  const appClass = [
+    'app',
+    collapsed ? 'collapsed' : '',
+    folding ? 'folding' : '',
+    focused ? 'focused' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className="app">
+    <div className={appClass}>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
       <aside className="sidebar">
-        <Brand />
-        <nav className="side-nav" aria-label="Main">
-          {links('side-link')}
-        </nav>
-        <div className="side-account">
-          <span className="account-email">{me.account.email}</span>
-          {logOut}
+        <div className="sidebar-head">
+          <Brand />
+          <button
+            type="button"
+            className="ghost icon-button sidebar-toggle"
+            aria-label={collapsed ? 'Expand the sidebar' : 'Collapse the sidebar'}
+            title={collapsed ? 'Expand the sidebar' : 'Collapse the sidebar'}
+            aria-expanded={!collapsed}
+            aria-controls="side-nav"
+            onClick={toggle}
+          >
+            <SidebarSimple aria-hidden="true" />
+          </button>
         </div>
+        <nav id="side-nav" className="side-nav" aria-label="Main">
+          {links(
+            items.filter((item) => !item.foot),
+            'side-link',
+          )}
+          <div className="side-foot">
+            {links(
+              items.filter((item) => item.foot),
+              'side-link',
+            )}
+          </div>
+        </nav>
       </aside>
 
-      <header className="topbar">
-        <Brand />
-        {logOut}
-      </header>
-
-      <div className="content">
+      <div className="main-col">
         {me.actingAs ? (
-          <div className="banner" role="status">
-            <span>
-              Acting as <strong>{me.actingAs.email}</strong>. Every change is logged.
-            </span>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void run(async () => setMe(await admin.stopActing()))}
-            >
-              Stop
-            </button>
+          <div className="acting">
+            <div className="banner" role="status">
+              <span>
+                Acting as <strong>{me.actingAs.email}</strong>. Every change is logged.
+              </span>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void run(async () => setMe(await admin.stopActing()))}
+              >
+                Stop
+              </button>
+            </div>
           </div>
         ) : null}
-        {error ? <p role="alert">{error}</p> : null}
-        <main>{children}</main>
+
+        <header className="topbar">
+          <Brand />
+          {profile}
+        </header>
+
+        <div className="content">
+          {error ? <p role="alert">{error}</p> : null}
+          <main id="main" tabIndex={-1}>
+            {children}
+          </main>
+        </div>
       </div>
 
       <nav className="bottom-nav" aria-label="Main">
-        {links('bottom-link', true)}
+        {links(items, 'bottom-link', true)}
       </nav>
     </div>
   );

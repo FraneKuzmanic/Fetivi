@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fieldLevel, isFilled, resumeStep, visibleFields, wizardProgress } from './completeness';
 import { facts, MINIMUM } from './wizard.fixtures';
-import { WIZARD_FIELDS, type WizardFieldId, wizardField } from './wizard-config';
+import { answersPrompt, WIZARD_FIELDS, type WizardFieldId, wizardField } from './wizard-config';
 
 const level = (id: WizardFieldId, f = facts()) => fieldLevel(wizardField(id), f);
 const visibleIds = (f: ReturnType<typeof facts>) =>
@@ -79,7 +79,11 @@ describe('filled', () => {
   it('counts a prompt as filled when a block carries its key', () => {
     const f = facts(
       {},
-      { blocks: [{ wizardKey: 'checkout_steps', revision: 1, publishedRevision: 1 }] },
+      {
+        blocks: [
+          { wizardKey: 'checkout_steps', category: 'how_tos', revision: 1, publishedRevision: 1 },
+        ],
+      },
     );
     expect(isFilled('checkout_steps', f)).toBe(true);
     expect(isFilled('laundry', f)).toBe(false);
@@ -128,7 +132,16 @@ describe('resume', () => {
     expect(resumeStep(facts(MINIMUM))).toBe('arrival_access');
     const arrivalDone = facts(
       { ...MINIMUM, location: true, lockboxCode: '1' },
-      { blocks: [{ wizardKey: 'arrival_directions', revision: 1, publishedRevision: 1 }] },
+      {
+        blocks: [
+          {
+            wizardKey: 'arrival_directions',
+            category: 'how_tos',
+            revision: 1,
+            publishedRevision: 1,
+          },
+        ],
+      },
     );
     expect(resumeStep(arrivalDone)).toBe('wifi_essentials');
   });
@@ -151,10 +164,28 @@ describe('resume', () => {
       },
       {
         amenityCount: 1,
-        blocks: keys.map((wizardKey) => ({ wizardKey, revision: 1, publishedRevision: 1 })),
+        blocks: keys.map((wizardKey) => ({
+          wizardKey,
+          category: 'how_tos' as const,
+          revision: 1,
+          publishedRevision: 1,
+        })),
       },
     );
     expect(resumeStep(all)).toBeNull();
     expect(wizardProgress(all).percent).toBe(100);
+  });
+});
+
+describe('answersPrompt', () => {
+  it('matches by key, and by section only where one prompt writes to it', () => {
+    expect(answersPrompt({ wizardKey: 'laundry', category: 'how_tos' }, 'laundry')).toBe(true);
+    expect(answersPrompt({ wizardKey: 'laundry', category: 'how_tos' }, 'hot_water')).toBe(false);
+    // Tips written on the Host picks page carry no key; host_picks has a single prompt.
+    expect(answersPrompt({ wizardKey: null, category: 'host_picks' }, 'neighbourhood_tips')).toBe(
+      true,
+    );
+    // How-tos has several prompts: an entry without a key answers none of them.
+    expect(answersPrompt({ wizardKey: null, category: 'how_tos' }, 'laundry')).toBe(false);
   });
 });

@@ -7,8 +7,8 @@ import { useWizardCopy } from './copy';
 
 const POLL_MS = 5000;
 
-/** The id of the unit page's Guest information section. */
-export const UNIT_BLOCKS_ID = 'guest-information';
+/** The unit page's guest guide section, as its `?section=` value. */
+export const UNIT_BLOCKS_ID = 'guide';
 
 /**
  * The go-live minimum as a checklist, and the Go live button. While translations are the only
@@ -66,7 +66,7 @@ export function GoLivePanel({
           const to = target
             ? wizardStepPath(status.unitId, target.stepId, target.fieldId)
             : item === 'translations'
-              ? `/units/${status.unitId}#${UNIT_BLOCKS_ID}`
+              ? `/units/${status.unitId}?section=${UNIT_BLOCKS_ID}`
               : null;
           return (
             <li key={item} className={done ? 'checklist-item done' : 'checklist-item'}>

@@ -28,7 +28,7 @@ export function UnitStatsPage() {
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/">Properties</Link>
+        <Link to="/properties">Properties</Link>
         <span aria-hidden="true">/</span>
         <Link to={`/properties/${unit.propertyId}`}>{unit.propertyName}</Link>
         <span aria-hidden="true">/</span>

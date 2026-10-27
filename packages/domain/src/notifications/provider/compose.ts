@@ -48,7 +48,15 @@ const STRINGS = {
     date: 'Datum',
     time: 'Vrijeme',
     /** The quantity's label per price unit; the value is the bare number. */
-    quantity: { person: 'Broj osoba', group: 'Broj grupa', item: 'Količina' },
+    quantity: {
+      person: 'Broj osoba',
+      group: 'Broj grupa',
+      item: 'Količina',
+      litre: 'Količina (l)',
+      kilogram: 'Količina (kg)',
+      hour: 'Broj sati',
+      day: 'Broj dana',
+    },
     guestName: 'Gost',
     guestPhone: 'Telefon gosta',
     action: 'Otvorite poveznicu za potvrdu primitka ili ako ne možete izvršiti narudžbu.',
@@ -69,7 +77,15 @@ const STRINGS = {
     date: 'Date',
     time: 'Time',
     /** The quantity's label per price unit; the value is the bare number. */
-    quantity: { person: 'Persons', group: 'Groups', item: 'Quantity' },
+    quantity: {
+      person: 'Persons',
+      group: 'Groups',
+      item: 'Quantity',
+      litre: 'Litres',
+      kilogram: 'Kilograms',
+      hour: 'Hours',
+      day: 'Days',
+    },
     guestName: 'Guest',
     guestPhone: 'Guest phone',
     action: "Open the link to acknowledge it, or to tell us you can't fulfil it.",

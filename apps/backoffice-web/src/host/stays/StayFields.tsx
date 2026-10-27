@@ -1,5 +1,5 @@
 import { STAY_LIMITS } from '@fetivi/domain/stay-vocabulary';
-import { NumberField, TextField } from '../../forms/fields';
+import { DateField, NumberField, TextField } from '../../forms/fields';
 import { nightsLabel } from './format';
 
 export interface StayDraft {
@@ -27,19 +27,11 @@ export function StayFields({
   return (
     <>
       <div className="field-row">
-        <TextField
-          label="Check-in"
-          type="date"
-          value={value.checkIn}
-          maxLength={10}
-          required
-          onChange={set('checkIn')}
-        />
-        <TextField
+        <DateField label="Check-in" value={value.checkIn} required onChange={set('checkIn')} />
+        <DateField
           label="Checkout"
-          type="date"
           value={value.checkout}
-          maxLength={10}
+          min={value.checkIn ?? undefined}
           required
           onChange={set('checkout')}
         />

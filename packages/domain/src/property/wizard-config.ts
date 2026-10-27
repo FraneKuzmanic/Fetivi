@@ -358,6 +358,34 @@ export function wizardField(id: WizardFieldId): WizardField {
   return byId.get(id) as WizardField;
 }
 
+/** Each guide section's prompt, for the sections only one prompt writes to. */
+const SOLE_PROMPT: Partial<Record<BlockCategory, WizardPromptKey>> = (() => {
+  const counts = new Map<BlockCategory, WizardPromptKey[]>();
+  for (const f of WIZARD_FIELDS) {
+    if (f.kind !== 'prompt' || !f.prompt) continue;
+    counts.set(f.prompt.category, [
+      ...(counts.get(f.prompt.category) ?? []),
+      f.id as WizardPromptKey,
+    ]);
+  }
+  return Object.fromEntries(
+    [...counts].filter(([, keys]) => keys.length === 1).map(([category, [key]]) => [category, key]),
+  );
+})();
+
+/**
+ * Whether a guide entry answers a wizard prompt: it carries the prompt's key, or it was written
+ * outside the wizard (no key) in a section only that prompt writes to, such as the Neighbourhood
+ * tips on the Host picks page. Sections with several prompts match by key only.
+ */
+export function answersPrompt(
+  block: { wizardKey: string | null; category: BlockCategory },
+  key: WizardPromptKey,
+): boolean {
+  if (block.wizardKey !== null) return block.wizardKey === key;
+  return SOLE_PROMPT[block.category] === key;
+}
+
 export function fieldsOfStep(stepId: WizardStepId): WizardField[] {
   return WIZARD_FIELDS.filter((f) => f.step === stepId);
 }

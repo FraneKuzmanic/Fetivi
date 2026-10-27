@@ -1,9 +1,9 @@
 import { WIZARD_COPY, type WizardCopy } from '@fetivi/domain/wizard';
-import { useSession } from '../../session';
+import { useOptionalSession } from '../../session';
 
 /** The wizard copy in the viewer's own language; an acting admin sees theirs, not the host's. */
 export function useWizardCopy(): WizardCopy {
-  const { me } = useSession();
+  const me = useOptionalSession()?.me;
   const language = me && me !== 'loading' ? me.account.language : 'en';
   return WIZARD_COPY[language] ?? WIZARD_COPY.en;
 }

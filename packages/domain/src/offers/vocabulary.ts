@@ -38,7 +38,8 @@ export const CONTACT_FIELDS = ['name', 'phone', 'name_and_phone'] as const;
 export type ContactFields = (typeof CONTACT_FIELDS)[number];
 
 /** The price is per unit of the Order's quantity. */
-export const PRICE_UNITS = ['person', 'group', 'item'] as const;
+/** What one price buys; only `group` is a flat price, the rest multiply by the quantity. */
+export const PRICE_UNITS = ['person', 'group', 'item', 'litre', 'kilogram', 'hour', 'day'] as const;
 export type PriceUnit = (typeof PRICE_UNITS)[number];
 
 /** The language of a Provider's order emails and order page. */

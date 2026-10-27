@@ -33,6 +33,16 @@ const schema = z
     MEDIA_DIR: z.string().default('../../.data/media'),
     /** The VAPID public key (same pair as jobs); without it the host's phone alerts are off. */
     VAPID_PUBLIC_KEY: optionalString,
+    /** Photon asks callers to identify themselves; production sets a reachable one. */
+    GEOCODER_USER_AGENT: z
+      .string()
+      .min(10)
+      .default('Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)'),
+    /** Address search on the property form; 'false' turns it off and leaves manual entry. */
+    GEOCODER_ENABLED: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((v) => v === 'true'),
     /** For the house manual import; without it, imports fail as not configured. */
     ANTHROPIC_API_KEY: z
       .string()

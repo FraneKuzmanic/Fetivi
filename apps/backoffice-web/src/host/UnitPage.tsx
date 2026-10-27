@@ -1,7 +1,23 @@
 import { BED_TYPES, type HostBlockCategory, LIMITS } from '@fetivi/domain/vocabulary';
-import { CaretRight, ChartBar, DownloadSimple, Plus, Trash } from '@phosphor-icons/react';
+import {
+  Bed,
+  BookOpenText,
+  CalendarCheck,
+  CalendarDots,
+  CaretRight,
+  ChartBar,
+  ClipboardText,
+  Couch,
+  DotsThree,
+  DownloadSimple,
+  EyeSlash,
+  PencilSimple,
+  Plus,
+  Trash,
+  WifiHigh,
+} from '@phosphor-icons/react';
 import { Fragment, useCallback, useEffect, useId, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import {
   type Block,
   host,
@@ -13,11 +29,13 @@ import {
 import { CheckboxField, NumberField, Section, SelectField, TextField } from '../forms/fields';
 import { BED_LABELS, CATEGORY_LABELS } from '../forms/labels';
 import { sectionBody } from '../forms/patch';
+import { Menu } from '../shell/Menu';
 import { useAction } from '../useAction';
 import { AmenitiesEditor } from './AmenitiesEditor';
 import { BlockEditor, SecretWarnings } from './BlockEditor';
 import { BlockList, preview } from './BlockList';
-import { CORE_SECTIONS, CoreField } from './CoreFields';
+import { CORE_SECTION_ICONS, CORE_SECTIONS, CoreField } from './CoreFields';
+import { type PageSection, SectionLayout } from './SectionLayout';
 import { CalendarsPanel } from './stays/proposed/CalendarsPanel';
 import { FieldTranslationStatus } from './translations/FieldTranslationStatus';
 import { TranslationChip } from './translations/TranslationChip';
@@ -58,13 +76,6 @@ export function UnitPage() {
     void load();
   }, [load]);
 
-  // A link with a section hash (the go-live checklist's translations item) scrolls to it on load.
-  const { hash } = useLocation();
-  const loaded = detail !== null;
-  useEffect(() => {
-    if (loaded && hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
-  }, [loaded, hash]);
-
   usePendingRefresh(
     [
       ...(detail?.blocks ?? []),
@@ -100,19 +111,264 @@ export function UnitPage() {
     setStatus(wizard);
   };
 
+  const live = detail.qrSlug !== null;
+  const sections: PageSection[] = [
+    { id: 'basics', label: 'Name and capacity', icon: Bed },
+    {
+      id: 'access',
+      label: 'Wi-Fi, codes and arrival',
+      icon: WifiHigh,
+    },
+    ...CORE_SECTIONS.map((section) => ({
+      id: section.id,
+      label: section.title,
+      icon: CORE_SECTION_ICONS[section.id] ?? ClipboardText,
+    })),
+    { id: 'amenities', label: 'Amenities', icon: Couch },
+    { id: UNIT_BLOCKS_ID, label: 'Guest guide', icon: BookOpenText },
+    ...(live ? [{ id: 'calendars', label: 'Calendars', icon: CalendarDots }] : []),
+  ];
+
+  const renderSection = (sectionId: string) => {
+    if (sectionId === 'basics') {
+      return (
+        <>
+          <Section title="Unit name" onSave={saveFields(['name'])}>
+            <TextField
+              label="Name"
+              hint="For example Apartment 1 or Studio Sea View."
+              value={draft.name}
+              maxLength={LIMITS.name}
+              required
+              onChange={(v) => set('name')(v ?? '')}
+            />
+          </Section>
+          <Section
+            title="Capacity"
+            onSave={saveFields(['maxOccupancy', 'bedrooms', 'bathrooms', 'beds'])}
+          >
+            <div className="field-row">
+              <NumberField
+                label="Maximum guests"
+                value={draft.maxOccupancy}
+                min={1}
+                max={50}
+                onChange={set('maxOccupancy')}
+              />
+              <NumberField
+                label="Bedrooms"
+                value={draft.bedrooms}
+                min={0}
+                max={50}
+                onChange={set('bedrooms')}
+              />
+              <NumberField
+                label="Bathrooms"
+                value={draft.bathrooms}
+                min={0}
+                max={50}
+                onChange={set('bathrooms')}
+              />
+            </div>
+            <BedsEditor beds={draft.beds} onChange={set('beds')} />
+          </Section>
+        </>
+      );
+    }
+    if (sectionId === 'access') {
+      return (
+        <>
+          <Section title="Wi-Fi" onSave={saveFields(['noWifi', 'wifiNetwork', 'wifiPassword'])}>
+            <CheckboxField
+              label="This unit has no Wi-Fi"
+              checked={draft.noWifi}
+              onChange={set('noWifi')}
+            />
+            {draft.noWifi ? null : (
+              <div className="field-row">
+                <TextField
+                  label="Network name"
+                  value={draft.wifiNetwork}
+                  maxLength={LIMITS.shortText}
+                  onChange={set('wifiNetwork')}
+                />
+                <TextField
+                  label="Password"
+                  value={draft.wifiPassword}
+                  maxLength={LIMITS.wifiPassword}
+                  onChange={set('wifiPassword')}
+                />
+              </div>
+            )}
+          </Section>
+          <Section
+            title="Door and lockbox codes"
+            description="Guests see codes only from the arrival release."
+            onSave={saveFields(['doorCode', 'lockboxCode'])}
+          >
+            <div className="field-row">
+              <TextField
+                label="Door code"
+                value={draft.doorCode}
+                maxLength={LIMITS.code}
+                onChange={set('doorCode')}
+              />
+              <TextField
+                label="Lockbox code"
+                value={draft.lockboxCode}
+                maxLength={LIMITS.code}
+                onChange={set('lockboxCode')}
+              />
+            </div>
+          </Section>
+          <Section
+            title="Arrival release"
+            onSave={saveFields(['arrivalReleaseDaysBefore'])}
+            description={`Door codes and arrival details appear at 00:00, ${releaseLabel(draft.arrivalReleaseDaysBefore).toLowerCase()}, ${detail.timezone} time.`}
+          >
+            <label className="field">
+              <span className="field-label">Show arrival details</span>
+              <select
+                value={draft.arrivalReleaseDaysBefore}
+                onChange={(e) => set('arrivalReleaseDaysBefore')(Number(e.target.value))}
+              >
+                {RELEASE_DAYS.map((d) => (
+                  <option key={d} value={d}>
+                    {releaseLabel(d)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </Section>
+        </>
+      );
+    }
+    const core = CORE_SECTIONS.find((section) => section.id === sectionId);
+    if (core) {
+      return (
+        <Section
+          key={core.id}
+          title={core.title}
+          description="Values from the property apply here until you set one for this unit."
+          onSave={saveFields(core.fields)}
+        >
+          {core.fields.map((field) => (
+            <Fragment key={field}>
+              <CoreField
+                field={field}
+                value={draft[field]}
+                inherited={detail.propertyValues}
+                onChange={(v) => setDraft((d) => (d ? { ...d, [field]: v } : d))}
+              />
+              <FieldTranslationStatus
+                translation={detail.fieldTranslations.find((f) => f.field === field)}
+                onChanged={reloadFieldTranslations}
+              />
+            </Fragment>
+          ))}
+        </Section>
+      );
+    }
+    if (sectionId === 'amenities') {
+      return (
+        <AmenitiesEditor
+          value={detail.amenities}
+          inherited={detail.propertyAmenities}
+          fieldTranslations={detail.fieldTranslations}
+          onTranslationChanged={reloadFieldTranslations}
+          onSave={async (list) => {
+            const { amenities } = await host.setUnitAmenities(id, list);
+            await reloadFieldTranslations();
+            return amenities;
+          }}
+        />
+      );
+    }
+    if (sectionId === 'calendars') {
+      return <CalendarsPanel unitId={detail.id} />;
+    }
+    return (
+      <Section
+        title="Guest guide"
+        description="The property's entries show on this unit unless you hide them or use a version for this unit."
+      >
+        <InheritedBlocks detail={detail} onChanged={refresh} />
+        <h3>Only this unit</h3>
+        <BlockList
+          blocks={detail.blocks}
+          create={(input) => host.createUnitBlock(id, input)}
+          onChanged={refresh}
+          emptyText="Nothing just for this unit yet."
+        />
+      </Section>
+    );
+  };
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/">Properties</Link>
-        <span aria-hidden="true">/</span>
         <Link to={`/properties/${detail.propertyId}`}>{detail.propertyName}</Link>
       </nav>
       <div className="page-head">
-        <h1>{detail.name}</h1>
+        <div className="page-title">
+          <div className="title-line">
+            <h1>{detail.name}</h1>
+            {live ? (
+              <span className="chip ok">Live</span>
+            ) : (
+              <span className="chip neutral">Setting up</span>
+            )}
+          </div>
+          <p className="muted">{detail.propertyName}</p>
+        </div>
+        <div className="actions">
+          {live ? (
+            <Link className="button primary" to={`/stays/new?unit=${detail.id}`}>
+              <Plus aria-hidden="true" weight="bold" />
+              Register a Stay
+            </Link>
+          ) : null}
+          <Menu
+            label={`More actions for ${detail.name}`}
+            trigger={<DotsThree aria-hidden="true" weight="bold" />}
+            items={[
+              ...(live
+                ? [
+                    {
+                      label: 'Stays',
+                      icon: <CalendarCheck aria-hidden="true" />,
+                      onSelect: () => navigate(`/stays?unit=${detail.id}`),
+                    },
+                    {
+                      label: 'Guest stats',
+                      icon: <ChartBar aria-hidden="true" />,
+                      onSelect: () => navigate(`/units/${detail.id}/stats`),
+                    },
+                  ]
+                : []),
+              {
+                label: 'Delete unit',
+                icon: <Trash aria-hidden="true" />,
+                danger: true,
+                onSelect: () => {
+                  if (
+                    !busy &&
+                    window.confirm(`Delete ${detail.name}? Its QR code stops working.`)
+                  ) {
+                    void run(async () => {
+                      await host.deleteUnit(id);
+                      navigate(`/properties/${detail.propertyId}`, { replace: true });
+                    });
+                  }
+                },
+              },
+            ]}
+          />
+        </div>
       </div>
       {error ? <p role="alert">{error}</p> : null}
 
-      <div className="editor">
+      <div className="unit-overview">
         {status ? (
           <SetupPanels
             status={status}
@@ -127,184 +383,9 @@ export function UnitPage() {
           />
         ) : null}
         <QrPanel detail={detail} />
-        <StaysPanel detail={detail} />
-        {detail.qrSlug ? <CalendarsPanel unitId={detail.id} /> : null}
-
-        <Section title="Unit name" onSave={saveFields(['name'])}>
-          <TextField
-            label="Name"
-            hint="For example Apartment 1 or Studio Sea View."
-            value={draft.name}
-            maxLength={LIMITS.name}
-            required
-            onChange={(v) => set('name')(v ?? '')}
-          />
-        </Section>
-
-        <Section title="Wi-Fi" onSave={saveFields(['noWifi', 'wifiNetwork', 'wifiPassword'])}>
-          <CheckboxField
-            label="This unit has no Wi-Fi"
-            checked={draft.noWifi}
-            onChange={set('noWifi')}
-          />
-          {draft.noWifi ? null : (
-            <>
-              <TextField
-                label="Network name"
-                value={draft.wifiNetwork}
-                maxLength={LIMITS.shortText}
-                onChange={set('wifiNetwork')}
-              />
-              <TextField
-                label="Password"
-                value={draft.wifiPassword}
-                maxLength={LIMITS.wifiPassword}
-                onChange={set('wifiPassword')}
-              />
-            </>
-          )}
-        </Section>
-
-        <Section
-          title="Door and lockbox codes"
-          description="Guests see codes only from the arrival release."
-          onSave={saveFields(['doorCode', 'lockboxCode'])}
-        >
-          <TextField
-            label="Door code"
-            value={draft.doorCode}
-            maxLength={LIMITS.code}
-            onChange={set('doorCode')}
-          />
-          <TextField
-            label="Lockbox code"
-            value={draft.lockboxCode}
-            maxLength={LIMITS.code}
-            onChange={set('lockboxCode')}
-          />
-        </Section>
-
-        <Section
-          title="Arrival release"
-          onSave={saveFields(['arrivalReleaseDaysBefore'])}
-          description={`Arrival details appear at 00:00, ${releaseLabel(draft.arrivalReleaseDaysBefore).toLowerCase()}, ${detail.timezone} time.`}
-        >
-          <label className="field">
-            <span className="field-label">Show arrival details</span>
-            <select
-              value={draft.arrivalReleaseDaysBefore}
-              onChange={(e) => set('arrivalReleaseDaysBefore')(Number(e.target.value))}
-            >
-              {RELEASE_DAYS.map((d) => (
-                <option key={d} value={d}>
-                  {releaseLabel(d)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </Section>
-
-        <Section
-          title="Capacity"
-          onSave={saveFields(['maxOccupancy', 'bedrooms', 'bathrooms', 'beds'])}
-        >
-          <div className="field-row">
-            <NumberField
-              label="Maximum guests"
-              value={draft.maxOccupancy}
-              min={1}
-              max={50}
-              onChange={set('maxOccupancy')}
-            />
-            <NumberField
-              label="Bedrooms"
-              value={draft.bedrooms}
-              min={0}
-              max={50}
-              onChange={set('bedrooms')}
-            />
-            <NumberField
-              label="Bathrooms"
-              value={draft.bathrooms}
-              min={0}
-              max={50}
-              onChange={set('bathrooms')}
-            />
-          </div>
-          <BedsEditor beds={draft.beds} onChange={set('beds')} />
-        </Section>
-
-        {CORE_SECTIONS.map((section) => (
-          <Section
-            key={section.title}
-            title={section.title}
-            description="Empty fields use the property's value."
-            onSave={saveFields(section.fields)}
-          >
-            {section.fields.map((field) => (
-              <Fragment key={field}>
-                <CoreField
-                  field={field}
-                  value={draft[field]}
-                  inherited={detail.propertyValues}
-                  onChange={(v) => setDraft((d) => (d ? { ...d, [field]: v } : d))}
-                />
-                <FieldTranslationStatus
-                  translation={detail.fieldTranslations.find((f) => f.field === field)}
-                  onChanged={reloadFieldTranslations}
-                />
-              </Fragment>
-            ))}
-          </Section>
-        ))}
-
-        <AmenitiesEditor
-          value={detail.amenities}
-          inherited={detail.propertyAmenities}
-          fieldTranslations={detail.fieldTranslations}
-          onTranslationChanged={reloadFieldTranslations}
-          onSave={async (list) => {
-            const { amenities } = await host.setUnitAmenities(id, list);
-            await reloadFieldTranslations();
-            return amenities;
-          }}
-        />
-
-        <Section
-          id={UNIT_BLOCKS_ID}
-          title="Guest information"
-          description="Property blocks show on this unit unless you hide or replace them here."
-        >
-          <InheritedBlocks detail={detail} onChanged={refresh} />
-          <h3>Only this unit</h3>
-          <BlockList
-            blocks={detail.blocks}
-            create={(input) => host.createUnitBlock(id, input)}
-            onChanged={refresh}
-            emptyText="No blocks of its own yet."
-          />
-        </Section>
-
-        <section className="panel danger-zone">
-          <h2>Delete unit</h2>
-          <p className="muted">Its QR code stops working. This cannot be undone.</p>
-          <button
-            type="button"
-            className="danger"
-            disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete ${detail.name}? Its QR code stops working.`)) {
-                void run(async () => {
-                  await host.deleteUnit(id);
-                  navigate(`/properties/${detail.propertyId}`, { replace: true });
-                });
-              }
-            }}
-          >
-            Delete unit
-          </button>
-        </section>
       </div>
+
+      <SectionLayout sections={sections} label="Unit sections" render={renderSection} />
     </>
   );
 }
@@ -323,18 +404,26 @@ function SetupPanels({
 }) {
   const { ui } = useWizardCopy();
   const headingId = useId();
+  const setup = (
+    <section className="panel setup-panel" aria-labelledby={headingId}>
+      <h2 id={headingId}>{ui.setup}</h2>
+      <CompletenessBar {...status.progress} />
+      <div className="actions">
+        <Link
+          className={status.live ? 'button' : 'button primary'}
+          to={`/units/${status.unitId}/setup`}
+        >
+          {ui.openWizard}
+          <CaretRight aria-hidden="true" />
+        </Link>
+      </div>
+    </section>
+  );
+  // Once live, the checklist has done its job: setup stays one click away.
+  if (status.live) return setup;
   return (
     <>
-      <section className="panel" aria-labelledby={headingId}>
-        <h2 id={headingId}>{ui.setup}</h2>
-        <CompletenessBar {...status.progress} />
-        <div className="actions">
-          <Link className="button primary" to={`/units/${status.unitId}/setup`}>
-            {ui.openWizard}
-            <CaretRight aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
+      {setup}
       <GoLivePanel status={status} busy={busy} onGoLive={onGoLive} onRefresh={onRefresh} />
     </>
   );
@@ -367,35 +456,6 @@ function QrPanel({ detail }: { detail: UnitDetail }) {
           </a>
         </div>
       </div>
-    </section>
-  );
-}
-
-function StaysPanel({ detail }: { detail: UnitDetail }) {
-  const headingId = useId();
-  return (
-    <section className="panel" aria-labelledby={headingId}>
-      <h2 id={headingId}>Stays</h2>
-      {detail.qrSlug ? (
-        <>
-          <p className="muted">Register each guest party to get a PIN for them.</p>
-          <div className="actions">
-            <Link className="button primary" to={`/stays/new?unit=${detail.id}`}>
-              <Plus aria-hidden="true" weight="bold" />
-              Register a Stay
-            </Link>
-            <Link className="button" to={`/stays?unit=${detail.id}`}>
-              See Stays
-            </Link>
-            <Link className="button" to={`/units/${detail.id}/stats`}>
-              <ChartBar aria-hidden="true" />
-              See guest stats
-            </Link>
-          </div>
-        </>
-      ) : (
-        <p className="muted">Stays can be registered once the unit is live.</p>
-      )}
     </section>
   );
 }
@@ -483,7 +543,7 @@ function InheritedBlocks({
       {warnings.length > 0 ? <SecretWarnings warnings={warnings} /> : null}
       {error ? <p role="alert">{error}</p> : null}
       {detail.propertyBlocks.length === 0 ? (
-        <p className="muted">The property has no blocks yet.</p>
+        <p className="muted">The property has nothing in its guide yet.</p>
       ) : null}
       <ul className="rows">
         {detail.propertyBlocks.map((block) => {
@@ -493,7 +553,7 @@ function InheritedBlocks({
             return (
               <li key={block.id}>
                 <BlockEditor
-                  heading={`Replace "${block.title}" for this unit`}
+                  heading={`Your version of "${block.title}" for this unit`}
                   initial={{ ...block, category: block.category as HostBlockCategory }}
                   onSubmit={(input) =>
                     host.createUnitBlock(detail.id, { ...input, replacesBlockId: block.id })
@@ -511,42 +571,49 @@ function InheritedBlocks({
             );
           }
           return (
-            <li key={block.id} className={`block-row${isHidden || replacement ? ' faded' : ''}`}>
+            <li
+              key={block.id}
+              className={`block-row entry-row${isHidden || replacement ? ' faded' : ''}`}
+            >
               <div className="block-text">
-                <span className="eyebrow">{CATEGORY_LABELS[block.category]}</span>
                 <span className="block-title">
                   <strong>{block.title}</strong>
                   <TranslationChip status={block.translation.status} />
                 </span>
-                <span className="muted">
+                <span className="muted entry-preview">
                   {replacement
-                    ? `Replaced here by "${replacement.title}"`
+                    ? `This unit uses its own version: "${replacement.title}"`
                     : isHidden
                       ? 'Hidden on this unit'
                       : preview(block.body)}
                 </span>
+                <span className="entry-meta">{CATEGORY_LABELS[block.category]}</span>
               </div>
-              <div className="actions">
+              <div className="entry-actions">
                 {replacement ? null : isHidden ? (
                   <button type="button" disabled={busy} onClick={() => setHidden(block.id, false)}>
                     Show again
                   </button>
                 ) : (
-                  <>
-                    <button type="button" disabled={busy} onClick={() => setHidden(block.id, true)}>
-                      Hide for this unit
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => {
-                        setWarnings([]);
-                        setReplacing(block);
-                      }}
-                    >
-                      Replace for this unit
-                    </button>
-                  </>
+                  <Menu
+                    label={`Change ${block.title} for this unit`}
+                    trigger={<DotsThree aria-hidden="true" weight="bold" />}
+                    items={[
+                      {
+                        label: 'Write a version for this unit',
+                        icon: <PencilSimple aria-hidden="true" />,
+                        onSelect: () => {
+                          setWarnings([]);
+                          setReplacing(block);
+                        },
+                      },
+                      {
+                        label: 'Hide on this unit',
+                        icon: <EyeSlash aria-hidden="true" />,
+                        onSelect: () => setHidden(block.id, true),
+                      },
+                    ]}
+                  />
                 )}
               </div>
             </li>

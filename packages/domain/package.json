@@ -31,7 +31,8 @@
     "./feedback-vocabulary": "./src/feedback/vocabulary.ts",
     "./suggestion-vocabulary": "./src/suggestions/host/vocabulary.ts",
     "./settings-vocabulary": "./src/settings/vocabulary.ts",
-    "./space-vocabulary": "./src/spaces/vocabulary.ts"
+    "./space-vocabulary": "./src/spaces/vocabulary.ts",
+    "./geocode-vocabulary": "./src/geocode/vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

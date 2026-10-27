@@ -131,6 +131,10 @@ export interface WizardCopy {
     save: string;
     added: string;
     notAdded: string;
+    /** An entry the unit shows because the property has it. */
+    fromPropertyEntry: string;
+    editForAllUnits: string;
+    ownVersion: string;
     blockTitle: string;
     blockBody: string;
     addressLine: string;

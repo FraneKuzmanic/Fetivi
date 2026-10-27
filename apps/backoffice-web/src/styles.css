@@ -8,6 +8,8 @@
   --blue-700: #003a8c;
   --navy-900: #1a2c5b;
   --sky-200: #afdbf5;
+  /* The mascot's shirt stripe: data bars and progress, never actions. */
+  --stripe-500: #2f9fdc;
   --sky-100: #e4f3fc;
   --white: #ffffff;
   --gray-50: #f6f8fb;
@@ -15,13 +17,16 @@
   --gray-300: #c9d2e0;
   /* Input borders: 3:1 against white (WCAG 1.4.11). */
   --gray-400: #8390a6;
-  --gray-500: #64748b;
+  --gray-500: #5b6b82;
   --danger: #b42318;
   --danger-bg: #fdecea;
   --warning-bg: #fff4db;
   --warning-border: #f2d49b;
   --success: #0f7b4f;
   --success-bg: #e3f5ec;
+  /* Dalmatian sun, deepened to 4.5:1 on its wash: departures on Today. */
+  --sun-ink: #b35400;
+  --sun-wash: #fff1df;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -125,7 +130,8 @@ textarea:focus {
 
 input::placeholder,
 textarea::placeholder {
-  color: #94a3b8;
+  /* 4.6:1 on white: hints stay readable without passing for a value. */
+  color: #65758c;
 }
 
 textarea {
@@ -549,11 +555,41 @@ button svg,
 
 /* --- App shell ------------------------------------------------------------------------------ */
 
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 50;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--blue-600);
+  color: var(--white);
+  font-weight: 500;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+main:focus {
+  outline: none;
+}
+
 .brand {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+  min-width: 0;
   text-decoration: none;
   line-height: 1.2;
+}
+
+.brand-mascot {
+  width: 36px;
+  height: 36px;
+  flex: none;
 }
 
 .brand-name {
@@ -563,16 +599,23 @@ button svg,
   letter-spacing: -0.01em;
 }
 
-.brand-sub {
-  font-size: 12px;
-  color: var(--gray-500);
-}
-
 .sidebar {
   display: none;
 }
 
+.main-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.acting {
+  padding: 16px 16px 0;
+}
+
+/* On a phone the brand bar stays first; the acting banner sits under it. */
 .topbar {
+  order: -1;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -580,14 +623,14 @@ button svg,
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 16px;
+  padding: 6px 12px 6px 16px;
   border-bottom: 1px solid var(--gray-200);
   background: var(--white);
 }
 
 .content {
   width: 100%;
-  max-width: 1040px;
+  max-width: 1240px;
   padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
@@ -595,11 +638,130 @@ button svg,
   min-width: 0;
 }
 
+.app.focused .content {
+  padding-bottom: 24px;
+}
+
 .content > main {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+}
+
+/* Profile menu: the initial in a pale sea circle; the email and Log out live inside. */
+button.profile-button {
+  gap: 4px;
+  padding: 0 6px 0 4px;
+  border-color: transparent;
+  border-radius: 999px;
+  background: none;
+}
+
+button.profile-button:hover,
+button.profile-button[aria-expanded="true"] {
+  border-color: var(--gray-200);
+  background: var(--gray-50);
+  color: var(--navy-900);
+}
+
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--sky-200);
+  border-radius: 999px;
+  background: var(--sky-100);
+  color: var(--blue-700);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.profile-caret {
+  font-size: 14px;
+  color: var(--gray-500);
+}
+
+/* Dropdown menus: the profile menu and a row's "⋯". The one floating surface, so it has a shadow. */
+.menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 13rem;
+  max-width: min(20rem, calc(100vw - 32px));
+  padding: 6px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  box-shadow: 0 8px 24px rgb(26 44 91 / 0.12);
+}
+
+.menu-list.end {
+  right: 0;
+}
+
+.menu-list.start {
+  left: 0;
+}
+
+.menu-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+  padding: 8px 10px 12px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.menu-caption {
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
+.menu-email {
+  font-size: 14px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+button.menu-item {
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 0 10px;
+  border: 0;
+}
+
+button.menu-item:hover,
+button.menu-item:focus-visible {
+  background: var(--gray-50);
+  color: var(--navy-900);
+}
+
+button.menu-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.menu-item svg {
+  color: var(--menu-icon, var(--gray-500));
+}
+
+button.menu-item.danger {
+  --menu-icon: var(--danger);
+  color: var(--danger);
+}
+
+button.menu-item.danger:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .bottom-nav {
@@ -612,6 +774,10 @@ button svg,
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.app.focused .bottom-nav {
+  display: none;
+}
+
 .bottom-link {
   flex: 1;
   display: flex;
@@ -620,6 +786,8 @@ button svg,
   justify-content: center;
   gap: 2px;
   min-height: 60px;
+  min-width: 0;
+  padding: 0 2px;
   color: var(--gray-500);
   font-size: 12px;
   font-weight: 500;
@@ -630,12 +798,7 @@ button svg,
   font-size: 24px;
 }
 
-/* Seven admin items share a phone's width: a long label ends in an ellipsis, never overlaps. */
-.bottom-link {
-  min-width: 0;
-  padding: 0 2px;
-}
-
+/* Many admin items share a phone's width: a long label ends in an ellipsis, never overlaps. */
 .bottom-link > span:not(.nav-badge) {
   max-width: 100%;
   overflow: hidden;
@@ -650,8 +813,18 @@ button svg,
 @media (min-width: 900px) {
   .app {
     display: grid;
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: 248px minmax(0, 1fr);
     min-height: 100vh;
+  }
+
+  /* The sidebar slides between full and the icon rail. Icons keep their place in both, so only
+     the width moves and the words fade. */
+  .app {
+    transition: grid-template-columns 220ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .app.collapsed {
+    grid-template-columns: 76px minmax(0, 1fr);
   }
 
   .sidebar {
@@ -660,32 +833,156 @@ button svg,
     height: 100vh;
     display: flex;
     flex-direction: column;
-    gap: 32px;
-    padding: 24px 16px;
+    gap: 24px;
+    padding: 14px 14px 16px;
     border-right: 1px solid var(--gray-200);
     background: var(--white);
     box-shadow: 1px 0 8px rgb(26 44 91 / 0.04);
+    overflow: hidden auto;
   }
 
-  .sidebar .brand {
-    padding: 0 12px;
+  /* Expanded, the toggle sits at the head's right; in the rail it drops to its own line under
+     the mascot (2px centres it there). The head grows with the fold, so the links glide down. */
+  .sidebar-head {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    height: var(--tap);
+    padding-left: 6px;
+    transition: height 220ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  .topbar,
+  .app.collapsed .sidebar-head {
+    height: calc(var(--tap) * 2 + 8px);
+  }
+
+  .sidebar-toggle {
+    position: absolute;
+    top: 0;
+    right: 2px;
+    transition: opacity 160ms ease-out;
+  }
+
+  .app.collapsed .sidebar-toggle {
+    top: calc(var(--tap) + 8px);
+    right: auto;
+    left: 2px;
+  }
+
+  .sidebar-toggle svg {
+    font-size: 20px;
+  }
+
+  /* While the width slides the toggle is gone at once, so it never crosses the mascot; it fades
+     back in at its new place when the motion ends. */
+  .app.folding .sidebar-toggle {
+    opacity: 0;
+    transition: none;
+  }
+
+  .brand-name,
+  .side-link .nav-label {
+    white-space: nowrap;
+    transition: opacity 160ms ease-out;
+  }
+
+  .app.collapsed .brand-name,
+  .app.collapsed .side-link .nav-label {
+    opacity: 0;
+  }
+
+  .app.collapsed .side-link {
+    position: relative;
+  }
+
+  .app.collapsed .side-link .nav-badge {
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    min-width: 18px;
+    padding: 0 4px;
+    font-size: 11px;
+    line-height: 18px;
+  }
+
+  /* On a wide screen the profile menu shares the page title's row: it sits over the content's
+     top right corner, and the first thing on the page leaves room for it. */
+  .main-col {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+  }
+
+  .acting {
+    max-width: 1240px;
+    padding: 24px 40px 0;
+  }
+
+  .topbar {
+    grid-row: 2;
+    grid-column: 1;
+    position: static;
+    z-index: 1;
+    align-self: start;
+    justify-content: flex-end;
+    max-width: 1240px;
+    padding: 24px 40px 0;
+    border-bottom: 0;
+    background: none;
+    pointer-events: none;
+  }
+
+  .topbar > * {
+    pointer-events: auto;
+  }
+
+  .topbar .brand,
   .bottom-nav {
     display: none;
   }
 
   .content {
-    padding: 32px 40px 48px;
+    grid-row: 2;
+    grid-column: 1;
+    padding: 24px 40px 48px;
     gap: 20px;
+  }
+
+  .content > main > :first-child {
+    padding-right: 76px;
+  }
+
+  /* On a detail page the breadcrumbs come first: they share the profile menu's 44px line. */
+  .content > main > .crumbs:first-child {
+    min-height: var(--tap);
+  }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+  .app,
+  .brand-name,
+  .sidebar-head,
+  .sidebar-toggle,
+  .side-link .nav-label {
+    transition: none;
   }
 }
 
 .side-nav {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 4px;
+}
+
+/* Settings and the collapse switch, kept at the bottom of the sidebar. */
+.side-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-200);
 }
 
 .side-link {
@@ -693,7 +990,9 @@ button svg,
   align-items: center;
   gap: 12px;
   min-height: var(--tap);
-  padding: 0 12px;
+  /* 13px centres the 22px icon in the 48px rail, so it never moves when the sidebar folds. */
+  padding: 0 13px;
+  overflow: hidden;
   border-radius: var(--radius-sm);
   color: var(--gray-500);
   font-weight: 500;
@@ -701,6 +1000,7 @@ button svg,
 }
 
 .side-link svg {
+  flex: none;
   font-size: 22px;
 }
 
@@ -712,26 +1012,6 @@ button svg,
 .side-link[aria-current="page"] {
   color: var(--blue-600);
   background: var(--sky-100);
-}
-
-.side-account {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 16px 12px 0;
-  border-top: 1px solid var(--gray-200);
-}
-
-.account-email {
-  font-size: 13px;
-  color: var(--gray-500);
-  overflow-wrap: anywhere;
-}
-
-.side-account button.ghost {
-  padding: 0;
 }
 
 .banner {
@@ -749,24 +1029,62 @@ button svg,
 
 /* --- Page parts ----------------------------------------------------------------------------- */
 
+/* Title, actions and the profile menu share one 44px top line; anything under the title follows. */
 .page-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
+.page-head h1 {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+}
+
+/* A head whose only action is the "⋯" menu keeps it beside the title, however long. */
+.page-head:has(> .menu:last-child) {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+/* The way back up: an arrow, then the parent pages, quiet until hovered. */
 .crumbs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: -8px;
   font-size: 14px;
-  color: var(--gray-500);
+  color: var(--gray-300);
 }
 
 .crumbs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
   color: var(--gray-500);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.crumbs a:hover {
+  color: var(--navy-900);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.crumbs > a:first-child::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M224 128a8 8 0 0 1-8 8H59.3l58.4 58.3a8 8 0 0 1-11.4 11.4l-72-72a8 8 0 0 1 0-11.4l72-72a8 8 0 0 1 11.4 11.4L59.3 120H216a8 8 0 0 1 8 8Z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }
 
 .editor {
@@ -787,7 +1105,7 @@ button svg,
 }
 
 .panel.narrow {
-  max-width: 32rem;
+  max-width: 44rem;
 }
 
 .panel > form {
@@ -833,7 +1151,7 @@ button svg,
   }
 
   .fields {
-    max-width: 40rem;
+    max-width: 48rem;
   }
 }
 
@@ -892,7 +1210,7 @@ button svg,
 
 .chip.neutral {
   background: var(--gray-200);
-  color: var(--gray-500);
+  color: #4a5a70;
 }
 
 .with-icon {
@@ -902,11 +1220,9 @@ button svg,
 }
 
 .eyebrow {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--blue-600);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--gray-500);
 }
 
 .warning {
@@ -955,8 +1271,12 @@ button svg,
   padding: 14px 16px;
 }
 
+/* Every list inside a panel runs edge to edge: rows, never a box in a box. */
 .panel .rows {
-  border-radius: var(--radius-sm);
+  margin: 0 -20px;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
 }
 
 .row-link {
@@ -1827,6 +2147,9 @@ a.chip {
 }
 
 .inbox-row-unit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 500;
 }
 
@@ -2179,7 +2502,7 @@ a.chip {
 .completeness-fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--blue-600);
+  background: var(--stripe-500);
 }
 
 .wizard-overview,
@@ -2190,11 +2513,6 @@ a.chip {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-}
-
-.language-picker {
-  width: 12rem;
-  max-width: 100%;
 }
 
 .type-options {
@@ -2531,15 +2849,30 @@ html:has(.wizard-footer) {
   background: var(--white);
 }
 
+/* One row on a phone too; it wraps only when a language's words need the room. */
 .wizard-footer-actions {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
+.wizard-footer .wizard-footer-actions button {
+  padding: 0 10px;
+}
+
+/* A phone shows Back as its arrow; the button keeps "Back" as its name. */
+.footer-back-label {
+  display: none;
+}
+
+@media (min-width: 600px) {
+  .footer-back-label {
+    display: inline;
+  }
+}
+
 .wizard-footer-actions button.primary {
-  grid-column: 1 / -1;
-  order: -1;
+  flex: 1 1 auto;
 }
 
 @media (min-width: 600px) {
@@ -2958,7 +3291,7 @@ button.danger[type="submit"]:hover {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--blue-600);
+  background: var(--stripe-500);
 }
 
 .cell-label {
@@ -2998,4 +3331,1321 @@ button.danger[type="submit"]:hover {
   display: block;
   color: var(--gray-500);
   font-size: 13px;
+}
+
+/* --- Date and time fields: day first, 24-hour, our own calendar and time list ---------------- */
+
+.picker {
+  position: relative;
+}
+
+.picker.date {
+  max-width: 18rem;
+}
+
+.picker.time {
+  max-width: 11rem;
+}
+
+.datetime-row .picker {
+  max-width: none;
+}
+
+.picker-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.picker-control input:not([type="checkbox"]) {
+  padding-right: 52px;
+  font-variant-numeric: tabular-nums;
+}
+
+.picker-control:has(.picker-suffix) input:not([type="checkbox"]) {
+  padding-right: 92px;
+}
+
+.picker-suffix {
+  position: absolute;
+  right: 48px;
+  color: var(--gray-500);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+button.picker-button {
+  position: absolute;
+  right: 2px;
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--gray-500);
+}
+
+button.picker-button:hover,
+button.picker-button[aria-expanded="true"] {
+  background: var(--sky-100);
+  color: var(--blue-600);
+}
+
+.picker .picker-button svg {
+  font-size: 20px;
+}
+
+.field-error {
+  color: var(--danger);
+}
+
+input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.calendar,
+.time-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  box-shadow: 0 8px 24px rgb(26 44 91 / 0.12);
+}
+
+.calendar {
+  width: 304px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 12px 8px;
+}
+
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendar-title {
+  font-weight: 600;
+}
+
+.calendar-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendar-grid th {
+  padding: 6px 0 4px;
+  color: var(--gray-500);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.calendar-grid td {
+  padding: 1px;
+  text-align: center;
+}
+
+.calendar .calendar-grid button {
+  width: 100%;
+  min-height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-grid button:hover:not(:disabled) {
+  background: var(--sky-100);
+  color: var(--blue-700);
+}
+
+.calendar-grid button[aria-current="date"] {
+  box-shadow: inset 0 0 0 1px var(--sky-200);
+  color: var(--blue-600);
+  font-weight: 600;
+}
+
+.calendar-grid button[aria-pressed="true"],
+.calendar-grid button[aria-pressed="true"]:hover {
+  background: var(--blue-600);
+  color: var(--white);
+  font-weight: 600;
+}
+
+.calendar-grid button:disabled {
+  opacity: 0.35;
+}
+
+.calendar-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+  border-top: 1px solid var(--gray-200);
+  margin-top: 6px;
+}
+
+.time-list {
+  width: 100%;
+  max-width: 12rem;
+  max-height: 240px;
+  padding: 4px;
+  overflow-y: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-list [role="option"] {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.time-list [role="option"]:hover,
+.time-list [role="option"].active {
+  background: var(--sky-100);
+  color: var(--blue-700);
+}
+
+.time-list [role="option"][aria-selected="true"] {
+  font-weight: 600;
+  color: var(--blue-600);
+}
+
+.datetime {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.datetime legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+.datetime-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 9rem);
+  gap: 8px;
+}
+
+/* --- Empty states: what will appear here and the one thing to do now ------------------------ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px 20px;
+  border: 1px dashed var(--gray-300);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.empty-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--sky-100);
+  color: var(--blue-700);
+  font-size: 22px;
+}
+
+.empty-art {
+  width: 200px;
+  max-width: 60%;
+}
+
+.empty-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 34rem;
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* --- Today: what waits on the host, who comes and goes, the units ---------------------------- */
+
+.page-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.today {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+
+.today-main,
+.today-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.today-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.today-section h2 {
+  font-size: 16px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-icon {
+  flex: none;
+  font-size: 20px;
+  color: var(--gray-500);
+}
+
+.attention-row,
+.movement,
+.unit-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.attention-icon {
+  font-size: 22px;
+  color: var(--blue-700);
+}
+
+.attention-action {
+  color: var(--blue-600);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.all-clear {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  color: var(--gray-500);
+}
+
+.all-clear-icon {
+  flex: none;
+  font-size: 22px;
+  color: var(--success);
+}
+
+.day-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.day-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day-heading {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-500);
+}
+
+.movement {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+
+.movement-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  font-size: 20px;
+}
+
+.movement-icon.arrival {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.movement-icon.departure {
+  background: var(--sun-wash);
+  color: var(--sun-ink);
+}
+
+.row-caret {
+  color: var(--gray-500);
+}
+
+.unit-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.today-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.today-facts > div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  padding: 14px 16px;
+}
+
+.today-facts > div + div {
+  border-left: 1px solid var(--gray-200);
+}
+
+.today-facts dt {
+  color: var(--gray-500);
+  font-size: 13px;
+}
+
+.today-facts dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.fact-icon {
+  font-size: 22px;
+  color: var(--gray-500);
+}
+
+@media (min-width: 1100px) {
+  .today {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
+}
+
+/* The calendar: units down, days across, Stays as bars over their nights. Two Monday-first weeks
+   at a time; on a phone it scrolls sideways with the unit names pinned. */
+.staycal-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.staycal-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.staycal-range {
+  margin-right: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-500);
+  font-variant-numeric: tabular-nums;
+}
+
+button.staycal-today {
+  padding: 0 14px;
+}
+
+button.staycal-today:disabled {
+  opacity: 0.55;
+  cursor: default;
+  border-color: var(--gray-300);
+  color: var(--navy-900);
+}
+
+.staycal-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.staycal {
+  --staycal-unit: 6.5rem;
+  display: grid;
+  grid-auto-rows: minmax(48px, auto);
+  min-width: calc(var(--staycal-unit) + 14 * 44px);
+  padding-bottom: 8px;
+}
+
+.staycal-corner {
+  grid-row: 1;
+  grid-column: 1;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--white);
+}
+
+.staycal-row {
+  display: contents;
+}
+
+/* A day's column, behind the bars: weekends and today tinted, a month's first day edged. */
+.staycal-col {
+  border-left: 1px solid var(--gray-200);
+}
+
+.staycal-col.is-weekend {
+  background: var(--gray-50);
+}
+
+.staycal-col.is-today {
+  background: var(--sky-100);
+}
+
+.staycal-col.is-month-start {
+  border-left-color: var(--gray-400);
+}
+
+.staycal-day {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 6px;
+  border-bottom: 1px solid var(--gray-200);
+  color: var(--gray-500);
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.staycal-day strong {
+  color: var(--navy-900);
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.staycal-day.is-today,
+.staycal-day.is-today strong {
+  color: var(--blue-700);
+  font-weight: 600;
+}
+
+.staycal-unit {
+  grid-column: 1;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 8px 0 14px;
+  background: var(--white);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+@media (min-width: 700px) {
+  .staycal {
+    --staycal-unit: 9rem;
+  }
+}
+
+/* A long unit name takes two lines, then ends in an ellipsis. */
+.staycal-unit > span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.staycal-bar {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  margin: 0 1px;
+  padding: 0 10px;
+  border: 1px solid var(--sky-200);
+  border-radius: 999px;
+  background: var(--sky-100);
+  color: var(--blue-700);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* A Stay that runs on past the shown weeks has a straight edge on that side. */
+.staycal-bar.cut-start {
+  margin-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.staycal-bar.cut-end {
+  margin-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.staycal-bar:hover {
+  border-color: var(--blue-600);
+}
+
+.staycal-bar:focus-visible {
+  outline-offset: 1px;
+}
+
+/* --- Section layout: one part of a long editor at a time ------------------------------------- */
+
+.section-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* Phone: the sections as a row of tabs that scrolls sideways, edge to edge. */
+.section-nav {
+  margin: 0 -16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.section-nav ul {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0 16px;
+  list-style: none;
+}
+
+.section-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 10px;
+  border-bottom: 2px solid transparent;
+  color: var(--gray-500);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.section-nav .section-link svg {
+  flex: none;
+  font-size: 18px;
+}
+
+.section-link:hover {
+  color: var(--navy-900);
+}
+
+.section-link[aria-current="true"] {
+  border-bottom-color: var(--blue-600);
+  color: var(--blue-600);
+}
+
+.section-note {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--warning-bg);
+  color: #8a5a00;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.section-out {
+  display: none;
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (min-width: 960px) {
+  .section-layout {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .section-nav {
+    position: sticky;
+    top: 16px;
+    margin: 0;
+    overflow: visible;
+    border-bottom: 0;
+  }
+
+  .section-nav ul {
+    flex-direction: column;
+    gap: 2px;
+    padding: 0;
+  }
+
+  .section-link {
+    padding: 0 12px;
+    border-bottom: 0;
+    border-radius: var(--radius-sm);
+    white-space: normal;
+  }
+
+  .section-link:hover {
+    background: var(--white);
+  }
+
+  .section-link[aria-current="true"] {
+    background: var(--sky-100);
+  }
+
+  .section-label {
+    flex: 1;
+  }
+
+  .section-out {
+    display: block;
+    font-size: 14px;
+  }
+}
+
+/* --- Property and unit pages ----------------------------------------------------------------- */
+
+.title-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.section-head h2 {
+  font-size: 16px;
+}
+
+.units-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unit-link {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+
+.unit-link-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--sky-100);
+  color: var(--blue-700);
+  font-size: 20px;
+}
+
+.add-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 16px;
+  background: var(--gray-50);
+}
+
+.add-row .field {
+  flex: 1 1 16rem;
+}
+
+/* Guide entries inside a panel run edge to edge: rows, not a box in a box. */
+.panel .blocks > .rows {
+  align-self: stretch;
+  margin: 0 -20px;
+  border: 0;
+  border-top: 1px solid var(--gray-200);
+  border-bottom: 1px solid var(--gray-200);
+  border-radius: 0;
+}
+
+.entry-row {
+  align-items: flex-start;
+  padding: 14px 20px;
+}
+
+.entry-preview {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.entry-meta {
+  color: var(--gray-500);
+  font-size: 13px;
+}
+
+.entry-meta:empty {
+  display: none;
+}
+
+.entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.entries-empty {
+  padding: 4px 0;
+}
+
+/* A list fills its panel; only form fields keep the reading width. */
+.fields:has(> .blocks) {
+  max-width: none;
+}
+
+/* A unit field that takes the property's value: label, the value as text, a way to set its own. */
+.inherited-field {
+  display: grid;
+  gap: 2px 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.fields > .inherited-field + .inherited-field {
+  margin-top: -16px;
+}
+
+.inherited-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+.inherited-text {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 700px) {
+  .inherited-field {
+    grid-template-columns: 12rem minmax(0, 1fr);
+    align-items: baseline;
+  }
+}
+
+button.link-button {
+  min-height: 32px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--blue-600);
+  font-size: 14px;
+}
+
+button.link-button:hover {
+  color: var(--blue-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* The unit's status and QR code above its sections, side by side on a wide screen. */
+.unit-overview {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .unit-overview {
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  }
+}
+
+.setup-panel .actions {
+  margin-top: 4px;
+}
+
+/* --- Settings ---------------------------------------------------------------------------------- */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: -4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.tab-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 12px;
+  border-bottom: 2px solid transparent;
+  color: var(--gray-500);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tabs .tab-link svg {
+  font-size: 18px;
+}
+
+.tab-link:hover {
+  color: var(--navy-900);
+}
+
+.tab-link[aria-current="page"] {
+  border-bottom-color: var(--blue-600);
+  color: var(--blue-600);
+}
+
+.facts {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--gray-500);
+  font-size: 13px;
+}
+
+.facts dd {
+  margin: 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.language-field {
+  max-width: 18rem;
+}
+
+.payments {
+  max-width: 48rem;
+}
+
+.payments-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.payments-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 40rem;
+}
+
+.payments-icon {
+  flex: none;
+  margin-top: 2px;
+  font-size: 22px;
+  color: var(--gray-500);
+}
+
+.payments-icon.ok {
+  color: var(--success);
+}
+
+.payments-icon.wait {
+  color: #8a5a00;
+}
+
+/* Services: one quiet line for card payments, managed in Settings. */
+.payments-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  color: inherit;
+  text-decoration: none;
+}
+
+.payments-line > svg:first-child {
+  font-size: 20px;
+  color: var(--gray-500);
+}
+
+.payments-line-action {
+  margin-left: auto;
+  color: var(--blue-600);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.payments-line:hover {
+  border-color: var(--gray-300);
+}
+
+/* A short list of choices, each with a line on what it means. */
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.choice-list legend {
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.choice-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  cursor: pointer;
+}
+
+.choice-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: var(--blue-600);
+  flex: none;
+}
+
+.choice-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.choice-option small {
+  color: var(--gray-500);
+}
+
+.choice-option:has(input:checked) {
+  border-color: var(--blue-600);
+  background: var(--sky-100);
+}
+
+.choice-option:has(input:focus-visible) {
+  outline: 2px solid var(--blue-600);
+  outline-offset: 2px;
+}
+
+.choice-detail {
+  padding: 4px 0 0 30px;
+}
+
+/* --- Suggestions: one gap per row, its guide section and the way to fill it -------------------- */
+
+.suggestion-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 14px;
+  align-items: center;
+  padding: 14px 16px;
+}
+
+.suggestion-row > .button {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.suggestion-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--sky-100);
+  color: var(--blue-700);
+  font-size: 20px;
+  align-self: start;
+}
+
+@media (min-width: 700px) {
+  .suggestion-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .suggestion-row > .button {
+    grid-column: auto;
+  }
+
+  .suggestion-icon {
+    align-self: center;
+  }
+}
+
+/* --- Inbox: tabs, a reason icon and unread dot per row, the guest's words quoted ---------------- */
+
+.tab-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--sky-100);
+  color: var(--blue-700);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+}
+
+button.tab-link {
+  min-height: var(--tap);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+}
+
+button.tab-link:hover {
+  border-color: transparent;
+  color: var(--navy-900);
+}
+
+button.tab-link[aria-selected="true"] {
+  border-bottom-color: var(--blue-600);
+  color: var(--blue-600);
+}
+
+.inbox-row.row-link {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  text-align: start;
+}
+
+.inbox-row-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.inbox-row-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--gray-50);
+  color: var(--gray-500);
+  font-size: 20px;
+  box-shadow: inset 0 0 0 1px var(--gray-200);
+}
+
+.inbox-row-icon.urgent {
+  background: var(--danger-bg);
+  color: var(--danger);
+  box-shadow: none;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--blue-600);
+  flex: none;
+}
+
+.inbox-quote {
+  padding: 12px 14px;
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-md) 4px;
+  background: var(--gray-50);
+  box-shadow: inset 0 0 0 1px var(--gray-200);
+}
+
+/* The host speaking: the warm tint the guest app gives the host's replies. */
+.inbox-quote.host {
+  background: #fff1df;
+  box-shadow: none;
+}
+
+/* --- Address: search that fills the fields, a map with one pin --------------------------------- */
+
+.address-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-field {
+  position: relative;
+}
+
+.search-field.with-icon-left input:not([type="checkbox"]) {
+  padding-left: 40px;
+}
+
+.search-icon {
+  position: absolute;
+  top: 13px;
+  left: 12px;
+  font-size: 18px;
+  color: var(--gray-500);
+  pointer-events: none;
+}
+
+.search-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 30;
+  max-height: 300px;
+  padding: 4px;
+  overflow-y: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  box-shadow: 0 8px 24px rgb(26 44 91 / 0.12);
+}
+
+.search-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.search-option:hover,
+.search-option.active {
+  background: var(--sky-100);
+}
+
+.search-note {
+  padding: 10px 12px;
+  color: var(--gray-500);
+  font-size: 14px;
+}
+
+.location-map {
+  height: 300px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--sky-100);
+}
+
+.address-fields .link-button {
+  align-self: flex-start;
+}
+
+.pending-media {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.pending-media legend {
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.file-button {
+  align-self: flex-start;
+  cursor: pointer;
+}
+
+.file-button:has(input:focus-visible) {
+  outline: 2px solid var(--blue-600);
+  outline-offset: 2px;
+}
+
+/* An editor opened inside a panel runs edge to edge on a tint: one level of boxes. */
+.panel .blocks > .block-editor,
+.panel .rows .block-editor {
+  margin: 0 -20px;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.panel .rows .block-editor {
+  margin: 0;
+}
+
+.panel > .rows:last-child,
+.panel > div:last-child > .rows:last-child {
+  margin-bottom: -20px;
+  border-bottom: 0;
+}
+
+.fields:has(.rows) {
+  max-width: none;
+}
+
+.remove-button:hover {
+  color: var(--danger);
+  background: var(--danger-bg);
 }

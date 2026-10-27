@@ -270,7 +270,7 @@ describe("OrderPage, the Provider's answer", () => {
     );
     await mount(`/admin/orders/${ID}`);
     const note = el.querySelector<HTMLTextAreaElement>('textarea');
-    const timeInput = el.querySelector<HTMLInputElement>('input[type="time"]');
+    const timeInput = el.querySelector<HTMLInputElement>('.picker.time input');
     const price = el.querySelectorAll<HTMLInputElement>('input[type="number"]')[0];
     if (!note || !timeInput || !price) throw new Error('no form');
     await type(note, 'Phoned: 18:00 instead');
@@ -294,9 +294,13 @@ describe("OrderPage, the Provider's answer", () => {
     stubApi({ ...PENDING, startsAt: null });
     await mount(`/admin/orders/${ID}`);
     expect(el.textContent).not.toContain('2026-10-25');
-    const dateInput = el.querySelector<HTMLInputElement>('input[type="date"]');
-    expect(dateInput?.min).toBe(PENDING.stayFrom);
-    expect(dateInput?.max).toBe(PENDING.stayTo);
+    const calendar = el.querySelector<HTMLButtonElement>('.picker.date .picker-button');
+    await act(async () => calendar?.click());
+    const day = (iso: string) => el.querySelector<HTMLButtonElement>(`[data-day="${iso}"]`);
+    expect(day(PENDING.stayFrom)?.disabled).toBe(false);
+    expect(day(PENDING.stayTo)?.disabled).toBe(false);
+    expect(day('2026-10-23')?.disabled).toBe(true);
+    expect(day('2026-10-29')?.disabled).toBe(true);
   });
 
   it('has no plain Accept for a request-kind Offer', async () => {

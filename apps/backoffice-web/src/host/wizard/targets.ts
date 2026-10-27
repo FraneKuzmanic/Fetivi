@@ -1,5 +1,6 @@
 import { type Amenity, SHARED_CORE_FIELDS } from '@fetivi/domain/vocabulary';
 import {
+  answersPrompt,
   fieldsOfStep,
   type WizardField,
   type WizardFieldId,
@@ -92,8 +93,11 @@ export function fieldPatches(
 }
 
 /** The block that answers a prompt on this unit, wherever it lives. */
-export function promptBlock(key: WizardPromptKey, detail: UnitDetail): Block | null {
-  return detail.effective.blocks.find((b) => b.wizardKey === key) ?? null;
+export function promptBlock(
+  key: WizardPromptKey,
+  detail: UnitDetail,
+): (Block & { source: 'property' | 'unit' }) | null {
+  return detail.effective.blocks.find((b) => answersPrompt(b, key)) ?? null;
 }
 
 /** The property's amenity list with one amenity switched on or off, keeping the notes. */

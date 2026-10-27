@@ -1,13 +1,15 @@
 // Pure setup-wizard progress: field levels, filled state, completeness and resume (ticket 20).
 
-import type { PropertyType } from './vocabulary';
+import type { BlockCategory, PropertyType } from './vocabulary';
 import {
+  answersPrompt,
   levelFor,
   WIZARD_FIELDS,
   WIZARD_STEP_IDS,
   type WizardField,
   type WizardFieldId,
   type WizardLevelOrHidden,
+  type WizardPromptKey,
   type WizardStepId,
   type WizardValues,
   wizardField,
@@ -15,6 +17,7 @@ import {
 
 export interface WizardBlockFact {
   wizardKey: string | null;
+  category: BlockCategory;
   revision: number;
   publishedRevision: number | null;
 }
@@ -51,7 +54,9 @@ const FILLED: Partial<Record<WizardFieldId, (v: WizardValues) => boolean>> = {
 
 export function isFilled(fieldId: WizardFieldId, facts: WizardFacts): boolean {
   const field = wizardField(fieldId);
-  if (field.kind === 'prompt') return facts.blocks.some((b) => b.wizardKey === fieldId);
+  if (field.kind === 'prompt') {
+    return facts.blocks.some((b) => answersPrompt(b, fieldId as WizardPromptKey));
+  }
   if (field.kind === 'amenities') return facts.amenityCount > 0;
   const rule = FILLED[fieldId];
   if (rule) return rule(facts.values);

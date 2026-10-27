@@ -51,6 +51,8 @@ describe('backoffice-api', () => {
       MAIL_TRANSPORT: 'console',
       MAIL_FROM: 'Fetivi <notifications@localhost>',
       MEDIA_DIR: '../../.data/media',
+      GEOCODER_USER_AGENT: 'Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)',
+      GEOCODER_ENABLED: true,
     });
   });
 

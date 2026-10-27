@@ -50,7 +50,7 @@ describe('GoLivePanel', () => {
 
   it('links pending translations to the unit page blocks', () => {
     const html = panel(status({ goLive: { ready: false, missing: ['translations'] } }));
-    expect(html).toContain('href="/units/u1#guest-information"');
+    expect(html).toContain('href="/units/u1?section=guide"');
   });
 });
 

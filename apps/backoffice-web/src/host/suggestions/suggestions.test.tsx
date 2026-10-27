@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { WIZARD_COPY } from '@fetivi/domain/wizard';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
@@ -68,14 +69,12 @@ describe('SuggestionsPage', () => {
   it("shows Fetivi's sentence, the unit, and a link to the wizard field", async () => {
     await mount(json({ suggestions: [SUGGESTION] }));
     await vi.waitFor(() => expect(text()).toContain(SUGGESTION.text));
-    expect(text()).toContain('Villa Mare · Apartment Mare');
-    expect(text()).toContain('You never see what guests wrote.');
     const link = el.querySelector('a[href="/units/u1/setup/how_tos#field-laundry"]');
-    expect(link?.textContent).toBe('Add it in setup');
+    expect(link?.textContent).toBe('Add to the guide');
     // AC 4: one row of API fields only, no transcript or message UI.
     expect(el.querySelectorAll('.rows > li')).toHaveLength(1);
     expect(el.querySelector('.rows')?.textContent).toBe(
-      `${SUGGESTION.text}Villa Mare · Apartment MareAdd it in setup`,
+      `${SUGGESTION.text}In the guide under ${WIZARD_COPY.en.steps.how_tos.title}Add to the guide`,
     );
   });
 
@@ -91,7 +90,7 @@ describe('SuggestionsPage', () => {
 
   it('says so when nothing is missing', async () => {
     await mount(json({ suggestions: [] }));
-    await vi.waitFor(() => expect(text()).toContain('Nothing missing right now.'));
+    await vi.waitFor(() => expect(text()).toContain('Your guide covers what guests ask'));
     expect(el.querySelector('.rows')).toBeNull();
   });
 

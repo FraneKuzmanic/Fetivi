@@ -248,7 +248,7 @@ describe('ImportPage', () => {
     stubApi(ITEMS);
     await mount();
     await click(buttonIn(rowOf('Checkout by'), 'Edit'));
-    const input = rowOf('Checkout by').querySelector('input[type="time"]') as HTMLInputElement;
+    const input = rowOf('Checkout by').querySelector('.picker.time input') as HTMLInputElement;
     await type(input, '10:30');
     await click(buttonIn(rowOf('Checkout by'), 'Confirm'));
     expect(posts.at(-1)?.body).toEqual({ values: { checkoutTime: '10:30' } });

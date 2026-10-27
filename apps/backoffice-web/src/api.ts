@@ -16,6 +16,7 @@ import type {
 } from '@fetivi/domain/curation-vocabulary';
 import type { DraftingTaskStatus } from '@fetivi/domain/drafting-vocabulary';
 import type { AnswerTopic } from '@fetivi/domain/feedback-vocabulary';
+import type { GeocodeKind, GeoPlace } from '@fetivi/domain/geocode-vocabulary';
 import type {
   HandoffReason,
   HandoffTranslationState,
@@ -1196,6 +1197,20 @@ export const host = {
   paymentsLink: () =>
     post<{ url: string; expiresAt: string }>('/api/host/payments/stripe/onboarding-link'),
   paymentsRefresh: () => post<PaymentsStatus>('/api/host/payments/stripe/refresh'),
+  paymentsDisconnect: () => post<PaymentsStatus>('/api/host/payments/stripe/disconnect'),
+  geocode: (
+    q: string,
+    options: { near?: { lat: number; lng: number }; kind?: GeocodeKind } = {},
+  ) => {
+    const query = new URLSearchParams({ q, kind: options.kind ?? 'address' });
+    if (options.near) {
+      query.set('lat', String(options.near.lat));
+      query.set('lng', String(options.near.lng));
+    }
+    return api<{ places: GeoPlace[] }>(`/api/host/geocode?${query}`);
+  },
+  reverseGeocode: (lat: number, lng: number) =>
+    api<{ place: GeoPlace | null }>(`/api/host/geocode/reverse?lat=${lat}&lng=${lng}`),
   readMessage: (id: string) => post(`/api/host/inbox/${id}/read`),
   replyMessage: (id: string, text: string) =>
     post<{ message: HostMessage }>(`/api/host/inbox/${id}/reply`, { text }),

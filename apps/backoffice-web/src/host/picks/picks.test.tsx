@@ -273,7 +273,7 @@ describe('host picks page', () => {
     await mount();
     const tips = el.querySelectorAll('section.panel')[2];
     expect(tips?.querySelector('.eyebrow')).toBeNull();
-    await click('Add block');
+    await click('Add guide entry');
     expect(tips?.textContent).not.toContain('Guide section');
     await setValue(field('Title'), 'Market');
     await setValue(field('Text'), 'Fresh fish until 10.');

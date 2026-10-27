@@ -1,35 +1,11 @@
 import { type FormEvent, type ReactNode, useId, useState } from 'react';
 import { useAction } from '../useAction';
+import { Field, type FieldProps } from './Field';
+
+export { DateField, DateTimeField, TimeField } from './DateTimeFields';
 
 // Controlled inputs for the host forms. Empty text means null: the API clears the field, and on a
 // unit null means "use the property's value".
-
-interface FieldProps {
-  label: string;
-  hint?: ReactNode;
-  /** Keeps the label for screen readers only, where a heading above already shows it. */
-  hideLabel?: boolean;
-}
-
-/** A labelled control; `children` renders the control with the id and description it is given. */
-function Field({
-  label,
-  hint,
-  hideLabel,
-  children,
-}: FieldProps & { children: (ids: { id: string; describedBy?: string }) => ReactNode }) {
-  const id = useId();
-  const hintId = `${id}-hint`;
-  return (
-    <div className="field">
-      <label className={hideLabel ? 'field-label visually-hidden' : 'field-label'} htmlFor={id}>
-        {label}
-      </label>
-      {children(hint ? { id, describedBy: hintId } : { id })}
-      {hint ? <small id={hintId}>{hint}</small> : null}
-    </div>
-  );
-}
 
 export function TextField({
   label,
@@ -50,7 +26,7 @@ export function TextField({
   maxLength: number;
   placeholder?: string | undefined;
   required?: boolean;
-  type?: 'text' | 'tel' | 'email' | 'date';
+  type?: 'text' | 'tel' | 'email';
   autoComplete?: string;
   /** The earliest and latest day of a date field. */
   min?: string;
@@ -151,28 +127,6 @@ export function NumberField({
           placeholder={placeholder}
           required={required}
           onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
-        />
-      )}
-    </Field>
-  );
-}
-
-export function TimeField({
-  label,
-  hint,
-  hideLabel,
-  value,
-  onChange,
-}: FieldProps & { value: string | null; onChange: (value: string | null) => void }) {
-  return (
-    <Field label={label} hint={hint} hideLabel={hideLabel}>
-      {(ids) => (
-        <input
-          id={ids.id}
-          aria-describedby={ids.describedBy}
-          type="time"
-          value={value ?? ''}
-          onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
         />
       )}
     </Field>

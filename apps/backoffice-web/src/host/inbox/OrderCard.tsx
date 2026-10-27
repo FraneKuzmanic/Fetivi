@@ -2,7 +2,7 @@ import { OFFER_LIMITS } from '@fetivi/domain/offer-vocabulary';
 import { type FormEvent, useId, useState } from 'react';
 import { centsFromEuros } from '../../admin/providers/money';
 import { type HostOrderActionBody, type HostOrderView, host, type OrderAction } from '../../api';
-import { NumberField, TextField, TimeField } from '../../forms/fields';
+import { DateField, NumberField, TimeField } from '../../forms/fields';
 import { useAction } from '../../useAction';
 import { inboxChanged } from './inbox-events';
 
@@ -29,6 +29,10 @@ const QUANTITY: Record<HostOrderView['priceUnit'], (n: number) => string> = {
   person: people,
   group: people,
   item: (n) => `${n} ×`,
+  litre: (n) => `${n} l`,
+  kilogram: (n) => `${n} kg`,
+  hour: (n) => (n === 1 ? '1 hour' : `${n} hours`),
+  day: (n) => (n === 1 ? '1 day' : `${n} days`),
 };
 
 export function orderChip(order: HostOrderView): { label: string; tone: string } {
@@ -157,13 +161,11 @@ export function OrderCard({
           <div className="field-row">
             {form === 'suggest_time' ? (
               <>
-                <TextField
+                <DateField
                   label="Date"
-                  type="date"
                   value={date}
                   min={order.stayFrom}
                   max={order.stayTo}
-                  maxLength={10}
                   required
                   onChange={setDate}
                 />

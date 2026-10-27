@@ -74,10 +74,11 @@ describe('field translation status', () => {
     expect(retryButton()).toBeDefined();
   });
 
-  it('shows only the chip while translating or published', async () => {
+  it('shows nothing while translating or once published', async () => {
     await mount({ ...FAILED, status: 'pending', error: null });
-    expect(el.querySelector('.chip.wait')?.textContent).toBe('Translating');
-    expect(retryButton()).toBeUndefined();
+    expect(el.innerHTML).toBe('');
+    await mount({ ...FAILED, status: 'published', error: null });
+    expect(el.innerHTML).toBe('');
   });
 
   it('renders nothing for a field without a translation', async () => {

@@ -110,6 +110,7 @@ export function wizardFacts(e: EffectiveUnit): WizardFacts {
     amenityCount: e.amenities.length,
     blocks: e.blocks.map((b) => ({
       wizardKey: b.wizardKey,
+      category: b.category,
       revision: b.revision,
       publishedRevision: b.publishedRevision,
     })),

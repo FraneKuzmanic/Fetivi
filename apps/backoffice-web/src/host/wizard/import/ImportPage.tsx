@@ -9,7 +9,6 @@ import {
 } from '../../../api';
 import { useAction } from '../../../useAction';
 import { format, useWizardCopy } from '../copy';
-import { LanguagePicker } from '../LanguagePicker';
 import { loadedValues } from '../targets';
 import { DraftItem } from './DraftItem';
 import { groupByStep, summaryCounts } from './drafts';
@@ -100,7 +99,6 @@ export function ImportPage() {
           <h1>{mi.title}</h1>
           <p className="muted">{mi.intro}</p>
         </div>
-        <LanguagePicker />
       </div>
 
       {manualImport === null || replacing ? (

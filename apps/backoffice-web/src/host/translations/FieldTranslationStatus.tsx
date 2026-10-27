@@ -22,7 +22,8 @@ export function FieldTranslationStatus({
   onChanged: () => Promise<void>;
 }) {
   const { busy, error, run } = useAction();
-  if (!translation) return null;
+  // Translating runs by itself after a save; only a failure needs the host.
+  if (translation?.status !== 'failed') return null;
   return (
     <span className="field-translation">
       <TranslationChip status={translation.status} />

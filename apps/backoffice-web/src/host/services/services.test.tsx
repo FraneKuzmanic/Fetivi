@@ -104,7 +104,7 @@ const button = (name: string) =>
   [...el.querySelectorAll('button')].find((b) => b.textContent?.includes(name));
 
 describe('host services', () => {
-  it('lists the services with the payments panel and the Providers link', async () => {
+  it('lists the services with the card payments line and the Providers link', async () => {
     stubApi({
       'GET /api/host/offers': () => json({ offers: [TRANSFER] }),
       'GET /api/host/payments': () => json(PAYMENTS),
@@ -113,8 +113,9 @@ describe('host services', () => {
     await vi.waitFor(() => expect(el.textContent).toContain('Airport transfer'));
     expect(el.textContent).toContain('Transfer · On request · €45.00 per group');
     expect(el.querySelector('a[href="/services/o1"]')).not.toBeNull();
-    expect(el.textContent).toContain('Card payments for your services');
-    expect(el.textContent).toContain('Not set up');
+    const payments = el.querySelector('a[href="/settings/payments"]');
+    expect(payments?.textContent).toContain('Card payments');
+    expect(payments?.textContent).toContain('Not connected');
     expect(el.querySelector('a[href="/services/providers"]')).not.toBeNull();
     expect(el.querySelector('.mascot, img')).toBeNull();
   });
@@ -148,12 +149,46 @@ describe('host services', () => {
       title: 'Airport transfer',
       description: 'Split airport to your door.',
       cancellationPolicy: 'Free until a day before.',
+      freeCancelHoursBefore: 24,
+      refundPercentAfter: 0,
       category: 'transfer',
       orderKind: 'booking',
       availabilityMode: 'on_request',
       paymentMode: 'direct',
       priceMinor: 4500,
       priceUnit: 'person',
+    });
+  });
+
+  it('drafts the policy from the cancellation choice until the host writes their own', async () => {
+    stubApi({
+      'GET /api/host/payments': () => json(PAYMENTS),
+      'POST /api/host/offers': () => json({ id: 'o2' }, 201),
+    });
+    await mount(
+      '/services/new',
+      <NewServicePage />,
+      <Route path="/services/:id" element={<p>editor</p>} />,
+    );
+    const policy = field<HTMLTextAreaElement>('Cancellation policy');
+    expect(policy.value).toBe('Free cancellation until 24 h before the start, then no refund.');
+    const free = [...el.querySelectorAll<HTMLLabelElement>('.choice-option')].find((l) =>
+      l.textContent?.includes('Free cancellation'),
+    );
+    await act(async () => free?.querySelector('input')?.click());
+    expect(field<HTMLTextAreaElement>('Cancellation policy').value).toBe('Always a full refund.');
+    await setValue(field('Title'), 'Olive oil');
+    await setValue(field('Description'), 'From our grove.');
+    await act(async () => {
+      el.querySelector('form')?.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      );
+    });
+    await vi.waitFor(() => expect(el.textContent).toContain('editor'));
+    expect(calls.find((c) => c.method === 'POST')?.body).toMatchObject({
+      cancellationPolicy: 'Always a full refund.',
+      freeCancelHoursBefore: 0,
+      refundPercentAfter: 100,
     });
   });
 

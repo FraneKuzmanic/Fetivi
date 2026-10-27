@@ -1,6 +1,7 @@
 import {
   accounts,
   type Db,
+  disconnectHostPayments,
   hostOnboardingLink,
   type PaymentGateway,
   refreshHostPayments,
@@ -54,7 +55,7 @@ export async function hostPaymentRoutes(app: FastifyInstance, deps: HostPaymentD
   app.post('/api/host/payments/stripe/onboarding-link', host, async (request) => {
     const hostId = hostIdOf(request);
     const gateway = gatewayOf();
-    const page = `${webOrigin}/services`;
+    const page = `${webOrigin}/settings/payments`;
     const link = await withPaymentErrors(() =>
       hostOnboardingLink({ db, gateway, now }, hostId, {
         returnUrl: `${page}?stripe=return`,
@@ -68,6 +69,13 @@ export async function hostPaymentRoutes(app: FastifyInstance, deps: HostPaymentD
     const hostId = hostIdOf(request);
     const gateway = gatewayOf();
     await withPaymentErrors(() => refreshHostPayments({ db, gateway, now }, hostId));
+    return statusOf(hostId);
+  });
+
+  /** Unlinks the account (Stripe keeps it); 409 open-card-orders while a card Order is open. */
+  app.post('/api/host/payments/stripe/disconnect', host, async (request) => {
+    const hostId = hostIdOf(request);
+    await withPaymentErrors(() => disconnectHostPayments({ db, now }, hostId));
     return statusOf(hostId);
   });
 }

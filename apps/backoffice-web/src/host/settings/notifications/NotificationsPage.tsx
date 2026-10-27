@@ -5,6 +5,8 @@ import { type HostNotificationSettings, host } from '../../../api';
 import { Section, TimeField } from '../../../forms/fields';
 import { useSession } from '../../../session';
 import { useAction } from '../../../useAction';
+import { SettingsTabs } from '../SettingsTabs';
+import { platform } from './install';
 import { PhoneAlerts } from './PhoneAlerts';
 
 const MODES: { mode: HostDeliveryMode; label: string; help: string }[] = [
@@ -29,7 +31,7 @@ function nextTime(times: string[]): string {
   return '12:00';
 }
 
-/** Settings → Notifications (PRD §6.6): how guest messages reach the host. */
+/** Settings → Notifications (PRD §6.6): how guest messages reach the host, by email and on a phone. */
 export function NotificationsPage() {
   const { me } = useSession();
   const { error, run } = useAction();
@@ -56,14 +58,17 @@ export function NotificationsPage() {
   };
 
   const account = me && me !== 'loading' ? me : null;
-  const email = account?.actingAs?.email ?? account?.account.email ?? '';
   const help = MODES.find((m) => m.mode === mode)?.help;
+  // Push needs the server's key and the host's own phone; elsewhere the section has nothing to do.
+  const phoneAlerts =
+    settings !== null &&
+    settings.push.publicKey !== null &&
+    !account?.actingAs &&
+    platform() !== 'other';
 
   return (
     <>
-      <div className="page-head">
-        <h1>Notifications</h1>
-      </div>
+      <SettingsTabs />
       {error ? <p role="alert">{error}</p> : null}
       {settings === null && !error ? <p className="muted">Loading…</p> : null}
       {settings ? (
@@ -128,19 +133,16 @@ export function NotificationsPage() {
               </>
             ) : null}
           </Section>
-          <Section title="Email">
-            <p>
-              Emails go to <strong>{email}</strong>. Reply in the inbox, not by email.
-            </p>
-          </Section>
-          <Section title="Phone alerts">
-            <PhoneAlerts
-              publicKey={settings.push.publicKey}
-              devices={settings.push.devices}
-              acting={Boolean(account?.actingAs)}
-              onChanged={refreshDevices}
-            />
-          </Section>
+          {phoneAlerts ? (
+            <Section title="Phone alerts">
+              <PhoneAlerts
+                publicKey={settings.push.publicKey}
+                devices={settings.push.devices}
+                acting={Boolean(account?.actingAs)}
+                onChanged={refreshDevices}
+              />
+            </Section>
+          ) : null}
         </div>
       ) : null}
     </>

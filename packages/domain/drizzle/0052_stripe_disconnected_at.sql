@@ -1,0 +1,1 @@
+ALTER TABLE "accounts" ADD COLUMN "stripe_disconnected_at" timestamp with time zone;

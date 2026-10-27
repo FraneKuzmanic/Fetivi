@@ -1,5 +1,5 @@
 import { HOST_PLACE_LIMITS } from '@fetivi/domain/host-picks-vocabulary';
-import { MapPinPlus, Star } from '@phosphor-icons/react';
+import { MapPinPlus, PencilSimple, Star, Trash } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
@@ -62,7 +62,9 @@ function RemoveButton({
     <>
       <button
         type="button"
-        className="danger"
+        className="ghost icon-button remove-button"
+        aria-label={`Remove ${label}`}
+        title="Remove"
         disabled={busy}
         onClick={() => {
           if (window.confirm(`Remove ${label}? Your guests will no longer see it.`)) {
@@ -73,7 +75,7 @@ function RemoveButton({
           }
         }}
       >
-        Remove<span className="visually-hidden"> {label}</span>
+        <Trash aria-hidden="true" />
       </button>
       {error ? <p role="alert">{error}</p> : null}
     </>
@@ -102,18 +104,18 @@ function PickRow({
   }
 
   return (
-    <li className="block-row">
+    <li className="block-row entry-row">
       <span className="block-text">
-        <span className="eyebrow">{placeKindLabel(pick)}</span>
         <span className="block-title">
           <strong>{pick.title}</strong>
           {pick.note ? <TranslationChip status={pick.translation.status} /> : null}
         </span>
         <span className="muted">{pick.note ? preview(pick.note) : 'No note'}</span>
+        <span className="entry-meta">{placeKindLabel(pick)}</span>
         <TranslationFailure id={pick.id} translation={pick.translation} onChanged={onChanged} />
       </span>
       {editing ? null : (
-        <span className="actions">
+        <span className="entry-actions">
           <button
             type="button"
             onClick={() => {
@@ -121,6 +123,7 @@ function PickRow({
               setEditing(true);
             }}
           >
+            <PencilSimple aria-hidden="true" />
             Edit note<span className="visually-hidden"> ({pick.title})</span>
           </button>
           <RemoveButton label={pick.title} id={pick.id} onRemoved={reload} />
@@ -181,9 +184,8 @@ function AddedRow({
     );
   }
   return (
-    <li className="block-row">
+    <li className="block-row entry-row">
       <span className="block-text">
-        <span className="eyebrow">{PLACE_CATEGORY_LABELS[place.placeCategory]}</span>
         <span className="block-title">
           <strong>{place.name}</strong>
           {place.inCatalog ? (
@@ -193,12 +195,15 @@ function AddedRow({
           )}
           <TranslationChip status={place.translation.status} />
         </span>
-        {place.address ? <span className="muted">{place.address}</span> : null}
-        <span className="muted">{preview(place.note)}</span>
+        <span className="muted entry-preview">{preview(place.note)}</span>
+        <span className="entry-meta">
+          {[PLACE_CATEGORY_LABELS[place.placeCategory], place.address].filter(Boolean).join(' · ')}
+        </span>
         <TranslationFailure id={place.id} translation={place.translation} onChanged={onChanged} />
       </span>
-      <span className="actions">
+      <span className="entry-actions">
         <button type="button" onClick={() => setEditing(true)}>
+          <PencilSimple aria-hidden="true" />
           Edit<span className="visually-hidden"> {place.name}</span>
         </button>
         <RemoveButton label={place.name} id={place.id} onRemoved={reload} />
@@ -240,7 +245,7 @@ export function HostPicksPage() {
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/">Properties</Link>
+        <Link to="/properties">Properties</Link>
         <span aria-hidden="true">/</span>
         <Link to={`/properties/${id}`}>{detail.name}</Link>
       </nav>

@@ -8,7 +8,7 @@ import { ArrowUDownLeft, CalendarX, Check, ClockClockwise, X } from '@phosphor-i
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { type AdminOrder, adminOrders } from '../../api';
-import { NumberField, TextArea, TextField, TimeField } from '../../forms/fields';
+import { DateField, NumberField, TextArea, TimeField } from '../../forms/fields';
 import { useAction } from '../../useAction';
 import { centsFromEuros } from '../providers/money';
 
@@ -252,14 +252,12 @@ export function OrderPage() {
                 onChange={setAnswerNote}
               />
               <div className="field-row">
-                <TextField
+                <DateField
                   label="New date"
                   hint={`Within the stay, ${day(order.stayFrom)} – ${day(order.stayTo)}.`}
-                  type="date"
                   value={newDate ?? order.date}
                   min={order.stayFrom}
                   max={order.stayTo}
-                  maxLength={10}
                   onChange={setNewDate}
                 />
                 <TimeField

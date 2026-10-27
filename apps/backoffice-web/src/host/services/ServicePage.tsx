@@ -16,7 +16,6 @@ import { LIMITS } from '@fetivi/domain/vocabulary';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { centsFromEuros, eurosFromCents } from '../../admin/providers/money';
-import { refundLine } from '../../admin/providers/OfferPage';
 import { OfferTranslations } from '../../admin/providers/OfferTranslations';
 import { SlotsPanel } from '../../admin/providers/SlotsPanel';
 import { type HostOfferPatch, host, type Offer, type OfferTranslationsClient } from '../../api';
@@ -39,6 +38,11 @@ import { useAction } from '../../useAction';
 import { TranslationChip } from '../translations/TranslationChip';
 import { usePendingRefresh } from '../translations/usePendingRefresh';
 import {
+  type CancellationRules,
+  CancellationRulesField,
+  policyFromRules,
+} from './CancellationRules';
+import {
   HOST_AVAILABILITY_LABELS,
   HOST_AVAILABILITY_MODES,
   HOST_AVAILABILITY_SHORT,
@@ -46,10 +50,12 @@ import {
   type HostAvailabilityMode,
 } from './labels';
 
-const TRANSLATED_HINT = 'Markdown. Translated into the seven guest languages on save.';
+const TRANSLATED_HINT = 'Translated into the seven guest languages when you save.';
 const REQUEST_PRICE_HINT = 'Optional for requests: you name the price when you accept.';
 const REQUEST_MODE_HINT = 'Requests always wait for your answer.';
-const ONLINE_HINT = 'Guests can pay online once your Stripe account is active (on Services).';
+const POLICY_HINT =
+  'What guests read before they order. Start from the line we wrote from your choice above, and add anything else, for example what happens in bad weather.';
+const ONLINE_HINT = 'Guests can pay online once Stripe is connected in Settings → Payments.';
 
 const translationsClient: OfferTranslationsClient = {
   translations: host.offerTranslations,
@@ -87,7 +93,13 @@ export function NewServicePage() {
   const cardsActive = useCardsActive();
   const [title, setTitle] = useState<string | null>(null);
   const [description, setDescription] = useState<string | null>(null);
+  const [rules, setRules] = useState<CancellationRules>({
+    freeCancelHoursBefore: OFFER_DEFAULTS.freeCancelHoursBefore,
+    refundPercentAfter: OFFER_DEFAULTS.refundPercentAfter,
+  });
+  // The policy text follows the choice until the host writes their own.
   const [policy, setPolicy] = useState<string | null>(null);
+  const policyText = policy ?? policyFromRules(rules);
   const [category, setCategory] = useState<OfferCategory>('transfer');
   const [orderKind, setOrderKind] = useState<OrderKind>('booking');
   const [mode, setMode] = useState<HostAvailabilityMode>('on_request');
@@ -104,7 +116,9 @@ export function NewServicePage() {
       const created = await host.createOffer({
         title: title ?? '',
         description: description ?? '',
-        cancellationPolicy: policy ?? '',
+        cancellationPolicy: policyText,
+        freeCancelHoursBefore: rules.freeCancelHoursBefore ?? 0,
+        refundPercentAfter: rules.refundPercentAfter ?? 0,
         category,
         orderKind,
         availabilityMode: effectiveMode,
@@ -140,17 +154,17 @@ export function NewServicePage() {
               maxLength={LIMITS.blockBody}
               rows={5}
               required
-              monospace
               onChange={setDescription}
             />
+            <CancellationRulesField value={rules} onChange={setRules} />
             <TextArea
               label="Cancellation policy"
-              hint="What guests read. The refund rules are set on the next page."
-              value={policy}
+              hint={POLICY_HINT}
+              value={policyText}
               maxLength={LIMITS.blockBody}
               rows={3}
               required
-              onChange={setPolicy}
+              onChange={(v) => setPolicy(v ?? '')}
             />
             <div className="field-row">
               <SelectField
@@ -161,7 +175,7 @@ export function NewServicePage() {
                 onChange={(c) => c && setCategory(c)}
               />
               <SelectField
-                label="Order kind"
+                label="Type of order"
                 value={orderKind}
                 options={ORDER_KINDS}
                 labels={ORDER_KIND_LABELS}
@@ -364,16 +378,15 @@ export function ServicePage() {
           />
           <TextArea
             label="Description"
-            hint="Markdown."
             value={draft.description}
             maxLength={LIMITS.blockBody}
             rows={6}
             required
-            monospace
             onChange={(v) => set('description')(v ?? '')}
           />
           <TextArea
             label="Cancellation policy"
+            hint="What guests read before they order. Keep it in line with the cancellation rules below."
             value={draft.cancellationPolicy}
             maxLength={LIMITS.blockBody}
             rows={3}
@@ -395,7 +408,7 @@ export function ServicePage() {
               onChange={(c) => c && set('category')(c)}
             />
             <SelectField
-              label="Order kind"
+              label="Type of order"
               hint={isRequest ? REQUEST_MODE_HINT : undefined}
               value={draft.orderKind}
               options={ORDER_KINDS}
@@ -512,25 +525,13 @@ export function ServicePage() {
             refundPercentAfter: draft.refundPercentAfter ?? 0,
           })}
         >
-          <div className="field-row">
-            <NumberField
-              label="Free until (hours before start)"
-              value={draft.freeCancelHoursBefore}
-              min={0}
-              max={OFFER_LIMITS.freeCancelHoursMax}
-              onChange={set('freeCancelHoursBefore')}
-            />
-            <NumberField
-              label="Refund after that (%)"
-              value={draft.refundPercentAfter}
-              min={0}
-              max={100}
-              onChange={set('refundPercentAfter')}
-            />
-          </div>
-          <p className="muted">
-            {refundLine(draft.freeCancelHoursBefore, draft.refundPercentAfter)}
-          </p>
+          <CancellationRulesField
+            value={{
+              freeCancelHoursBefore: draft.freeCancelHoursBefore,
+              refundPercentAfter: draft.refundPercentAfter,
+            }}
+            onChange={(rules) => setDraft((d) => (d ? { ...d, ...rules } : d))}
+          />
         </Section>
 
         <Section

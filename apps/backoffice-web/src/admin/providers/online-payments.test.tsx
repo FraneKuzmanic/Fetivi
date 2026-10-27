@@ -70,7 +70,6 @@ async function mount(provider: Provider, path = '/admin/providers/p1') {
     root?.render(
       <MemoryRouter initialEntries={[path]}>
         <OnlinePaymentsPanel
-          subject="provider"
           status={provider}
           onLink={() => providers.stripeOnboardingLink(provider.id)}
           onRefresh={() => providers.stripeRefresh(provider.id)}

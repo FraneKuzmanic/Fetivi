@@ -1,8 +1,10 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, notInArray } from 'drizzle-orm';
 import type { Executor } from '../db/client';
 import { accounts } from '../db/schema/accounts';
-import { providers } from '../db/schema/offers';
+import { offers, providers } from '../db/schema/offers';
+import { orders } from '../db/schema/orders';
 import { properties } from '../db/schema/properties';
+import { FINAL_ORDER_STATUSES } from '../orders/vocabulary';
 import type { PaymentGateway } from './gateway';
 import type { ProviderCardStatus } from './vocabulary';
 
@@ -19,7 +21,7 @@ export interface OnboardingDeps {
 
 export class OnboardingRuleError extends Error {
   override name = 'OnboardingRuleError';
-  constructor(readonly code: 'not-found' | 'no-account') {
+  constructor(readonly code: 'not-found' | 'no-account' | 'open-card-orders') {
     super(code);
   }
 }
@@ -93,6 +95,7 @@ async function hostRow(db: Executor, hostId: string) {
       email: accounts.email,
       role: accounts.role,
       stripeAccountId: accounts.stripeAccountId,
+      stripeDisconnectedAt: accounts.stripeDisconnectedAt,
     })
     .from(accounts)
     .where(eq(accounts.id, hostId));
@@ -111,7 +114,10 @@ async function hostDisplayName(db: Executor, host: { id: string; email: string }
   return property?.name ?? host.email;
 }
 
-/** `providerOnboardingLink` for a host's own account (key `host:<id>:account`). */
+/**
+ * `providerOnboardingLink` for a host's own account (key `host:<id>:account`). After a Disconnect
+ * the key carries its time, so Stripe makes a new account instead of replaying the old one.
+ */
 export async function hostOnboardingLink(
   deps: OnboardingDeps,
   hostId: string,
@@ -126,7 +132,11 @@ export async function hostOnboardingLink(
         email: host.email,
         displayName: await hostDisplayName(deps.db, host),
       },
-      { idempotencyKey: `host:${host.id}:account` },
+      {
+        idempotencyKey: host.stripeDisconnectedAt
+          ? `host:${host.id}:account:${host.stripeDisconnectedAt.getTime()}`
+          : `host:${host.id}:account`,
+      },
     );
     await deps.db
       .update(accounts)
@@ -150,4 +160,41 @@ export async function refreshHostPayments(
     .set({ stripeCardPayments: status, stripeCheckedAt: deps.now(), updatedAt: deps.now() })
     .where(eq(accounts.id, host.id));
   return status;
+}
+
+/**
+ * Unlinks the host's Stripe account from Fetivi; Stripe keeps the account itself. Each payment
+ * attempt keeps the account it was made on, so refunds and history of earlier Orders still work.
+ * Refused while an own-service Order paid online is still open: its money flow needs the account.
+ */
+export async function disconnectHostPayments(
+  deps: Pick<OnboardingDeps, 'db' | 'now'>,
+  hostId: string,
+): Promise<void> {
+  const host = await hostRow(deps.db, hostId);
+  if (!host.stripeAccountId) return;
+  const [open] = await deps.db
+    .select({ id: orders.id })
+    .from(orders)
+    .innerJoin(offers, eq(offers.id, orders.offerId))
+    .where(
+      and(
+        eq(offers.hostId, hostId),
+        eq(orders.paymentMode, 'online'),
+        notInArray(orders.status, [...FINAL_ORDER_STATUSES]),
+      ),
+    )
+    .limit(1);
+  if (open) throw new OnboardingRuleError('open-card-orders');
+  const now = deps.now();
+  await deps.db
+    .update(accounts)
+    .set({
+      stripeAccountId: null,
+      stripeCardPayments: null,
+      stripeCheckedAt: null,
+      stripeDisconnectedAt: now,
+      updatedAt: now,
+    })
+    .where(eq(accounts.id, hostId));
 }

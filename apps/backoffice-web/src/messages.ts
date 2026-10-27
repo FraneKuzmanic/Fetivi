@@ -46,6 +46,7 @@ const MESSAGES: Record<string, string> = {
   'proposal-gone': 'This booking was already handled. Reload the page.',
   'not-possibly-cancelled': 'This Stay is not marked as possibly cancelled.',
   'no-account': 'Create an onboarding link first: this Provider has no Stripe account yet.',
+  'open-card-orders': 'An order paid by card is still open. Finish or cancel it, then disconnect.',
   'payments-not-configured': 'Online payments are not set up on this server (no Stripe key).',
   'stripe-unavailable': 'Stripe did not answer. Please try again in a minute.',
   'stripe-rejected': 'Stripe refused the request. Check the Provider details and try again.',

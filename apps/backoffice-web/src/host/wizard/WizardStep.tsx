@@ -15,7 +15,7 @@ import {
   type WizardStepId,
   wizardStepPath,
 } from '@fetivi/domain/wizard';
-import { CheckCircle, Plus, Trash } from '@phosphor-icons/react';
+import { ArrowLeft, CheckCircle, Plus, Trash } from '@phosphor-icons/react';
 import { type FormEvent, useEffect, useId, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { host, type PropertyDetail, type UnitDetail, type WizardStatus } from '../../api';
@@ -29,9 +29,9 @@ import {
   TriStateField,
 } from '../../forms/fields';
 import { useAction } from '../../useAction';
+import { AddressFields } from '../address/AddressFields';
 import { BlockPrompt } from './BlockPrompt';
 import { format, useWizardCopy } from './copy';
-import { LanguagePicker } from './LanguagePicker';
 import {
   type DraftValues,
   fieldPatches,
@@ -139,8 +139,7 @@ export function WizardStep({
     (value: DraftValues[K]) =>
       setDraft((d) => ({ ...d, [key]: value }));
 
-  function setCoord(axis: 'lat' | 'lng', value: number | null) {
-    const next = { ...coords, [axis]: value };
+  function setLocation(next: { lat: number | null; lng: number | null }) {
     setCoords(next);
     // Both or neither; one alone is not saved.
     if (next.lat !== null && next.lng !== null) set('location')({ lat: next.lat, lng: next.lng });
@@ -178,50 +177,26 @@ export function WizardStep({
     const label = copy.fields[field.id].label;
     switch (field.id) {
       case 'address':
-        return (
-          <>
-            <TextField
-              label={ui.addressLine}
-              value={draft.addressLine}
-              maxLength={LIMITS.shortText}
-              onChange={set('addressLine')}
-            />
-            <div className="field-row">
-              <TextField
-                label={ui.postalCode}
-                value={draft.postalCode}
-                maxLength={LIMITS.shortText}
-                onChange={set('postalCode')}
-              />
-              <TextField
-                label={ui.city}
-                value={draft.city}
-                maxLength={LIMITS.shortText}
-                onChange={set('city')}
-              />
-            </div>
-          </>
-        );
       case 'location':
         return (
-          <div className="field-row">
-            <NumberField
-              label={ui.latitude}
-              value={coords.lat}
-              min={-90}
-              max={90}
-              step="any"
-              onChange={(v) => setCoord('lat', v)}
-            />
-            <NumberField
-              label={ui.longitude}
-              value={coords.lng}
-              min={-180}
-              max={180}
-              step="any"
-              onChange={(v) => setCoord('lng', v)}
-            />
-          </div>
+          <AddressFields
+            parts={field.id === 'address' ? 'address' : 'map'}
+            value={{
+              addressLine: draft.addressLine,
+              postalCode: draft.postalCode,
+              city: draft.city,
+              lat: coords.lat,
+              lng: coords.lng,
+            }}
+            onChange={(next) => {
+              set('addressLine')(next.addressLine);
+              set('postalCode')(next.postalCode);
+              set('city')(next.city);
+              if (next.lat !== coords.lat || next.lng !== coords.lng) {
+                setLocation({ lat: next.lat, lng: next.lng });
+              }
+            }}
+          />
         );
       case 'check_in_time':
       case 'checkout_time': {
@@ -464,7 +439,6 @@ export function WizardStep({
             <span aria-hidden="true">/</span>
             <Link to={overviewPath}>{ui.setup}</Link>
           </nav>
-          <LanguagePicker />
         </div>
         <header className="wizard-step-head">
           <span className="eyebrow">
@@ -530,8 +504,15 @@ export function WizardStep({
         <div className="wizard-footer">
           {error ? <p role="alert">{error}</p> : null}
           <div className="wizard-footer-actions">
-            <button type="button" className="ghost" disabled={busy} onClick={() => go(prevPath)}>
-              {ui.back}
+            <button
+              type="button"
+              className="ghost footer-back"
+              aria-label={ui.back}
+              disabled={busy}
+              onClick={() => go(prevPath)}
+            >
+              <ArrowLeft aria-hidden="true" />
+              <span className="footer-back-label">{ui.back}</span>
             </button>
             <button type="button" disabled={busy} onClick={() => go(overviewPath)}>
               {ui.saveExit}

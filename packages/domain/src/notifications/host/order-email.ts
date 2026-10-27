@@ -30,6 +30,10 @@ const QUANTITY_LABELS: Record<PriceUnit, string> = {
   person: 'People',
   group: 'People',
   item: 'Quantity',
+  litre: 'Litres',
+  kilogram: 'Kilograms',
+  hour: 'Hours',
+  day: 'Days',
 };
 
 export function composeHostOrderEmail(input: HostOrderEmailInput): {

@@ -337,6 +337,10 @@ export const PRICE_UNIT_LABELS: Record<PriceUnit, string> = {
   person: 'per person',
   group: 'per group',
   item: 'per item',
+  litre: 'per litre',
+  kilogram: 'per kg',
+  hour: 'per hour',
+  day: 'per day',
 };
 
 export const ADAPTER_KIND_LABELS: Record<AdapterKind, string> = {

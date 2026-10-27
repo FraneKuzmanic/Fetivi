@@ -13,7 +13,6 @@ import { useAction } from '../../useAction';
 import { format, useWizardCopy } from './copy';
 import { GoLivePanel } from './GoLivePanel';
 import { pendingByStep } from './import/drafts';
-import { LanguagePicker } from './LanguagePicker';
 import { WizardOverview } from './WizardOverview';
 import { WizardStep } from './WizardStep';
 
@@ -93,7 +92,7 @@ export function WizardPage() {
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/">Properties</Link>
+        <Link to="/properties">Properties</Link>
         <span aria-hidden="true">/</span>
         <Link to={`/properties/${detail.propertyId}`}>{detail.propertyName}</Link>
         <span aria-hidden="true">/</span>
@@ -104,7 +103,6 @@ export function WizardPage() {
           <h1>{format(ui.overviewTitle, { unit: detail.name })}</h1>
           <p className="muted">{ui.overviewIntro}</p>
         </div>
-        <LanguagePicker />
       </div>
       {error ? <p role="alert">{error}</p> : null}
       <WizardOverview

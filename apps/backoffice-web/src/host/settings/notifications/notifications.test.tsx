@@ -125,7 +125,7 @@ const radio = (name: string) =>
   [...el.querySelectorAll<HTMLLabelElement>('label')]
     .find((l) => l.textContent === name)
     ?.querySelector<HTMLInputElement>('input[type="radio"]');
-const timeInputs = () => [...el.querySelectorAll<HTMLInputElement>('input[type="time"]')];
+const timeInputs = () => [...el.querySelectorAll<HTMLInputElement>('.picker.time input')];
 
 describe('notification settings', () => {
   it('shows the three default times in Digest mode and hides them in Immediate', async () => {
@@ -162,21 +162,20 @@ describe('notification settings', () => {
     await vi.waitFor(() => expect(el.textContent).toContain('Saved'));
   });
 
-  it('shows the account email and that replies belong in the inbox', async () => {
+  it('has no separate Email section', async () => {
     device({ ua: DESKTOP });
     stubApi(HOST);
     await mount();
-    expect(el.textContent).toContain('Emails go to host@example.test');
-    expect(el.textContent).toContain('Reply in the inbox, not by email.');
+    expect(el.textContent).not.toContain('Emails go to');
   });
 });
 
 describe('phone alerts', () => {
-  it('asks a desktop browser to open the page on a phone', async () => {
+  it('leaves phone alerts out of a desktop browser', async () => {
     device({ ua: DESKTOP });
     stubApi(HOST);
     await mount();
-    expect(el.textContent).toContain('Open this page on your phone to set up alerts.');
+    expect(el.textContent).not.toContain('Phone alerts');
     expect(button('Turn on alerts')).toBeUndefined();
   });
 
@@ -226,7 +225,7 @@ describe('phone alerts', () => {
     device({ ua: IPHONE, installed: true });
     stubApi(ACTING);
     await mount();
-    expect(el.textContent).toContain('Only the host can turn on alerts on their own phone.');
+    expect(el.textContent).not.toContain('Phone alerts');
     expect(button('Turn on alerts')).toBeUndefined();
   });
 });

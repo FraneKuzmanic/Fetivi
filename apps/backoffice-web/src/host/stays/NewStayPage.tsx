@@ -51,7 +51,7 @@ export function NewStayPage() {
         <section className="panel narrow">
           <p>Stays can be registered once Fetivi has approved a property.</p>
           <p>
-            <Link to="/">Go to Properties</Link>
+            <Link to="/properties">Go to Properties</Link>
           </p>
         </section>
       ) : null}

@@ -7,45 +7,31 @@ import { CopyButton } from '../../host/stays/StayPage';
 import { useAction } from '../../useAction';
 
 type Status = ProviderCardStatus | 'none';
-type Subject = 'provider' | 'host';
-
-const STATUS: Record<Status, { chip: string; tone: string; text: Record<Subject, string> }> = {
+const STATUS: Record<Status, { chip: string; tone: string; text: string }> = {
   none: {
     chip: 'Not set up',
     tone: 'neutral',
-    text: {
-      provider: 'Offers paid online need a Stripe account.',
-      host: 'Connect your own Stripe account to take card payments. Until then, guests pay you directly.',
-    },
+    text: 'Offers paid online need a Stripe account.',
   },
   pending: {
     chip: 'Onboarding',
     tone: 'wait',
-    text: {
-      provider: 'Waiting for the Provider to finish Stripe onboarding.',
-      host: 'Waiting for you to finish Stripe onboarding.',
-    },
+    text: 'Waiting for the Provider to finish Stripe onboarding.',
   },
   active: {
     chip: 'Active',
     tone: 'ok',
-    text: { provider: 'Can take card payments.', host: 'Your services can take card payments.' },
+    text: 'Can take card payments.',
   },
   restricted: {
     chip: 'Restricted',
     tone: 'fail',
-    text: {
-      provider: 'Stripe needs more information from the Provider.',
-      host: 'Stripe needs more information from you. Continue onboarding to see what.',
-    },
+    text: 'Stripe needs more information from the Provider.',
   },
   unsupported: {
     chip: 'Unsupported',
     tone: 'fail',
-    text: {
-      provider: "Stripe can't take card payments for this account.",
-      host: "Stripe can't take card payments for this account.",
-    },
+    text: "Stripe can't take card payments for this account.",
   },
 };
 
@@ -53,20 +39,18 @@ const when = (iso: string) =>
   new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 
 /**
- * Stripe Connect onboarding for one merchant of record: the card capability status, a fresh
- * onboarding link and a Refresh. For a Provider the admin copies the link to send on; a host
- * (38) is sent straight to Stripe. Returning from Stripe (`?stripe=return|refresh`) refreshes once.
+ * A Provider's Stripe Connect onboarding: the card capability status, a fresh onboarding link the
+ * admin copies to send on, and a Refresh. Returning from Stripe (`?stripe=return|refresh`)
+ * refreshes once. Hosts manage their own account in Settings → Payments.
  */
 export function OnlinePaymentsPanel<T extends PaymentsStatus>({
   title = 'Online payments',
-  subject,
   status: current,
   onLink,
   onRefresh,
   onChange,
 }: {
   title?: string;
-  subject: Subject;
   status: T;
   onLink: () => Promise<{ url: string; expiresAt: string }>;
   onRefresh: () => Promise<T>;
@@ -97,7 +81,7 @@ export function OnlinePaymentsPanel<T extends PaymentsStatus>({
     <section className="panel" aria-labelledby="online-payments">
       <h2 id="online-payments">{title}</h2>
       <p>
-        <span className={`chip ${status.tone}`}>{status.chip}</span> {status.text[subject]}
+        <span className={`chip ${status.tone}`}>{status.chip}</span> {status.text}
       </p>
       {current.stripeCheckedAt ? (
         <small className="muted">Last checked {when(current.stripeCheckedAt)}</small>
@@ -129,18 +113,11 @@ export function OnlinePaymentsPanel<T extends PaymentsStatus>({
           disabled={busy}
           onClick={() =>
             void run(async () => {
-              const fresh = await onLink();
-              // The host fills in their own details, so the link opens in place.
-              if (subject === 'host') window.location.assign(fresh.url);
-              else setLink(fresh);
+              setLink(await onLink());
             })
           }
         >
-          {subject === 'provider'
-            ? 'Create onboarding link'
-            : current.stripeConnected
-              ? 'Continue on Stripe'
-              : 'Set up card payments'}
+          Create onboarding link
         </button>
         {/* A created link means the account exists, even before this page reloads. */}
         {current.stripeConnected || link ? (

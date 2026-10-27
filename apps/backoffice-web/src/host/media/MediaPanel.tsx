@@ -1,28 +1,20 @@
-import { LIMITS, MEDIA_CONTENT_TYPES, MEDIA_TYPES } from '@fetivi/domain/vocabulary';
+import { LIMITS, MEDIA_CONTENT_TYPES } from '@fetivi/domain/vocabulary';
 import { type FormEvent, useId, useState } from 'react';
 import { type Block, type BlockMedia, host } from '../../api';
 import { TextField } from '../../forms/fields';
 import { useAction } from '../../useAction';
+import { fileProblem } from './PendingMedia';
 
 const ACCEPT = MEDIA_CONTENT_TYPES.join(',');
 
-/** A message for a file the server would refuse anyway; the server stays the authority. */
-function fileProblem(file: File): string | null {
-  const type = MEDIA_TYPES[file.type as keyof typeof MEDIA_TYPES];
-  if (!type) return 'Use a JPEG, PNG or WebP photo, or an MP4 or WebM video.';
-  const limit = type.kind === 'image' ? LIMITS.imageBytes : LIMITS.videoBytes;
-  if (file.size > limit) return 'This file is too large: photos up to 10 MB, videos up to 50 MB.';
-  return null;
-}
-
-/** The photos and short videos of one block: add with a caption, edit captions, remove. */
+/** The photos and short videos of one guide entry: add with a caption, edit captions, remove. */
 export function MediaPanel({ block, onChanged }: { block: Block; onChanged: () => Promise<void> }) {
   const full = block.media.length >= LIMITS.mediaPerBlock;
   return (
     <div className="media-panel">
       <p className="muted">
-        Guests see a new item once the block's translations are published. The caption is shown to
-        guests and read aloud to blind guests; it is translated with the block.
+        Guests see a new photo once the entry's translations are published. The caption is shown to
+        guests and read aloud to blind guests; it is translated with the entry.
       </p>
       {block.media.length > 0 ? (
         <ul className="media-list">
@@ -32,7 +24,7 @@ export function MediaPanel({ block, onChanged }: { block: Block; onChanged: () =
         </ul>
       ) : null}
       {full ? (
-        <p className="muted">This block has the maximum of 6 photos or videos.</p>
+        <p className="muted">This entry has the maximum of 6 photos or videos.</p>
       ) : (
         <UploadForm blockId={block.id} onChanged={onChanged} />
       )}
@@ -141,7 +133,7 @@ function UploadForm({ blockId, onChanged }: { blockId: string; onChanged: () => 
           }}
         />
         <small id={`${fileId}-hint`}>
-          JPEG, PNG or WebP up to 10 MB; MP4 or WebM up to 50 MB; up to 6 per block.
+          JPEG, PNG or WebP up to 10 MB; MP4 or WebM up to 50 MB; up to 6 per entry.
         </small>
       </div>
       <TextField

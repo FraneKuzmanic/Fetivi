@@ -77,6 +77,10 @@ const UNIT_KEYS = {
   person: 'order.people',
   group: 'order.groups',
   item: 'order.items',
+  litre: 'order.litres',
+  kilogram: 'order.kilograms',
+  hour: 'order.hours',
+  day: 'order.days',
 } as const satisfies Record<PriceUnit, string>;
 
 /** Dates, times and money of an Order in the interface language. */

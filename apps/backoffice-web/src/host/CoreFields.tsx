@@ -1,4 +1,6 @@
 import { CHECK_IN_METHODS, LIMITS, PARKING_TYPES } from '@fetivi/domain/vocabulary';
+import { Car, type Icon, IdentificationCard, Key, Phone, Scroll } from '@phosphor-icons/react';
+import { type ReactNode, useState } from 'react';
 import type { CoreValues } from '../api';
 import { SelectField, TextArea, TextField, TimeField, TriStateField } from '../forms/fields';
 import { CHECK_IN_METHOD_LABELS, CORE_FIELD_LABELS, PARKING_LABELS } from '../forms/labels';
@@ -33,24 +35,39 @@ export const CORE_SECTIONS: { id: string; title: string; fields: readonly CoreKe
   { id: 'licence', title: 'Licence', fields: ['licenceNumber'] },
 ];
 
+/** The icon each core section has in the property and unit section lists. */
+export const CORE_SECTION_ICONS: Record<string, Icon> = {
+  arrival: Key,
+  'house-rules': Scroll,
+  parking: Car,
+  contacts: Phone,
+  licence: IdentificationCard,
+};
+
 const TIMES = new Set<CoreKey>(['checkInTime', 'checkoutTime', 'quietHoursFrom', 'quietHoursTo']);
 const BOOLEANS = new Set<CoreKey>(['petsAllowed', 'smokingAllowed', 'partiesAllowed']);
 const LONG_TEXT = new Set<CoreKey>(['accessInstructions', 'parkingNotes', 'houseRulesNotes']);
 const PHONES = new Set<CoreKey>(['hostPhone', 'emergencyContactPhone']);
 
-/** A property value as the unit form shows it in a hint. */
+/** A property value as the unit page shows it, in full. */
 export function formatCoreValue(key: CoreKey, value: CoreValues[CoreKey]): string {
-  if (value === null) return 'not set';
+  if (value === null) return 'Not set on the property';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (key === 'checkInMethod')
     return CHECK_IN_METHOD_LABELS[value as keyof typeof CHECK_IN_METHOD_LABELS];
   if (key === 'parkingType') return PARKING_LABELS[value as keyof typeof PARKING_LABELS];
-  return value.length > 60 ? `${value.slice(0, 59)}…` : value;
+  return value;
 }
 
+/** What a field is for, where the label alone leaves a host guessing. */
+const HINTS: Partial<Record<CoreKey, string>> = {
+  licenceNumber:
+    'The official registration number of the rental, for example 2181-03-01-24-0001. It shows guests the place is registered.',
+};
+
 /**
- * One shared core field. On a unit (`inherited` given) an empty field uses the property's value,
- * which the hint shows, and a set field can be handed back to the property.
+ * One shared core field. On a unit (`inherited` given) the property's value is shown as text
+ * until the host sets one for this unit; a value set here can be handed back to the property.
  */
 export function CoreField({
   field,
@@ -63,22 +80,74 @@ export function CoreField({
   onChange: (value: CoreValues[CoreKey]) => void;
   inherited?: CoreValues;
 }) {
+  const [overriding, setOverriding] = useState(value !== null);
   const label = CORE_FIELD_LABELS[field];
-  const fromProperty = inherited ? formatCoreValue(field, inherited[field]) : null;
-  const hint =
-    inherited === undefined ? undefined : value === null ? (
-      <>Uses the property value: {fromProperty}</>
-    ) : (
-      <>
-        Property value: {fromProperty}.{' '}
-        <button type="button" className="link" onClick={() => onChange(null)}>
-          Use property value
-        </button>
-      </>
+
+  if (!inherited) {
+    return <CoreInput field={field} value={value} onChange={onChange} hint={HINTS[field]} />;
+  }
+
+  if (!overriding && value === null) {
+    const shown = formatCoreValue(field, inherited[field]);
+    return (
+      <div className="field inherited-field">
+        <span className="field-label">{label}</span>
+        <div className="inherited-value">
+          <span className={inherited[field] === null ? 'muted' : 'inherited-text'}>{shown}</span>
+          <button
+            type="button"
+            className="link-button"
+            aria-label={`Set ${label.toLowerCase()} for this unit`}
+            onClick={() => {
+              setOverriding(true);
+              onChange(inherited[field]);
+            }}
+          >
+            Set for this unit
+          </button>
+        </div>
+      </div>
     );
-  const nullLabel = inherited ? 'Use property value' : 'Not set';
-  const placeholder =
-    inherited && typeof inherited[field] === 'string' ? (inherited[field] as string) : undefined;
+  }
+
+  return (
+    <CoreInput
+      field={field}
+      value={value}
+      onChange={onChange}
+      hint={
+        <>
+          {HINTS[field] ? `${HINTS[field]} ` : null}
+          Only this unit.{' '}
+          <button
+            type="button"
+            className="link"
+            onClick={() => {
+              setOverriding(false);
+              onChange(null);
+            }}
+          >
+            Use the property's value
+          </button>
+        </>
+      }
+    />
+  );
+}
+
+function CoreInput({
+  field,
+  value,
+  onChange,
+  hint,
+}: {
+  field: CoreKey;
+  value: CoreValues[CoreKey];
+  onChange: (value: CoreValues[CoreKey]) => void;
+  hint?: ReactNode;
+}) {
+  const label = CORE_FIELD_LABELS[field];
+  const nullLabel = 'Not set';
 
   if (TIMES.has(field)) {
     return (
@@ -134,7 +203,6 @@ export function CoreField({
         hint={hint}
         value={value as string | null}
         maxLength={LIMITS.longText}
-        placeholder={placeholder}
         onChange={(v) => onChange(v)}
       />
     );
@@ -152,7 +220,6 @@ export function CoreField({
             ? LIMITS.licence
             : LIMITS.shortText
       }
-      placeholder={placeholder}
       onChange={(v) => onChange(v)}
     />
   );

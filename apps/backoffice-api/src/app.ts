@@ -1,5 +1,6 @@
 import type {
   Db,
+  Geocoder,
   JobQueue,
   Mailer,
   ManualImportModel,
@@ -20,6 +21,7 @@ import { registerAuth } from './auth/plugin';
 import { authRoutes } from './auth/routes';
 import { calendarRoutes } from './calendars/routes';
 import { catalogRoutes } from './catalog/routes';
+import { geocodeRoutes } from './geocode/routes';
 import { hostNotificationRoutes } from './host/notifications';
 import { hostRoutes } from './host/routes';
 import { hostStatsRoutes } from './host/stats';
@@ -59,6 +61,8 @@ export interface AppDeps {
   manualImportModel: ManualImportModel;
   /** Resend's webhook signing secret; without it `/webhooks/resend` is not registered. */
   resendWebhookSecret?: string | undefined;
+  /** Address search for the property form; null turns it off. */
+  geocoder?: Geocoder | null;
   /** The VAPID public key for the host's phone alerts; unset turns them off. */
   vapidPublicKey?: string | undefined;
   /**
@@ -106,6 +110,7 @@ export function buildApp(deps: AppDeps) {
   app.register(hostPickRoutes, { db, queue, now });
   app.register(hostPaymentRoutes, { db, now, webOrigin, gateway: deps.stripe?.gateway ?? null });
   app.register(hostNotificationRoutes, { db, now, vapidPublicKey: deps.vapidPublicKey ?? null });
+  app.register(geocodeRoutes, { geocoder: deps.geocoder ?? null });
   if (deps.resendWebhookSecret) {
     app.register(resendWebhookRoutes, { db, now, secret: deps.resendWebhookSecret });
   }

@@ -44,6 +44,8 @@ export type ErrorCode =
   | 'already-replied'
   | 'push-endpoint'
   | 'no-account'
+  | 'open-card-orders'
+  | 'geocoder-unavailable'
   | 'payments-not-configured'
   | 'stripe-unavailable'
   | 'stripe-rejected'

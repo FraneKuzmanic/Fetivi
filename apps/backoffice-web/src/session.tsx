@@ -41,6 +41,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** The session, or null outside a SessionProvider (a component rendered on its own). */
+export function useOptionalSession(): SessionValue | null {
+  return useContext(SessionContext);
+}
+
 export function useSession(): SessionValue {
   const value = useContext(SessionContext);
   if (!value) throw new Error('useSession must be used inside SessionProvider');

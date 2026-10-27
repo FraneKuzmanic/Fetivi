@@ -58,7 +58,7 @@ export function InboxMessage({
       </header>
 
       <section className="inbox-text" aria-label="Guest message">
-        <p className="inbox-body">
+        <p className="inbox-body inbox-quote">
           {translated && !showOriginal ? message.translation : message.text}
         </p>
         {translated ? (
@@ -90,7 +90,7 @@ export function InboxMessage({
       {message.reply ? (
         <section className="inbox-reply" aria-label="Your reply">
           <h3>Your reply</h3>
-          <p className="inbox-body">{message.reply.text}</p>
+          <p className="inbox-body inbox-quote host">{message.reply.text}</p>
           <p className="muted inbox-note">
             {receivedAt(message.reply.repliedAt)} · {replyDelivery(message.reply)}
           </p>

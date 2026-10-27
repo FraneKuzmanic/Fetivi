@@ -33,6 +33,7 @@ async function host(app: TestApp, email: string) {
 
 const LINK = '/api/host/payments/stripe/onboarding-link';
 const REFRESH = '/api/host/payments/stripe/refresh';
+const DISCONNECT = '/api/host/payments/stripe/disconnect';
 
 beforeAll(async () => {
   t = await createTestApp({ stripe: { gateway } });
@@ -74,8 +75,8 @@ describe('host payments', () => {
     expect(creates[0]?.idempotencyKey).toBe(`host:${hostA.id}:account`);
     const links = gateway.calls.filter((c) => c.op === 'account_link');
     expect(links.at(-1)?.params).toMatchObject({
-      returnUrl: `${TEST_ORIGIN}/services?stripe=return`,
-      refreshUrl: `${TEST_ORIGIN}/services?stripe=refresh`,
+      returnUrl: `${TEST_ORIGIN}/settings/payments?stripe=return`,
+      refreshUrl: `${TEST_ORIGIN}/settings/payments?stripe=refresh`,
     });
     const id = await storedAccount(hostA.id);
     const account = gateway.state().accounts.find((a) => a.id === id);
@@ -111,6 +112,23 @@ describe('host payments', () => {
       stripeConnected: true,
       stripeCardPayments: null,
     });
+  });
+
+  it('disconnects: the account is unlinked, and the next link makes a new one', async () => {
+    const before = await storedAccount(hostB.id);
+    const response = await post(t.app, DISCONNECT, undefined, hostB.cookie);
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      stripeConnected: false,
+      stripeCardPayments: null,
+      stripeCheckedAt: null,
+    });
+    expect(await storedAccount(hostB.id)).toBeNull();
+    expect((await post(t.app, LINK, undefined, hostB.cookie)).statusCode).toBe(200);
+    const after = await storedAccount(hostB.id);
+    expect(after).toBeTruthy();
+    expect(after).not.toBe(before);
+    expect((await post(t.app, DISCONNECT, undefined, adminCookie)).statusCode).toBe(403);
   });
 
   it('is for hosts only', async () => {

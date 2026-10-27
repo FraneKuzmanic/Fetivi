@@ -27,13 +27,16 @@ import { HostPicksPage } from './host/picks/HostPicksPage';
 import { ProvidersPage as HostProvidersPage } from './host/services/ProvidersPage';
 import { NewServicePage, ServicePage } from './host/services/ServicePage';
 import { ServicesPage } from './host/services/ServicesPage';
+import { AccountPage } from './host/settings/AccountPage';
 import { NotificationsPage } from './host/settings/notifications/NotificationsPage';
+import { PaymentsPage } from './host/settings/PaymentsPage';
 import { UnitStatsPage } from './host/stats/UnitStatsPage';
 import { NewStayPage } from './host/stays/NewStayPage';
 import { ConfirmProposalPage } from './host/stays/proposed/ConfirmProposalPage';
 import { StayPage } from './host/stays/StayPage';
 import { StaysPage } from './host/stays/StaysPage';
 import { SuggestionsPage } from './host/suggestions/SuggestionsPage';
+import { TodayPage } from './host/today/TodayPage';
 import { UnitPage } from './host/UnitPage';
 import { ImportPage } from './host/wizard/import/ImportPage';
 import { WizardPage } from './host/wizard/WizardPage';
@@ -75,10 +78,18 @@ export function App() {
             <RequireSession>
               {(me) => (
                 <Shell me={me}>
-                  {me.account.role === 'admin' && !me.actingAs ? <AdminHome /> : <PropertiesPage />}
+                  {me.account.role === 'admin' && !me.actingAs ? <AdminHome /> : <TodayPage />}
                 </Shell>
               )}
             </RequireSession>
+          }
+        />
+        <Route
+          path="/properties"
+          element={
+            <Page area="host">
+              <PropertiesPage />
+            </Page>
           }
         />
         <Route
@@ -201,11 +212,28 @@ export function App() {
             </Page>
           }
         />
+        <Route path="/settings" element={<Navigate to="/settings/notifications" replace />} />
         <Route
           path="/settings/notifications"
           element={
             <Page area="host">
               <NotificationsPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/settings/payments"
+          element={
+            <Page area="host">
+              <PaymentsPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/settings/account"
+          element={
+            <Page area="host">
+              <AccountPage />
             </Page>
           }
         />

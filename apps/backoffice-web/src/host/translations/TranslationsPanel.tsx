@@ -105,7 +105,7 @@ export function TranslationsPanel({
                       setCorrecting(language);
                     }}
                   >
-                    Correct
+                    Edit
                   </button>
                 )}
               </div>

@@ -8,7 +8,7 @@ import { LIMITS } from '@fetivi/domain/vocabulary';
 import { Plus, Trash } from '@phosphor-icons/react';
 import { useId, useState } from 'react';
 import type { CatalogLink, FieldSources, OpeningHours, PlaceImage, Season } from '../../api';
-import { SelectField, TextField, TimeField } from '../../forms/fields';
+import { DateField, DateTimeField, SelectField, TextField, TimeField } from '../../forms/fields';
 import { IMAGE_SOURCE_LABELS, SOURCE_FIELD_LABELS, WEEKDAY_LABELS } from '../../forms/labels';
 
 // Controlled list editors for the record page. Each one edits a whole list; its Section saves it
@@ -54,6 +54,12 @@ export function InputField({
   required?: boolean;
 }) {
   const id = useId();
+  if (type === 'date') {
+    return <DateField label={label} value={value} required={required} onChange={onChange} />;
+  }
+  if (type === 'datetime-local') {
+    return <DateTimeField label={label} value={value} required={required} onChange={onChange} />;
+  }
   return (
     <div className="field">
       <label className="field-label" htmlFor={id}>

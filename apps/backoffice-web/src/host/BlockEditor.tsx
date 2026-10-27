@@ -5,10 +5,12 @@ import {
   LIMITS,
 } from '@fetivi/domain/vocabulary';
 import { type FormEvent, useState } from 'react';
-import type { Block, BlockInput, BlockResult, SecretWarning } from '../api';
-import { SelectField, TextArea, TextField } from '../forms/fields';
+import { type Block, type BlockInput, type BlockResult, host, type SecretWarning } from '../api';
+import { SelectField, TextField } from '../forms/fields';
 import { CATEGORY_LABELS, VISIBILITY_LABELS } from '../forms/labels';
 import { useAction } from '../useAction';
+import { type PendingFile, PendingMedia } from './media/PendingMedia';
+import { MarkdownField } from './wizard/MarkdownField';
 
 const WARNING_KIND: Record<SecretWarning['kind'], string> = {
   code: 'a door or key code',
@@ -44,7 +46,7 @@ export function SecretWarnings({
   );
 }
 
-/** Creates or edits one info block. */
+/** Creates or edits one guide entry (an info block). */
 export function BlockEditor({
   initial,
   heading,
@@ -52,16 +54,19 @@ export function BlockEditor({
   onDone,
   onCancel,
   categoryFixed = false,
+  withMedia = false,
 }: {
   initial?: Partial<Pick<Block, 'title' | 'body' | 'visibility' | 'revision'>> & {
     category?: HostBlockCategory;
   };
   /** Hides the Guide section field: the block stays in `initial.category`. */
   categoryFixed?: boolean;
+  /** A new entry: photos and video can be picked now and upload once it is saved. */
+  withMedia?: boolean;
   heading: string;
   onSubmit: (input: BlockInput) => Promise<BlockResult>;
-  /** Called after a save; the warnings, if any, are shown by the caller. */
-  onDone: (warnings: SecretWarning[]) => void;
+  /** Called after a save; the warnings and an upload problem, if any, are shown by the caller. */
+  onDone: (warnings: SecretWarning[], uploadProblem?: string) => void;
   onCancel: () => void;
 }) {
   const { busy, error, run } = useAction();
@@ -71,12 +76,27 @@ export function BlockEditor({
   const [title, setTitle] = useState<string | null>(initial?.title ?? null);
   const [body, setBody] = useState<string | null>(initial?.body ?? null);
   const [visibility, setVisibility] = useState(initial?.visibility ?? 'always');
+  const [media, setMedia] = useState<PendingFile[]>([]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
     void run(async () => {
       const result = await onSubmit({ category, title: title ?? '', body: body ?? '', visibility });
-      onDone(result.warnings);
+      // The entry is saved; a failed upload is reported, never a reason to save it twice.
+      let failed = 0;
+      for (const item of media) {
+        try {
+          await host.uploadMedia(result.block.id, item.file, item.caption ?? '');
+        } catch {
+          failed += 1;
+        }
+      }
+      onDone(
+        result.warnings,
+        failed > 0
+          ? `Saved, but ${failed === 1 ? 'one photo or video' : `${failed} photos or videos`} did not upload. Add ${failed === 1 ? 'it' : 'them'} again from the entry's menu.`
+          : undefined,
+      );
     });
   }
 
@@ -108,26 +128,13 @@ export function BlockEditor({
           required
           onChange={setTitle}
         />
-        <TextArea
-          label="Text"
-          hint={
-            <>
-              Markdown supported: **bold**, - lists, [links](https://…).
-              {initial?.revision ? ` Revision ${initial.revision}.` : null}
-            </>
-          }
-          value={body}
-          maxLength={LIMITS.blockBody}
-          rows={8}
-          required
-          monospace
-          onChange={setBody}
-        />
+        <MarkdownField label="Text" value={body ?? ''} onChange={(v) => setBody(v || null)} />
+        {withMedia ? <PendingMedia files={media} onChange={setMedia} /> : null}
       </div>
       {error ? <p role="alert">{error}</p> : null}
       <div className="actions">
         <button type="submit" className="primary" disabled={busy}>
-          Save block
+          Save
         </button>
         <button type="button" disabled={busy} onClick={onCancel}>
           Cancel

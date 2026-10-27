@@ -41,7 +41,7 @@ describe('goLiveCheck', () => {
   it('waits for the translations of a pending block', () => {
     const pending = facts(MINIMUM, {
       ...approved,
-      blocks: [{ wizardKey: null, revision: 2, publishedRevision: 1 }],
+      blocks: [{ wizardKey: null, category: 'how_tos', revision: 2, publishedRevision: 1 }],
     });
     expect(goLiveCheck(pending).missing).toEqual(['translations']);
   });
