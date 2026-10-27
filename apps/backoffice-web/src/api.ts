@@ -131,11 +131,24 @@ export interface HostSummary {
   emailVerified: boolean;
   suspended: boolean;
   createdAt: string;
+  propertyCount: number;
+}
+
+/** What waits on the admin: the counts on the Today page and the nav. */
+export interface AdminOverview {
+  approvalsPending: number;
+  curationOpen: number;
+  curationNeedsVisit: number;
+  recordsDue: number;
+  paymentProblems: number;
+  ordersNeedAction: number;
 }
 
 export interface AuditEntry {
   id: number;
   adminId: string;
+  /** Null when that admin account was deleted. */
+  adminEmail: string | null;
   hostId: string;
   hostEmail: string;
   method: string;
@@ -518,6 +531,8 @@ export interface ReconciliationFinding {
   stripeRef: string | null;
   detail: string;
   action: string | null;
+  /** What the finding is about, named for a person: an Order's offer, a Provider. */
+  subject: { kind: 'order' | 'provider' | 'payment'; id: string; label: string } | null;
   firstSeenAt: string;
   lastSeenAt: string;
   resolvedAt: string | null;
@@ -587,6 +602,8 @@ export interface AdminPropertyRow {
   city: string | null;
   hostEmail: string;
   unitCount: number;
+  /** Units that meet the go-live minimum and get their QR link on approval. */
+  readyUnitCount: number;
   createdAt: string;
   approvedAt: string | null;
 }
@@ -790,7 +807,8 @@ export const admin = {
   actAs: (hostId: string) => post<Me>('/api/admin/act-as', { hostId }),
   stopActing: () => post<Me>('/api/admin/act-as/stop'),
   audit: () => api<{ entries: AuditEntry[] }>('/api/admin/audit'),
-  properties: (status: 'pending' | 'approved') =>
+  overview: () => api<AdminOverview>('/api/admin/overview'),
+  properties: (status: 'pending' | 'approved' | 'all') =>
     api<{ properties: AdminPropertyRow[] }>(`/api/admin/properties?status=${status}`),
   approve: (id: string) => post(`/api/admin/properties/${id}/approve`),
   feedbackStats: () => api<AdminFeedbackStats>('/api/admin/feedback-stats'),
@@ -805,7 +823,31 @@ export interface PlatformSettings {
   dailyMessageCap: number;
 }
 
+/** One row of the admin's Orders list. */
+export interface AdminOrderRow {
+  id: string;
+  createdAt: string;
+  offerTitle: string;
+  providerName: string | null;
+  hostEmail: string | null;
+  propertyName: string | null;
+  date: string;
+  startsAt: string | null;
+  quantity: number;
+  priceMinor: number | null;
+  currency: string;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  needsAction: boolean;
+}
+
+export type AdminOrderView = 'needs_action' | 'active' | 'done';
+
 export const adminOrders = {
+  list: (view: AdminOrderView, q = '', offset = 0) =>
+    api<{ orders: AdminOrderRow[]; total: number }>(
+      `/api/admin/orders?view=${view}&offset=${offset}${q ? `&q=${encodeURIComponent(q)}` : ''}`,
+    ),
   get: (id: string) => api<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}`),
   cancel: (id: string, body: { refundMinor?: number; note?: string }) =>
     post<AdminOrder>(`/api/admin/orders/${encodeURIComponent(id)}/cancel`, body),

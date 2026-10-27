@@ -248,9 +248,9 @@ export const IMAGE_SOURCE_LABELS: Record<ImageSource, string> = {
 };
 
 export const STALENESS_LABELS: Record<StalenessStatus, string> = {
-  fresh: 'Fresh',
-  stale: 'Past its budget',
-  never_verified: 'Never verified',
+  fresh: 'Up to date',
+  stale: 'Re-check due',
+  never_verified: 'Never checked',
   expired: 'Ended',
 };
 
@@ -305,15 +305,15 @@ export const OFFER_CATEGORY_LABELS: Record<OfferCategory, string> = {
 };
 
 export const AVAILABILITY_MODE_LABELS: Record<AvailabilityMode, string> = {
-  live: "Live (Provider's booking system)",
-  allotment: 'Allotment (seats from the deal)',
-  on_request: 'On request (Provider accepts)',
+  live: "Instant (the Provider's booking system)",
+  allotment: 'Fixed seats (agreed in the deal)',
+  on_request: 'On request (the Provider confirms)',
 };
 
 /** Short forms for chips and lists. */
 export const AVAILABILITY_MODE_SHORT: Record<AvailabilityMode, string> = {
-  live: 'Live',
-  allotment: 'Allotment',
+  live: 'Instant booking',
+  allotment: 'Fixed seats',
   on_request: 'On request',
 };
 
@@ -360,7 +360,7 @@ export const CURATION_ACTION_LABELS: Record<CurationAction, string> = {
   approve: 'Approve',
   edit: 'Edit',
   reject: 'Reject',
-  needs_visit: 'Needs a visit',
+  needs_visit: 'Move to Needs a visit',
 };
 
 export const CURATION_STATUS_LABELS: Record<CurationStatus, string> = {

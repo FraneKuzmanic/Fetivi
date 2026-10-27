@@ -1,4 +1,11 @@
-import { reconciliationFindings, reconciliationRuns } from '@fetivi/domain';
+import {
+  createJobQueue,
+  createOrder,
+  providers,
+  reconciliationFindings,
+  reconciliationRuns,
+} from '@fetivi/domain';
+import { seedGuestUnit, seedOrderableOffer, seedProvider } from '@fetivi/domain/testing';
 import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAdmin } from '../cli/create-admin';
@@ -109,5 +116,61 @@ describe('admin reconciliation', () => {
     expect((await post(t.app, url, {}, adminCookie)).statusCode).toBe(404);
     const resolved = `/api/admin/reconciliation/findings/${resolvedId}/resolve`;
     expect((await post(t.app, resolved, {}, adminCookie)).statusCode).toBe(404);
+  });
+
+  it('names what each finding is about', async () => {
+    // The dismissed session is on a Stripe account no Provider or host has.
+    const done = await get(t.app, '/api/admin/reconciliation?status=resolved', adminCookie);
+    const dismissed = done.json().findings.find((f: { id: string }) => f.id === openId);
+    expect(dismissed.subject).toEqual({ kind: 'payment', id: 'cs_1', label: 'acct_1' });
+
+    const provider = await seedProvider(t.db);
+    await t.db
+      .update(providers)
+      .set({ stripeAccountId: 'acct_2' })
+      .where(eq(providers.id, provider.id));
+    const guest = await seedGuestUnit(t.db, { now: t.clock.now() });
+    const { offerId } = await seedOrderableOffer(t.db, {
+      providerId: provider.id,
+      availabilityMode: 'on_request',
+    });
+    const { order } = await createOrder(
+      { db: t.db, queue: createJobQueue(t.boss), now: t.clock.now },
+      {
+        spaceId: guest.spaceId,
+        offerId,
+        date: guest.stay.checkIn,
+        quantity: 1,
+        contact: { email: 'guest@example.test' },
+      },
+    );
+    const [run] = await t.db.select().from(reconciliationRuns);
+    const base = { runId: run?.id as string, firstSeenAt: SEEN, lastSeenAt: SEEN };
+    await t.db.insert(reconciliationFindings).values([
+      {
+        ...base,
+        kind: 'check_failed',
+        subject: `attempt:${order.id}`,
+        orderId: order.id,
+        detail: 'stripe said no',
+        status: 'needs_attention',
+      },
+      {
+        ...base,
+        kind: 'orphan_session',
+        subject: 'session:acct_2:cs_2',
+        stripeRef: 'cs_2',
+        detail: 'status=complete intent=pi_2',
+        status: 'needs_attention',
+      },
+    ]);
+    const open = await get(t.app, '/api/admin/reconciliation', adminCookie);
+    const subjects = open.json().findings.map((f: { subject: unknown }) => f.subject);
+    expect(subjects).toEqual(
+      expect.arrayContaining([
+        { kind: 'order', id: order.id, label: expect.any(String) },
+        { kind: 'provider', id: provider.id, label: provider.name },
+      ]),
+    );
   });
 });

@@ -12,6 +12,7 @@ import {
 } from '../../api';
 import { Section, TextArea } from '../../forms/fields';
 import { PLACE_CATEGORY_LABELS, TRANSLATION_ERROR_LABELS } from '../../forms/labels';
+import { useConfirm } from '../../shell/ConfirmDialog';
 import { useAction } from '../../useAction';
 import { BlockList, preview } from '../BlockList';
 import { TranslationChip } from '../translations/TranslationChip';
@@ -58,6 +59,7 @@ function RemoveButton({
   onRemoved: () => Promise<void>;
 }) {
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   return (
     <>
       <button
@@ -66,8 +68,15 @@ function RemoveButton({
         aria-label={`Remove ${label}`}
         title="Remove"
         disabled={busy}
-        onClick={() => {
-          if (window.confirm(`Remove ${label}? Your guests will no longer see it.`)) {
+        onClick={async () => {
+          if (
+            await confirm({
+              title: `Remove ${label}?`,
+              body: 'Your guests will no longer see it.',
+              action: 'Remove',
+              danger: true,
+            })
+          ) {
             void run(async () => {
               await host.deleteHostPlace(id);
               await onRemoved();

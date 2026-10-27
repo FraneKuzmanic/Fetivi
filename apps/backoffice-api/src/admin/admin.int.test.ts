@@ -88,6 +88,12 @@ describe('role matrix', () => {
     expect(r.statusCode).toBe(200);
     const emails = r.json().hosts.map((h: { email: string }) => h.email);
     expect(emails).toEqual(['b@example.test', 'a@example.test']);
+    expect(r.json().hosts[0].propertyCount).toBe(0);
+    await post(t.app, '/api/host/properties', { name: 'Villa', city: 'Split' }, hostA.cookie);
+    const after = await get(t.app, '/api/admin/hosts', adminCookie);
+    expect(after.json().hosts.map((h: { propertyCount: number }) => h.propertyCount)).toEqual([
+      0, 1,
+    ]);
   });
 });
 
@@ -126,6 +132,7 @@ describe('act as host', () => {
           adminId,
           hostId: hostA.id,
           hostEmail: 'a@example.test',
+          adminEmail: ADMIN_EMAIL,
           method: 'POST',
           statusCode: 200,
         });
@@ -201,6 +208,20 @@ describe('suspend and delete', () => {
     const rows = await t.db.select().from(actAsAudit).where(eq(actAsAudit.hostId, hostB.id));
     expect(rows.length).toBeGreaterThanOrEqual(2);
     expect((await get(t.app, '/api/auth/me', otherAdmin)).json().actingAs).toBeNull();
+  });
+
+  it("shows a deleted admin's audit rows without an email", async () => {
+    await t.db.insert(actAsAudit).values({
+      adminId: '00000000-0000-4000-8000-000000000001',
+      hostId: hostA.id,
+      hostEmail: 'a@example.test',
+      method: 'POST',
+      route: '/api/host/probe',
+      statusCode: 200,
+      createdAt: new Date('2030-01-01T00:00:00Z'),
+    });
+    const [latest] = (await get(t.app, '/api/admin/audit?limit=1', adminCookie)).json().entries;
+    expect(latest).toMatchObject({ route: '/api/host/probe', adminEmail: null });
   });
 
   it('never targets an admin and validates ids', async () => {

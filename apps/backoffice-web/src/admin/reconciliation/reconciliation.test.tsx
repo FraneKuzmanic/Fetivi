@@ -1,8 +1,10 @@
 // @vitest-environment happy-dom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { ReconciliationFinding, ReconciliationRun } from '../../api';
+import { formatMoment } from '../../forms/datetime';
 import { ReconciliationPage } from './ReconciliationPage';
 
 const RUN: ReconciliationRun = {
@@ -32,6 +34,7 @@ const OPEN: ReconciliationFinding = {
   stripeRef: 'cs_1',
   detail: 'status=complete intent=pi_1',
   action: null,
+  subject: null,
   firstSeenAt: '2026-10-23T09:00:00Z',
   lastSeenAt: '2026-10-23T10:00:00Z',
   resolvedAt: null,
@@ -45,6 +48,11 @@ const RESOLVED: ReconciliationFinding = {
   stripeRef: 'cs_2',
   detail: 'session=complete intent=pi_2',
   action: 'authorize: applied',
+  subject: {
+    kind: 'order',
+    id: '0b3f1c2d-aaaa-4bbb-8ccc-123456789abc',
+    label: 'Blue Lagoon boat trip',
+  },
   firstSeenAt: '2026-10-23T10:00:00Z',
   lastSeenAt: '2026-10-23T10:00:00Z',
   resolvedAt: '2026-10-23T10:00:00Z',
@@ -55,6 +63,15 @@ const RACED: ReconciliationFinding = {
   id: 'f-raced',
   kind: 'hold_expired',
   action: 'expire: unchanged',
+  subject: { kind: 'provider', id: 'p1', label: 'Adriatic Boats' },
+};
+
+const DISMISSED: ReconciliationFinding = {
+  ...OPEN,
+  id: 'f-dismissed',
+  kind: 'refund_failed',
+  status: 'dismissed',
+  detail: '',
 };
 
 let root: Root | null = null;
@@ -83,7 +100,7 @@ function stubApi() {
     if (url.endsWith('/run')) return json({ queued: true }, 202);
     if (url.endsWith('/resolve')) return new Response(null, { status: 204 });
     if (url.includes('status=resolved')) {
-      return json({ runs: [RUN, EARLIER], findings: [RESOLVED, RACED] });
+      return json({ runs: [RUN, EARLIER], findings: [RESOLVED, RACED, DISMISSED] });
     }
     return json({ runs: [RUN, EARLIER], findings: [OPEN] });
   });
@@ -95,7 +112,11 @@ async function mount() {
   document.body.append(el);
   root = createRoot(el);
   await act(async () => {
-    root?.render(<ReconciliationPage />);
+    root?.render(
+      <MemoryRouter>
+        <ReconciliationPage />
+      </MemoryRouter>,
+    );
   });
 }
 
@@ -111,43 +132,66 @@ async function click(name: string) {
 describe('ReconciliationPage', () => {
   it('lists what needs attention, and what was put right under Resolved', async () => {
     await mount();
-    expect(el.textContent).toContain('Stripe checkout with no Order');
-    expect(el.textContent).toContain('checked 12 · 1 put right · 1 need attention');
-    expect(el.querySelector('details summary')?.textContent).toBe('Earlier runs');
-    expect(el.querySelector('details')?.textContent).toContain(
+    expect(el.querySelector('h1')?.textContent).toBe('Payment checks');
+    expect(calls[0]).toEqual({
+      url: '/api/admin/reconciliation?status=needs_attention',
+      method: 'GET',
+    });
+    expect(el.textContent).toContain(
+      `Last check ${formatMoment(RUN.startedAt)} · 12 checked · 1 fixed · 1 need you`,
+    );
+    expect(el.querySelector('details.help summary')?.textContent).toBe('Earlier checks');
+    expect(el.querySelector('details.help')?.textContent).toContain(
       'Stripe was unavailable, so only holds were checked',
+    );
+    const open = el.querySelector('.data-table tbody tr');
+    expect(open?.textContent).toContain('Stripe payment with no order');
+    expect(open?.textContent).toContain('Nothing yet');
+    expect(open?.querySelector('details.tech-details summary')?.textContent).toBe(
+      'Technical details',
+    );
+    expect(open?.querySelector('details.tech-details')?.textContent).toContain(
+      'status=complete intent=pi_1',
     );
     expect(button('Mark resolved')).toBeDefined();
 
     await click('Resolved');
     expect(calls.at(-1)?.url).toBe('/api/admin/reconciliation?status=resolved');
-    expect(el.textContent).toContain('Payment completed, webhook missed');
-    expect(el.textContent).toContain('Order 0b3f1c2d');
+    const rows = [...el.querySelectorAll('.data-table tbody tr')];
+    expect(rows).toHaveLength(3);
+    expect(rows[0]?.textContent).toContain('Payment went through, but Fetivi missed it');
+    expect(rows[0]?.textContent).toContain('Order: Blue Lagoon boat trip');
+    expect(rows[0]?.querySelector('a')?.getAttribute('href')).toBe(
+      `/admin/orders/${RESOLVED.orderId}`,
+    );
+    expect(rows[1]?.textContent).toContain('Provider: Adriatic Boats');
+    expect(rows[1]?.querySelector('a')?.getAttribute('href')).toBe('/admin/providers/p1');
     // The stored action codes read as words.
-    expect(el.textContent).toContain('Payment authorized');
-    expect(el.textContent).toContain('Order expired (already up to date)');
+    expect(rows[0]?.textContent).toContain('Card hold recorded');
+    expect(rows[1]?.textContent).toContain('Order expired (already up to date)');
+    expect(rows[2]?.textContent).toContain('Refund failed at Stripe');
+    expect(rows[2]?.textContent).toContain('Nothing yet · marked resolved');
+    expect(rows[2]?.querySelector('details')).toBeNull();
     expect(el.textContent).not.toContain(': applied');
     expect(button('Mark resolved')).toBeUndefined();
   });
 
-  it('queues a run', async () => {
+  it('queues a check', async () => {
     await mount();
-    await click('Run now');
+    await click('Check now');
     expect(calls.at(-1)).toEqual({ url: '/api/admin/reconciliation/run', method: 'POST' });
-    expect(el.textContent).toContain('Run queued');
+    expect(el.textContent).toContain('Check started. It finishes within a minute.');
+    expect(button('Check now')?.disabled).toBe(true);
   });
 
-  it('marks a finding resolved and removes it from the list', async () => {
+  it('marks a finding resolved without asking and removes it from the list', async () => {
     await mount();
-    vi.stubGlobal(
-      'confirm',
-      vi.fn(() => true),
-    );
     await click('Mark resolved');
     expect(calls.at(-1)).toEqual({
       url: '/api/admin/reconciliation/findings/f-open/resolve',
       method: 'POST',
     });
-    expect(el.textContent).toContain('Nothing needs attention.');
+    expect(el.textContent).toContain('All caught up');
+    expect(el.querySelector('.data-table')).toBeNull();
   });
 });

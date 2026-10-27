@@ -95,11 +95,14 @@ describe('property approval', () => {
         city: 'Trogir',
         hostEmail: 'a@example.test',
         unitCount: 3,
+        readyUnitCount: 2,
         approvedAt: null,
       }),
     ]);
     const approved = await get(t.app, '/api/admin/properties?status=approved', adminCookie);
     expect(approved.json().properties).toEqual([]);
+    const all = await get(t.app, '/api/admin/properties?status=all', adminCookie);
+    expect(all.json().properties.map((p: { id: string }) => p.id)).toEqual([propertyId]);
   });
 
   it('approves once, giving every ready unit a permanent slug', async () => {
@@ -123,6 +126,8 @@ describe('property approval', () => {
 
     const list = await get(t.app, '/api/admin/properties?status=approved', adminCookie);
     const approvedAt = list.json().properties[0].approvedAt;
+    // The live units still count as ready once they have their slugs.
+    expect(list.json().properties[0].readyUnitCount).toBe(2);
     expect(approvedAt).toBe('2026-10-19T10:00:00.000Z');
 
     // Approving again changes nothing.

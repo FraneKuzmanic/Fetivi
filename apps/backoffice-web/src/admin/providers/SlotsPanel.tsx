@@ -2,20 +2,26 @@ import { OFFER_LIMITS } from '@fetivi/domain/offer-vocabulary';
 import { Plus, Trash } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import type { AllotmentSlot, SlotsClient } from '../../api';
+import { formatDate } from '../../forms/datetime';
 import { CheckboxField, NumberField, TimeField } from '../../forms/fields';
 import { WEEKDAY_LABELS } from '../../forms/labels';
+import { useConfirm } from '../../shell/ConfirmDialog';
+import { Pager } from '../../shell/Pager';
+import { Tabs } from '../../shell/Tabs';
 import { useAction } from '../../useAction';
 import { InputField } from '../catalog/RowEditors';
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7];
 const short = (weekday: number) => (WEEKDAY_LABELS[weekday] ?? '').slice(0, 3);
 
-/** 'YYYY-MM-DDTHH:mm' → 'Mon 2027-01-04 09:00'. */
+/** 'YYYY-MM-DDTHH:mm' → 'Mon 04.01.2027, 09:00'. */
 function startLine(local: string): string {
   const [date = '', time = ''] = local.split('T');
   const weekday = new Date(`${date}T00:00:00Z`).getUTCDay() || 7;
-  return `${short(weekday)} ${date} ${time}`;
+  return `${short(weekday)} ${formatDate(date)}, ${time.slice(0, 5)}`;
 }
+
+const PAGE = 30;
 
 interface BulkDraft {
   from: string | null;
@@ -40,6 +46,7 @@ export function SlotsPanel({
 }) {
   const { busy, error, run } = useAction();
   const [past, setPast] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [slots, setSlots] = useState<AllotmentSlot[] | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [draft, setDraft] = useState<BulkDraft>({
@@ -170,21 +177,25 @@ export function SlotsPanel({
         </div>
       </form>
 
-      <div className="page-head">
-        <h3>Slots</h3>
-        <div className="segmented" role="tablist" aria-label="When">
-          <button type="button" role="tab" aria-selected={!past} onClick={() => setPast(false)}>
-            Upcoming
-          </button>
-          <button type="button" role="tab" aria-selected={past} onClick={() => setPast(true)}>
-            Past
-          </button>
-        </div>
-      </div>
+      <h3>Slots</h3>
+      <Tabs
+        label="When"
+        items={[
+          { id: 'upcoming', label: 'Upcoming' },
+          { id: 'past', label: 'Past' },
+        ]}
+        value={past ? 'past' : 'upcoming'}
+        onChange={(v) => {
+          setPast(v === 'past');
+          setOffset(0);
+        }}
+      />
       {error ? <p role="alert">{error}</p> : null}
       {slots === null ? <p className="muted">Loading…</p> : null}
       {slots?.length === 0 ? (
-        <p className="muted">{past ? 'No past slots.' : 'No upcoming slots.'}</p>
+        <p className="muted">
+          {past ? 'No past slots.' : 'No upcoming slots. Add them from a weekly schedule above.'}
+        </p>
       ) : null}
       {slots && slots.length > 0 ? (
         <ul className="rows slot-list">
@@ -194,10 +205,13 @@ export function SlotsPanel({
             <span>Left</span>
             <span />
           </li>
-          {slots.map((slot) => (
+          {slots.slice(offset, offset + PAGE).map((slot) => (
             <SlotRow key={slot.id} slot={slot} client={client} onChanged={reload} />
           ))}
         </ul>
+      ) : null}
+      {slots && slots.length > PAGE ? (
+        <Pager offset={offset} total={slots.length} size={PAGE} onChange={setOffset} />
       ) : null}
       <small>Times in {timezone}.</small>
     </div>
@@ -214,6 +228,7 @@ function SlotRow({
   onChanged: () => Promise<void>;
 }) {
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [capacity, setCapacity] = useState<number | null>(slot.capacity);
   const start = startLine(slot.startsAt);
 
@@ -253,8 +268,17 @@ function SlotRow({
         className="icon-button"
         aria-label={`Delete slot ${start}`}
         disabled={busy}
-        onClick={() => {
-          if (!window.confirm(`Delete the slot on ${start}?`)) return;
+        onClick={async () => {
+          const yes = await confirm({
+            title: `Delete the slot on ${start}?`,
+            body:
+              slot.remaining < slot.capacity
+                ? 'Some seats on it are already booked.'
+                : 'Nobody has booked it yet.',
+            action: 'Delete slot',
+            danger: true,
+          });
+          if (!yes) return;
           void run(async () => {
             await client.deleteSlot(slot.id);
             await onChanged();

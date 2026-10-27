@@ -16,11 +16,24 @@ import {
   type PriceUnit,
 } from '@fetivi/domain/offer-vocabulary';
 import { LIMITS } from '@fetivi/domain/vocabulary';
+import {
+  ArrowUDownLeft,
+  CalendarCheck,
+  Clock,
+  CurrencyEur,
+  DotsThree,
+  IdentificationCard,
+  Pause,
+  Play,
+  Tag,
+  TextAlignLeft,
+  Translate,
+  Trash,
+} from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { catalog, type Destination, type Offer, type OfferPatch, providers } from '../../api';
 import {
-  CheckboxField,
   NumberField,
   Section,
   SelectField,
@@ -38,8 +51,11 @@ import {
   PAYMENT_MODE_LABELS,
   PRICE_UNIT_LABELS,
 } from '../../forms/labels';
+import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
+import { useConfirm } from '../../shell/ConfirmDialog';
+import { Menu } from '../../shell/Menu';
 import { useAction } from '../../useAction';
 import { centsFromEuros, eurosFromCents } from './money';
 import { OfferTranslations } from './OfferTranslations';
@@ -336,7 +352,8 @@ const AVAILABILITY_KEYS = [
 export function OfferPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const { busy, error, run } = useAction();
+  const confirm = useConfirm();
+  const { error, run } = useAction();
   const [offer, setOffer] = useState<Offer | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [places, setPlaces] = useState<{ id: string; title: string }[]>([]);
@@ -409,6 +426,298 @@ export function OfferPage() {
       : {}),
   });
 
+  async function setActive(active: boolean) {
+    if (!offer) return;
+    if (!active) {
+      const yes = await confirm({
+        title: `Pause ${offer.title}?`,
+        body: 'Guests stop seeing it until you resume it. Orders already placed go on.',
+        action: 'Pause offer',
+      });
+      if (!yes) return;
+    }
+    void run(async () => accept(await providers.updateOffer(id, { active }), ['active']));
+  }
+
+  async function remove() {
+    if (!offer) return;
+    const yes = await confirm({
+      title: `Delete ${offer.title}?`,
+      body: 'Its time slots and translations go with it. This cannot be undone.',
+      action: 'Delete offer',
+      danger: true,
+    });
+    if (!yes) return;
+    void run(async () => {
+      await providers.deleteOffer(id);
+      navigate(offer.provider ? `/admin/providers/${offer.provider.id}` : '/admin/providers', {
+        replace: true,
+      });
+    });
+  }
+
+  const sections: PageSection[] = [
+    { id: 'text', label: 'Text', icon: TextAlignLeft },
+    { id: 'type', label: 'Kind and place', icon: Tag },
+    { id: 'price', label: 'Price and payment', icon: CurrencyEur },
+    { id: 'availability', label: 'Availability', icon: CalendarCheck },
+    ...(offer.availabilityMode === 'allotment'
+      ? [{ id: 'slots', label: 'Time slots', icon: Clock }]
+      : []),
+    { id: 'cancellation', label: 'Cancellation', icon: ArrowUDownLeft },
+    { id: 'guest', label: 'Guest details', icon: IdentificationCard },
+    { id: 'translations', label: 'Translations', icon: Translate },
+  ];
+
+  const renderSection = (section: string) => {
+    switch (section) {
+      case 'type':
+        return (
+          <Section
+            title="Classification"
+            onSave={save(
+              ['category', 'orderKind', 'placeId', ...AVAILABILITY_KEYS],
+              classificationBody(),
+            )}
+          >
+            <div className="field-row">
+              <SelectField
+                label="Category"
+                value={draft.category}
+                options={OFFER_CATEGORIES}
+                labels={OFFER_CATEGORY_LABELS}
+                onChange={(c) => c && set('category')(c)}
+              />
+              <SelectField
+                label="Order kind"
+                hint={isRequest ? REQUEST_MODE_HINT : undefined}
+                value={draft.orderKind}
+                options={ORDER_KINDS}
+                labels={ORDER_KIND_LABELS}
+                onChange={(k) => k && set('orderKind')(k)}
+              />
+            </div>
+            <SelectField
+              label="Linked place"
+              hint={`A catalog place in ${offer.destination?.name ?? 'the destination'}, for recommendations.`}
+              value={draft.placeId}
+              options={placeIds}
+              labels={placeLabels}
+              emptyLabel="None"
+              onChange={set('placeId')}
+            />
+          </Section>
+        );
+      case 'price':
+        return (
+          <Section
+            title="Price and payment"
+            onSave={save(['priceEuros', 'currency', 'priceUnit', 'paymentMode'], {
+              priceMinor: centsFromEuros(draft.priceEuros),
+              currency: draft.currency,
+              priceUnit: draft.priceUnit,
+              paymentMode: draft.paymentMode,
+            })}
+          >
+            <div className="field-row">
+              <NumberField
+                label="Price (€)"
+                hint={isRequest ? REQUEST_PRICE_HINT : undefined}
+                value={draft.priceEuros}
+                min={0}
+                max={OFFER_LIMITS.priceMinorMax / 100}
+                step={0.01}
+                onChange={set('priceEuros')}
+              />
+              <TextField
+                label="Currency"
+                value={draft.currency}
+                maxLength={3}
+                required
+                onChange={(v) => set('currency')((v ?? '').toUpperCase())}
+              />
+              <SelectField
+                label="Unit"
+                value={draft.priceUnit}
+                options={PRICE_UNITS}
+                labels={PRICE_UNIT_LABELS}
+                onChange={(u) => u && set('priceUnit')(u)}
+              />
+            </div>
+            <SelectField
+              label="Payment"
+              hint={
+                draft.paymentMode === 'online'
+                  ? "Needs the Provider's online payment setup (coming with online payments)."
+                  : undefined
+              }
+              value={draft.paymentMode}
+              options={PAYMENT_MODES}
+              labels={PAYMENT_MODE_LABELS}
+              onChange={(p) => p && set('paymentMode')(p)}
+            />
+          </Section>
+        );
+      case 'availability':
+        return (
+          <Section
+            title="Availability"
+            onSave={save(AVAILABILITY_KEYS, {
+              availabilityMode: draft.availabilityMode,
+              adapterKind: live ? draft.adapterKind : null,
+              externalProductRef: live ? draft.externalProductRef : null,
+              responseWindowMinutes: draft.responseWindowMinutes ?? 0,
+              responseHoursFrom: draft.responseHoursFrom ?? '',
+              responseHoursTo: draft.responseHoursTo ?? '',
+            })}
+          >
+            <SelectField
+              label="Mode"
+              hint={offer.orderKind === 'request' ? REQUEST_MODE_HINT : undefined}
+              value={draft.availabilityMode}
+              options={
+                offer.orderKind === 'request' ? (['on_request'] as const) : AVAILABILITY_MODES
+              }
+              labels={AVAILABILITY_MODE_LABELS}
+              onChange={(m) => m && set('availabilityMode')(m)}
+            />
+            {live ? (
+              <LiveFields
+                adapterKind={draft.adapterKind}
+                externalProductRef={draft.externalProductRef}
+                onAdapter={set('adapterKind')}
+                onRef={set('externalProductRef')}
+              />
+            ) : null}
+            {draft.availabilityMode === 'on_request' ? (
+              <>
+                <NumberField
+                  label="Response window (minutes)"
+                  value={draft.responseWindowMinutes}
+                  min={1}
+                  max={windowMax}
+                  onChange={set('responseWindowMinutes')}
+                />
+                <div className="field-row">
+                  <TimeField
+                    label="Counted from"
+                    value={draft.responseHoursFrom}
+                    onChange={set('responseHoursFrom')}
+                  />
+                  <TimeField
+                    label="Until"
+                    value={draft.responseHoursTo}
+                    onChange={set('responseHoursTo')}
+                  />
+                </div>
+                <small>
+                  In {offer.timezone}. Always under 4 days: with these hours, at most {windowMax}{' '}
+                  minutes.
+                </small>
+              </>
+            ) : null}
+          </Section>
+        );
+      case 'cancellation':
+        return (
+          <Section
+            title="Cancellation rules"
+            description="What is applied when a guest cancels. Keep the policy text above in line with it."
+            onSave={save(['freeCancelHoursBefore', 'refundPercentAfter'], {
+              freeCancelHoursBefore: draft.freeCancelHoursBefore ?? 0,
+              refundPercentAfter: draft.refundPercentAfter ?? 0,
+            })}
+          >
+            <div className="field-row">
+              <NumberField
+                label="Free until (hours before start)"
+                value={draft.freeCancelHoursBefore}
+                min={0}
+                max={OFFER_LIMITS.freeCancelHoursMax}
+                onChange={set('freeCancelHoursBefore')}
+              />
+              <NumberField
+                label="Refund after that (%)"
+                value={draft.refundPercentAfter}
+                min={0}
+                max={100}
+                onChange={set('refundPercentAfter')}
+              />
+            </div>
+            <p className="muted">
+              {refundLine(draft.freeCancelHoursBefore, draft.refundPercentAfter)}
+            </p>
+          </Section>
+        );
+      case 'guest':
+        return (
+          <Section
+            title="Guest details for the Provider"
+            onSave={save(['contactFields'], { contactFields: draft.contactFields })}
+          >
+            <SelectField
+              label="The Provider receives"
+              hint="The guest's email is always required; it is not sent to the Provider."
+              value={draft.contactFields}
+              options={CONTACT_FIELDS}
+              labels={CONTACT_FIELDS_LABELS}
+              onChange={(c) => c && set('contactFields')(c)}
+            />
+          </Section>
+        );
+      case 'slots':
+        return (
+          <Section title="Time slots">
+            <SlotsPanel offerId={offer.id} timezone={offer.timezone} client={providers} />
+          </Section>
+        );
+      case 'translations':
+        return (
+          <Section title="Translations">
+            <OfferTranslations offer={offer} client={providers} onChanged={reload} />
+          </Section>
+        );
+      default:
+        return (
+          <Section
+            title="Text"
+            description="Saving a change translates it again into the seven guest languages. The policy text is what guests read before ordering."
+            onSave={save(['title', 'description', 'cancellationPolicy'], {
+              title: draft.title,
+              description: draft.description,
+              cancellationPolicy: draft.cancellationPolicy,
+            })}
+          >
+            <TextField
+              label="Title"
+              value={draft.title}
+              maxLength={LIMITS.title}
+              required
+              onChange={(v) => set('title')(v ?? '')}
+            />
+            <TextArea
+              label="Description"
+              hint="Markdown."
+              value={draft.description}
+              maxLength={LIMITS.blockBody}
+              rows={6}
+              required
+              monospace
+              onChange={(v) => set('description')(v ?? '')}
+            />
+            <TextArea
+              label="Cancellation policy"
+              value={draft.cancellationPolicy}
+              maxLength={LIMITS.blockBody}
+              rows={3}
+              required
+              onChange={(v) => set('cancellationPolicy')(v ?? '')}
+            />
+          </Section>
+        );
+    }
+  };
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
@@ -421,279 +730,54 @@ export function OfferPage() {
         ) : null}
       </nav>
       <div className="page-head">
-        <h1>{offer.title}</h1>
-        <div className="record-chips">
-          <span className="chip neutral">{OFFER_CATEGORY_LABELS[offer.category]}</span>
-          <span className="chip neutral">{AVAILABILITY_MODE_SHORT[offer.availabilityMode]}</span>
-          <TranslationChip status={offer.translation.status} />
-          {offer.active ? null : <span className="chip neutral">Paused</span>}
-        </div>
-      </div>
-      <p className="muted">
-        {offer.destination ? `In ${offer.destination.name}. ` : null}
-        {ORDER_KIND_LABELS[offer.orderKind]}. {PAYMENT_MODE_LABELS[offer.paymentMode]}.
-      </p>
-      {error ? <p role="alert">{error}</p> : null}
-
-      <div className="editor">
-        <Section
-          title="Text"
-          description="Saving a change translates it again into the seven guest languages. The policy text is what guests read before ordering."
-          onSave={save(['title', 'description', 'cancellationPolicy'], {
-            title: draft.title,
-            description: draft.description,
-            cancellationPolicy: draft.cancellationPolicy,
-          })}
-        >
-          <TextField
-            label="Title"
-            value={draft.title}
-            maxLength={LIMITS.title}
-            required
-            onChange={(v) => set('title')(v ?? '')}
-          />
-          <TextArea
-            label="Description"
-            hint="Markdown."
-            value={draft.description}
-            maxLength={LIMITS.blockBody}
-            rows={6}
-            required
-            monospace
-            onChange={(v) => set('description')(v ?? '')}
-          />
-          <TextArea
-            label="Cancellation policy"
-            value={draft.cancellationPolicy}
-            maxLength={LIMITS.blockBody}
-            rows={3}
-            required
-            onChange={(v) => set('cancellationPolicy')(v ?? '')}
-          />
-        </Section>
-
-        <Section
-          title="Classification"
-          onSave={save(
-            ['category', 'orderKind', 'placeId', ...AVAILABILITY_KEYS],
-            classificationBody(),
-          )}
-        >
-          <div className="field-row">
-            <SelectField
-              label="Category"
-              value={draft.category}
-              options={OFFER_CATEGORIES}
-              labels={OFFER_CATEGORY_LABELS}
-              onChange={(c) => c && set('category')(c)}
-            />
-            <SelectField
-              label="Order kind"
-              hint={isRequest ? REQUEST_MODE_HINT : undefined}
-              value={draft.orderKind}
-              options={ORDER_KINDS}
-              labels={ORDER_KIND_LABELS}
-              onChange={(k) => k && set('orderKind')(k)}
-            />
-          </div>
-          <SelectField
-            label="Linked place"
-            hint={`A catalog place in ${offer.destination?.name ?? 'the destination'}, for recommendations.`}
-            value={draft.placeId}
-            options={placeIds}
-            labels={placeLabels}
-            emptyLabel="None"
-            onChange={set('placeId')}
-          />
-        </Section>
-
-        <Section
-          title="Price and payment"
-          onSave={save(['priceEuros', 'currency', 'priceUnit', 'paymentMode'], {
-            priceMinor: centsFromEuros(draft.priceEuros),
-            currency: draft.currency,
-            priceUnit: draft.priceUnit,
-            paymentMode: draft.paymentMode,
-          })}
-        >
-          <div className="field-row">
-            <NumberField
-              label="Price (€)"
-              hint={isRequest ? REQUEST_PRICE_HINT : undefined}
-              value={draft.priceEuros}
-              min={0}
-              max={OFFER_LIMITS.priceMinorMax / 100}
-              step={0.01}
-              onChange={set('priceEuros')}
-            />
-            <TextField
-              label="Currency"
-              value={draft.currency}
-              maxLength={3}
-              required
-              onChange={(v) => set('currency')((v ?? '').toUpperCase())}
-            />
-            <SelectField
-              label="Unit"
-              value={draft.priceUnit}
-              options={PRICE_UNITS}
-              labels={PRICE_UNIT_LABELS}
-              onChange={(u) => u && set('priceUnit')(u)}
-            />
-          </div>
-          <SelectField
-            label="Payment"
-            hint={
-              draft.paymentMode === 'online'
-                ? "Needs the Provider's online payment setup (coming with online payments)."
-                : undefined
-            }
-            value={draft.paymentMode}
-            options={PAYMENT_MODES}
-            labels={PAYMENT_MODE_LABELS}
-            onChange={(p) => p && set('paymentMode')(p)}
-          />
-        </Section>
-
-        <Section
-          title="Availability"
-          onSave={save(AVAILABILITY_KEYS, {
-            availabilityMode: draft.availabilityMode,
-            adapterKind: live ? draft.adapterKind : null,
-            externalProductRef: live ? draft.externalProductRef : null,
-            responseWindowMinutes: draft.responseWindowMinutes ?? 0,
-            responseHoursFrom: draft.responseHoursFrom ?? '',
-            responseHoursTo: draft.responseHoursTo ?? '',
-          })}
-        >
-          <SelectField
-            label="Mode"
-            hint={offer.orderKind === 'request' ? REQUEST_MODE_HINT : undefined}
-            value={draft.availabilityMode}
-            options={offer.orderKind === 'request' ? (['on_request'] as const) : AVAILABILITY_MODES}
-            labels={AVAILABILITY_MODE_LABELS}
-            onChange={(m) => m && set('availabilityMode')(m)}
-          />
-          {live ? (
-            <LiveFields
-              adapterKind={draft.adapterKind}
-              externalProductRef={draft.externalProductRef}
-              onAdapter={set('adapterKind')}
-              onRef={set('externalProductRef')}
-            />
-          ) : null}
-          {draft.availabilityMode === 'on_request' ? (
-            <>
-              <NumberField
-                label="Response window (minutes)"
-                value={draft.responseWindowMinutes}
-                min={1}
-                max={windowMax}
-                onChange={set('responseWindowMinutes')}
-              />
-              <div className="field-row">
-                <TimeField
-                  label="Counted from"
-                  value={draft.responseHoursFrom}
-                  onChange={set('responseHoursFrom')}
-                />
-                <TimeField
-                  label="Until"
-                  value={draft.responseHoursTo}
-                  onChange={set('responseHoursTo')}
-                />
-              </div>
-              <small>
-                In {offer.timezone}. Always under 4 days: with these hours, at most {windowMax}{' '}
-                minutes.
-              </small>
-            </>
-          ) : null}
-        </Section>
-
-        <Section
-          title="Cancellation rules"
-          description="What is applied when a guest cancels. Keep the policy text above in line with it."
-          onSave={save(['freeCancelHoursBefore', 'refundPercentAfter'], {
-            freeCancelHoursBefore: draft.freeCancelHoursBefore ?? 0,
-            refundPercentAfter: draft.refundPercentAfter ?? 0,
-          })}
-        >
-          <div className="field-row">
-            <NumberField
-              label="Free until (hours before start)"
-              value={draft.freeCancelHoursBefore}
-              min={0}
-              max={OFFER_LIMITS.freeCancelHoursMax}
-              onChange={set('freeCancelHoursBefore')}
-            />
-            <NumberField
-              label="Refund after that (%)"
-              value={draft.refundPercentAfter}
-              min={0}
-              max={100}
-              onChange={set('refundPercentAfter')}
-            />
+        <div className="page-title">
+          <div className="title-line">
+            <h1>{offer.title}</h1>
+            {offer.active ? (
+              <span className="chip ok">Active</span>
+            ) : (
+              <span className="chip neutral">Paused</span>
+            )}
+            <TranslationChip status={offer.translation.status} />
           </div>
           <p className="muted">
-            {refundLine(draft.freeCancelHoursBefore, draft.refundPercentAfter)}
+            {[
+              offer.destination?.name,
+              OFFER_CATEGORY_LABELS[offer.category],
+              AVAILABILITY_MODE_SHORT[offer.availabilityMode],
+              PAYMENT_MODE_LABELS[offer.paymentMode],
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
-        </Section>
-
-        <Section
-          title="Guest details for the Provider"
-          onSave={save(['contactFields'], { contactFields: draft.contactFields })}
-        >
-          <SelectField
-            label="The Provider receives"
-            hint="The guest's email is always required; it is not sent to the Provider."
-            value={draft.contactFields}
-            options={CONTACT_FIELDS}
-            labels={CONTACT_FIELDS_LABELS}
-            onChange={(c) => c && set('contactFields')(c)}
-          />
-        </Section>
-
-        <Section title="Status" onSave={save(['active'], { active: draft.active })}>
-          <CheckboxField label="Active" checked={draft.active} onChange={set('active')} />
-          <small>Paused Offers are hidden from guests.</small>
-        </Section>
-
-        <Section title="Translations">
-          <OfferTranslations offer={offer} client={providers} onChanged={reload} />
-        </Section>
-
-        {offer.availabilityMode === 'allotment' ? (
-          <Section title="Allotment slots">
-            <SlotsPanel offerId={offer.id} timezone={offer.timezone} client={providers} />
-          </Section>
-        ) : null}
-
-        <section className="panel danger-zone">
-          <h2>Delete offer</h2>
-          <p className="muted">Deletes the Offer with its slots and translations.</p>
-          <button
-            type="button"
-            className="danger"
-            disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete ${offer.title}? This cannot be undone.`)) {
-                void run(async () => {
-                  await providers.deleteOffer(id);
-                  navigate(
-                    offer.provider ? `/admin/providers/${offer.provider.id}` : '/admin/providers',
-                    {
-                      replace: true,
-                    },
-                  );
-                });
-              }
-            }}
-          >
-            Delete offer
-          </button>
-        </section>
+        </div>
+        <Menu
+          label={`More actions for ${offer.title}`}
+          trigger={<DotsThree aria-hidden="true" weight="bold" />}
+          items={[
+            offer.active
+              ? {
+                  label: 'Pause offer',
+                  icon: <Pause aria-hidden="true" />,
+                  onSelect: () => void setActive(false),
+                }
+              : {
+                  label: 'Resume offer',
+                  icon: <Play aria-hidden="true" />,
+                  onSelect: () => void setActive(true),
+                },
+            {
+              label: 'Delete offer',
+              icon: <Trash aria-hidden="true" />,
+              danger: true,
+              onSelect: () => void remove(),
+            },
+          ]}
+        />
       </div>
+      {error ? <p role="alert">{error}</p> : null}
+
+      <SectionLayout sections={sections} label="Offer sections" render={renderSection} />
     </>
   );
 }

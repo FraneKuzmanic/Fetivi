@@ -2,6 +2,7 @@ import { CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Link } from 'react-router';
 import { host, type StayProposals } from '../../../api';
+import { useConfirm } from '../../../shell/ConfirmDialog';
 import { useAction } from '../../../useAction';
 import { dateRange, nightsLabel } from '../format';
 import { BookingLinksStep } from './BookingLinksStep';
@@ -22,6 +23,7 @@ export function ProposedList({
 }) {
   const headingId = useId();
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [data, setData] = useState<StayProposals | null>(null);
 
   const load = useCallback(
@@ -39,8 +41,14 @@ export function ProposedList({
   if (!data) return error ? <p role="alert">{error}</p> : null;
   const { proposals, bookingLinks } = data;
 
-  function dismiss(id: string) {
-    if (!window.confirm('Not a booking? Fetivi will not propose this calendar entry again.'))
+  async function dismiss(id: string) {
+    if (
+      !(await confirm({
+        title: 'Not a booking?',
+        body: 'Fetivi will not propose this calendar entry again.',
+        action: 'Not a booking',
+      }))
+    )
       return;
     void run(async () => {
       await host.dismissProposal(id);

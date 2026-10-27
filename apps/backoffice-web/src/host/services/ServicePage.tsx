@@ -34,6 +34,7 @@ import {
   ORDER_KIND_LABELS,
   PRICE_UNIT_LABELS,
 } from '../../forms/labels';
+import { useConfirm } from '../../shell/ConfirmDialog';
 import { useAction } from '../../useAction';
 import { TranslationChip } from '../translations/TranslationChip';
 import { usePendingRefresh } from '../translations/usePendingRefresh';
@@ -283,6 +284,7 @@ export function ServicePage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const cardsActive = useCardsActive();
   const [offer, setOffer] = useState<Offer | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -572,8 +574,15 @@ export function ServicePage() {
             type="button"
             className="danger"
             disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete ${offer.title}? This cannot be undone.`)) {
+            onClick={async () => {
+              if (
+                await confirm({
+                  title: `Delete ${offer.title}?`,
+                  body: 'Guests stop seeing it. This cannot be undone.',
+                  action: 'Delete service',
+                  danger: true,
+                })
+              ) {
                 void run(async () => {
                   await host.deleteOffer(id);
                   navigate('/services', { replace: true });

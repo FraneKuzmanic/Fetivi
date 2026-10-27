@@ -7,6 +7,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { host, type Stay } from '../../api';
 import { CheckboxField, Section, SelectField } from '../../forms/fields';
 import { LANGUAGE_LABELS } from '../../forms/labels';
+import { useConfirm } from '../../shell/ConfirmDialog';
 import { useAction } from '../../useAction';
 import { dateRange, guestsLabel, nightsLabel, releaseText } from './format';
 import { type StayDraft, StayFields, stayBody } from './StayFields';
@@ -25,6 +26,7 @@ export function StayPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [stay, setStay] = useState<Stay | null>(null);
   const [draft, setDraft] = useState<StayDraft | null>(null);
 
@@ -84,8 +86,15 @@ export function StayPage() {
                 type="button"
                 className="danger"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm('Cancel this Stay? Its PIN stops working.')) {
+                onClick={async () => {
+                  if (
+                    await confirm({
+                      title: 'Cancel this Stay?',
+                      body: 'Its PIN stops working.',
+                      action: 'Cancel Stay',
+                      danger: true,
+                    })
+                  ) {
                     void run(async () => {
                       await host.deleteStay(id);
                       navigate('/stays', { replace: true });
@@ -158,8 +167,15 @@ export function StayPage() {
             type="button"
             className="danger"
             disabled={busy}
-            onClick={() => {
-              if (window.confirm('Delete this Stay? Its PIN stops working.')) {
+            onClick={async () => {
+              if (
+                await confirm({
+                  title: 'Delete this Stay?',
+                  body: 'Its PIN stops working. This cannot be undone.',
+                  action: 'Delete Stay',
+                  danger: true,
+                })
+              ) {
                 void run(async () => {
                   await host.deleteStay(id);
                   navigate('/stays', { replace: true });

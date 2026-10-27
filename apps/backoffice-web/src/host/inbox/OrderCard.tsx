@@ -3,6 +3,7 @@ import { type FormEvent, useId, useState } from 'react';
 import { centsFromEuros } from '../../admin/providers/money';
 import { type HostOrderActionBody, type HostOrderView, host, type OrderAction } from '../../api';
 import { DateField, NumberField, TimeField } from '../../forms/fields';
+import { useConfirm } from '../../shell/ConfirmDialog';
 import { useAction } from '../../useAction';
 import { inboxChanged } from './inbox-events';
 
@@ -68,7 +69,7 @@ const OUTCOME = {
 } as const;
 
 const CANNOT_FULFIL =
-  "Can't fulfil this order? It will be cancelled, the guest is told, and anything they paid is refunded in full.";
+  'It will be cancelled, the guest is told, and anything they paid is refunded in full.';
 
 type Form = 'suggest_time' | 'accept_with_price' | null;
 
@@ -82,6 +83,7 @@ export function OrderCard({
 }) {
   const id = useId();
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [form, setForm] = useState<Form>(null);
   const [outcome, setOutcome] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(order.date);
@@ -245,8 +247,16 @@ export function OrderCard({
               type="button"
               className="danger"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(CANNOT_FULFIL)) void answer('cannot_fulfil');
+              onClick={async () => {
+                if (
+                  await confirm({
+                    title: "Can't fulfil this order?",
+                    body: CANNOT_FULFIL,
+                    action: "Can't fulfil",
+                    danger: true,
+                  })
+                )
+                  void answer('cannot_fulfil');
               }}
             >
               Can't fulfil

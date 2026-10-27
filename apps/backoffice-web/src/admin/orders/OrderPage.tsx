@@ -1,40 +1,14 @@
-import type {
-  OrderStatus,
-  OrderTrigger,
-  PaymentStatus,
-  Proposer,
-} from '@fetivi/domain/order-vocabulary';
+import type { OrderTrigger, Proposer } from '@fetivi/domain/order-vocabulary';
 import { ArrowUDownLeft, CalendarX, Check, ClockClockwise, X } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { type AdminOrder, adminOrders } from '../../api';
+import { formatDate, formatMoment } from '../../forms/datetime';
 import { DateField, NumberField, TextArea, TimeField } from '../../forms/fields';
+import { useConfirm } from '../../shell/ConfirmDialog';
 import { useAction } from '../../useAction';
 import { centsFromEuros } from '../providers/money';
-
-type Tone = 'ok' | 'wait' | 'fail' | 'neutral';
-
-const ORDER_STATUS: Record<OrderStatus, [string, Tone]> = {
-  awaiting_confirmation: ['Awaiting confirmation', 'wait'],
-  confirming: ['Confirming', 'wait'],
-  pending_provider: ['Waiting for the Provider', 'wait'],
-  confirmed: ['Confirmed', 'ok'],
-  declined: ['Declined', 'neutral'],
-  expired: ['Expired', 'neutral'],
-  failed: ['Failed', 'fail'],
-  cancelled: ['Cancelled', 'neutral'],
-  completed: ['Completed', 'ok'],
-};
-
-const PAYMENT_STATUS: Record<PaymentStatus, [string, Tone]> = {
-  none: ['No payment', 'neutral'],
-  authorized: ['Authorized', 'wait'],
-  captured: ['Captured', 'ok'],
-  voided: ['Voided', 'neutral'],
-  refund_pending: ['Refund pending', 'wait'],
-  refunded: ['Refunded', 'neutral'],
-  failed: ['Refund failed', 'fail'],
-};
+import { Chip, money, ORDER_STATUS, PAYMENT_STATUS } from './labels';
 
 const TRIGGERS: Record<OrderTrigger, string> = {
   guest: 'Guest',
@@ -45,13 +19,13 @@ const TRIGGERS: Record<OrderTrigger, string> = {
   window_timer: 'Response window',
   completion_timer: 'Completion timer',
   admin: 'Admin',
-  payment_webhook: 'Stripe webhook',
-  payment_job: 'Payment job',
-  reconciliation: 'Reconciliation',
+  payment_webhook: 'Stripe',
+  payment_job: 'Payment',
+  reconciliation: 'Payment check',
 };
 
 const PROPOSERS: Record<Proposer, string> = {
-  offer: 'the Offer',
+  offer: 'the offer',
   provider_time: 'the Provider (new time)',
   provider_price: 'the Provider (price)',
   admin: 'an admin',
@@ -59,20 +33,8 @@ const PROPOSERS: Record<Proposer, string> = {
 
 const NOTE_MAX = 500;
 
-const money = (minor: number, currency: string) =>
-  new Intl.NumberFormat('en', { style: 'currency', currency }).format(minor / 100);
-const time = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-/** A civil 'YYYY-MM-DD' in the same style, without shifting it through a time zone. */
-const day = (date: string) =>
-  new Date(`${date}T00:00:00Z`).toLocaleDateString(undefined, {
-    dateStyle: 'medium',
-    timeZone: 'UTC',
-  });
-
-const Chip = ({ text, tone }: { text: string; tone: Tone }) => (
-  <span className={`chip ${tone}`}>{text}</span>
-);
+const time = formatMoment;
+const day = formatDate;
 
 function rulesText(o: AdminOrder): string {
   const free =
@@ -89,6 +51,7 @@ function rulesText(o: AdminOrder): string {
 export function OrderPage() {
   const { id = '' } = useParams();
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [order, setOrder] = useState<AdminOrder | null>(null);
   const [override, setOverride] = useState<number | null>(null);
   const [cancelNote, setCancelNote] = useState<string | null>(null);
@@ -106,15 +69,22 @@ export function OrderPage() {
     void run(load);
   }, [run, load]);
 
-  function cancel(event: FormEvent) {
+  async function cancel(event: FormEvent) {
     event.preventDefault();
     if (!order) return;
     const refundMinor = order.paidAmountMinor === null ? undefined : centsFromEuros(override);
-    const what =
+    const amount =
       order.paidAmountMinor === null
-        ? 'Cancel this Order?'
-        : `Cancel this Order and refund ${money(refundMinor ?? order.paidAmountMinor, order.currency)}?`;
-    if (!window.confirm(`${what} The guest and the Provider are told.`)) return;
+        ? null
+        : money(refundMinor ?? order.paidAmountMinor, order.currency);
+    const payee = order.providerName === null ? 'host' : 'Provider';
+    const yes = await confirm({
+      title: 'Cancel this order?',
+      body: `${amount ? `The guest gets ${amount} back. ` : ''}The guest and the ${payee} are told. This cannot be undone.`,
+      action: amount ? `Cancel and refund ${amount}` : 'Cancel order',
+      danger: true,
+    });
+    if (!yes) return;
     void run(async () => {
       setOrder(
         await adminOrders.cancel(order.id, {
@@ -125,27 +95,47 @@ export function OrderPage() {
     });
   }
 
-  function refundNow(event: FormEvent) {
+  async function refundNow(event: FormEvent) {
     event.preventDefault();
     if (!order) return;
     const refundMinor = centsFromEuros(refund);
     if (refundMinor === null) return;
-    if (!window.confirm(`Refund ${money(refundMinor, order.currency)} to the guest?`)) return;
+    const amount = money(refundMinor, order.currency);
+    const yes = await confirm({
+      title: `Refund ${amount} to the guest?`,
+      body: 'A payment can be refunded once from here. This cannot be undone.',
+      action: `Refund ${amount}`,
+      danger: true,
+    });
+    if (!yes) return;
     void run(async () => {
       setOrder(await adminOrders.refund(order.id, { refundMinor, note: refundNote ?? undefined }));
     });
   }
 
   /** Records the Provider's phoned answer on the proposal the page shows. */
-  function answer(kind: 'accept' | 'decline' | 'propose') {
+  async function answer(kind: 'accept' | 'decline' | 'propose') {
     if (!order || !answerNote?.trim()) return;
     const body = { proposalId: order.proposalId, note: answerNote };
-    const what = {
-      accept: 'Record that the Provider accepted? The Order is confirmed and the guest is told.',
-      decline: 'Record that the Provider declined? The guest is told.',
-      propose: 'Send these new terms to the guest? They accept or decline them in chat.',
+    const ask = {
+      accept: {
+        title: 'Record that the Provider accepted?',
+        body: 'The order is confirmed and the guest is told.',
+        action: 'Confirm order',
+      },
+      decline: {
+        title: 'Record that the Provider declined?',
+        body: 'The guest is told the order cannot go ahead.',
+        action: 'Decline order',
+        danger: true,
+      },
+      propose: {
+        title: 'Send the new terms to the guest?',
+        body: 'They accept or decline them in the chat.',
+        action: 'Send new terms',
+      },
     }[kind];
-    if (!window.confirm(what)) return;
+    if (!(await confirm(ask))) return;
     void run(async () => {
       const next =
         kind === 'propose'
@@ -184,7 +174,12 @@ export function OrderPage() {
       : ['Provider', order.providerName],
     ['When', order.startsAt ? time(order.startsAt) : day(order.date)],
     ['Quantity', String(order.quantity)],
-    ['Terms', `Version ${order.version}, from ${PROPOSERS[order.proposer]}`],
+    [
+      'Terms',
+      order.version === 1 && order.proposer === 'offer'
+        ? 'As offered'
+        : `Changed by ${PROPOSERS[order.proposer]} (version ${order.version})`,
+    ],
     [
       'Total',
       order.priceMinor === null ? 'Set by the Provider' : money(order.priceMinor, order.currency),
@@ -204,8 +199,6 @@ export function OrderPage() {
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/admin/orders">Orders</Link>
-        <span aria-hidden="true">/</span>
-        <span className="mono-text">{order.id.slice(0, 8)}</span>
       </nav>
       <div className="page-head">
         <h1>{order.offerTitle}</h1>
@@ -227,6 +220,7 @@ export function OrderPage() {
               </div>
             ))}
           </dl>
+          <p className="muted">Any later refund is made in the {payee}'s Stripe dashboard.</p>
         </section>
 
         {order.canAnswer ? (
@@ -237,7 +231,7 @@ export function OrderPage() {
           >
             <h2 id="order-answer">Provider's answer</h2>
             <p className="muted">
-              {order.windowMissed ? <Chip text="Window missed" tone="fail" /> : null}{' '}
+              {order.windowMissed ? <Chip text="Answer overdue" tone="fail" /> : null}{' '}
               {order.responseDueAt ? `The answer is due ${time(order.responseDueAt)}. ` : ''}
               Phone the Provider and record what they said.
             </p>
@@ -358,7 +352,8 @@ export function OrderPage() {
           <form className="panel" aria-labelledby="order-refund" onSubmit={refundNow}>
             <h2 id="order-refund">Refund</h2>
             <p className="muted">
-              The money is still captured. One refund per payment, with Fetivi's fee in proportion.
+              The guest paid {money(order.paidAmountMinor ?? 0, order.currency)}. You can refund
+              part or all of it once; Fetivi's fee is refunded in proportion.
             </p>
             <div className="fields">
               <NumberField
@@ -387,8 +382,6 @@ export function OrderPage() {
             </div>
           </form>
         ) : null}
-
-        <p className="muted">Further refunds are made in the {payee}'s Stripe dashboard.</p>
 
         <section className="panel" aria-labelledby="order-history">
           <h2 id="order-history">History</h2>

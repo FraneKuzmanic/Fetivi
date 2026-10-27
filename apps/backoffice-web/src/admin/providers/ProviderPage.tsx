@@ -5,28 +5,36 @@ import {
   type ProviderLanguage,
 } from '@fetivi/domain/offer-vocabulary';
 import { LIMITS } from '@fetivi/domain/vocabulary';
-import { CaretRight, Plus } from '@phosphor-icons/react';
+import {
+  AddressBook,
+  CreditCard,
+  DotsThree,
+  Handshake,
+  Pause,
+  Play,
+  Plus,
+  Tag,
+  Trash,
+} from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { type OfferSummary, type Provider, type ProviderInput, providers } from '../../api';
-import {
-  CheckboxField,
-  NumberField,
-  Section,
-  SelectField,
-  TextArea,
-  TextField,
-} from '../../forms/fields';
+import { NumberField, Section, SelectField, TextArea, TextField } from '../../forms/fields';
 import {
   AVAILABILITY_MODE_SHORT,
   OFFER_CATEGORY_LABELS,
   PROVIDER_LANGUAGE_LABELS,
 } from '../../forms/labels';
+import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
+import { useConfirm } from '../../shell/ConfirmDialog';
+import { EmptyState } from '../../shell/EmptyState';
+import { Menu } from '../../shell/Menu';
 import { useAction } from '../../useAction';
 import { bpFromPercent, formatPrice, percentFromBp } from './money';
 import { OnlinePaymentsPanel } from './OnlinePaymentsPanel';
+import { percentText } from './ProvidersPage';
 
 const WHATSAPP_HINT = 'Stored for order links by WhatsApp later; email is used for now.';
 const LANGUAGE_LABEL = 'Language for order emails';
@@ -159,7 +167,9 @@ export function NewProviderPage() {
 export function ProviderPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const { busy, error, run } = useAction();
+  const confirm = useConfirm();
+  const [blocked, setBlocked] = useState<string | null>(null);
+  const { error, run } = useAction();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [offers, setOffers] = useState<OfferSummary[] | null>(null);
@@ -206,7 +216,136 @@ export function ProviderPage() {
   const save = (keys: readonly (keyof Draft)[], body: Partial<ProviderInput>) => async () =>
     accept(await providers.update(id, body), keys);
 
-  const hasOffers = (offers?.length ?? provider.offerCount) > 0;
+  const offerCount = offers?.length ?? provider.offerCount;
+
+  async function setActive(active: boolean) {
+    if (!provider) return;
+    if (!active) {
+      const yes = await confirm({
+        title: `Pause ${provider.name}?`,
+        body: 'Guests stop seeing their offers until you resume them. Orders already placed go on.',
+        action: 'Pause provider',
+      });
+      if (!yes) return;
+    }
+    void run(async () => accept(await providers.update(id, { active }), ['active']));
+  }
+
+  async function remove() {
+    if (!provider) return;
+    if (offerCount > 0) {
+      setBlocked(
+        `To delete ${provider.name}, delete their ${offerCount === 1 ? 'offer' : `${offerCount} offers`} first.`,
+      );
+      return;
+    }
+    const yes = await confirm({
+      title: `Delete ${provider.name}?`,
+      body: 'They have no offers left. This cannot be undone.',
+      action: 'Delete provider',
+      danger: true,
+    });
+    if (!yes) return;
+    void run(async () => {
+      await providers.remove(id);
+      navigate('/admin/providers', { replace: true });
+    });
+  }
+
+  const sections: PageSection[] = [
+    { id: 'offers', label: 'Offers', icon: Tag, count: offerCount },
+    { id: 'contact', label: 'Contact', icon: AddressBook },
+    { id: 'deal', label: 'Deal', icon: Handshake },
+    { id: 'payments', label: 'Online payments', icon: CreditCard },
+  ];
+
+  const renderSection = (section: string) => {
+    switch (section) {
+      case 'contact':
+        return (
+          <Section
+            title="Contact"
+            onSave={save(['name', 'email', 'whatsappPhone', 'language', 'taxNumber'], {
+              name: draft.name ?? '',
+              email: draft.email ?? '',
+              whatsappPhone: draft.whatsappPhone,
+              language: draft.language,
+              taxNumber: draft.taxNumber,
+            })}
+          >
+            <TextField
+              label="Name"
+              value={draft.name}
+              maxLength={LIMITS.name}
+              required
+              onChange={set('name')}
+            />
+            <TextField
+              label="Email"
+              hint="Orders are sent here."
+              type="email"
+              value={draft.email}
+              maxLength={254}
+              required
+              onChange={set('email')}
+            />
+            <TextField
+              label="WhatsApp number"
+              hint={WHATSAPP_HINT}
+              type="tel"
+              value={draft.whatsappPhone}
+              maxLength={LIMITS.phone}
+              onChange={set('whatsappPhone')}
+            />
+            <SelectField
+              label={LANGUAGE_LABEL}
+              hint={LANGUAGE_HINT}
+              value={draft.language}
+              options={PROVIDER_LANGUAGES}
+              labels={PROVIDER_LANGUAGE_LABELS}
+              onChange={(value) => set('language')(value ?? PROVIDER_DEFAULTS.language)}
+            />
+            <TextField
+              label="Tax number"
+              hint="Needed for the platform's reporting duty."
+              value={draft.taxNumber}
+              maxLength={OFFER_LIMITS.taxNumber}
+              onChange={set('taxNumber')}
+            />
+          </Section>
+        );
+      case 'deal':
+        return (
+          <Section
+            title="Deal"
+            onSave={save(['commissionPercent', 'dealNotes'], {
+              commissionBp: bpFromPercent(draft.commissionPercent) ?? 0,
+              dealNotes: draft.dealNotes,
+            })}
+          >
+            <CommissionField value={draft.commissionPercent} onChange={set('commissionPercent')} />
+            <TextArea
+              label="Deal notes"
+              hint="Only you see these."
+              value={draft.dealNotes}
+              maxLength={OFFER_LIMITS.dealNotes}
+              onChange={set('dealNotes')}
+            />
+          </Section>
+        );
+      case 'payments':
+        return (
+          <OnlinePaymentsPanel
+            status={provider}
+            onLink={() => providers.stripeOnboardingLink(provider.id)}
+            onRefresh={() => providers.stripeRefresh(provider.id)}
+            onChange={setProvider}
+          />
+        );
+      default:
+        return <OffersPanel providerId={id} offers={offers} />;
+    }
+  };
 
   return (
     <>
@@ -214,135 +353,49 @@ export function ProviderPage() {
         <Link to="/admin/providers">Providers</Link>
       </nav>
       <div className="page-head">
-        <h1>{provider.name}</h1>
-        {provider.active ? null : (
-          <div className="record-chips">
-            <span className="chip neutral">Paused</span>
+        <div className="page-title">
+          <div className="title-line">
+            <h1>{provider.name}</h1>
+            {provider.active ? (
+              <span className="chip ok">Active</span>
+            ) : (
+              <span className="chip neutral">Paused</span>
+            )}
           </div>
-        )}
+          <p className="muted">
+            {provider.email} · {percentText(provider.commissionBp)} commission
+          </p>
+        </div>
+        <Menu
+          label={`More actions for ${provider.name}`}
+          trigger={<DotsThree aria-hidden="true" weight="bold" />}
+          items={[
+            provider.active
+              ? {
+                  label: 'Pause provider',
+                  icon: <Pause aria-hidden="true" />,
+                  onSelect: () => void setActive(false),
+                }
+              : {
+                  label: 'Resume provider',
+                  icon: <Play aria-hidden="true" />,
+                  onSelect: () => void setActive(true),
+                },
+            {
+              label: 'Delete provider',
+              icon: <Trash aria-hidden="true" />,
+              danger: true,
+              onSelect: () => void remove(),
+            },
+          ]}
+        />
       </div>
       {error ? <p role="alert">{error}</p> : null}
+      {blocked ? <p role="alert">{blocked}</p> : null}
 
-      <div className="editor">
-        <OffersPanel providerId={id} offers={offers} />
-
-        <Section
-          title="Contact"
-          onSave={save(['name', 'email', 'whatsappPhone', 'language', 'taxNumber'], {
-            name: draft.name ?? '',
-            email: draft.email ?? '',
-            whatsappPhone: draft.whatsappPhone,
-            language: draft.language,
-            taxNumber: draft.taxNumber,
-          })}
-        >
-          <TextField
-            label="Name"
-            value={draft.name}
-            maxLength={LIMITS.name}
-            required
-            onChange={set('name')}
-          />
-          <TextField
-            label="Email"
-            hint="Orders are sent here."
-            type="email"
-            value={draft.email}
-            maxLength={254}
-            required
-            onChange={set('email')}
-          />
-          <TextField
-            label="WhatsApp number"
-            hint={WHATSAPP_HINT}
-            type="tel"
-            value={draft.whatsappPhone}
-            maxLength={LIMITS.phone}
-            onChange={set('whatsappPhone')}
-          />
-          <SelectField
-            label={LANGUAGE_LABEL}
-            hint={LANGUAGE_HINT}
-            value={draft.language}
-            options={PROVIDER_LANGUAGES}
-            labels={PROVIDER_LANGUAGE_LABELS}
-            onChange={(value) => set('language')(value ?? PROVIDER_DEFAULTS.language)}
-          />
-          <TextField
-            label="Tax number"
-            hint="Needed for the platform's reporting duty."
-            value={draft.taxNumber}
-            maxLength={OFFER_LIMITS.taxNumber}
-            onChange={set('taxNumber')}
-          />
-        </Section>
-
-        <Section
-          title="Deal"
-          onSave={save(['commissionPercent', 'dealNotes'], {
-            commissionBp: bpFromPercent(draft.commissionPercent) ?? 0,
-            dealNotes: draft.dealNotes,
-          })}
-        >
-          <CommissionField value={draft.commissionPercent} onChange={set('commissionPercent')} />
-          <TextArea
-            label="Deal notes"
-            hint="Only you see these."
-            value={draft.dealNotes}
-            maxLength={OFFER_LIMITS.dealNotes}
-            onChange={set('dealNotes')}
-          />
-        </Section>
-
-        <Section title="Status" onSave={save(['active'], { active: draft.active })}>
-          <CheckboxField label="Active" checked={draft.active} onChange={set('active')} />
-          <small>Paused Providers' Offers are hidden from guests.</small>
-        </Section>
-
-        <OnlinePaymentsPanel
-          status={provider}
-          onLink={() => providers.stripeOnboardingLink(provider.id)}
-          onRefresh={() => providers.stripeRefresh(provider.id)}
-          onChange={setProvider}
-        />
-
-        <section className="panel danger-zone">
-          <h2>Delete provider</h2>
-          <p className="muted">
-            {hasOffers
-              ? "Delete this Provider's Offers first. A Provider with Offers cannot be deleted."
-              : 'Deletes this Provider. This cannot be undone.'}
-          </p>
-          <button
-            type="button"
-            className="danger"
-            disabled={busy || hasOffers}
-            onClick={() => {
-              if (window.confirm(`Delete ${provider.name}?`)) {
-                void run(async () => {
-                  await providers.remove(id);
-                  navigate('/admin/providers', { replace: true });
-                });
-              }
-            }}
-          >
-            Delete provider
-          </button>
-        </section>
-      </div>
+      <SectionLayout sections={sections} label="Provider sections" render={renderSection} />
     </>
   );
-}
-
-function offerLine(o: OfferSummary): string {
-  return [
-    o.destination?.name,
-    OFFER_CATEGORY_LABELS[o.category],
-    AVAILABILITY_MODE_SHORT[o.availabilityMode],
-    formatPrice(o.priceMinor, o.currency, o.priceUnit),
-  ]
-    .filter(Boolean)
-    .join(' · ');
 }
 
 function OffersPanel({
@@ -352,35 +405,73 @@ function OffersPanel({
   providerId: string;
   offers: OfferSummary[] | null;
 }) {
+  const add = (
+    <Link className="button primary" to={`/admin/providers/${providerId}/offers/new`}>
+      <Plus aria-hidden="true" weight="bold" />
+      Add offer
+    </Link>
+  );
   return (
     <section className="panel" aria-labelledby="offers-heading">
-      <div className="page-head">
+      <div className="panel-head">
         <h2 id="offers-heading">Offers</h2>
-        <Link className="button primary" to={`/admin/providers/${providerId}/offers/new`}>
-          <Plus aria-hidden="true" weight="bold" />
-          Add offer
-        </Link>
+        {offers && offers.length > 0 ? add : null}
       </div>
       {offers === null ? <p className="muted">Loading…</p> : null}
-      {offers?.length === 0 ? <p className="muted">No Offers yet.</p> : null}
+      {offers?.length === 0 ? (
+        <EmptyState icon={Tag} title="No offers yet" action={add}>
+          An offer is something guests can book or buy from this provider, such as a boat trip.
+        </EmptyState>
+      ) : null}
       {offers && offers.length > 0 ? (
-        <ul className="rows">
-          {offers.map((o) => (
-            <li key={o.id}>
-              <Link to={`/admin/offers/${o.id}`} className="row-link record-row">
-                <span className="block-text record-text">
-                  <strong>{o.title}</strong>
-                  <span className="muted">{offerLine(o)}</span>
-                </span>
-                <span className="record-chips">
-                  {o.active ? null : <span className="chip neutral">Paused</span>}
-                  <TranslationChip status={o.translation.status} />
-                </span>
-                <CaretRight className="record-caret" aria-hidden="true" />
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="table-frame">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Offer</th>
+                <th scope="col" className="wide-only">
+                  Booking
+                </th>
+                <th scope="col" className="num wide-only">
+                  Price
+                </th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {offers.map((o) => (
+                <tr key={o.id} className="linked">
+                  <td>
+                    <div className="cell-main">
+                      <Link className="row-target" to={`/admin/offers/${o.id}`}>
+                        {o.title}
+                      </Link>
+                      <span className="cell-sub">
+                        {[o.destination?.name, OFFER_CATEGORY_LABELS[o.category]]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="wide-only">{AVAILABILITY_MODE_SHORT[o.availabilityMode]}</td>
+                  <td className="num wide-only">
+                    {formatPrice(o.priceMinor, o.currency, o.priceUnit)}
+                  </td>
+                  <td>
+                    <span className="chip-stack">
+                      {o.active ? (
+                        <span className="chip ok">Active</span>
+                      ) : (
+                        <span className="chip neutral">Paused</span>
+                      )}
+                      <TranslationChip status={o.translation.status} />
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </section>
   );

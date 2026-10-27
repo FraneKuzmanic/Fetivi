@@ -10,9 +10,11 @@ import {
   type DraftedSeason,
 } from '@fetivi/domain/curation-vocabulary';
 import { SOURCE_LABELS } from '@fetivi/domain/seeding-vocabulary';
+import { ClockCounterClockwise, DotsThree, ListChecks } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ApiError, type CurationItem, catalog, curation, type Destination } from '../../api';
+import { formatDate, formatDay } from '../../forms/datetime';
 import {
   CURATION_ACTION_LABELS,
   CURATION_KIND_LABELS,
@@ -21,12 +23,27 @@ import {
   SOURCE_FIELD_LABELS,
   WEEKDAY_LABELS,
 } from '../../forms/labels';
+import { useConfirm } from '../../shell/ConfirmDialog';
+import { EmptyState } from '../../shell/EmptyState';
+import { Menu } from '../../shell/Menu';
+import { Tabs } from '../../shell/Tabs';
 import { useAction } from '../../useAction';
 
-const TABS: { tab: CurationTab; label: string; empty: string }[] = [
-  { tab: 'open', label: 'Open', empty: 'Nothing to curate.' },
-  { tab: 'needs_visit', label: 'Needs a visit', empty: 'No items need a visit.' },
-  { tab: 'done', label: 'Done', empty: 'Nothing reviewed yet.' },
+const TABS: { id: CurationTab; label: string; empty: [string, string] }[] = [
+  {
+    id: 'open',
+    label: 'To review',
+    empty: [
+      'All caught up',
+      'Drafts, website changes, guest flags and host suggestions wait here for your review.',
+    ],
+  },
+  {
+    id: 'needs_visit',
+    label: 'Needs a visit',
+    empty: ['Nothing needs a visit', 'Items you can only check in person wait here.'],
+  },
+  { id: 'done', label: 'Done', empty: ['Nothing reviewed yet', 'Items you review end up here.'] },
 ];
 
 const KIND_TONE: Record<CurationKind, string> = {
@@ -38,14 +55,10 @@ const KIND_TONE: Record<CurationKind, string> = {
   fallback_topic_cluster: 'neutral',
 };
 
-const date = (iso: string) => new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' });
+const date = formatDay;
 
 /** A YYYY-MM-DD day as written, whatever the viewer's zone. */
-const calendarDay = (day: string) =>
-  new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, {
-    dateStyle: 'medium',
-    timeZone: 'UTC',
-  });
+const calendarDay = formatDate;
 
 const categoryLabel = (code: string) => PLACE_CATEGORY_LABELS[code as PlaceCategory] ?? code;
 
@@ -71,9 +84,11 @@ function detail(item: CurationItem): string | null {
     case 'draft':
     case 'refresh_diff': {
       if (p.kind === 'draft' && !item.record && item.candidate && !item.drafted) {
-        if (p.drafting?.status === 'no_sources') return 'No usable source found';
-        if (p.drafting?.status === 'failed') return 'Drafting failed';
-        return 'Waiting for the drafting job';
+        if (p.drafting?.status === 'no_sources') {
+          return 'Couldn’t be drafted: no readable web page about it';
+        }
+        if (p.drafting?.status === 'failed') return 'Drafting didn’t work';
+        return p.drafting ? 'Being drafted' : 'Waiting to be drafted';
       }
       const fields = proposedFields(p.changes);
       if (fields.length === 0) return null;
@@ -106,7 +121,7 @@ const proposedFields = (changes: CuratedChanges) =>
   );
 
 const dayMonth = (month: number, day: number) =>
-  new Date(Date.UTC(2000, month - 1, day)).toLocaleDateString(undefined, {
+  new Date(Date.UTC(2000, month - 1, day)).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
     timeZone: 'UTC',
@@ -242,6 +257,7 @@ function meta(item: CurationItem): string {
 /** /admin/curation: the one queue of everything waiting for the admin's review. */
 export function CurationPage() {
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const [params] = useSearchParams();
   const { busy, error, run } = useAction();
   const [tab, setTab] = useState<CurationTab>('open');
@@ -282,9 +298,15 @@ export function CurationPage() {
     void run(async () => setDestinations((await catalog.destinations()).destinations));
   }, [run]);
 
-  const act = (item: CurationItem, action: CurationAction) => {
-    if (action === 'reject' && !window.confirm('Reject this item? The record stays as it is.')) {
-      return;
+  const act = async (item: CurationItem, action: CurationAction) => {
+    if (action === 'reject') {
+      const yes = await confirm({
+        title: `Reject ${subject(item)}?`,
+        body: 'Nothing changes in the catalog. The item moves to Done.',
+        action: 'Reject',
+        danger: true,
+      });
+      if (!yes) return;
     }
     void run(async () => {
       setNotice(null);
@@ -309,30 +331,20 @@ export function CurationPage() {
   };
 
   const total = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : null;
-  const empty = TABS.find((t) => t.tab === tab)?.empty;
+  const [emptyTitle, emptyText] = TABS.find((t) => t.id === tab)?.empty ?? ['', ''];
+  const filtered = kind !== null || destinationId !== '';
 
   return (
     <>
       <div className="page-head">
         <h1>Curation</h1>
         <Link className="button" to="/admin/curation/staleness">
-          Staleness queue
+          <ClockCounterClockwise aria-hidden="true" />
+          Due for a re-check
         </Link>
       </div>
-      <div className="filters">
-        <div className="segmented" role="tablist" aria-label="Status">
-          {TABS.map((t) => (
-            <button
-              key={t.tab}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.tab}
-              onClick={() => setTab(t.tab)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+      <Tabs label="Status" items={TABS} value={tab} onChange={setTab} />
+      <div className="toolbar">
         <label className="field inline-field">
           <span className="field-label">Destination</span>
           <select value={destinationId} onChange={(e) => setDestinationId(e.target.value)}>
@@ -350,11 +362,11 @@ export function CurationPage() {
             value={kind ?? ''}
             onChange={(e) => setKind((e.target.value || null) as CurationKind | null)}
           >
-            <option value="">All kinds{total === null ? '' : ` (${total})`}</option>
+            <option value="">All kinds{total ? ` (${total})` : ''}</option>
             {CURATION_KINDS.map((k) => (
               <option key={k} value={k}>
                 {CURATION_KIND_LABELS[k]}
-                {counts ? ` (${counts[k]})` : ''}
+                {counts?.[k] ? ` (${counts[k]})` : ''}
               </option>
             ))}
           </select>
@@ -367,13 +379,36 @@ export function CurationPage() {
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
       {items === null && !error ? <p className="muted">Loading…</p> : null}
-      {items?.length === 0 ? <p className="muted">{empty}</p> : null}
+      {items?.length === 0 ? (
+        filtered ? (
+          <EmptyState
+            icon={ListChecks}
+            title="Nothing matches these filters"
+            action={
+              <button
+                type="button"
+                onClick={() => {
+                  setKind(null);
+                  setDestinationId('');
+                }}
+              >
+                Show everything
+              </button>
+            }
+          />
+        ) : (
+          <EmptyState icon={ListChecks} title={emptyTitle}>
+            {emptyText}
+          </EmptyState>
+        )
+      ) : null}
       {items && items.length > 0 ? (
         <ul className="rows">
           {items.map((item) => {
             const more = detail(item);
+            const [first, ...rest] = item.actions;
             return (
-              <li key={item.id} className="block-row">
+              <li key={item.id} className="block-row curation-row">
                 <div className="block-text">
                   <span className="block-title">
                     <span className={`chip ${KIND_TONE[item.kind]}`}>
@@ -385,19 +420,27 @@ export function CurationPage() {
                   <span className="muted">{meta(item)}</span>
                   <Proposal item={item} />
                 </div>
-                {item.actions.length > 0 ? (
+                {first ? (
                   <div className="actions queue-actions">
-                    {item.actions.map((a) => (
-                      <button
-                        key={a}
-                        type="button"
-                        className={a === 'approve' ? 'primary' : undefined}
-                        disabled={busy}
-                        onClick={() => act(item, a)}
-                      >
-                        {CURATION_ACTION_LABELS[a]}
-                      </button>
-                    ))}
+                    <button
+                      type="button"
+                      className={first === 'approve' ? 'primary' : undefined}
+                      disabled={busy}
+                      onClick={() => void act(item, first)}
+                    >
+                      {CURATION_ACTION_LABELS[first]}
+                    </button>
+                    {rest.length > 0 ? (
+                      <Menu
+                        label={`More for ${subject(item)}`}
+                        trigger={<DotsThree aria-hidden="true" weight="bold" />}
+                        items={rest.map((a) => ({
+                          label: CURATION_ACTION_LABELS[a],
+                          danger: a === 'reject',
+                          onSelect: () => void act(item, a),
+                        }))}
+                      />
+                    ) : null}
                   </div>
                 ) : (
                   <span className={`chip ${item.status === 'approved' ? 'ok' : 'neutral'}`}>

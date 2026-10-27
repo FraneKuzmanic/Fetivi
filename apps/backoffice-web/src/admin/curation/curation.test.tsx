@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { CurationItem, StalenessRecord } from '../../api';
+import { ConfirmProvider } from '../../shell/ConfirmDialog';
 import { CurationPage } from './CurationPage';
 import { StalenessPage } from './StalenessPage';
 
@@ -247,27 +248,51 @@ async function mount(path: string) {
   root = createRoot(el);
   await act(async () => {
     root?.render(
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/admin/curation" element={<CurationPage />} />
-          <Route path="/admin/curation/staleness" element={<StalenessPage />} />
-          <Route path="/admin/catalog/records/:id" element={<RecordStub />} />
-        </Routes>
-      </MemoryRouter>,
+      <ConfirmProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/admin/curation" element={<CurationPage />} />
+            <Route path="/admin/curation/staleness" element={<StalenessPage />} />
+            <Route path="/admin/catalog/records/:id" element={<RecordStub />} />
+          </Routes>
+        </MemoryRouter>
+      </ConfirmProvider>,
     );
   });
 }
 
 const rowOf = (text: string) =>
-  [...el.querySelectorAll('li.block-row')].find((li) => li.textContent?.includes(text));
+  [...el.querySelectorAll('li.block-row, tbody tr')].find((row) => row.textContent?.includes(text));
 
+/** The buttons a row shows, the "⋯" menu's included by its accessible name. */
 const buttonsOf = (row: Element | undefined) =>
-  [...(row?.querySelectorAll('button') ?? [])].map((b) => b.textContent);
+  [...(row?.querySelectorAll('button') ?? [])].map(
+    (b) => b.textContent || b.getAttribute('aria-label'),
+  );
 
-async function click(button: Element | undefined) {
+async function click(button: Element | undefined | null) {
   await act(async () => {
     (button as HTMLButtonElement | undefined)?.click();
   });
+}
+
+/** Every action of a row: its one visible button, then what its "⋯" menu holds. */
+async function actionsOf(row: Element | undefined, subject: string) {
+  const visible = row?.querySelector('.queue-actions > button')?.textContent;
+  const more = row?.querySelector(`button[aria-label="More for ${subject}"]`);
+  if (!more) return [visible];
+  await click(more);
+  const items = [...(row?.querySelectorAll('[role="menuitem"]') ?? [])].map((i) => i.textContent);
+  await click(more);
+  return [visible, ...items];
+}
+
+/** Opens a row's "⋯" menu and picks one of its items. */
+async function pick(row: Element | undefined, subject: string, item: string) {
+  await click(row?.querySelector(`button[aria-label="More for ${subject}"]`));
+  await click(
+    [...(row?.querySelectorAll('[role="menuitem"]') ?? [])].find((i) => i.textContent === item),
+  );
 }
 
 async function choose(label: string, value: string) {
@@ -283,19 +308,41 @@ async function choose(label: string, value: string) {
 
 const status = () => el.querySelector('output[aria-live="polite"]')?.textContent;
 
-const buttonIn = (row: Element | undefined, name: string) =>
+const buttonIn = (row: Element | undefined | null, name: string) =>
   [...(row?.querySelectorAll('button') ?? [])].find((b) => b.textContent === name);
+
+const dialog = () => document.querySelector('dialog.confirm-dialog');
 
 describe('CurationPage', () => {
   it('shows each kind with its own actions', async () => {
     await mount('/admin/curation');
     expect(calls[0]?.url).toBe('/api/admin/curation?status=open');
-    expect(buttonsOf(rowOf('Konoba Old'))).toEqual(['Approve', 'Edit', 'Reject', 'Needs a visit']);
-    expect(rowOf('Konoba Old')?.textContent).toContain('Proposes Title, Description');
-    expect(buttonsOf(rowOf('Kayak Bros'))).toEqual(['Approve', 'Reject', 'Needs a visit']);
+    expect([...el.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual([
+      'To review',
+      'Needs a visit',
+      'Done',
+    ]);
+    expect(el.querySelector('a[href="/admin/curation/staleness"]')?.textContent).toBe(
+      'Due for a re-check',
+    );
+    const draft = rowOf('Konoba Old');
+    expect(await actionsOf(draft, 'Konoba Old')).toEqual([
+      'Approve',
+      'Edit',
+      'Reject',
+      'Move to Needs a visit',
+    ]);
+    expect(buttonIn(draft, 'Approve')?.className).toBe('primary');
+    expect(draft?.textContent).toContain('Proposes Title, Description');
+    expect(draft?.textContent).toContain('Trogir · Added 20.10.2026');
+    expect(await actionsOf(rowOf('Kayak Bros'), 'Kayak Bros')).toEqual([
+      'Approve',
+      'Reject',
+      'Move to Needs a visit',
+    ]);
     expect(rowOf('Kayak Bros')?.textContent).toContain('host@example.test');
     const cluster = rowOf('kayak rental')?.textContent ?? '';
-    expect(cluster).toContain('4 searches, 3 without results');
+    expect(cluster).toContain('4 searches, 3 without results, week of 12.10.2026');
     expect(cluster).toContain('Near okrug');
     expect(el.textContent).toContain('Host Provider suggestion (1)');
     expect(el.textContent).toContain('All kinds (3)');
@@ -322,25 +369,50 @@ describe('CurationPage', () => {
     expect(status()).toBe('Konoba Old approved. It is under Done.');
   });
 
-  it('says where an item went after Needs a visit', async () => {
+  it('says where an item went after Move to Needs a visit', async () => {
     await mount('/admin/curation');
-    await click(buttonIn(rowOf('Kayak Bros'), 'Needs a visit'));
+    await pick(rowOf('Kayak Bros'), 'Kayak Bros', 'Move to Needs a visit');
+    expect(calls).toContainEqual({
+      url: '/api/admin/curation/i-provider/needs-visit',
+      method: 'POST',
+    });
     expect(rowOf('Kayak Bros')).toBeUndefined();
     expect(status()).toBe('Kayak Bros moved to Needs a visit.');
+  });
+
+  it('asks before rejecting, and rejects only on the dialog’s Reject', async () => {
+    await mount('/admin/curation');
+    await pick(rowOf('Kayak Bros'), 'Kayak Bros', 'Reject');
+    expect(dialog()?.querySelector('h2')?.textContent).toBe('Reject Kayak Bros?');
+    await click(buttonIn(dialog(), 'Cancel'));
+    expect(dialog()).toBeNull();
+    expect(calls.some((c) => c.url.endsWith('/reject'))).toBe(false);
+    expect(rowOf('Kayak Bros')).toBeDefined();
+
+    await pick(rowOf('Kayak Bros'), 'Kayak Bros', 'Reject');
+    await click(buttonIn(dialog(), 'Reject'));
+    expect(calls).toContainEqual({ url: '/api/admin/curation/i-provider/reject', method: 'POST' });
+    expect(rowOf('Kayak Bros')).toBeUndefined();
+    expect(status()).toBe('Kayak Bros rejected. It is under Done.');
   });
 
   it('shows a waiting seeding draft by its candidate name, with Reject only', async () => {
     await mount('/admin/curation?kind=draft');
     expect(calls[0]?.url).toBe('/api/admin/curation?status=open&kind=draft');
     const row = rowOf('Saldun');
-    expect(row?.textContent).toContain('Waiting for the drafting job');
+    expect(row?.textContent).toContain('to be drafted');
     expect(buttonsOf(row)).toEqual(['Reject']);
   });
 
   it('shows a drafted candidate draft with all actions and its proposal with sources', async () => {
     await mount('/admin/curation?kind=draft');
     const row = rowOf('Sv. Dominik');
-    expect(buttonsOf(row)).toEqual(['Approve', 'Edit', 'Reject', 'Needs a visit']);
+    expect(await actionsOf(row, 'Sv. Dominik')).toEqual([
+      'Approve',
+      'Edit',
+      'Reject',
+      'Move to Needs a visit',
+    ]);
     expect(row?.querySelector('summary')?.textContent).toBe('Show proposal');
     const fields = [...(row?.querySelectorAll('.proposal dl > div') ?? [])].map((d) => [
       d.querySelector('dt')?.textContent,
@@ -367,7 +439,7 @@ describe('CurationPage', () => {
   it('says why a candidate draft has nothing to approve', async () => {
     await mount('/admin/curation?kind=draft');
     const row = rowOf('Parking Lokva');
-    expect(row?.textContent).toContain('No usable source found');
+    expect(row?.textContent).toContain('Couldn’t be drafted: no readable web page about it');
     expect(buttonsOf(row)).toEqual(['Reject']);
     expect(row?.querySelector('.proposal')).toBeNull();
   });
@@ -385,7 +457,7 @@ describe('CurationPage', () => {
 
   it('opens the record editor on Edit', async () => {
     await mount('/admin/curation');
-    await click(buttonIn(rowOf('Konoba Old'), 'Edit'));
+    await pick(rowOf('Konoba Old'), 'Konoba Old', 'Edit');
     expect(calls).toContainEqual({ url: '/api/admin/curation/i-draft/edit', method: 'POST' });
     expect(el.textContent).toContain('Record r1');
   });
@@ -394,12 +466,18 @@ describe('CurationPage', () => {
 describe('StalenessPage', () => {
   it('lists records in API order and marks one verified', async () => {
     await mount('/admin/curation/staleness');
-    const titles = [...el.querySelectorAll('li.block-row strong')].map((s) => s.textContent);
+    expect(el.querySelector('h1')?.textContent).toBe('Due for a re-check');
+    const titles = [...el.querySelectorAll('table.data-table tbody .row-target')].map(
+      (a) => a.textContent,
+    );
     expect(titles).toEqual(['Pantan beach', 'Krka day trip']);
-    expect(rowOf('Pantan beach')?.textContent).toContain('Recommended 12 times in 90 days');
-    expect(rowOf('Pantan beach')?.textContent).toContain('Past its budget');
+    const pantan = rowOf('Pantan beach');
+    expect(pantan?.textContent).toContain('Overdue since 01.07.2025');
+    expect(pantan?.textContent).toContain('12 times in 90 days');
     expect(rowOf('Krka day trip')?.textContent).toContain('Day trip · Trogir');
-    await click(buttonIn(rowOf('Pantan beach'), 'Mark verified'));
+    expect(rowOf('Krka day trip')?.textContent).toContain('Never checked');
+    expect(rowOf('Krka day trip')?.textContent).toContain('Not lately');
+    await click(buttonIn(pantan, 'Mark verified'));
     expect(calls).toContainEqual({
       url: '/api/admin/catalog/records/s1/verify',
       method: 'POST',

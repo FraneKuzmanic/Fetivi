@@ -1,13 +1,9 @@
-import { Plus } from '@phosphor-icons/react';
+import { MapTrifold, Plus } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { catalog, type Destination } from '../../api';
+import { EmptyState } from '../../shell/EmptyState';
 import { useAction } from '../../useAction';
-
-export const areaLine = (d: Pick<Destination, 'radiusKm' | 'centre'>) =>
-  `${d.radiusKm} km around ${d.centre.lat.toFixed(4)}, ${d.centre.lng.toFixed(4)}`;
-
-const countLine = (n: number) => (n === 1 ? '1 record' : `${n} records`);
 
 /** /admin/catalog: every destination and the size of its catalog. */
 export function DestinationsPage() {
@@ -18,14 +14,18 @@ export function DestinationsPage() {
     void run(async () => setList((await catalog.destinations()).destinations));
   }, [run]);
 
+  const add = (
+    <Link className="button primary" to="/admin/catalog/destinations/new">
+      <Plus aria-hidden="true" weight="bold" />
+      Add destination
+    </Link>
+  );
+
   return (
     <>
       <div className="page-head">
         <h1>Catalog</h1>
-        <Link className="button primary" to="/admin/catalog/destinations/new">
-          <Plus aria-hidden="true" weight="bold" />
-          Add destination
-        </Link>
+        {list && list.length > 0 ? add : null}
       </div>
       <p className="muted">
         Places, events, transport notes and day trips that guests get recommendations from.
@@ -33,25 +33,40 @@ export function DestinationsPage() {
       {error ? <p role="alert">{error}</p> : null}
       {list === null && !error ? <p className="muted">Loading…</p> : null}
       {list?.length === 0 ? (
-        <p className="muted">No destinations yet. Add Trogir to start.</p>
+        <EmptyState icon={MapTrifold} title="No destinations yet" action={add}>
+          A destination is a town and the area around it. Add one, then find the places worth
+          recommending there.
+        </EmptyState>
       ) : null}
       {list && list.length > 0 ? (
-        <ul className="rows table">
-          <li className="table-head" aria-hidden="true">
-            <span>Destination</span>
-            <span>Area</span>
-            <span>Records</span>
-          </li>
-          {list.map((d) => (
-            <li key={d.id}>
-              <Link to={`/admin/catalog/destinations/${d.id}`} className="row-link">
-                <strong>{d.name}</strong>
-                <span className="muted">{areaLine(d)}</span>
-                <span className="muted">{countLine(d.recordCount)}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="table-frame">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Destination</th>
+                <th scope="col" className="wide-only">
+                  Area
+                </th>
+                <th scope="col" className="num">
+                  Records
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((d) => (
+                <tr key={d.id} className="linked">
+                  <td>
+                    <Link className="row-target" to={`/admin/catalog/destinations/${d.id}`}>
+                      {d.name}
+                    </Link>
+                  </td>
+                  <td className="wide-only">Within {d.radiusKm} km</td>
+                  <td className="num">{d.recordCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </>
   );

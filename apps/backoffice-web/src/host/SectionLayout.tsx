@@ -8,6 +8,8 @@ export interface PageSection {
   icon: Icon;
   /** A short state after the label, such as "Not set" or a count. */
   note?: string;
+  /** How many things the section holds, shown as a quiet count. */
+  count?: number;
   /** Opens another page instead of a section here (Host picks). */
   to?: string;
 }
@@ -66,6 +68,7 @@ export function SectionLayout({
                   <s.icon aria-hidden="true" weight={s.id === active ? 'fill' : 'regular'} />
                   <span className="section-label">{s.label}</span>
                   {s.note ? <span className="section-note">{s.note}</span> : null}
+                  {s.count ? <span className="tab-count section-count">{s.count}</span> : null}
                 </a>
               )}
             </li>

@@ -29,6 +29,7 @@ import {
 import { CheckboxField, NumberField, Section, SelectField, TextField } from '../forms/fields';
 import { BED_LABELS, CATEGORY_LABELS } from '../forms/labels';
 import { sectionBody } from '../forms/patch';
+import { useConfirm } from '../shell/ConfirmDialog';
 import { Menu } from '../shell/Menu';
 import { useAction } from '../useAction';
 import { AmenitiesEditor } from './AmenitiesEditor';
@@ -57,6 +58,7 @@ export function UnitPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [detail, setDetail] = useState<UnitDetail | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [status, setStatus] = useState<WizardStatus | null>(null);
@@ -350,10 +352,15 @@ export function UnitPage() {
                 label: 'Delete unit',
                 icon: <Trash aria-hidden="true" />,
                 danger: true,
-                onSelect: () => {
+                onSelect: async () => {
                   if (
                     !busy &&
-                    window.confirm(`Delete ${detail.name}? Its QR code stops working.`)
+                    (await confirm({
+                      title: `Delete ${detail.name}?`,
+                      body: 'Its QR code stops working. This cannot be undone.',
+                      action: 'Delete unit',
+                      danger: true,
+                    }))
                   ) {
                     void run(async () => {
                       await host.deleteUnit(id);

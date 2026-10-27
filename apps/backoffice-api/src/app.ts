@@ -13,6 +13,7 @@ import { curationRoutes } from './admin/curation';
 import { draftingRoutes } from './admin/drafting';
 import { feedbackStatsRoutes } from './admin/feedback';
 import { adminOrderRoutes } from './admin/orders';
+import { adminOverviewRoutes } from './admin/overview';
 import { reconciliationRoutes } from './admin/reconciliation';
 import { adminRoutes } from './admin/routes';
 import { seedingRoutes } from './admin/seeding';
@@ -97,6 +98,7 @@ export function buildApp(deps: AppDeps) {
   app.register(seedingRoutes, { db, queue, now });
   app.register(draftingRoutes, { db, queue, now });
   app.register(adminOrderRoutes, { db, queue, now });
+  app.register(adminOverviewRoutes, { db, now });
   app.register(catalogRoutes, { db, queue, now });
   app.register(providerRoutes, { db, queue, now });
   app.register(onboardingRoutes, { db, now, webOrigin, gateway: deps.stripe?.gateway ?? null });

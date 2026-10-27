@@ -89,3 +89,15 @@ export function addMonths(iso: string, n: number): string {
 export function todayIso(now = new Date()): string {
   return isoDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
+
+/** A moment as the admin reads it, in the browser's zone: "27.10.2026". */
+export function formatDay(at: string | Date): string {
+  const d = typeof at === 'string' ? new Date(at) : at;
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+}
+
+/** A moment with its time, 24-hour: "27.10.2026, 14:05". */
+export function formatMoment(at: string | Date): string {
+  const d = typeof at === 'string' ? new Date(at) : at;
+  return `${formatDay(d)}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

@@ -3,6 +3,7 @@ import { DotsThree, Image, PencilSimple, Plus, Translate, Trash } from '@phospho
 import { useState } from 'react';
 import { type Block, type BlockInput, type BlockResult, host, type SecretWarning } from '../api';
 import { CATEGORY_LABELS, TRANSLATION_ERROR_LABELS, VISIBILITY_LABELS } from '../forms/labels';
+import { useConfirm } from '../shell/ConfirmDialog';
 import { Menu } from '../shell/Menu';
 import { useAction } from '../useAction';
 import { BlockEditor, SecretWarnings } from './BlockEditor';
@@ -47,6 +48,7 @@ export function BlockList({
   category?: HostBlockCategory;
 }) {
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [warnings, setWarnings] = useState<SecretWarning[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -133,8 +135,15 @@ export function BlockList({
                         label: 'Delete',
                         icon: <Trash aria-hidden="true" />,
                         danger: true,
-                        onSelect: () => {
-                          if (window.confirm(`Delete "${block.title}" from the guide?`)) {
+                        onSelect: async () => {
+                          if (
+                            await confirm({
+                              title: `Delete “${block.title}”?`,
+                              body: 'Guests stop seeing it in the guide. This cannot be undone.',
+                              action: 'Delete entry',
+                              danger: true,
+                            })
+                          ) {
                             void run(async () => {
                               await host.deleteBlock(block.id);
                               await onChanged();

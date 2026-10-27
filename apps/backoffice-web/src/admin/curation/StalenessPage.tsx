@@ -2,20 +2,31 @@ import {
   RECOMMENDATION_WINDOW_DAYS,
   STALENESS_NEAR_DAYS,
 } from '@fetivi/domain/curation-vocabulary';
+import { ClockCounterClockwise } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { catalog, curation, type Destination, type StalenessRecord } from '../../api';
+import { formatDay } from '../../forms/datetime';
 import { CATALOG_KIND_LABELS, PLACE_CATEGORY_LABELS } from '../../forms/labels';
+import { EmptyState } from '../../shell/EmptyState';
 import { useAction } from '../../useAction';
-import { StalenessChip } from '../catalog/StalenessChip';
 
 const kindLabel = (r: StalenessRecord) =>
   r.placeCategory ? PLACE_CATEGORY_LABELS[r.placeCategory] : CATALOG_KIND_LABELS[r.kind];
 
 const recommended = (n: number) =>
   n === 0
-    ? `Not recommended in the last ${RECOMMENDATION_WINDOW_DAYS} days`
-    : `Recommended ${n} ${n === 1 ? 'time' : 'times'} in ${RECOMMENDATION_WINDOW_DAYS} days`;
+    ? 'Not lately'
+    : `${n} ${n === 1 ? 'time' : 'times'} in ${RECOMMENDATION_WINDOW_DAYS} days`;
+
+/** "Overdue since 12.10.2026", "Due 05.11.2026", "Never checked". */
+export function dueText(r: Pick<StalenessRecord, 'staleness'>): string {
+  const { status, staleAt } = r.staleness;
+  if (status === 'never_verified') return 'Never checked';
+  if (status === 'expired') return 'Ended';
+  if (staleAt === null) return 'No re-check needed';
+  return status === 'stale' ? `Overdue since ${formatDay(staleAt)}` : `Due ${formatDay(staleAt)}`;
+}
 
 /** /admin/curation/staleness: the records most likely to mislead guests, worst first. */
 export function StalenessPage() {
@@ -53,13 +64,13 @@ export function StalenessPage() {
         <Link to="/admin/curation">Curation</Link>
       </nav>
       <div className="page-head">
-        <h1>Staleness queue</h1>
+        <h1>Due for a re-check</h1>
       </div>
       <p className="muted">
-        Past or within {STALENESS_NEAR_DAYS} days of their budget. The most overdue and most
-        recommended come first.
+        Places due for a re-check now or in the next {STALENESS_NEAR_DAYS} days. Most overdue and
+        most recommended first.
       </p>
-      <div className="filters">
+      <div className="toolbar">
         <label className="field inline-field">
           <span className="field-label">Destination</span>
           <select value={destinationId} onChange={(e) => setDestinationId(e.target.value)}>
@@ -79,31 +90,51 @@ export function StalenessPage() {
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
       {records === null && !error ? <p className="muted">Loading…</p> : null}
-      {records?.length === 0 ? <p className="muted">Every record is within its budget.</p> : null}
+      {records?.length === 0 ? (
+        <EmptyState icon={ClockCounterClockwise} title="All caught up">
+          No place needs a re-check in the next {STALENESS_NEAR_DAYS} days.
+        </EmptyState>
+      ) : null}
       {records && records.length > 0 ? (
-        <ul className="rows">
-          {records.map((r) => (
-            <li key={r.id} className="block-row">
-              <div className="block-text">
-                <span className="block-title">
-                  <Link to={`/admin/catalog/records/${r.id}`}>
-                    <strong>{r.title}</strong>
-                  </Link>
-                  <StalenessChip staleness={r.staleness} />
-                </span>
-                <span className="muted">
-                  {kindLabel(r)} · {r.destinationName}
-                </span>
-                <span className="muted">{recommended(r.recommendations)}</span>
-              </div>
-              <div className="actions queue-actions">
-                <button type="button" disabled={busy} onClick={() => void verify(r)}>
-                  Mark verified
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="table-frame">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Place</th>
+                <th scope="col">Re-check</th>
+                <th scope="col" className="wide-only">
+                  Recommended
+                </th>
+                <th scope="col">
+                  <span className="visually-hidden">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((r) => (
+                <tr key={r.id} className="linked">
+                  <td>
+                    <div className="cell-main">
+                      <Link className="row-target" to={`/admin/catalog/records/${r.id}`}>
+                        {r.title}
+                      </Link>
+                      <span className="cell-sub">
+                        {kindLabel(r)} · {r.destinationName}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="nowrap">{dueText(r)}</td>
+                  <td className="wide-only">{recommended(r.recommendations)}</td>
+                  <td className="cell-actions">
+                    <button type="button" disabled={busy} onClick={() => void verify(r)}>
+                      Mark verified
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </>
   );

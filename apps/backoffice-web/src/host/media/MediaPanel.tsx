@@ -2,6 +2,7 @@ import { LIMITS, MEDIA_CONTENT_TYPES } from '@fetivi/domain/vocabulary';
 import { type FormEvent, useId, useState } from 'react';
 import { type Block, type BlockMedia, host } from '../../api';
 import { TextField } from '../../forms/fields';
+import { useConfirm } from '../../shell/ConfirmDialog';
 import { useAction } from '../../useAction';
 import { fileProblem } from './PendingMedia';
 
@@ -44,6 +45,7 @@ function MediaPreview({ item }: { item: BlockMedia }) {
 
 function MediaItem({ item, onChanged }: { item: BlockMedia; onChanged: () => Promise<void> }) {
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [caption, setCaption] = useState<string | null>(item.caption);
 
   function save(event: FormEvent) {
@@ -74,8 +76,15 @@ function MediaItem({ item, onChanged }: { item: BlockMedia; onChanged: () => Pro
             type="button"
             className="danger"
             disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Remove "${item.caption}"?`)) {
+            onClick={async () => {
+              if (
+                await confirm({
+                  title: `Remove “${item.caption}”?`,
+                  body: 'Guests stop seeing this photo.',
+                  action: 'Remove photo',
+                  danger: true,
+                })
+              ) {
                 void run(async () => {
                   await host.deleteMedia(item.id);
                   await onChanged();

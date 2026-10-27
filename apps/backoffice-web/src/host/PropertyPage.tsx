@@ -17,6 +17,7 @@ import { host, type PropertyDetail, type PropertyPatch } from '../api';
 import { Section, SelectField, TextField } from '../forms/fields';
 import { PROPERTY_TYPE_LABELS } from '../forms/labels';
 import { sectionBody } from '../forms/patch';
+import { useConfirm } from '../shell/ConfirmDialog';
 import { Menu } from '../shell/Menu';
 import { useAction } from '../useAction';
 import { AmenitiesEditor } from './AmenitiesEditor';
@@ -87,6 +88,7 @@ export function PropertyPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [detail, setDetail] = useState<PropertyDetail | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [coords, setCoords] = useState<{ lat: number | null; lng: number | null }>({
@@ -334,10 +336,15 @@ export function PropertyPage() {
               label: 'Delete property',
               icon: <Trash aria-hidden="true" />,
               danger: true,
-              onSelect: () => {
+              onSelect: async () => {
                 if (
                   !busy &&
-                  window.confirm(`Delete ${detail.name} and all its units? This cannot be undone.`)
+                  (await confirm({
+                    title: `Delete ${detail.name}?`,
+                    body: 'All its units go with it, and their QR codes stop working. This cannot be undone.',
+                    action: 'Delete property',
+                    danger: true,
+                  }))
                 ) {
                   void run(async () => {
                     await host.deleteProperty(id);

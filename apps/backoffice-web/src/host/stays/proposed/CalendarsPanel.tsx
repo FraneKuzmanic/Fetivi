@@ -3,6 +3,7 @@ import { Trash } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useId, useState } from 'react';
 import { type CalendarFeed, host, type UnitCalendars } from '../../../api';
 import { TextField } from '../../../forms/fields';
+import { useConfirm } from '../../../shell/ConfirmDialog';
 import { useAction } from '../../../useAction';
 import { agoLabel } from '../format';
 import { BookingLinksStep } from './BookingLinksStep';
@@ -28,6 +29,7 @@ function FeedStatus({ feed }: { feed: CalendarFeed }) {
 export function CalendarsPanel({ unitId }: { unitId: string }) {
   const headingId = useId();
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [data, setData] = useState<UnitCalendars | null>(null);
   const [url, setUrl] = useState<string | null>(null);
 
@@ -49,8 +51,16 @@ export function CalendarsPanel({ unitId }: { unitId: string }) {
     });
   }
 
-  function remove(feed: CalendarFeed) {
-    if (!window.confirm('Remove this calendar? Stays already registered stay as they are.')) return;
+  async function remove(feed: CalendarFeed) {
+    if (
+      !(await confirm({
+        title: 'Remove this calendar?',
+        body: 'Stays already registered stay as they are.',
+        action: 'Remove calendar',
+        danger: true,
+      }))
+    )
+      return;
     void run(async () => {
       await host.removeCalendar(feed.id);
       setData(await host.calendars(unitId));

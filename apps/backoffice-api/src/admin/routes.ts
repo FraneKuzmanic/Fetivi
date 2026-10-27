@@ -16,7 +16,9 @@ export interface AdminDeps {
 
 const IdParams = z.object({ id: z.uuid() });
 const ActAsBody = z.object({ hostId: z.uuid() });
-const PropertiesQuery = z.object({ status: z.enum(['pending', 'approved']).default('pending') });
+const PropertiesQuery = z.object({
+  status: z.enum(['pending', 'approved', 'all']).default('pending'),
+});
 const AuditQuery = z.object({ limit: z.coerce.number().int().min(1).max(500).default(100) });
 
 export async function adminRoutes(app: FastifyInstance, deps: AdminDeps): Promise<void> {
@@ -35,17 +37,22 @@ export async function adminRoutes(app: FastifyInstance, deps: AdminDeps): Promis
 
   app.get('/api/admin/hosts', admin, async () => {
     const rows = await db
-      .select()
+      .select({
+        account: accounts,
+        // Qualified by hand: a one-table select renders its columns without the table name.
+        propertyCount: sql<number>`(select count(*)::int from ${properties} where ${properties.hostId} = "accounts"."id")`,
+      })
       .from(accounts)
       .where(eq(accounts.role, 'host'))
       .orderBy(desc(accounts.createdAt));
     return {
-      hosts: rows.map((r) => ({
+      hosts: rows.map(({ account: r, propertyCount }) => ({
         id: r.id,
         email: r.email,
         emailVerified: r.emailVerifiedAt !== null,
         suspended: r.suspendedAt !== null,
         createdAt: r.createdAt.toISOString(),
+        propertyCount,
       })),
     };
   });
@@ -117,21 +124,30 @@ export async function adminRoutes(app: FastifyInstance, deps: AdminDeps): Promis
         city: properties.city,
         hostEmail: accounts.email,
         unitCount: sql<number>`(select count(*)::int from ${units} where ${units.propertyId} = ${properties.id})`,
+        liveUnitCount: sql<number>`(select count(*)::int from ${units} where ${units.propertyId} = ${properties.id} and ${units.qrSlug} is not null)`,
         createdAt: properties.createdAt,
         approvedAt: properties.approvedAt,
       })
       .from(properties)
       .innerJoin(accounts, eq(properties.hostId, accounts.id))
       .where(
-        status === 'pending' ? isNull(properties.approvedAt) : isNotNull(properties.approvedAt),
+        status === 'all'
+          ? undefined
+          : status === 'pending'
+            ? isNull(properties.approvedAt)
+            : isNotNull(properties.approvedAt),
       )
       .orderBy(desc(properties.createdAt));
     return {
-      properties: rows.map((r) => ({
-        ...r,
-        createdAt: r.createdAt.toISOString(),
-        approvedAt: r.approvedAt?.toISOString() ?? null,
-      })),
+      properties: await Promise.all(
+        rows.map(async ({ liveUnitCount, ...r }) => ({
+          ...r,
+          // Live units passed the minimum; the slugless ones are checked as approve checks them.
+          readyUnitCount: liveUnitCount + (await readyUnitIds(db, r.id)).length,
+          createdAt: r.createdAt.toISOString(),
+          approvedAt: r.approvedAt?.toISOString() ?? null,
+        })),
+      ),
     };
   });
 
@@ -163,11 +179,19 @@ export async function adminRoutes(app: FastifyInstance, deps: AdminDeps): Promis
 
   app.get('/api/admin/audit', admin, async (request) => {
     const { limit } = AuditQuery.parse(request.query);
+    // No foreign key on the log: a deleted admin's entries keep a null email.
     const rows = await db
-      .select()
+      .select({ entry: actAsAudit, adminEmail: accounts.email })
       .from(actAsAudit)
+      .leftJoin(accounts, eq(accounts.id, actAsAudit.adminId))
       .orderBy(desc(actAsAudit.createdAt), desc(actAsAudit.id))
       .limit(limit);
-    return { entries: rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })) };
+    return {
+      entries: rows.map(({ entry, adminEmail }) => ({
+        ...entry,
+        adminEmail,
+        createdAt: entry.createdAt.toISOString(),
+      })),
+    };
   });
 }

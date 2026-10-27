@@ -18,6 +18,7 @@ export function Menu({
   header,
   className = 'icon-button',
   align = 'end',
+  up = false,
 }: {
   /** The button's accessible name, e.g. "More actions for Wi-Fi". */
   label: string;
@@ -27,6 +28,8 @@ export function Menu({
   header?: ReactNode;
   className?: string;
   align?: 'start' | 'end';
+  /** Opens above the button, for one at the bottom of the screen. */
+  up?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -96,7 +99,7 @@ export function Menu({
           id={id}
           role="menu"
           aria-label={label}
-          className={`menu-list ${align}`}
+          className={`menu-list ${align}${up ? ' up' : ''}`}
           onKeyDown={onKeyDown}
         >
           {header ? <div className="menu-header">{header}</div> : null}

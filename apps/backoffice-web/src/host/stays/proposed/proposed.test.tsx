@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { StayProposal, StayProposals } from '../../../api';
 import { messageFor } from '../../../messages';
+import { ConfirmProvider } from '../../../shell/ConfirmDialog';
 import { BookingLinksStep } from './BookingLinksStep';
 import { ConfirmProposalPage } from './ConfirmProposalPage';
 import { ProposedList } from './ProposedList';
@@ -92,12 +93,14 @@ async function mount(path: string, element: React.ReactNode, route = path) {
   root = createRoot(container);
   await act(async () =>
     root?.render(
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path={route} element={element} />
-          <Route path="/stays/:id" element={<Probe />} />
-        </Routes>
-      </MemoryRouter>,
+      <ConfirmProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path={route} element={element} />
+            <Route path="/stays/:id" element={<Probe />} />
+          </Routes>
+        </MemoryRouter>
+      </ConfirmProvider>,
     ),
   );
 }
@@ -142,15 +145,21 @@ describe('ProposedList', () => {
   it('dismisses after the confirm dialog and reloads', async () => {
     stubApi();
     await mount('/stays', <ProposedList several={false} />, '/stays');
-    const confirm = vi.fn(() => false);
-    vi.stubGlobal('confirm', confirm);
-    await click(button('Not a booking'));
-    expect(calls.some((c) => c.url.endsWith('/dismiss'))).toBe(false);
-    confirm.mockReturnValue(true);
-    await click(button('Not a booking'));
-    expect(confirm).toHaveBeenLastCalledWith(
-      'Not a booking? Fetivi will not propose this calendar entry again.',
+    const rowButton = () => document.querySelector<HTMLButtonElement>('.proposal-row button');
+    const dialogButton = (label: string) =>
+      [...document.querySelectorAll<HTMLButtonElement>('dialog.confirm-dialog button')].find(
+        (b) => b.textContent?.trim() === label,
+      );
+    await click(rowButton() ?? undefined);
+    expect(document.querySelector('dialog.confirm-dialog h2')?.textContent).toBe('Not a booking?');
+    expect(document.querySelector('dialog.confirm-dialog')?.textContent).toContain(
+      'Fetivi will not propose this calendar entry again.',
     );
+    await click(dialogButton('Cancel'));
+    expect(document.querySelector('dialog.confirm-dialog')).toBeNull();
+    expect(calls.some((c) => c.url.endsWith('/dismiss'))).toBe(false);
+    await click(rowButton() ?? undefined);
+    await click(dialogButton('Not a booking'));
     expect(calls.filter((c) => c.method === 'POST').map((c) => c.url)).toEqual([
       '/api/host/stay-proposals/e1/dismiss',
     ]);

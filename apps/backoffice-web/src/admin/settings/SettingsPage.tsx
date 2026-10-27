@@ -20,7 +20,7 @@ export function SettingsPage() {
   if (!loaded) return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
 
   async function save() {
-    if (cap === null) throw new Error('Enter a daily message cap.');
+    if (cap === null) throw new Error('Enter a daily chat limit.');
     setCap((await admin.saveSettings({ dailyMessageCap: cap })).dailyMessageCap);
   }
 
@@ -31,15 +31,17 @@ export function SettingsPage() {
       </div>
       <div className="editor">
         <Section title="Guest chat" onSave={save}>
-          <NumberField
-            label="Daily message cap per Space"
-            hint="After this many messages in a day, chat pauses until midnight at the property. Guide and My trip keep working."
-            value={cap}
-            onChange={setCap}
-            min={MESSAGE_CAP_LIMITS.min}
-            max={MESSAGE_CAP_LIMITS.max}
-            required
-          />
+          <div className="field-narrow">
+            <NumberField
+              label="Daily chat limit per guest device"
+              hint="After this many messages in a day, chat pauses until midnight at the property. Guide and My trip keep working."
+              value={cap}
+              onChange={setCap}
+              min={MESSAGE_CAP_LIMITS.min}
+              max={MESSAGE_CAP_LIMITS.max}
+              required
+            />
+          </div>
         </Section>
       </div>
     </>

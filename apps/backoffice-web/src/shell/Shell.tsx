@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   CaretDown,
   ClipboardText,
+  DotsThreeOutline,
   GearSix,
   Handshake,
   House,
@@ -39,35 +40,91 @@ interface NavItem {
   prefixes: string[];
   /** A count shown on the item, such as unread messages. */
   badge?: number;
+  /** A queue that is fine to have waiting: its count is blue, not red. */
+  calm?: boolean;
   /** Kept apart at the bottom of the sidebar. */
   foot?: boolean;
+  /** Admin items are grouped in the sidebar: the daily queues, what the admin keeps, the logs. */
+  group?: 'work' | 'manage' | 'insight';
+  /** An admin item that keeps its own place in the phone's bottom bar; the rest go under More. */
+  phone?: boolean;
 }
 
 const isHostView = (me: Me) => me.account.role !== 'admin' || me.actingAs !== null;
 
-function navItems(me: Me, unread: number): NavItem[] {
+/** What waits on the admin, shown as counts on the nav items. */
+export interface AdminCounts {
+  approvals: number;
+  curation: number;
+  orders: number;
+  payments: number;
+}
+
+function navItems(me: Me, unread: number, counts: AdminCounts | null): NavItem[] {
   if (!isHostView(me)) {
     return [
-      { to: '/', label: 'Hosts', icon: UsersThree, prefixes: [] },
-      { to: '/admin/approvals', label: 'Approvals', icon: SealCheck, prefixes: [] },
-      { to: '/admin/catalog', label: 'Catalog', icon: MapTrifold, prefixes: ['/admin/catalog'] },
+      { to: '/', label: 'Today', icon: House, prefixes: [], group: 'work', phone: true },
+      {
+        to: '/admin/approvals',
+        label: 'Approvals',
+        icon: SealCheck,
+        prefixes: [],
+        badge: counts?.approvals,
+        calm: true,
+        group: 'work',
+        phone: true,
+      },
       {
         to: '/admin/curation',
         label: 'Curation',
         icon: ListChecks,
         prefixes: ['/admin/curation'],
+        badge: counts?.curation,
+        calm: true,
+        group: 'work',
+        phone: true,
       },
-      { to: '/admin/feedback', label: 'Feedback', icon: ThumbsUp, prefixes: [] },
+      {
+        to: '/admin/orders',
+        label: 'Orders',
+        icon: Receipt,
+        prefixes: ['/admin/orders'],
+        badge: counts?.orders,
+        group: 'work',
+        phone: true,
+      },
+      {
+        to: '/admin/reconciliation',
+        label: 'Payment checks',
+        icon: Scales,
+        prefixes: [],
+        badge: counts?.payments,
+        group: 'work',
+      },
+      {
+        to: '/admin/catalog',
+        label: 'Catalog',
+        icon: MapTrifold,
+        prefixes: ['/admin/catalog'],
+        group: 'manage',
+      },
       {
         to: '/admin/providers',
         label: 'Providers',
         icon: Handshake,
         prefixes: ['/admin/providers', '/admin/offers'],
+        group: 'manage',
       },
-      { to: '/admin/orders', label: 'Orders', icon: Receipt, prefixes: ['/admin/orders'] },
-      { to: '/admin/reconciliation', label: 'Reconciliation', icon: Scales, prefixes: [] },
+      { to: '/admin/hosts', label: 'Hosts', icon: UsersThree, prefixes: [], group: 'manage' },
+      { to: '/admin/feedback', label: 'Feedback', icon: ThumbsUp, prefixes: [], group: 'insight' },
+      {
+        to: '/admin/audit',
+        label: 'Audit log',
+        icon: ClipboardText,
+        prefixes: [],
+        group: 'insight',
+      },
       { to: '/admin/settings', label: 'Settings', icon: GearSix, prefixes: [], foot: true },
-      { to: '/admin/audit', label: 'Audit', icon: ClipboardText, prefixes: [] },
     ];
   }
   return [
@@ -145,13 +202,14 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [unread, setUnread] = useState(0);
+  const [counts, setCounts] = useState<AdminCounts | null>(null);
   const [collapsed, setCollapsed] = useState(storedCollapsed);
   const wide = useWide();
   const [folding, setFolding] = useState(false);
   const foldTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(foldTimer.current), []);
   const hostView = isHostView(me);
-  const items = navItems(me, unread);
+  const items = navItems(me, unread, counts);
   // Setup has its own sticky footer; the phone's bottom nav would squeeze the form between them.
   const focused = /^\/units\/[^/]+\/setup(\/|$)/.test(pathname);
 
@@ -178,6 +236,31 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
     };
   }, [hostView, pathname]);
 
+  // What waits on the admin, checked on every page change and every minute.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a page change is the trigger.
+  useEffect(() => {
+    if (hostView) return;
+    let live = true;
+    const check = () =>
+      admin.overview().then(
+        (o) =>
+          live &&
+          setCounts({
+            approvals: o.approvalsPending,
+            curation: o.curationOpen,
+            orders: o.ordersNeedAction,
+            payments: o.paymentProblems,
+          }),
+        () => {},
+      );
+    void check();
+    const timer = setInterval(() => void check(), UNREAD_POLL_MS);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [hostView, pathname]);
+
   const isCurrent = (item: NavItem) =>
     item.to === '/'
       ? pathname === '/'
@@ -187,18 +270,27 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
     // On a phone a host reaches Settings from the profile menu, leaving room for six items.
     list
       .filter((item) => !(short && item.to === '/settings'))
-      .map((item) => (
+      .map((item, i, all) => (
         <Link
           key={item.to}
           to={item.to}
-          className={className}
+          className={
+            // A line between the admin's groups: queues, what the admin keeps, the logs.
+            !short && i > 0 && item.group !== all[i - 1]?.group
+              ? `${className} group-start`
+              : className
+          }
           aria-current={isCurrent(item) ? 'page' : undefined}
           title={collapsed && !short ? item.label : undefined}
         >
           <item.icon aria-hidden="true" weight={isCurrent(item) ? 'fill' : 'regular'} />
           <span className="nav-label">{(short && item.short) || item.label}</span>
           {item.badge ? (
-            <span className="nav-badge" role="img" aria-label={`${item.badge} waiting`}>
+            <span
+              className={item.calm ? 'nav-badge calm' : 'nav-badge'}
+              role="img"
+              aria-label={`${item.badge} waiting`}
+            >
               {item.badge > 99 ? '99+' : item.badge}
             </span>
           ) : null}
@@ -331,8 +423,57 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
       </div>
 
       <nav className="bottom-nav" aria-label="Main">
-        {links(items, 'bottom-link', true)}
+        {hostView ? (
+          links(items, 'bottom-link', true)
+        ) : (
+          <>
+            {links(
+              items.filter((item) => item.phone),
+              'bottom-link',
+              true,
+            )}
+            <MoreMenu
+              items={items.filter((item) => !item.phone)}
+              current={items.some((item) => !item.phone && isCurrent(item))}
+            />
+          </>
+        )}
       </nav>
     </div>
+  );
+}
+
+/** The admin's phone bar has room for four items; the rest open from More. */
+function MoreMenu({ items, current }: { items: NavItem[]; current: boolean }) {
+  const navigate = useNavigate();
+  const waiting = items.reduce((n, item) => n + (item.badge ?? 0), 0);
+  const calm = items.every((item) => !item.badge || item.calm);
+  return (
+    <Menu
+      label="More pages"
+      className={current ? 'bottom-link bottom-more current' : 'bottom-link bottom-more'}
+      align="end"
+      up
+      trigger={
+        <>
+          <DotsThreeOutline aria-hidden="true" weight={current ? 'fill' : 'regular'} />
+          <span className="nav-label">More</span>
+          {waiting ? (
+            <span
+              className={calm ? 'nav-badge calm' : 'nav-badge'}
+              role="img"
+              aria-label={`${waiting} waiting`}
+            >
+              {waiting > 99 ? '99+' : waiting}
+            </span>
+          ) : null}
+        </>
+      }
+      items={items.map((item) => ({
+        label: item.badge ? `${item.label} (${item.badge})` : item.label,
+        icon: <item.icon aria-hidden="true" />,
+        onSelect: () => navigate(item.to),
+      }))}
+    />
   );
 }

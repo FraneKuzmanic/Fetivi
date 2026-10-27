@@ -84,7 +84,12 @@ afterEach(() => {
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
 
-async function mount(path: string, me: Me, stats: UnitStats = STATS) {
+async function mount(
+  path: string,
+  me: Me,
+  stats: UnitStats = STATS,
+  adminStats: AdminFeedbackStats = ADMIN_STATS,
+) {
   vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url === '/api/auth/me') return json(me);
@@ -92,7 +97,7 @@ async function mount(path: string, me: Me, stats: UnitStats = STATS) {
       return json({ messages: [], unread: 0, orders: [], ordersWaiting: 0 });
     if (url === '/api/host/units/u1') return json(UNIT);
     if (url === '/api/host/units/u1/stats') return json(stats);
-    if (url === '/api/admin/feedback-stats') return json(ADMIN_STATS);
+    if (url === '/api/admin/feedback-stats') return json(adminStats);
     return new Response(null, { status: 404 });
   });
   el = document.createElement('div');
@@ -153,20 +158,29 @@ describe('UnitStatsPage', () => {
 describe('FeedbackStatsPage', () => {
   it('shows the totals, reasons, target note and a row per unit linked to the flags', async () => {
     await mount('/admin/feedback', ADMIN_ME);
-    await vi.waitFor(() => expect(text()).toContain('Answer feedback'));
+    await vi.waitFor(() => expect(el.querySelector('h1')?.textContent).toBe('Feedback'));
     expect(navLabels()).toContain('Feedback');
+    expect(
+      el.querySelector('.page-head a[href="/admin/curation?kind=guest_flagged"]')?.textContent,
+    ).toBe('Review flagged places');
     expect(text()).toContain(
-      'Target: above 80% helpful, wrong or outdated under 5% of answers (proposed).',
+      'How guests rate Fetivi’s answers. Proposed target: over 80% helpful, and under 5% wrong or outdated.',
     );
     expect(el.querySelector('.reasons-line')?.textContent).toContain(
       'Wrong 1 · Outdated 1 · Not helpful 0',
     );
     expect(el.querySelector('.reasons-line')?.textContent).toContain('10% of answers');
-    const row = el.querySelector('.feedback-table tbody tr');
+    const row = el.querySelector('.table-frame .data-table tbody tr');
     expect(row?.textContent).toContain('Apartment Mare');
     expect(row?.textContent).toContain('host@example.test');
     expect(row?.textContent).toContain('75%');
     expect(row?.querySelectorAll('a[href="/admin/curation?kind=guest_flagged"]')).toHaveLength(2);
     expect(text()).toContain('Getting around');
+  });
+
+  it('says so when no answer has been rated', async () => {
+    await mount('/admin/feedback', ADMIN_ME, STATS, { ...ADMIN_STATS, units: [] });
+    await vi.waitFor(() => expect(text()).toContain('No rated answers yet'));
+    expect(el.querySelector('.data-table')).toBeNull();
   });
 });

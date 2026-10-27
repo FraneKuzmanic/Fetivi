@@ -56,7 +56,7 @@ describe('SettingsPage', () => {
     if (!input) throw new Error('no input');
     expect(input.value).toBe('60');
     expect([input.min, input.max]).toEqual(['1', '1000']);
-    expect(el.textContent).toContain('Daily message cap per Space');
+    expect(el.textContent).toContain('Daily chat limit per guest device');
 
     await type(input, '25');
     await act(async () => {
@@ -69,5 +69,20 @@ describe('SettingsPage', () => {
     });
     expect(input.value).toBe('25');
     expect(el.querySelector('output.saved')?.textContent).toBe('Saved');
+  });
+
+  it('saves nothing when the field is empty', async () => {
+    await mount();
+    const input = el.querySelector<HTMLInputElement>('input[type="number"]');
+    if (!input) throw new Error('no input');
+    await type(input, '');
+    await act(async () => {
+      el.querySelector('form')?.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      );
+    });
+    // The required field normally stops the submit; past it, save() refuses.
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    expect(calls.map((c) => c.method)).toEqual(['GET']);
   });
 });

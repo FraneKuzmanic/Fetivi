@@ -8,6 +8,7 @@ import {
   type OrderPaymentJobData,
   offers,
   orderEvents,
+  orderProposals,
   orders,
   parseStripeEvent,
   paymentAttempts,
@@ -363,5 +364,75 @@ describe("recording the Provider's phoned answer", () => {
     expect(res.statusCode).toBe(409);
     expect(res.json().error).toBe('not-answerable');
     expect((await orderOf(orderId)).status).toBe('pending_provider');
+  });
+});
+
+describe('admin Order list', () => {
+  const list = (query: string) => get(t.app, `/api/admin/orders?${query}`, adminCookie);
+  const idsOf = (res: { json: () => { orders: { id: string }[] } }) =>
+    res.json().orders.map((o) => o.id);
+
+  it('is for the admin only and checks the query', async () => {
+    expect((await get(t.app, '/api/admin/orders', hostCookie)).statusCode).toBe(403);
+    expect((await list('view=nope')).statusCode).toBe(400);
+    expect((await list('limit=201')).statusCode).toBe(400);
+  });
+
+  it('puts an Order whose answer window was missed under needs action', async () => {
+    const { orderId, proposalId } = await pendingOrder();
+    const q = `q=${orderId.slice(0, 8).toUpperCase()}`;
+    const active = await list(q);
+    expect(active.statusCode).toBe(200);
+    expect(active.json()).toEqual({
+      orders: [
+        expect.objectContaining({
+          id: orderId,
+          status: 'pending_provider',
+          paymentStatus: 'none',
+          providerName: expect.any(String),
+          hostEmail: null,
+          propertyName: expect.any(String),
+          quantity: 2,
+          needsAction: false,
+        }),
+      ],
+      total: 1,
+    });
+    expect(idsOf(await list(`view=needs_action&${q}`))).toEqual([]);
+
+    await t.db
+      .update(orderProposals)
+      .set({ responseDueAt: new Date(t.clock.now().getTime() - 60_000) })
+      .where(eq(orderProposals.id, proposalId));
+    const due = await list(`view=needs_action&${q}`);
+    expect(due.json().orders).toMatchObject([{ id: orderId, needsAction: true }]);
+    expect(idsOf(await list('view=needs_action'))).toContain(orderId);
+    expect(idsOf(await list(`view=done&${q}`))).toEqual([]);
+  });
+
+  it('lists finished Orders under done, newest first, by page', async () => {
+    const done = await list('view=done');
+    const ids = idsOf(done);
+    expect(ids.length).toBeGreaterThan(1);
+    expect(done.json().total).toBe(ids.length);
+    for (const order of done.json().orders) {
+      expect(['declined', 'expired', 'failed', 'cancelled', 'completed']).toContain(order.status);
+    }
+    const created = done.json().orders.map((o: { createdAt: string }) => o.createdAt);
+    expect(created).toEqual([...created].sort().reverse());
+    const page = await list('view=done&limit=1&offset=1');
+    expect(idsOf(page)).toEqual([ids[1]]);
+    expect(page.json().total).toBe(ids.length);
+    expect(idsOf(await list('view=active'))).not.toContain(ids[0]);
+  });
+
+  it('finds Orders by Offer title or provider name', async () => {
+    const { orderId } = await pendingOrder();
+    const view = (await get(t.app, path(orderId), adminCookie)).json();
+    const byProvider = await list(`q=${encodeURIComponent(view.providerName.toLowerCase())}`);
+    expect(idsOf(byProvider)).toEqual([orderId]);
+    const byTitle = await list(`q=${encodeURIComponent(view.offerTitle)}`);
+    expect(idsOf(byTitle)).toContain(orderId);
+    expect((await list('q=%25')).json().total).toBe(0);
   });
 });

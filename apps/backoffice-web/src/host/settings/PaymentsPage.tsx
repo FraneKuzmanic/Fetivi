@@ -8,6 +8,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { host, type PaymentsStatus } from '../../api';
+import { useConfirm } from '../../shell/ConfirmDialog';
 import { useAction } from '../../useAction';
 import { SettingsTabs } from './SettingsTabs';
 
@@ -62,6 +63,7 @@ const DASHBOARD = 'https://dashboard.stripe.com/';
  */
 export function PaymentsPage() {
   const { busy, error, run } = useAction();
+  const confirm = useConfirm();
   const [status, setStatus] = useState<PaymentsStatus | null>(null);
   const [params, setParams] = useSearchParams();
   const started = useRef(false);
@@ -94,11 +96,14 @@ export function PaymentsPage() {
       window.location.assign(link.url);
     });
 
-  const disconnect = () => {
+  const disconnect = async () => {
     if (
-      !window.confirm(
-        'Disconnect Stripe? New card payments stop and guests pay you directly until you connect an account again. Payments and refunds you already have stay in your Stripe Dashboard, and your Stripe account is not closed.',
-      )
+      !(await confirm({
+        title: 'Disconnect Stripe?',
+        body: 'New card payments stop and guests pay you directly until you connect an account again. Payments and refunds you already have stay in your Stripe Dashboard, and your Stripe account is not closed.',
+        action: 'Disconnect',
+        danger: true,
+      }))
     ) {
       return;
     }

@@ -12,6 +12,19 @@ import {
   type TransportMode,
 } from '@fetivi/domain/catalog-vocabulary';
 import { LIMITS } from '@fetivi/domain/vocabulary';
+import {
+  BookOpen,
+  CalendarBlank,
+  Clock,
+  DotsThree,
+  ImageSquare,
+  Info,
+  LinkSimple,
+  SealCheck,
+  TextAlignLeft,
+  Translate,
+  Trash,
+} from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import {
@@ -34,8 +47,11 @@ import {
   PLACE_CATEGORY_LABELS,
   TRANSPORT_MODE_LABELS,
 } from '../../forms/labels';
+import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
+import { useConfirm } from '../../shell/ConfirmDialog';
+import { Menu } from '../../shell/Menu';
 import { useAction } from '../../useAction';
 import { CatalogTranslations } from './CatalogTranslations';
 import {
@@ -416,6 +432,7 @@ function detailsBody(kind: CatalogKind, d: Draft, location: LatLng | null): Cata
 export function RecordPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const { busy, error, run } = useAction();
   const [record, setRecord] = useState<CatalogRecord | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -479,6 +496,246 @@ export function RecordPage() {
 
   const reload = async () => setRecord(await catalog.record(id));
 
+  async function verify() {
+    if (!record) return;
+    const yes = await confirm({
+      title: `Mark ${record.title} as verified?`,
+      body: 'Check every field first. This sets today as the last-checked date for the whole record.',
+      action: 'Mark verified',
+    });
+    if (yes) void run(async () => setRecord(await catalog.verify(id)));
+  }
+
+  async function remove() {
+    if (!record) return;
+    const yes = await confirm({
+      title: `Delete ${record.title}?`,
+      body: 'Its seasons, hours, photos and translations go with it. This cannot be undone.',
+      action: 'Delete record',
+      danger: true,
+    });
+    if (!yes) return;
+    void run(async () => {
+      await catalog.deleteRecord(id);
+      navigate(`/admin/catalog/destinations/${record.destination.id}`, { replace: true });
+    });
+  }
+
+  const sections: PageSection[] = [
+    { id: 'details', label: 'Details', icon: Info },
+    { id: 'description', label: 'Description', icon: TextAlignLeft },
+    ...(KIND_HAS_SEASONS[kind]
+      ? [{ id: 'seasons', label: 'Seasons', icon: CalendarBlank, count: draft.seasons.length }]
+      : []),
+    ...(KIND_HAS_HOURS[kind]
+      ? [{ id: 'hours', label: 'Opening hours', icon: Clock, count: draft.openingHours.length }]
+      : []),
+    ...(kind === 'transport_note' ? [{ id: 'links', label: 'Links', icon: LinkSimple }] : []),
+    ...(kind === 'place'
+      ? [{ id: 'photos', label: 'Photos', icon: ImageSquare, count: draft.images.length }]
+      : []),
+    { id: 'sources', label: 'Sources', icon: BookOpen },
+    { id: 'translations', label: 'Translations', icon: Translate },
+  ];
+
+  const renderSection = (section: string) => {
+    switch (section) {
+      case 'description':
+        return (
+          <Section
+            title="Description"
+            description="Saving a change to the title or description translates it again into the seven guest languages."
+            onSave={savePatch(['title', 'description'], {
+              title: draft.title,
+              description: draft.description,
+            })}
+          >
+            <TextField
+              label="Title"
+              value={draft.title}
+              maxLength={LIMITS.title}
+              required
+              onChange={(v) => set('title')(v ?? '')}
+            />
+            <TextArea
+              label="Description"
+              hint="Markdown: **bold**, lists with -, links as [text](https://…)."
+              value={draft.description}
+              maxLength={LIMITS.blockBody}
+              rows={8}
+              required
+              onChange={(v) => set('description')(v ?? '')}
+            />
+          </Section>
+        );
+      case 'seasons':
+        return (
+          <Section
+            title="Seasons"
+            onSave={async () => accept(await catalog.setSeasons(id, draft.seasons), ['seasons'])}
+          >
+            <SeasonsEditor seasons={draft.seasons} onChange={set('seasons')} />
+          </Section>
+        );
+      case 'hours':
+        return (
+          <Section
+            title="Opening hours"
+            onSave={async () =>
+              accept(await catalog.setOpeningHours(id, draft.openingHours), ['openingHours'])
+            }
+          >
+            <OpeningHoursEditor hours={draft.openingHours} onChange={set('openingHours')} />
+          </Section>
+        );
+      case 'links':
+        return (
+          <Section title="Links" onSave={savePatch(['links'], { links: draft.links })}>
+            <LinksEditor links={draft.links} onChange={set('links')} />
+          </Section>
+        );
+      case 'photos':
+        return (
+          <Section
+            title="Photos"
+            onSave={async () => accept(await catalog.setImages(id, draft.images), ['images'])}
+          >
+            <ImagesEditor images={draft.images} onChange={set('images')} />
+          </Section>
+        );
+      case 'sources':
+        return (
+          <Section
+            title="Sources"
+            description="Where each fact was checked. One https link per field."
+            onSave={savePatch(['fieldSources'], { fieldSources: draft.fieldSources })}
+          >
+            <SourcesEditor
+              kind={kind}
+              sources={draft.fieldSources}
+              onChange={set('fieldSources')}
+            />
+          </Section>
+        );
+      case 'translations':
+        return (
+          <Section title="Translations">
+            <CatalogTranslations record={record} onChanged={reload} />
+          </Section>
+        );
+      default:
+        return (
+          <Section title="Details" onSave={saveDetails}>
+            {kind === 'place' ? (
+              <>
+                <SelectField
+                  label="Category"
+                  value={draft.placeCategory}
+                  options={PLACE_CATEGORIES}
+                  labels={PLACE_CATEGORY_LABELS}
+                  onChange={(c) => c && set('placeCategory')(c)}
+                />
+                <TextField
+                  label="Address"
+                  value={draft.address}
+                  maxLength={LIMITS.shortText}
+                  onChange={set('address')}
+                />
+                <TextField
+                  label="Phone"
+                  type="tel"
+                  value={draft.phone}
+                  maxLength={LIMITS.phone}
+                  onChange={set('phone')}
+                />
+              </>
+            ) : null}
+            {kind === 'event' ? (
+              <>
+                <div className="field-row">
+                  <InputField
+                    label="Starts"
+                    type="datetime-local"
+                    value={draft.startsAt}
+                    required
+                    onChange={set('startsAt')}
+                  />
+                  <InputField
+                    label="Ends"
+                    type="datetime-local"
+                    value={draft.endsAt}
+                    required
+                    onChange={set('endsAt')}
+                  />
+                </div>
+                <small>
+                  {EVENT_TIME_HINT} ({record.destination.timezone})
+                </small>
+                <TextField
+                  label="Venue"
+                  value={draft.venueName}
+                  maxLength={LIMITS.shortText}
+                  onChange={set('venueName')}
+                />
+              </>
+            ) : null}
+            {kind === 'transport_note' ? (
+              <SelectField
+                label="Mode"
+                value={draft.transportMode}
+                options={TRANSPORT_MODES}
+                labels={TRANSPORT_MODE_LABELS}
+                onChange={(m) => m && set('transportMode')(m)}
+              />
+            ) : null}
+            {kind === 'day_trip' ? (
+              <NumberField
+                label="Travel time (minutes)"
+                hint="One way, from the destination."
+                value={draft.travelMinutes}
+                min={1}
+                max={CATALOG_LIMITS.travelMinutesMax}
+                onChange={set('travelMinutes')}
+              />
+            ) : null}
+            {kind === 'day_trip' || kind === 'transport_note' ? (
+              <FerryLinesField value={draft.ferryLines} onChange={set('ferryLines')} />
+            ) : null}
+            {kind !== 'transport_note' ? (
+              <>
+                <CoordsFields value={coords} onChange={setCoords} />
+                <InputField
+                  label="Website"
+                  type="url"
+                  placeholder="https://"
+                  value={draft.websiteUrl}
+                  maxLength={CATALOG_LIMITS.url}
+                  onChange={set('websiteUrl')}
+                />
+              </>
+            ) : null}
+            {kind === 'place' || kind === 'day_trip' ? (
+              <RainyDayField value={draft.rainyDay} onChange={set('rainyDay')} />
+            ) : null}
+            {kind === 'event' ? (
+              <InterestsField value={draft.interests} onChange={set('interests')} />
+            ) : null}
+          </Section>
+        );
+    }
+  };
+
+  const verifiedLine = [
+    record.verifiedAt
+      ? `Verified ${day(record.verifiedAt)}${record.verifiedByEmail ? ` by ${record.verifiedByEmail}` : ''}`
+      : 'Never verified',
+    record.staleness.staleAt
+      ? `${record.staleness.status === 'stale' ? 'Re-check due since' : 'Next re-check'} ${day(record.staleness.staleAt)}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
@@ -489,234 +746,40 @@ export function RecordPage() {
         </Link>
       </nav>
       <div className="page-head">
-        <h1>{record.title}</h1>
-        <div className="record-chips">
-          <span className="chip neutral">{CATALOG_KIND_LABELS[kind]}</span>
-          <StalenessChip staleness={record.staleness} />
-          <TranslationChip status={record.translation.status} />
+        <div className="page-title">
+          <div className="title-line">
+            <h1>{record.title}</h1>
+            {record.staleness.status === 'fresh' ? null : (
+              <StalenessChip staleness={record.staleness} />
+            )}
+            <TranslationChip status={record.translation.status} />
+          </div>
+          <p className="muted">
+            {CATALOG_KIND_LABELS[kind]} · {verifiedLine}
+          </p>
+        </div>
+        <div className="actions">
+          <button type="button" disabled={busy} onClick={() => void verify()}>
+            <SealCheck aria-hidden="true" />
+            Mark verified
+          </button>
+          <Menu
+            label={`More actions for ${record.title}`}
+            trigger={<DotsThree aria-hidden="true" weight="bold" />}
+            items={[
+              {
+                label: 'Delete record',
+                icon: <Trash aria-hidden="true" />,
+                danger: true,
+                onSelect: () => void remove(),
+              },
+            ]}
+          />
         </div>
       </div>
       {error ? <p role="alert">{error}</p> : null}
 
-      <div className="editor">
-        <Section title="Details" onSave={saveDetails}>
-          {kind === 'place' ? (
-            <>
-              <SelectField
-                label="Category"
-                value={draft.placeCategory}
-                options={PLACE_CATEGORIES}
-                labels={PLACE_CATEGORY_LABELS}
-                onChange={(c) => c && set('placeCategory')(c)}
-              />
-              <TextField
-                label="Address"
-                value={draft.address}
-                maxLength={LIMITS.shortText}
-                onChange={set('address')}
-              />
-              <TextField
-                label="Phone"
-                type="tel"
-                value={draft.phone}
-                maxLength={LIMITS.phone}
-                onChange={set('phone')}
-              />
-            </>
-          ) : null}
-          {kind === 'event' ? (
-            <>
-              <div className="field-row">
-                <InputField
-                  label="Starts"
-                  type="datetime-local"
-                  value={draft.startsAt}
-                  required
-                  onChange={set('startsAt')}
-                />
-                <InputField
-                  label="Ends"
-                  type="datetime-local"
-                  value={draft.endsAt}
-                  required
-                  onChange={set('endsAt')}
-                />
-              </div>
-              <small>
-                {EVENT_TIME_HINT} ({record.destination.timezone})
-              </small>
-              <TextField
-                label="Venue"
-                value={draft.venueName}
-                maxLength={LIMITS.shortText}
-                onChange={set('venueName')}
-              />
-            </>
-          ) : null}
-          {kind === 'transport_note' ? (
-            <SelectField
-              label="Mode"
-              value={draft.transportMode}
-              options={TRANSPORT_MODES}
-              labels={TRANSPORT_MODE_LABELS}
-              onChange={(m) => m && set('transportMode')(m)}
-            />
-          ) : null}
-          {kind === 'day_trip' ? (
-            <NumberField
-              label="Travel time (minutes)"
-              hint="One way, from the destination."
-              value={draft.travelMinutes}
-              min={1}
-              max={CATALOG_LIMITS.travelMinutesMax}
-              onChange={set('travelMinutes')}
-            />
-          ) : null}
-          {kind === 'day_trip' || kind === 'transport_note' ? (
-            <FerryLinesField value={draft.ferryLines} onChange={set('ferryLines')} />
-          ) : null}
-          {kind !== 'transport_note' ? (
-            <>
-              <CoordsFields value={coords} onChange={setCoords} />
-              <InputField
-                label="Website"
-                type="url"
-                placeholder="https://"
-                value={draft.websiteUrl}
-                maxLength={CATALOG_LIMITS.url}
-                onChange={set('websiteUrl')}
-              />
-            </>
-          ) : null}
-          {kind === 'place' || kind === 'day_trip' ? (
-            <RainyDayField value={draft.rainyDay} onChange={set('rainyDay')} />
-          ) : null}
-          {kind === 'event' ? (
-            <InterestsField value={draft.interests} onChange={set('interests')} />
-          ) : null}
-        </Section>
-
-        <Section
-          title="Description"
-          description="Saving a change to the title or description translates it again into the seven guest languages."
-          onSave={savePatch(['title', 'description'], {
-            title: draft.title,
-            description: draft.description,
-          })}
-        >
-          <TextField
-            label="Title"
-            value={draft.title}
-            maxLength={LIMITS.title}
-            required
-            onChange={(v) => set('title')(v ?? '')}
-          />
-          <TextArea
-            label="Description"
-            hint="Markdown."
-            value={draft.description}
-            maxLength={LIMITS.blockBody}
-            rows={8}
-            required
-            monospace
-            onChange={(v) => set('description')(v ?? '')}
-          />
-        </Section>
-
-        {KIND_HAS_SEASONS[kind] ? (
-          <Section
-            title="Seasons"
-            onSave={async () => accept(await catalog.setSeasons(id, draft.seasons), ['seasons'])}
-          >
-            <SeasonsEditor seasons={draft.seasons} onChange={set('seasons')} />
-          </Section>
-        ) : null}
-
-        {KIND_HAS_HOURS[kind] ? (
-          <Section
-            title="Opening hours"
-            onSave={async () =>
-              accept(await catalog.setOpeningHours(id, draft.openingHours), ['openingHours'])
-            }
-          >
-            <OpeningHoursEditor hours={draft.openingHours} onChange={set('openingHours')} />
-          </Section>
-        ) : null}
-
-        {kind === 'transport_note' ? (
-          <Section title="Links" onSave={savePatch(['links'], { links: draft.links })}>
-            <LinksEditor links={draft.links} onChange={set('links')} />
-          </Section>
-        ) : null}
-
-        {kind === 'place' ? (
-          <Section
-            title="Photos"
-            onSave={async () => accept(await catalog.setImages(id, draft.images), ['images'])}
-          >
-            <ImagesEditor images={draft.images} onChange={set('images')} />
-          </Section>
-        ) : null}
-
-        <Section
-          title="Sources"
-          description="Where each fact was checked. One https link per field."
-          onSave={savePatch(['fieldSources'], { fieldSources: draft.fieldSources })}
-        >
-          <SourcesEditor kind={kind} sources={draft.fieldSources} onChange={set('fieldSources')} />
-        </Section>
-
-        <Section title="Translations">
-          <CatalogTranslations record={record} onChanged={reload} />
-        </Section>
-
-        <section className="panel">
-          <h2>Verification</h2>
-          <p>
-            {record.verifiedAt
-              ? `Last verified ${day(record.verifiedAt)} by ${record.verifiedByEmail ?? 'the seed script or a deleted account'}.`
-              : 'Never verified.'}
-            {record.staleness.staleAt
-              ? ` ${record.staleness.status === 'stale' ? 'Went' : 'Goes'} past its budget on ${day(record.staleness.staleAt)}.`
-              : null}
-          </p>
-          <p className="muted">Stamps today's date on the whole record. Check every field first.</p>
-          <div className="actions">
-            <button
-              type="button"
-              className="primary"
-              disabled={busy}
-              onClick={() => void run(async () => setRecord(await catalog.verify(id)))}
-            >
-              Mark verified
-            </button>
-          </div>
-        </section>
-
-        <section className="panel danger-zone">
-          <h2>Delete record</h2>
-          <p className="muted">
-            Deletes the record with its seasons, hours, photos and translations.
-          </p>
-          <button
-            type="button"
-            className="danger"
-            disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete ${record.title}? This cannot be undone.`)) {
-                void run(async () => {
-                  await catalog.deleteRecord(id);
-                  navigate(`/admin/catalog/destinations/${record.destination.id}`, {
-                    replace: true,
-                  });
-                });
-              }
-            }}
-          >
-            Delete record
-          </button>
-        </section>
-      </div>
+      <SectionLayout sections={sections} label="Record sections" render={renderSection} />
     </>
   );
 }

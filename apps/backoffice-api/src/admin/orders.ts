@@ -4,6 +4,7 @@ import {
   adminRefund,
   type Db,
   destinations,
+  FINAL_ORDER_STATUSES,
   isFinalOrderStatus,
   type JobQueue,
   OFFER_LIMITS,
@@ -24,7 +25,21 @@ import {
   type TransitionOutcome,
   units,
 } from '@fetivi/domain';
-import { asc, eq } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  lte,
+  notInArray,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { principalOf } from '../auth/plugin';
@@ -49,7 +64,111 @@ const ProposeBody = AnswerBody.extend({
   priceMinor: z.number().int().min(1).max(OFFER_LIMITS.priceMinorMax).optional(),
 });
 
+const ListQuery = z.object({
+  view: z.enum(['needs_action', 'active', 'done']).default('active'),
+  q: z.string().trim().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
 const iso = (date: Date | null) => date?.toISOString() ?? null;
+const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/**
+ * The Orders the admin should act on: waiting for the Provider past the answer window, which is
+ * what alerts the admin to phone them (36) and sets `windowMissed` on the Order page.
+ */
+function needsActionWhere(now: Date): SQL {
+  return and(
+    eq(orders.status, 'pending_provider'),
+    isNotNull(orderProposals.responseDueAt),
+    lte(orderProposals.responseDueAt, now),
+  ) as SQL;
+}
+
+/** How many Orders need the admin, for the admin home. */
+export async function countOrdersNeedingAction(db: Db, now: Date): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(orders)
+    .innerJoin(orderProposals, eq(orderProposals.id, orders.currentProposalId))
+    .where(needsActionWhere(now));
+  return row?.n ?? 0;
+}
+
+/** The admin's Order list: one tab, an optional search, newest first. */
+async function listOrders(db: Db, input: z.infer<typeof ListQuery>, now: Date) {
+  const needsAction = needsActionWhere(now);
+  const where: (SQL | undefined)[] = [
+    input.view === 'needs_action'
+      ? needsAction
+      : input.view === 'active'
+        ? notInArray(orders.status, [...FINAL_ORDER_STATUSES])
+        : inArray(orders.status, [...FINAL_ORDER_STATUSES]),
+  ];
+  if (input.q) {
+    const q = escapeLike(input.q);
+    where.push(
+      or(
+        ilike(sql`${orders.id}::text`, `${q}%`),
+        ilike(offers.title, `%${q}%`),
+        ilike(providers.name, `%${q}%`),
+        ilike(accounts.email, `%${q}%`),
+      ),
+    );
+  }
+  const [rows, [total]] = await Promise.all([
+    db
+      .select({
+        order: orders,
+        proposal: orderProposals,
+        offerTitle: offers.title,
+        providerName: providers.name,
+        hostEmail: accounts.email,
+        propertyName: properties.name,
+        needsAction: sql<boolean>`coalesce(${needsAction}, false)`,
+      })
+      .from(orders)
+      .innerJoin(orderProposals, eq(orderProposals.id, orders.currentProposalId))
+      .innerJoin(offers, eq(offers.id, orders.offerId))
+      .leftJoin(providers, eq(providers.id, offers.providerId))
+      .leftJoin(accounts, eq(accounts.id, offers.hostId))
+      .innerJoin(stays, eq(stays.id, orders.stayId))
+      .innerJoin(units, eq(units.id, stays.unitId))
+      .innerJoin(properties, eq(properties.id, units.propertyId))
+      .where(and(...where))
+      .orderBy(desc(orders.createdAt), desc(orders.id))
+      .limit(input.limit)
+      .offset(input.offset),
+    db
+      .select({ n: count() })
+      .from(orders)
+      .innerJoin(orderProposals, eq(orderProposals.id, orders.currentProposalId))
+      .innerJoin(offers, eq(offers.id, orders.offerId))
+      .leftJoin(providers, eq(providers.id, offers.providerId))
+      .leftJoin(accounts, eq(accounts.id, offers.hostId))
+      .where(and(...where)),
+  ]);
+  return {
+    orders: rows.map(({ order, proposal, ...row }) => ({
+      id: order.id,
+      createdAt: order.createdAt.toISOString(),
+      offerTitle: row.offerTitle,
+      providerName: row.providerName,
+      hostEmail: row.hostEmail,
+      propertyName: row.propertyName,
+      date: proposal.date,
+      startsAt: iso(proposal.startsAt),
+      quantity: proposal.quantity,
+      priceMinor: proposal.priceMinor,
+      currency: proposal.currency,
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      needsAction: row.needsAction,
+    })),
+    total: total?.n ?? 0,
+  };
+}
 
 /** One Order as the admin page shows it, with what the admin may still do. */
 async function orderView(db: Db, id: string, now: Date) {
@@ -203,6 +322,10 @@ export async function adminOrderRoutes(app: FastifyInstance, deps: AdminOrderDep
     if (!found) throw new HttpError(404, 'not-found');
     return found;
   };
+
+  app.get('/api/admin/orders', admin, async (request) =>
+    listOrders(db, ListQuery.parse(request.query), deps.now()),
+  );
 
   app.get('/api/admin/orders/:id', admin, async (request) => {
     const { id } = IdParams.parse(request.params);

@@ -1,11 +1,13 @@
 // @vitest-environment happy-dom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { AdminOrder } from '../../api';
-import { OrderLookupPage } from './OrderLookupPage';
+import type { AdminOrder, AdminOrderRow } from '../../api';
+import { formatMoment } from '../../forms/datetime';
+import { ConfirmProvider } from '../../shell/ConfirmDialog';
 import { OrderPage } from './OrderPage';
+import { OrdersPage } from './OrdersPage';
 
 const ID = '0b3f1c2d-aaaa-4bbb-8ccc-123456789abc';
 
@@ -107,15 +109,27 @@ afterEach(() => {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
-function stubApi(order: AdminOrder) {
+function stubApi(
+  order: AdminOrder,
+  list: () => { orders: AdminOrderRow[]; total: number } = () => ({ orders: [], total: 0 }),
+) {
   calls = [];
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
     calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+    if (url.startsWith('/api/admin/orders?')) return json(list());
     if (url.endsWith('/cancel')) return json(CANCELLED);
+    if (url.endsWith('/refund')) {
+      return json({ ...order, canRefund: false, refundAmountMinor: 2000 });
+    }
     return json(order);
   });
+}
+
+function Probe() {
+  const location = useLocation();
+  return <output data-testid="location">{location.pathname + location.search}</output>;
 }
 
 async function mount(path: string) {
@@ -124,18 +138,39 @@ async function mount(path: string) {
   root = createRoot(el);
   await act(async () => {
     root?.render(
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/admin/orders" element={<OrderLookupPage />} />
-          <Route path="/admin/orders/:id" element={<OrderPage />} />
-        </Routes>
-      </MemoryRouter>,
+      <ConfirmProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route
+              path="/admin/orders"
+              element={
+                <>
+                  <OrdersPage />
+                  <Probe />
+                </>
+              }
+            />
+            <Route path="/admin/orders/:id" element={<OrderPage />} />
+          </Routes>
+        </MemoryRouter>
+      </ConfirmProvider>,
     );
   });
 }
 
 const button = (name: string) =>
   [...el.querySelectorAll('button')].find((b) => b.textContent?.includes(name));
+
+const dialog = () => document.querySelector<HTMLDialogElement>('dialog.confirm-dialog');
+
+/** Clicks a button of the confirm dialog, by its exact name. */
+async function confirmWith(name: string) {
+  const target = [...(dialog()?.querySelectorAll('button') ?? [])].find(
+    (b) => b.textContent?.trim() === name,
+  );
+  if (!target) throw new Error(`no dialog button ${name}`);
+  await act(async () => target.click());
+}
 
 /** Types like a user: React listens to the native input event. */
 const type = (input: HTMLInputElement | HTMLTextAreaElement, value: string) =>
@@ -150,23 +185,38 @@ describe('OrderPage', () => {
     stubApi(ORDER);
     await mount(`/admin/orders/${ID}`);
     expect(calls[0]).toMatchObject({ url: `/api/admin/orders/${ID}`, method: 'GET' });
+    expect(el.querySelector('.crumbs')?.textContent).toBe('Orders');
+    expect([...el.querySelectorAll('.record-chips .chip')].map((c) => c.textContent)).toEqual([
+      'Confirmed',
+      'Paid',
+    ]);
     const text = el.textContent ?? '';
     for (const fact of [
       'Blue Lagoon boat trip',
-      'Confirmed',
-      'Captured',
       'Adriatic Boats',
+      `When${formatMoment(ORDER.startsAt ?? '')}`,
+      'TermsAs offered',
       'Free until 24 h before the start, then 30 % back.',
       'Policy refund now€50.00',
-      "Further refunds are made in the Provider's Stripe dashboard.",
     ]) {
       expect(text).toContain(fact);
     }
+    expect(el.querySelector('[aria-labelledby="order-facts"]')?.textContent).toContain(
+      "Any later refund is made in the Provider's Stripe dashboard.",
+    );
     const rows = [...el.querySelectorAll('.events-table tbody tr')];
     expect(rows).toHaveLength(2);
+    expect(rows[0]?.textContent).toContain(formatMoment(ORDER.events[0]?.at ?? ''));
     expect(rows[1]?.textContent).toContain('Confirming → Confirmed');
-    expect(rows[1]?.textContent).toContain('Authorized → Captured');
+    expect(rows[1]?.textContent).toContain('Card held → Paid');
+    expect(rows[1]?.textContent).toContain('Payment');
     expect(button('Refund')).toBeUndefined();
+  });
+
+  it('names who changed the terms after the offer', async () => {
+    stubApi({ ...ORDER, version: 2, proposer: 'provider_time' });
+    await mount(`/admin/orders/${ID}`);
+    expect(el.textContent).toContain('TermsChanged by the Provider (new time) (version 2)');
   });
 
   it("names the host as the one paid on a host's own service", async () => {
@@ -182,24 +232,30 @@ describe('OrderPage', () => {
     expect(text).toContain('Hosthost@example.com (own service)');
     expect(text).toContain('Waiting for the host');
     expect(text).toContain('Paid to the host directly');
-    expect(text).toContain("Further refunds are made in the host's Stripe dashboard.");
+    expect(text).toContain("Any later refund is made in the host's Stripe dashboard.");
     expect(text).not.toContain('Provider');
   });
 
-  it('cancels with the override in cents and the note', async () => {
+  it('cancels with the override in cents and the note, once confirmed', async () => {
     stubApi(ORDER);
-    const confirm = vi.fn(() => true);
-    vi.stubGlobal('confirm', confirm);
     await mount(`/admin/orders/${ID}`);
     const amount = el.querySelector<HTMLInputElement>('input[type="number"]');
     const note = el.querySelector<HTMLTextAreaElement>('textarea');
     if (!amount || !note) throw new Error('no form');
     await type(amount, '12.34');
     await type(note, 'goodwill');
+
     await act(async () => button('Cancel order')?.click());
-    expect(confirm).toHaveBeenCalledWith(
-      'Cancel this Order and refund €12.34? The guest and the Provider are told.',
+    expect(dialog()?.querySelector('h2')?.textContent).toBe('Cancel this order?');
+    expect(dialog()?.textContent).toContain(
+      'The guest gets €12.34 back. The guest and the Provider are told. This cannot be undone.',
     );
+    await confirmWith('Cancel');
+    expect(dialog()).toBeNull();
+    expect(calls.some((c) => c.url.endsWith('/cancel'))).toBe(false);
+
+    await act(async () => button('Cancel order')?.click());
+    await confirmWith('Cancel and refund €12.34');
     expect(calls.at(-1)).toEqual({
       url: `/api/admin/orders/${ID}/cancel`,
       method: 'POST',
@@ -218,12 +274,33 @@ describe('OrderPage', () => {
       paidAmountMinor: null,
       policyRefundMinor: null,
     });
-    const confirm = vi.fn(() => true);
-    vi.stubGlobal('confirm', confirm);
     await mount(`/admin/orders/${ID}`);
     expect(el.querySelector('input[type="number"]')).toBeNull();
+    expect(el.textContent).toContain('Nothing is captured through Fetivi');
     await act(async () => button('Cancel order')?.click());
-    expect(calls.at(-1)?.body).toEqual({});
+    expect(dialog()?.textContent).not.toContain('back.');
+    await confirmWith('Cancel order');
+    expect(calls.at(-1)).toMatchObject({ url: `/api/admin/orders/${ID}/cancel`, body: {} });
+  });
+
+  it('refunds a released Order once confirmed', async () => {
+    stubApi({ ...ORDER, status: 'cancelled', canCancel: false, canRefund: true });
+    await mount(`/admin/orders/${ID}`);
+    expect(el.textContent).toContain(
+      'The guest paid €50.00. You can refund part or all of it once',
+    );
+    const amount = el.querySelector<HTMLInputElement>('input[type="number"]');
+    if (!amount) throw new Error('no amount');
+    await type(amount, '20');
+    await act(async () => button('Refund')?.click());
+    expect(dialog()?.querySelector('h2')?.textContent).toBe('Refund €20.00 to the guest?');
+    await confirmWith('Refund €20.00');
+    expect(calls.at(-1)).toEqual({
+      url: `/api/admin/orders/${ID}/refund`,
+      method: 'POST',
+      body: { refundMinor: 2000 },
+    });
+    expect(el.textContent).toContain('Refund decided€20.00');
   });
 });
 
@@ -243,18 +320,19 @@ const PENDING: AdminOrder = {
 describe("OrderPage, the Provider's answer", () => {
   it('records a phoned accept with the note, once the note is written', async () => {
     stubApi(PENDING);
-    vi.stubGlobal(
-      'confirm',
-      vi.fn(() => true),
-    );
     await mount(`/admin/orders/${ID}`);
-    expect(el.textContent).toContain('Window missed');
-    expect(el.textContent).toContain('Version 1, from the Offer');
+    expect(el.querySelector('.chip.fail')?.textContent).toBe('Answer overdue');
+    expect(el.textContent).toContain(
+      `The answer is due ${formatMoment(PENDING.responseDueAt ?? '')}.`,
+    );
+    expect(el.textContent).toContain('TermsAs offered');
     expect(button('Accept')?.disabled).toBe(true);
     const note = el.querySelector<HTMLTextAreaElement>('textarea');
     if (!note) throw new Error('no note');
     await type(note, 'Phoned: they can do it');
     await act(async () => button('Accept')?.click());
+    expect(dialog()?.querySelector('h2')?.textContent).toBe('Record that the Provider accepted?');
+    await confirmWith('Confirm order');
     expect(calls.at(-1)).toEqual({
       url: `/api/admin/orders/${ID}/accept`,
       method: 'POST',
@@ -264,10 +342,6 @@ describe("OrderPage, the Provider's answer", () => {
 
   it('sends new terms with the time and the price in cents', async () => {
     stubApi(PENDING);
-    vi.stubGlobal(
-      'confirm',
-      vi.fn(() => true),
-    );
     await mount(`/admin/orders/${ID}`);
     const note = el.querySelector<HTMLTextAreaElement>('textarea');
     const timeInput = el.querySelector<HTMLInputElement>('.picker.time input');
@@ -277,6 +351,7 @@ describe("OrderPage, the Provider's answer", () => {
     await type(timeInput, '18:00');
     await type(price, '120.5');
     await act(async () => button('Send new terms')?.click());
+    await confirmWith('Send new terms');
     expect(calls.at(-1)).toEqual({
       url: `/api/admin/orders/${ID}/propose`,
       method: 'POST',
@@ -290,10 +365,27 @@ describe("OrderPage, the Provider's answer", () => {
     });
   });
 
+  it('records a phoned decline once confirmed', async () => {
+    stubApi(PENDING);
+    await mount(`/admin/orders/${ID}`);
+    const note = el.querySelector<HTMLTextAreaElement>('textarea');
+    if (!note) throw new Error('no note');
+    await type(note, 'Phoned: fully booked');
+    await act(async () => button('Decline')?.click());
+    expect(dialog()?.querySelector('h2')?.textContent).toBe('Record that the Provider declined?');
+    await confirmWith('Decline order');
+    expect(calls.at(-1)).toEqual({
+      url: `/api/admin/orders/${ID}/decline`,
+      method: 'POST',
+      body: { proposalId: PENDING.proposalId, note: 'Phoned: fully booked' },
+    });
+  });
+
   it('formats a date-only When and keeps a new date within the stay', async () => {
     stubApi({ ...PENDING, startsAt: null });
     await mount(`/admin/orders/${ID}`);
     expect(el.textContent).not.toContain('2026-10-25');
+    expect(el.textContent).toContain('When25.10.2026');
     const calendar = el.querySelector<HTMLButtonElement>('.picker.date .picker-button');
     await act(async () => calendar?.click());
     const day = (iso: string) => el.querySelector<HTMLButtonElement>(`[data-day="${iso}"]`);
@@ -311,17 +403,86 @@ describe("OrderPage, the Provider's answer", () => {
   });
 });
 
-describe('OrderLookupPage', () => {
-  it('opens an Order by its id and refuses a partial one', async () => {
+const ROW: AdminOrderRow = {
+  id: ID,
+  createdAt: '2026-10-20T10:00:00.000Z',
+  offerTitle: 'Blue Lagoon boat trip',
+  providerName: null,
+  hostEmail: 'host@example.com',
+  propertyName: 'Villa Mare',
+  date: '2026-10-25',
+  startsAt: null,
+  quantity: 2,
+  priceMinor: 5000,
+  currency: 'EUR',
+  status: 'pending_provider',
+  paymentStatus: 'captured',
+  needsAction: true,
+};
+
+/** Waits out the search box's pause before it asks again. */
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 300)));
+const location = () => el.querySelector('[data-testid="location"]')?.textContent;
+const listCalls = () =>
+  calls.filter((c) => c.url.startsWith('/api/admin/orders?')).map((c) => c.url);
+
+describe('OrdersPage', () => {
+  it('lists the open Orders as rows that open the Order', async () => {
+    stubApi(ORDER, () => ({ orders: [ROW, { ...ROW, id: 'o2', needsAction: false }], total: 2 }));
+    await mount('/admin/orders');
+    expect(listCalls()).toEqual(['/api/admin/orders?view=active&offset=0']);
+    const tabs = [...el.querySelectorAll('[role="tab"]')];
+    expect(tabs.map((t) => t.textContent)).toEqual(['Needs you', 'Open', 'Done']);
+    expect(el.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('Open');
+    expect(el.querySelector('.toolbar-note')?.textContent).toBe('2 orders');
+    const rows = [...el.querySelectorAll('.data-table tbody tr')];
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.querySelector('a')?.getAttribute('href')).toBe(`/admin/orders/${ID}`);
+    expect(rows[0]?.textContent).toContain('host@example.com (host) · Villa Mare');
+    expect(rows[0]?.textContent).toContain('25.10.2026');
+    expect(rows[0]?.textContent).toContain('Needs you');
+    expect(rows[0]?.textContent).toContain('Paid');
+    expect(rows[0]?.textContent).toContain('€50.00');
+    expect(rows[1]?.textContent).not.toContain('Needs you');
+    expect(el.querySelector('.pager')).toBeNull();
+  });
+
+  it('keeps the tab in the address and lists that view', async () => {
+    stubApi(ORDER);
+    await mount('/admin/orders?view=done');
+    expect(listCalls()).toEqual(['/api/admin/orders?view=done&offset=0']);
+    expect(el.querySelector('.empty-title')?.textContent).toBe('No finished orders yet');
+    await act(async () => button('Needs you')?.click());
+    expect(location()).toBe('/admin/orders?view=needs_action');
+    expect(listCalls().at(-1)).toBe('/api/admin/orders?view=needs_action&offset=0');
+    expect(el.querySelector('.empty-title')?.textContent).toBe('All caught up');
+    await act(async () => button('Open')?.click());
+    expect(location()).toBe('/admin/orders');
+  });
+
+  it('searches once typing settles and clears a search that found nothing', async () => {
     stubApi(ORDER);
     await mount('/admin/orders');
-    const input = el.querySelector<HTMLInputElement>('input');
-    if (!input) throw new Error('no field');
-    await type(input, ID.slice(0, 8));
-    await act(async () => button('Open')?.click());
-    expect(el.querySelector('[role="alert"]')?.textContent).toContain('full Order id');
-    await type(input, ID.toUpperCase());
-    await act(async () => button('Open')?.click());
-    expect(calls.at(-1)).toMatchObject({ url: `/api/admin/orders/${ID}`, method: 'GET' });
+    const search = el.querySelector<HTMLInputElement>('input[type="search"]');
+    if (!search) throw new Error('no search');
+    expect(el.querySelector(`label[for="${search.id}"]`)?.textContent).toBe('Search orders');
+    await type(search, 'lagoon');
+    await settle();
+    expect(listCalls().at(-1)).toBe('/api/admin/orders?view=active&offset=0&q=lagoon');
+    expect(el.querySelector('.empty-title')?.textContent).toBe('No orders match “lagoon”');
+    await act(async () => button('Clear search')?.click());
+    await settle();
+    expect(search.value).toBe('');
+    expect(listCalls().at(-1)).toBe('/api/admin/orders?view=active&offset=0');
+    expect(el.querySelector('.empty-title')?.textContent).toBe('No open orders');
+  });
+
+  it('pages through more than 50 Orders', async () => {
+    stubApi(ORDER, () => ({ orders: [ROW], total: 120 }));
+    await mount('/admin/orders');
+    expect(el.querySelector('.pager')?.textContent).toContain('1–50 of 120');
+    await act(async () => button('Next')?.click());
+    expect(listCalls().at(-1)).toBe('/api/admin/orders?view=active&offset=50');
+    expect(el.querySelector('.pager')?.textContent).toContain('51–100 of 120');
   });
 });
