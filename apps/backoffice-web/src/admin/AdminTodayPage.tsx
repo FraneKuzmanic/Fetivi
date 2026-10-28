@@ -157,7 +157,7 @@ export function AdminTodayPage() {
             {waiting.length > 0 ? (
               <ApprovalsTable rows={waiting} onChanged={load} />
             ) : (
-              <EmptyState icon={SealCheck} title="No properties wait for approval">
+              <EmptyState icon={SealCheck} title="All caught up">
                 New properties show up here until you approve them.
               </EmptyState>
             )}

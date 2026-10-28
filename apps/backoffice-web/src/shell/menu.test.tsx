@@ -77,6 +77,20 @@ describe('Menu', () => {
     expect(trigger()?.getAttribute('aria-controls')).toBe(list()?.id);
   });
 
+  it('focuses the first item only once the list is visible, since a browser skips a hidden one', async () => {
+    await mount();
+    const seen: string[] = [];
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      seen.push(this.closest<HTMLElement>('[role="menu"]')?.style.visibility ?? 'outside');
+    });
+    await open();
+    focus.mockRestore();
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen).not.toContain('hidden');
+  });
+
   it('moves between items with the arrows, Home and End; Escape returns to the button', async () => {
     await mount();
     await open();

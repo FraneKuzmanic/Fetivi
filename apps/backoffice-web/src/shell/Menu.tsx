@@ -91,9 +91,15 @@ export function Menu({
     };
   }, [open, up, align]);
 
+  // A browser does not focus a hidden element, so the first item takes focus once it is placed.
+  const placed = pos.visibility !== 'hidden';
+  useEffect(() => {
+    if (open && placed)
+      list.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+  }, [open, placed]);
+
   useEffect(() => {
     if (!open) return;
-    list.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
     const outside = (event: PointerEvent) => {
       const target = event.target as Node;
       if (!root.current?.contains(target) && !list.current?.contains(target)) setOpen(false);
@@ -147,7 +153,7 @@ export function Menu({
               id={id}
               role="menu"
               aria-label={label}
-              className={`menu-list ${align}`}
+              className="menu-list"
               style={pos}
               onKeyDown={onKeyDown}
             >
