@@ -32,7 +32,7 @@ export const pl: Messages = {
   },
   empty: {
     chat: 'Tu będziemy rozmawiać. Wkrótce się pojawię.',
-    guide: 'Tu pojawi się przewodnik po twoim pobycie i okolicy.',
+    guide: 'Tu pojawi się przewodnik po Twoim pobycie i okolicy.',
     trip: 'Tu pojawią się plany Twojej podróży.',
   },
   chat: {

@@ -37,10 +37,9 @@ import {
 import { z } from 'zod';
 import { propertyInfoCard } from './property-info';
 
-export * from './property-info';
-
 /** The UI message part type of a streamed component. */
-export const COMPONENT_PART_TYPE = 'data-component';
+export { COMPONENT_PART_TYPE } from '@fetivi/domain/citations';
+export * from './property-info';
 
 const short = z.string().trim().min(1).max(60);
 

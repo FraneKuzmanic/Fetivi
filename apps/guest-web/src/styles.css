@@ -247,7 +247,7 @@ input {
 /* The phone's language is a hint, set apart from the chosen look of aria-current. */
 .language-suggested {
   color: var(--gray-500);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
@@ -1949,13 +1949,23 @@ body:has(.onboarding) {
   .onboarding[data-step="pin"] .stage-speech {
     padding: 1.25rem 1.5rem;
   }
+
+  /* An error takes a few lines: Fetivi steps back a little, and his whole balloon stays. */
+  .onboarding[data-step="pin"]:has(.pin-form .message:not(:empty)) {
+    --porthole: 8.5rem;
+  }
+
+  .onboarding[data-step="pin"]:has(.pin-form .message:not(:empty)) .stage {
+    gap: 2.25rem;
+  }
 }
 
 /*
- * A PIN error or the open recovery field needs room on a short screen: Fetivi steps back and the
- * balloon keeps only its heading (the error says what to do next), so nothing scrolls.
+ * A PIN error or the open recovery field needs room on a short screen or a phone: Fetivi steps
+ * back and the balloon keeps only its heading (the error says what to do next), so nothing
+ * scrolls. A laptop-height window has room for the whole stage, so it keeps it.
  */
-@media (max-height: 820px) {
+@media (max-height: 790px), (max-width: 47.99rem) and (max-height: 1000px) {
   .onboarding[data-step="pin"]:has(.pin-form .message:not(:empty), .recovery-form) {
     --porthole: 8.5rem;
     gap: 0.75rem;
@@ -2109,4 +2119,11 @@ body:has(.onboarding) {
 .onboarding .recovery-form .email-input {
   border-color: var(--white);
   color: var(--navy-900);
+}
+
+/* A sent request rests: the field greys out with its arrow, on the stage and in Settings. */
+.recovery-field .email-input:disabled {
+  background: var(--gray-200);
+  color: var(--gray-500);
+  cursor: default;
 }

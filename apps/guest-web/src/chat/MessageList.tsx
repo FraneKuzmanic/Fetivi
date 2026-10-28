@@ -99,9 +99,7 @@ function webResultsOf(data: unknown): WebResult[] | null {
  */
 function segmentsOf(
   message: UIMessage,
-  busy: boolean,
-  finished: boolean,
-  latest: boolean,
+  { busy, finished, latest }: { busy: boolean; finished: boolean; latest: boolean },
 ): Segment[] {
   const segments: Segment[] = [];
   const chips: Segment[] = [];
@@ -280,7 +278,7 @@ export function MessageList({
     const streaming = isBusy(status) && i === messages.length - 1;
     // An open card acts only on the newest answer while the guest can reply.
     const latest = interactive && i === messages.length - 1;
-    const segments = segmentsOf(m, isBusy(status), !streaming, latest);
+    const segments = segmentsOf(m, { busy: isBusy(status), finished: !streaming, latest });
     if (segments.length === 0) return null;
     const previous = messages[i - 1];
     // A host reply in between starts a new run, so Fetivi's mascot shows again.

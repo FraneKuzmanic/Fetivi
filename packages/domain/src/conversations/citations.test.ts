@@ -43,9 +43,16 @@ describe('keptTextParts', () => {
     ).toEqual([{ type: 'text', text: 'Open daily (visittrogir.hr).' }]);
   });
 
-  it('leaves brackets alone in an answer with no search', () => {
-    const parts = [{ type: 'text', text: 'Room [1] is upstairs.' }];
-    expect(keptTextParts(parts)).toEqual(parts);
+  it('drops markers cleanly in an answer with no search', () => {
+    expect(keptTextParts([{ type: 'text', text: 'Open daily [1].' }])).toEqual([
+      { type: 'text', text: 'Open daily.' },
+    ]);
+  });
+
+  it('drops a marker whose result has no host, not leaving empty brackets', () => {
+    expect(keptTextParts([webResults(''), { type: 'text', text: 'Open daily [1].' }])).toEqual([
+      { type: 'text', text: 'Open daily.' },
+    ]);
   });
 
   it('uses the latest search for the text after it', () => {

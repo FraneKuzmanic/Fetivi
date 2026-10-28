@@ -1,4 +1,5 @@
-import type { MessagePart } from '../db/schema/conversations';
+// Browser code imports this module, so it keeps its own part shape rather than the DB schema's.
+type MessagePart = { type: string } & Record<string, unknown>;
 
 /** A piece of a cited answer: plain text, or a citation of a web result (0-based index). */
 export type CitedSegment = { text: string } | { ref: number };
@@ -48,12 +49,16 @@ export const uncitedText = (text: string, count: number) =>
  */
 export const citationsAsHosts = (text: string, hosts: readonly string[]) =>
   parseCitations(text, hosts.length)
-    .map((s) => ('text' in s ? s.text : ` (${(hosts[s.ref] ?? '').replace(/^www\./, '')})`))
+    .map((s) => {
+      if ('text' in s) return s.text;
+      const host = hosts[s.ref]?.replace(/^www\./, '');
+      return host ? ` (${host})` : '';
+    })
     .join('')
     .trimStart();
 
-/** The guest's streamed-card part type; mirrors `COMPONENT_PART_TYPE` in packages/ui payloads. */
-const COMPONENT_PART_TYPE = 'data-component';
+/** The part type of a card streamed to the guest (a component part). */
+export const COMPONENT_PART_TYPE = 'data-component';
 
 /** The hosts of a `web-results` card part, or null for any other part. */
 function webResultHosts(part: MessagePart): string[] | null {
@@ -67,8 +72,8 @@ function webResultHosts(part: MessagePart): string[] | null {
 
 /**
  * A message's text parts for a kept transcript, which drops the cards: text after a search reads
- * its markers as the cited hosts, as the guest saw badges there. Text before any search keeps its
- * brackets, as the guest saw it too.
+ * its markers as the cited hosts, as the guest saw badges there. A marker with no result to name,
+ * before any search or past the results, is dropped.
  */
 export function keptTextParts(parts: readonly MessagePart[]): MessagePart[] {
   const kept: MessagePart[] = [];
@@ -77,8 +82,8 @@ export function keptTextParts(parts: readonly MessagePart[]): MessagePart[] {
     hosts = webResultHosts(part) ?? hosts;
     if (part.type !== 'text') continue;
     kept.push(
-      hosts && typeof part.text === 'string'
-        ? { ...part, text: citationsAsHosts(part.text, hosts) }
+      typeof part.text === 'string'
+        ? { ...part, text: citationsAsHosts(part.text, hosts ?? []) }
         : part,
     );
   }
