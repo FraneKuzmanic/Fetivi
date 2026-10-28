@@ -136,7 +136,7 @@ describe('Menu', () => {
   });
 });
 
-async function mountWithSubmenu() {
+async function mountWithSubmenu(current: 'English' | 'Hrvatski' = 'English') {
   picked = [];
   const container = document.createElement('div');
   document.body.append(container);
@@ -154,8 +154,13 @@ async function mountWithSubmenu() {
             name: 'Language: English',
             icon: <span />,
             submenu: [
-              { label: 'English', current: true, onSelect: pick('English') },
-              { label: 'Hrvatski', lang: 'hr', current: false, onSelect: pick('Hrvatski') },
+              { label: 'English', current: current === 'English', onSelect: pick('English') },
+              {
+                label: 'Hrvatski',
+                lang: 'hr',
+                current: current === 'Hrvatski',
+                onSelect: pick('Hrvatski'),
+              },
             ],
           },
           { label: 'Sign out', onSelect: pick('Sign out') },
@@ -196,6 +201,24 @@ describe('Menu submenu', () => {
     expect(parentItem()?.getAttribute('aria-controls')).toBe(submenu()?.id);
     await vi.waitFor(() => expect(document.activeElement).toBe(radios()[0]));
     expect(radios().map((r) => r.getAttribute('aria-checked'))).toEqual(['true', 'false']);
+  });
+
+  it('focuses the checked option when it is not the first', async () => {
+    await mountWithSubmenu('Hrvatski');
+    await openToParent();
+    await key('ArrowRight');
+    await vi.waitFor(() => expect(document.activeElement).toBe(radios()[1]));
+  });
+
+  it('moves into an already open submenu on ArrowRight from its parent', async () => {
+    await mountWithSubmenu();
+    await openToParent();
+    await key('ArrowRight');
+    await vi.waitFor(() => expect(document.activeElement).toBe(radios()[0]));
+    act(() => parentItem()?.focus());
+    await key('ArrowRight');
+    expect(submenu()).not.toBeNull();
+    expect(document.activeElement).toBe(radios()[0]);
   });
 
   it('keeps the arrows, Home and End inside the submenu', async () => {

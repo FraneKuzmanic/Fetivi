@@ -41,6 +41,27 @@ export function submenuSide(
 
 const HIDDEN: CSSProperties = { visibility: 'hidden' };
 
+const subItemsIn = (list: HTMLElement | null) => [
+  ...(list?.querySelectorAll<HTMLButtonElement>('[data-submenu] [role^="menuitem"]') ?? []),
+];
+
+/** Focuses the submenu's checked option, else its first one. */
+function focusSubmenu(list: HTMLElement | null): void {
+  const options = subItemsIn(list);
+  (options.find((o) => o.getAttribute('aria-checked') === 'true') ?? options[0])?.focus();
+}
+
+/** Runs `place` now and again on every resize and scroll (a table's too); returns the cleanup. */
+function followViewport(place: () => void): () => void {
+  place();
+  window.addEventListener('resize', place);
+  window.addEventListener('scroll', place, { capture: true, passive: true });
+  return () => {
+    window.removeEventListener('resize', place);
+    window.removeEventListener('scroll', place, { capture: true });
+  };
+}
+
 /**
  * A button that opens a short list of actions (the profile menu, a row's "⋯"). Arrow keys move
  * between items, Escape and a click outside close it, and focus returns to the button.
@@ -87,10 +108,7 @@ export function Menu({
   const itemsOf = () => [
     ...(list.current?.querySelectorAll<HTMLButtonElement>(':scope > [role^="menuitem"]') ?? []),
   ];
-  const subItemsOf = () => [
-    ...(list.current?.querySelectorAll<HTMLButtonElement>('[data-submenu] [role^="menuitem"]') ??
-      []),
-  ];
+  const subItemsOf = () => subItemsIn(list.current);
   const parentOf = () =>
     list.current?.querySelector<HTMLButtonElement>(':scope > [aria-expanded="true"]');
 
@@ -119,12 +137,9 @@ export function Menu({
           : { left: Math.max(8, r.left) }),
       });
     };
-    place();
-    window.addEventListener('resize', place);
-    window.addEventListener('scroll', place, { capture: true, passive: true });
+    const stop = followViewport(place);
     return () => {
-      window.removeEventListener('resize', place);
-      window.removeEventListener('scroll', place, { capture: true });
+      stop();
       setPos(HIDDEN);
     };
   }, [open, up, align]);
@@ -148,12 +163,9 @@ export function Menu({
         side === 'right' ? { top, left: box.right + 4 } : { top, right: viewport - box.left + 4 },
       );
     };
-    place();
-    window.addEventListener('resize', place);
-    window.addEventListener('scroll', place, { capture: true, passive: true });
+    const stop = followViewport(place);
     return () => {
-      window.removeEventListener('resize', place);
-      window.removeEventListener('scroll', place, { capture: true });
+      stop();
       setSubPos(HIDDEN);
     };
   }, [sub, subId]);
@@ -167,8 +179,7 @@ export function Menu({
 
   const subPlaced = subPos === 'inline' || subPos.visibility !== 'hidden';
   useEffect(() => {
-    if (sub && subPlaced)
-      list.current?.querySelector<HTMLButtonElement>('[data-submenu] [role^="menuitem"]')?.focus();
+    if (sub && subPlaced) focusSubmenu(list.current);
   }, [sub, subPlaced]);
 
   useEffect(() => {
@@ -195,8 +206,11 @@ export function Menu({
       setSub(null);
       parent?.focus();
     } else if (!inSub && event.key === 'ArrowRight' && items[at]?.submenu) {
+      // `at` indexes `items` too, since each item renders exactly one top-level menuitem.
       event.preventDefault();
-      setSub(items[at].label);
+      // Already open (focus came back to its parent): no state change, so move focus here.
+      if (sub === items[at].label) focusSubmenu(list.current);
+      else setSub(items[at].label);
     } else if (event.key === 'Escape') {
       event.preventDefault();
       close(true);
