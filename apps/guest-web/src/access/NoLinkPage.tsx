@@ -11,7 +11,7 @@ const MESSAGE = {
 export function NoLinkPage({ reason = 'none' }: { reason?: keyof typeof MESSAGE }) {
   const { t } = useTranslation();
   return (
-    <main className="onboarding">
+    <main className="onboarding" data-step="no-link">
       <h1 className="visually-hidden">Fetivi</h1>
       <FetiviStage>
         <p>{t(MESSAGE[reason])}</p>

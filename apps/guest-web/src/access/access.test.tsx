@@ -118,4 +118,9 @@ describe('NoLinkPage', () => {
     expect(html).toContain('No connection.');
     expect(html).not.toContain('Open the link your host sent you');
   });
+
+  it('marks its own step so the stage is centred like the welcome', () => {
+    const html = renderToString(<NoLinkPage />);
+    expect(html).toContain('<main class="onboarding" data-step="no-link">');
+  });
 });

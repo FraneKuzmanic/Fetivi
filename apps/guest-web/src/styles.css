@@ -1830,6 +1830,13 @@ body:has(.onboarding) {
     speech-bob 2.8s ease-in-out 700ms infinite;
 }
 
+/* The global reduced-motion reset loses to the rule above, so the balloon opts out here. */
+@media (prefers-reduced-motion: reduce) {
+  .stage-speech {
+    animation: none;
+  }
+}
+
 /* The balloon's tail points down at Fetivi. */
 .stage-speech::after {
   content: "";
@@ -1875,8 +1882,9 @@ body:has(.onboarding) {
   margin-bottom: -12%;
 }
 
-/* The welcome: balloon and porthole sit together as one centred group. */
-.onboarding[data-step="intro"] .stage {
+/* The welcome and the no-link page: balloon and porthole sit together as one centred group. */
+.onboarding[data-step="intro"] .stage,
+.onboarding[data-step="no-link"] .stage {
   flex: 1;
   justify-content: center;
 }
