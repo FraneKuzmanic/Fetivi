@@ -110,7 +110,7 @@ export function PendingMedia({
           />
         </label>
       ) : (
-        <p className="muted">Up to {LIMITS.mediaPerBlock} photos or videos per entry.</p>
+        <p className="muted">{t('blocks.mediaLimit', { count: LIMITS.mediaPerBlock })}</p>
       )}
       {problem ? <p role="alert">{problem}</p> : null}
     </fieldset>

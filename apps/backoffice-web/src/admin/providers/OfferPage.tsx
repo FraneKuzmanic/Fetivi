@@ -608,8 +608,7 @@ export function OfferPage() {
                   />
                 </div>
                 <small>
-                  In {offer.timezone}. Always under 4 days: with these hours, at most {windowMax}{' '}
-                  minutes.
+                  {t('host:services.windowHint', { timezone: offer.timezone, count: windowMax })}
                 </small>
               </>
             ) : null}

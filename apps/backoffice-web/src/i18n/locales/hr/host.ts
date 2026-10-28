@@ -390,6 +390,9 @@ export const host: Translation<typeof en> = {
     captionFor: 'Opis za {{file}}',
     captionShortHint: 'Što prikazuje, u nekoliko riječi.',
     mediaOptional: 'Fotografije i videozapisi (neobavezno)',
+    mediaLimit_one: 'Najviše {{count}} fotografija ili videozapis po unosu.',
+    mediaLimit_few: 'Najviše {{count}} fotografije ili videozapisa po unosu.',
+    mediaLimit_other: 'Najviše {{count}} fotografija ili videozapisa po unosu.',
     addPhotos: 'Dodaj fotografije ili videozapis',
     fieldStructure:
       'Neki jezici nisu zadržali strukturu teksta. Pokušajte ponovno ili preformulirajte tekst i spremite.',
@@ -563,6 +566,12 @@ export const host: Translation<typeof en> = {
     answerTimeHint: 'Računa se samo između sati ispod. Propušten odgovor ide timu Fetivija.',
     countedFrom: 'Računa se od',
     until: 'Do',
+    windowHint_one:
+      'Vremenska zona: {{timezone}}. Uvijek manje od 4 dana: uz ovo radno vrijeme najviše {{count}} minuta.',
+    windowHint_few:
+      'Vremenska zona: {{timezone}}. Uvijek manje od 4 dana: uz ovo radno vrijeme najviše {{count}} minute.',
+    windowHint_other:
+      'Vremenska zona: {{timezone}}. Uvijek manje od 4 dana: uz ovo radno vrijeme najviše {{count}} minuta.',
     timesAndSeats: 'Termini i mjesta',
     rules: 'Pravila otkazivanja',
     rulesHint: 'Što se primjenjuje kad gost otkaže. Neka tekst pravila iznad bude u skladu s tim.',
@@ -596,6 +605,7 @@ export const host: Translation<typeof en> = {
     removeTitle: 'Ukloniti {{label}}?',
     removeBody: 'Vaši gosti to više neće vidjeti.',
     editNote: 'Uredi napomenu',
+    noNote: 'Bez napomene',
     noteOn: 'Vaša napomena za {{title}}',
     noteHint: 'Ostavite prazno ako želite samo oznaku.',
     saveNote: 'Spremi napomenu',

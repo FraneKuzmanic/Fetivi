@@ -14,7 +14,14 @@ interface SessionValue {
 const SessionContext = createContext<SessionValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [me, setMe] = useState<Me | null | 'loading'>('loading');
+  const [me, setSessionMe] = useState<Me | null | 'loading'>('loading');
+
+  // Signed in, the account's language rules: chosen, or the default from the last sign-in. It is
+  // set before the signed-in pages render, so none of them starts in the signed-out language.
+  const setMe = useCallback((next: Me | null) => {
+    if (next) setLanguage(backofficeLanguageOf(next.account.language));
+    setSessionMe(next);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -23,7 +30,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (error instanceof ApiError && error.status === 401) setMe(null);
       else throw error;
     }
-  }, []);
+  }, [setMe]);
 
   const logout = useCallback(async () => {
     try {
@@ -33,16 +40,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       storeLanguage(currentLanguage());
       setMe(null);
     }
-  }, []);
+  }, [setMe]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  // Signed in, the account's language rules: chosen, or the default from the last sign-in.
-  useEffect(() => {
-    if (me && me !== 'loading') setLanguage(backofficeLanguageOf(me.account.language));
-  }, [me]);
 
   return (
     <SessionContext.Provider value={{ me, setMe, refresh, logout }}>

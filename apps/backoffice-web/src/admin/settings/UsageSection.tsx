@@ -82,11 +82,7 @@ export function UsageSection() {
             </table>
           </div>
           {usage.unpricedCalls > 0 ? (
-            <p className="muted">
-              {usage.unpricedCalls} {usage.unpricedCalls === 1 ? 'call' : 'calls'} used a model
-              without a price in the table and {usage.unpricedCalls === 1 ? 'is' : 'are'} not
-              counted.
-            </p>
+            <p className="muted">{t('settings.unpriced', { count: usage.unpricedCalls })}</p>
           ) : null}
         </>
       ) : error ? (

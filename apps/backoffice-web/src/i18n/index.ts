@@ -15,14 +15,12 @@ declare module 'i18next' {
 
 export const locales = { en, hr };
 
-const resources = Object.fromEntries(Object.entries(locales).map(([code, ns]) => [code, ns]));
-
 /** Before anyone signs in: the signed-out switch's last choice, else the browser's language. */
 const initial = storedLanguage() ?? pickBrowserLanguage(navigatorLanguages());
 
 // Synchronous init: bundled resources, so the first render (and tests) has strings.
 void i18next.use(initReactI18next).init({
-  resources,
+  resources: locales,
   lng: initial,
   fallbackLng: 'en',
   supportedLngs: [...BACKOFFICE_LANGUAGES],

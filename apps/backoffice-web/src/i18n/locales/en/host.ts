@@ -363,6 +363,8 @@ export const host = {
     captionFor: 'Caption for {{file}}',
     captionShortHint: 'What it shows, in a few words.',
     mediaOptional: 'Photos and video (optional)',
+    mediaLimit_one: 'Up to {{count}} photo or video per entry.',
+    mediaLimit_other: 'Up to {{count}} photos or videos per entry.',
     addPhotos: 'Add photos or video',
     fieldStructure:
       "Some languages did not keep the text's structure. Retry, or rephrase the text and save.",
@@ -530,6 +532,10 @@ export const host = {
       'Counted only between the hours below. A missed answer goes to the Fetivi team.',
     countedFrom: 'Counted from',
     until: 'Until',
+    windowHint_one:
+      'In {{timezone}}. Always under 4 days: with these hours, at most {{count}} minute.',
+    windowHint_other:
+      'In {{timezone}}. Always under 4 days: with these hours, at most {{count}} minutes.',
     timesAndSeats: 'Times and seats',
     rules: 'Cancellation rules',
     rulesHint: 'What is applied when a guest cancels. Keep the policy text above in line with it.',
@@ -562,6 +568,7 @@ export const host = {
     removeTitle: 'Remove {{label}}?',
     removeBody: 'Your guests will no longer see it.',
     editNote: 'Edit note',
+    noNote: 'No note',
     noteOn: 'Your note on {{title}}',
     noteHint: 'Leave it empty for the badge alone.',
     saveNote: 'Save note',

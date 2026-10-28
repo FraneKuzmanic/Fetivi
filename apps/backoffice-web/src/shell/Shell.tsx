@@ -21,7 +21,6 @@ import {
   SignOut,
   Storefront,
   ThumbsUp,
-  Translate,
   Tray,
   UsersThree,
 } from '@phosphor-icons/react';
@@ -375,17 +374,18 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
           },
         ]
       : []),
-    // Each language under its own name; the current one is checked.
+    // Each language under its own name; the current one is checked, the other keeps the space.
     ...BACKOFFICE_LANGUAGES.map((language, i) => ({
       label: LANGUAGE_NAMES[language],
       lang: language,
       caption: i === 0 ? t('language') : undefined,
-      icon:
-        language === current ? (
-          <Check aria-hidden="true" weight="bold" />
-        ) : (
-          <Translate aria-hidden="true" />
-        ),
+      icon: (
+        <Check
+          aria-hidden="true"
+          weight="bold"
+          visibility={language === current ? undefined : 'hidden'}
+        />
+      ),
       current: language === current,
       onSelect: () => chooseLanguage(language),
     })),

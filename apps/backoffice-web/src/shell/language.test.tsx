@@ -5,7 +5,8 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import type { Me } from '../api';
-import { setLanguage } from '../i18n';
+import { i18next, setLanguage } from '../i18n';
+import { SessionProvider, useSession } from '../session';
 
 const me = (language: 'en' | 'hr', languageChosen = false): Me => ({
   account: { id: 'h1', email: 'host@example.test', role: 'host', language, languageChosen },
@@ -76,6 +77,29 @@ async function type(selector: string, value: string) {
 }
 
 describe('back-office language', () => {
+  it('renders signed-in pages in the account language from their first render', async () => {
+    // A map, for one, is built once with the strings of its first render.
+    const seen: string[] = [];
+    function Probe() {
+      const { me: current } = useSession();
+      if (current && current !== 'loading') seen.push(i18next.language);
+      return null;
+    }
+    vi.stubGlobal('fetch', async () => json(me('hr')));
+    el = document.createElement('div');
+    document.body.append(el);
+    root = createRoot(el);
+    await act(async () => {
+      root?.render(
+        <SessionProvider>
+          <Probe />
+        </SessionProvider>,
+      );
+    });
+    expect(seen.length).toBeGreaterThan(0);
+    expect(new Set(seen)).toEqual(new Set(['hr']));
+  });
+
   it("shows the account's language and sets <html lang>", async () => {
     await mount('/', me('hr'));
     await vi.waitFor(() => expect(navText()).toContain('Danas'));

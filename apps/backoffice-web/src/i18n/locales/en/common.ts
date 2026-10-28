@@ -69,4 +69,16 @@ export const common = {
     actions: 'Actions',
     clearSearch: 'Clear search',
   },
+  /** MapLibre's own control labels. */
+  map: {
+    title: 'Map',
+    marker: 'Map marker',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    attribution: 'Toggle attribution',
+    feedback: 'Map feedback',
+    ctrlScroll: 'Use Ctrl + scroll to zoom the map',
+    cmdScroll: 'Use ⌘ + scroll to zoom the map',
+    twoFingers: 'Use two fingers to move the map',
+  },
 };

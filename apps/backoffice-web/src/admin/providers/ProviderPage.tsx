@@ -356,7 +356,8 @@ export function ProviderPage() {
             )}
           </div>
           <p className="muted">
-            {provider.email} · {percentText(provider.commissionBp)} commission
+            {provider.email} ·{' '}
+            {t('provider.commissionLine', { percent: percentText(provider.commissionBp) })}
           </p>
         </div>
         <MoreActions

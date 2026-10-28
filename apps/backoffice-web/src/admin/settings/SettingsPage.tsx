@@ -30,7 +30,7 @@ export function SettingsPage() {
     return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
 
   async function save() {
-    if (cap === null) throw new Error('Enter a daily chat limit.');
+    if (cap === null) throw new Error(t('settings.chatLimitMissing'));
     setCap((await admin.saveSettings({ dailyMessageCap: cap })).dailyMessageCap);
   }
 

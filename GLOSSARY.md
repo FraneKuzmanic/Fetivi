@@ -344,7 +344,7 @@ The back office and the emails to hosts speak Croatian and English (ticket 53). 
 | QR link | QR poveznica |
 | Arrival release | otključavanje dolaska |
 | Stay | boravak |
-| Proposed Stay | predloženi boravak |
+| Proposed Stay | predloženi boravak (host pages: rezervacija iz kalendara) |
 | Possibly cancelled | moguće otkazano |
 | Calendar feed | kalendar (poveznica za izvoz) |
 | Order | narudžba |
@@ -362,4 +362,4 @@ The back office and the emails to hosts speak Croatian and English (ticket 53). 
 | Reconciliation finding | problem (the page: Provjera plaćanja) |
 | Answer feedback | ocjena odgovora |
 
-The Setup wizard is "postavljanje", never "vodič", so that "Vodič" always means the Guide. An Info block is a "unos", matching the English UI's "guide entry"; "blok" is not used.
+The Setup wizard is "postavljanje", never "vodič", so that "Vodič" always means the Guide. An Info block is a "unos", matching the English UI's "guide entry"; "blok" is not used. A Proposed Stay is "predloženi boravak" in the admin's log, but the host pages call it a "rezervacija" (from the calendar), matching the English UI's "booking".

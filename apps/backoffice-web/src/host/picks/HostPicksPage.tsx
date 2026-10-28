@@ -125,7 +125,7 @@ function PickRow({
           <strong>{pick.title}</strong>
           {pick.note ? <TranslationChip status={pick.translation.status} /> : null}
         </span>
-        <span className="muted">{pick.note ? preview(pick.note) : 'No note'}</span>
+        <span className="muted">{pick.note ? preview(pick.note) : t('picks.noNote')}</span>
         <span className="entry-meta">{placeKindLabel(pick)}</span>
         <TranslationFailure id={pick.id} translation={pick.translation} onChanged={onChanged} />
       </span>

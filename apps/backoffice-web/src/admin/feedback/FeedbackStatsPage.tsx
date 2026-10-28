@@ -38,8 +38,9 @@ export function FeedbackStatsPage() {
           {totals.outdated} · {labels.feedbackReason.not_helpful} {totals.notHelpful}
           <span className="muted">
             {' '}
-            · wrong or outdated: {percent(totals.wrong + totals.outdated, totals.answers)} of
-            answers
+            {t('feedback.wrongShare', {
+              percent: percent(totals.wrong + totals.outdated, totals.answers),
+            })}
           </span>
         </p>
       </section>

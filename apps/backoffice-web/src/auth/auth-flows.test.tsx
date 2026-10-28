@@ -114,6 +114,19 @@ describe('signed-out pages', () => {
     );
   });
 
+  it('keeps focus on the language switch when the language changes', async () => {
+    await open('/login');
+    const hrvatski = button('Hrvatski');
+    await act(async () => {
+      hrvatski?.focus();
+      hrvatski?.click();
+    });
+    expect(document.documentElement.lang).toBe('hr');
+    expect(el.querySelector('h1')?.textContent).toBe('Prijava');
+    expect(document.activeElement).toBe(hrvatski);
+    await act(async () => button('English')?.click());
+  });
+
   it('shows and hides the password', async () => {
     await open('/login');
     const input = () => el.querySelector<HTMLInputElement>('.password-input input');

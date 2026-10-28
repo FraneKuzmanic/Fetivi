@@ -1,4 +1,4 @@
-import { accounts, BACKOFFICE_LANGUAGES, GUEST_LANGUAGES } from '@fetivi/domain';
+import { accounts, BACKOFFICE_LANGUAGES } from '@fetivi/domain';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -41,7 +41,7 @@ const Credentials = z.object({
 const SignUpBody = z.object({ email: Email, password: Password, language: PageLanguage });
 const EmailBody = z.object({ email: Email, language: PageLanguage });
 const TokenBody = z.object({ token: z.string().min(1).max(256) });
-const LanguageBody = z.strictObject({ language: z.enum(GUEST_LANGUAGES) });
+const LanguageBody = z.strictObject({ language: z.enum(BACKOFFICE_LANGUAGES) });
 const ResetBody = z.object({ token: z.string().min(1).max(256), password: Password });
 
 export async function authRoutes(app: FastifyInstance, deps: AccountDeps): Promise<void> {

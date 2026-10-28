@@ -481,6 +481,7 @@ export const admin = {
   feedback: {
     title: 'Feedback',
     units: 'Units',
+    wrongShare: '· wrong or outdated: {{percent}} of answers',
     unit: 'Unit',
     stays: 'Stays',
     conversations: 'Conversations',
@@ -519,6 +520,7 @@ export const admin = {
     title: 'Settings',
     guestChat: 'Guest chat',
     chatLimit: 'Daily chat limit per guest device',
+    chatLimitMissing: 'Enter a daily chat limit.',
     usage: 'Anthropic usage',
     usageHintChecked:
       "An estimate: the tokens Fetivi records × Anthropic's published prices (checked {{date}}). Your actual bill can differ. Days and months are in UTC.",
@@ -529,6 +531,9 @@ export const admin = {
     month: 'This month',
     total: 'Total',
     lessThan: '< {{amount}}',
+    unpriced_one: '{{count}} call used a model without a price in the table and is not counted.',
+    unpriced_other:
+      '{{count}} calls used a model without a price in the table and are not counted.',
   },
   order: {
     triggers: {
@@ -726,6 +731,7 @@ export const admin = {
     removeTime: 'Remove time {{n}}',
     addTime: 'Add time',
     seatsPerSlot: 'Seats per slot',
+    timesHint: 'Times in {{timezone}}. Up to a year at a time.',
     create: 'Create slots',
     slots: 'Slots',
     when: 'When',
@@ -748,6 +754,7 @@ export const admin = {
     language: 'Language for order emails',
     languageHint: 'Also the language of the order page the email links to.',
     commission: 'Commission (%)',
+    commissionLine: '{{percent}} commission',
     commissionHint: "Fetivi's share of each Order.",
     name: 'Name',
     email: 'Email',

@@ -175,7 +175,7 @@ export function SlotsPanel({
           max={OFFER_LIMITS.capacityMax}
           onChange={(capacity) => setDraft((d) => ({ ...d, capacity }))}
         />
-        <small>Times in {timezone}. Up to a year at a time.</small>
+        <small>{t('slots.timesHint', { timezone })}</small>
         <div className="section-foot">
           {result ? (
             <output className="saved" aria-live="polite">

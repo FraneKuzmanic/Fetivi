@@ -512,6 +512,7 @@ export const admin: Translation<typeof en> = {
   feedback: {
     title: 'Ocjene',
     units: 'Jedinice',
+    wrongShare: '· netočno ili zastarjelo: {{percent}} odgovora',
     unit: 'Jedinica',
     stays: 'Boravci',
     conversations: 'Razgovori',
@@ -552,6 +553,7 @@ export const admin: Translation<typeof en> = {
     title: 'Postavke',
     guestChat: 'Razgovor s gostima',
     chatLimit: 'Dnevno ograničenje razgovora po uređaju gosta',
+    chatLimitMissing: 'Upišite dnevno ograničenje razgovora.',
     usage: 'Potrošnja Anthropica',
     usageHintChecked:
       'Procjena: tokeni koje Fetivi bilježi × Anthropicove objavljene cijene (provjereno {{date}}). Stvarni račun može se razlikovati. Dani i mjeseci su u UTC-u.',
@@ -562,6 +564,9 @@ export const admin: Translation<typeof en> = {
     month: 'Ovaj mjesec',
     total: 'Ukupno',
     lessThan: '< {{amount}}',
+    unpriced_one: '{{count}} poziv koristio je model bez cijene u tablici i nije uračunat.',
+    unpriced_few: '{{count}} poziva koristila su model bez cijene u tablici i nisu uračunata.',
+    unpriced_other: '{{count}} poziva koristilo je model bez cijene u tablici i nije uračunato.',
   },
   order: {
     triggers: {
@@ -761,6 +766,7 @@ export const admin: Translation<typeof en> = {
     removeTime: 'Ukloni vrijeme {{n}}',
     addTime: 'Dodaj vrijeme',
     seatsPerSlot: 'Mjesta po terminu',
+    timesHint: 'Vremenska zona: {{timezone}}. Najviše godinu dana odjednom.',
     create: 'Izradi termine',
     slots: 'Termini',
     when: 'Kada',
@@ -783,6 +789,7 @@ export const admin: Translation<typeof en> = {
     language: 'Jezik e-poruka o narudžbama',
     languageHint: 'Ujedno i jezik stranice narudžbe na koju vodi e-poruka.',
     commission: 'Provizija (%)',
+    commissionLine: 'provizija {{percent}}',
     commissionHint: 'Fetivijev udio u svakoj narudžbi.',
     name: 'Naziv',
     email: 'E-adresa',

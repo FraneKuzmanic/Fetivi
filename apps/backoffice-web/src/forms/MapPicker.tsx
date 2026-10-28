@@ -143,6 +143,17 @@ function LocationMap({
             : { center: [at.lng, at.lat] as [number, number], zoom: initial.current ? 17 : 13 }),
           cooperativeGestures: true,
           attributionControl: { compact: true },
+          locale: {
+            'Map.Title': t('map.title'),
+            'Marker.Title': t('map.marker'),
+            'NavigationControl.ZoomIn': t('map.zoomIn'),
+            'NavigationControl.ZoomOut': t('map.zoomOut'),
+            'AttributionControl.ToggleAttribution': t('map.attribution'),
+            'AttributionControl.MapFeedback': t('map.feedback'),
+            'CooperativeGesturesHandler.WindowsHelpText': t('map.ctrlScroll'),
+            'CooperativeGesturesHandler.MacHelpText': t('map.cmdScroll'),
+            'CooperativeGesturesHandler.MobileHelpText': t('map.twoFingers'),
+          },
         });
         m.addControl(new maplibre.NavigationControl({ showCompass: false }));
         const marker = new maplibre.Marker({ draggable: true, color: PIN_COLOUR });

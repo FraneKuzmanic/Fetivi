@@ -9,7 +9,8 @@ import { HarbourHouse } from './HarbourHouse';
  * the wordmark and a small harbour house form one header ("Fetivi on the quay"); `intro` adds the
  * line on what hosts do here, for first visits. From 900px the header gives way to a side panel
  * with the full scene and that line. A new title (a sent or done state) takes focus, so screen
- * readers announce it and keyboard users keep their place.
+ * readers announce it and keyboard users keep their place; a title that changed only because the
+ * language switched does not, so focus stays on the switch.
  */
 export function AuthPage({
   title,
@@ -20,19 +21,21 @@ export function AuthPage({
   intro?: boolean;
   children: ReactNode;
 }) {
-  const { t } = useTranslation(['auth', 'shell']);
+  const { t, i18n } = useTranslation(['auth', 'shell']);
+  const language = i18n.language;
   const heading = useRef<HTMLHeadingElement>(null);
-  const first = useRef(true);
+  const shown = useRef<{ title: string; language: string } | null>(null);
 
   useEffect(() => {
     const previous = document.title;
     document.title = t('shell:documentTitle', { page: title });
-    if (first.current) first.current = false;
-    else heading.current?.focus();
+    const before = shown.current;
+    shown.current = { title, language };
+    if (before && before.language === language && before.title !== title) heading.current?.focus();
     return () => {
       document.title = previous;
     };
-  }, [title, t]);
+  }, [title, language, t]);
 
   return (
     <div className="auth">

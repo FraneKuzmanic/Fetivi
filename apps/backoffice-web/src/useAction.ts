@@ -5,7 +5,8 @@ import { messageOf } from './messages';
 /** Runs an async action, tracking whether it is busy and the error message it ended with. */
 export function useAction() {
   const [busy, setBusy] = useState(false);
-  // The error itself, so its message follows a language switch.
+  // The error itself, so its message follows a language switch; the subscription below re-renders
+  // on that switch.
   const [failure, setFailure] = useState<{ error: unknown } | null>(null);
   useTranslation('errors');
 

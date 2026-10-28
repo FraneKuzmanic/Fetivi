@@ -2,13 +2,21 @@
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { i18next } from '../i18n';
 import { MapPicker, type MapPoint } from './MapPicker';
 
-// No WebGL in happy-dom: the map either never finishes loading or fails, as each test needs.
+// No WebGL in happy-dom: the map either never finishes loading or fails, as each test needs, or a
+// test hands in a fake MapLibre.
 let mapFails = true;
+let fakeMapLibre: unknown = null;
 vi.mock('@fetivi/ui', () => ({
   MAP_STYLE_URL: 'x',
-  loadMapLibre: () => (mapFails ? Promise.reject(new Error('no WebGL')) : new Promise(() => {})),
+  loadMapLibre: () =>
+    fakeMapLibre
+      ? Promise.resolve(fakeMapLibre)
+      : mapFails
+        ? Promise.reject(new Error('no WebGL'))
+        : new Promise(() => {}),
 }));
 
 const PLACE = {
@@ -36,6 +44,7 @@ afterEach(() => {
   document.body.innerHTML = '';
   vi.unstubAllGlobals();
   mapFails = true;
+  fakeMapLibre = null;
 });
 
 const json = (body: unknown, status = 200) =>
@@ -151,5 +160,42 @@ describe('MapPicker', () => {
     await type(input('Latitude'), '43.5');
     await type(input('Longitude'), '16.25');
     expect(el.textContent).not.toContain('Place the pin on the map or enter the coordinates.');
+  });
+
+  it("gives the map's own controls the interface language", async () => {
+    let locale: Record<string, string> | undefined;
+    class Chainable {
+      setLngLat() {
+        return this;
+      }
+      addTo() {
+        return this;
+      }
+      on() {
+        return this;
+      }
+    }
+    fakeMapLibre = {
+      Map: class extends Chainable {
+        constructor(options: { locale: Record<string, string> }) {
+          super();
+          locale = options.locale;
+        }
+        addControl() {}
+        remove() {}
+      },
+      NavigationControl: class {},
+      Marker: Chainable,
+    };
+    await i18next.changeLanguage('hr');
+    try {
+      await mount();
+      await vi.waitFor(() => expect(locale?.['NavigationControl.ZoomIn']).toBe('Približi'));
+      expect(locale?.['CooperativeGesturesHandler.WindowsHelpText']).toBe(
+        'Za zumiranje karte držite Ctrl i pomičite kotačić',
+      );
+    } finally {
+      await i18next.changeLanguage('en');
+    }
   });
 });

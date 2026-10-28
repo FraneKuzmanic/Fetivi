@@ -70,4 +70,15 @@ export const common: Translation<typeof en> = {
     actions: 'Radnje',
     clearSearch: 'Očisti pretragu',
   },
+  map: {
+    title: 'Karta',
+    marker: 'Oznaka na karti',
+    zoomIn: 'Približi',
+    zoomOut: 'Udalji',
+    attribution: 'Prikaži ili sakrij izvore karte',
+    feedback: 'Povratne informacije o karti',
+    ctrlScroll: 'Za zumiranje karte držite Ctrl i pomičite kotačić',
+    cmdScroll: 'Za zumiranje karte držite ⌘ i pomičite kotačić',
+    twoFingers: 'Kartu pomičite s dva prsta',
+  },
 };

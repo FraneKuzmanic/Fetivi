@@ -257,5 +257,8 @@ describe('back-office language', () => {
     expect((await get(t.app, '/api/auth/me', hostCookie)).json().account.language).toBe('hr');
     const bad = await put(t.app, '/api/auth/me/language', { language: 'es' }, hostCookie);
     expect(bad.statusCode).toBe(400);
+    // A guest language the back office does not speak.
+    const guestOnly = await put(t.app, '/api/auth/me/language', { language: 'de' }, hostCookie);
+    expect(guestOnly.statusCode).toBe(400);
   });
 });
