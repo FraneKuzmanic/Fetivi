@@ -1,4 +1,5 @@
 import { type FormEvent, type ReactNode, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAction } from '../useAction';
 import { Field, type FieldProps } from './Field';
 
@@ -182,9 +183,9 @@ export function TriStateField({
   hideLabel,
   value,
   onChange,
-  nullLabel = 'Not set',
-  yesLabel = 'Yes',
-  noLabel = 'No',
+  nullLabel,
+  yesLabel,
+  noLabel,
 }: FieldProps & {
   value: boolean | null;
   onChange: (value: boolean | null) => void;
@@ -192,6 +193,7 @@ export function TriStateField({
   yesLabel?: string;
   noLabel?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <Field label={label} hint={hint} hideLabel={hideLabel}>
       {(ids) => (
@@ -201,9 +203,9 @@ export function TriStateField({
           value={value === null ? '' : value ? 'yes' : 'no'}
           onChange={(e) => onChange(e.target.value === '' ? null : e.target.value === 'yes')}
         >
-          <option value="">{nullLabel}</option>
-          <option value="yes">{yesLabel}</option>
-          <option value="no">{noLabel}</option>
+          <option value="">{nullLabel ?? t('field.notSet')}</option>
+          <option value="yes">{yesLabel ?? t('yes')}</option>
+          <option value="no">{noLabel ?? t('no')}</option>
         </select>
       )}
     </Field>
@@ -243,7 +245,7 @@ export function Section({
   title,
   description,
   onSave,
-  saveLabel = 'Save',
+  saveLabel,
   children,
 }: {
   id?: string;
@@ -254,6 +256,7 @@ export function Section({
   children: ReactNode;
 }) {
   const { busy, error, run } = useAction();
+  const { t } = useTranslation();
   const [saved, setSaved] = useState(false);
   const headingId = useId();
 
@@ -275,11 +278,11 @@ export function Section({
           {error ? <p role="alert">{error}</p> : null}
           {saved && !error ? (
             <output className="saved" aria-live="polite">
-              Saved
+              {t('field.saved')}
             </output>
           ) : null}
           <button type="submit" className="primary" disabled={busy}>
-            {saveLabel}
+            {saveLabel ?? t('save')}
           </button>
         </div>
       ) : null}

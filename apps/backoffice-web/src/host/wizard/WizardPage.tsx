@@ -1,6 +1,7 @@
 import type { PropertyType } from '@fetivi/domain/vocabulary';
 import { isWizardStepId } from '@fetivi/domain/wizard';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 import {
   host,
@@ -26,6 +27,7 @@ interface Loaded {
 
 /** /units/:id/setup and /units/:id/setup/:stepId. Progress lives in the saved data only. */
 export function WizardPage() {
+  const { t } = useTranslation(['host', 'common']);
   const { id = '', stepId } = useParams();
   const { ui } = useWizardCopy();
   const { busy, error, run } = useAction();
@@ -51,7 +53,8 @@ export function WizardPage() {
   if (stepId !== undefined && !isWizardStepId(stepId)) {
     return <Navigate to={`/units/${id}/setup`} replace />;
   }
-  if (!data) return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+  if (!data)
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
 
   const { detail, property, status } = data;
   const pending = pendingByStep(data.manualImport);
@@ -94,8 +97,8 @@ export function WizardPage() {
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/properties">Properties</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/properties">{t('host:properties.title')}</Link>
         <span aria-hidden="true">/</span>
         <Link to={`/properties/${detail.propertyId}`}>{detail.propertyName}</Link>
         <span aria-hidden="true">/</span>

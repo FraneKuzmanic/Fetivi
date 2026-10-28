@@ -1,12 +1,14 @@
+import { useTranslation } from 'react-i18next';
 import { type AdminPropertyRow, admin } from '../api';
 import { formatDay } from '../forms/datetime';
+import { i18next } from '../i18n';
 import { useConfirm } from '../shell/ConfirmDialog';
 import { useAction } from '../useAction';
 
 /** "1 of 2 ready": how many units go live the moment the property is approved. */
 export function unitsLine(p: AdminPropertyRow): string {
-  if (p.approvedAt) return p.unitCount === 1 ? '1 unit' : `${p.unitCount} units`;
-  return `${p.readyUnitCount} of ${p.unitCount} ready`;
+  if (p.approvedAt) return i18next.t('admin:approvals.units', { count: p.unitCount });
+  return i18next.t('admin:approvals.ready', { ready: p.readyUnitCount, total: p.unitCount });
 }
 
 /** Waiting properties first, oldest first; then the approved, newest first. */
@@ -24,17 +26,18 @@ export function ApprovalsTable({
   rows: AdminPropertyRow[];
   onChanged: () => Promise<void> | void;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const confirm = useConfirm();
   const { busy, error, run } = useAction();
 
   async function approve(p: AdminPropertyRow) {
     const yes = await confirm({
-      title: `Approve ${p.name}?`,
+      title: t('approvals.approveTitle', { name: p.name }),
       body:
         p.readyUnitCount === p.unitCount
-          ? 'All its units are ready and get their QR links now.'
-          : `${p.readyUnitCount} of ${p.unitCount} units are ready and get their QR links now. The rest get theirs when they are ready.`,
-      action: 'Approve property',
+          ? t('approvals.allReady')
+          : t('approvals.someReady', { ready: p.readyUnitCount, total: p.unitCount }),
+      action: t('approvals.approveProperty'),
     });
     if (!yes) return;
     void run(async () => {
@@ -50,22 +53,22 @@ export function ApprovalsTable({
         <table className="data-table">
           <thead>
             <tr>
-              <th scope="col">Property</th>
+              <th scope="col">{t('approvals.property')}</th>
               <th scope="col" className="wide-only">
-                Destination
+                {t('approvals.destination')}
               </th>
               <th scope="col" className="wide-only">
-                Host
+                {t('approvals.host')}
               </th>
               <th scope="col" className="wide-only">
-                Units
+                {t('approvals.unitsColumn')}
               </th>
               <th scope="col" className="wide-only">
-                Added
+                {t('approvals.added')}
               </th>
-              <th scope="col">Status</th>
+              <th scope="col">{t('approvals.statusColumn')}</th>
               <th scope="col">
-                <span className="visually-hidden">Actions</span>
+                <span className="visually-hidden">{t('common:table.actions')}</span>
               </th>
             </tr>
           </thead>
@@ -81,9 +84,9 @@ export function ApprovalsTable({
                 <td className="nowrap wide-only">{formatDay(p.createdAt)}</td>
                 <td>
                   {p.approvedAt ? (
-                    <span className="chip ok">Approved</span>
+                    <span className="chip ok">{t('approvals.approved')}</span>
                   ) : (
-                    <span className="chip wait">Waiting</span>
+                    <span className="chip wait">{t('approvals.waiting')}</span>
                   )}
                 </td>
                 <td className="cell-actions">
@@ -94,7 +97,7 @@ export function ApprovalsTable({
                       disabled={busy}
                       onClick={() => void approve(p)}
                     >
-                      Approve
+                      {t('approvals.approve')}
                     </button>
                   )}
                 </td>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import {
   type ConfirmBody,
@@ -24,6 +25,7 @@ interface Loaded {
 
 /** /units/:id/setup/import: paste or upload a house manual, then review its drafts one by one. */
 export function ImportPage() {
+  const { t } = useTranslation(['host', 'common']);
   const { id = '' } = useParams();
   const copy = useWizardCopy();
   const mi = copy.manualImport;
@@ -56,7 +58,7 @@ export function ImportPage() {
   usePageTitle(mi.title);
 
   if (!data || !loaded)
-    return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
   const { detail, manualImport } = data;
   const setImport = (next: ManualImport) => setData((d) => d && { ...d, manualImport: next });
 
@@ -90,7 +92,7 @@ export function ImportPage() {
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
         <Link to={`/properties/${detail.propertyId}`}>{detail.propertyName}</Link>
         <span aria-hidden="true">/</span>
         <Link to={`/units/${id}`}>{detail.name}</Link>

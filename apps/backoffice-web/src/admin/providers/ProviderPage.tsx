@@ -16,17 +16,15 @@ import {
   Trash,
 } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { type OfferSummary, type Provider, type ProviderInput, providers } from '../../api';
 import { NumberField, Section, SelectField, TextArea, TextField } from '../../forms/fields';
-import {
-  AVAILABILITY_MODE_SHORT,
-  OFFER_CATEGORY_LABELS,
-  PROVIDER_LANGUAGE_LABELS,
-} from '../../forms/labels';
+import { PROVIDER_LANGUAGE_LABELS } from '../../forms/labels';
 import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
+import { useLabels } from '../../i18n/useLabels';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { EmptyState } from '../../shell/EmptyState';
 import { MoreActions } from '../../shell/MoreActions';
@@ -35,9 +33,6 @@ import { useAction } from '../../useAction';
 import { bpFromPercent, formatPrice, percentFromBp } from './money';
 import { OnlinePaymentsPanel } from './OnlinePaymentsPanel';
 import { percentText } from './ProvidersPage';
-
-const LANGUAGE_LABEL = 'Language for order emails';
-const LANGUAGE_HINT = 'Also the language of the order page the email links to.';
 
 interface Draft {
   name: string | null;
@@ -68,10 +63,11 @@ function CommissionField({
   value: number | null;
   onChange: (value: number | null) => void;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   return (
     <NumberField
-      label="Commission (%)"
-      hint="Fetivi's share of each Order."
+      label={t('provider.commission')}
+      hint={t('provider.commissionHint')}
       value={value}
       min={0}
       max={100}
@@ -83,6 +79,7 @@ function CommissionField({
 
 /** /admin/providers/new */
 export function NewProviderPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
   const [name, setName] = useState<string | null>(null);
@@ -105,26 +102,26 @@ export function NewProviderPage() {
     });
   }
 
-  usePageTitle('Add provider');
+  usePageTitle(t('providers.add'));
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/providers">Providers</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/admin/providers">{t('providers.title')}</Link>
       </nav>
       <section className="panel narrow">
         <form onSubmit={submit}>
           <div className="fields">
             <TextField
-              label="Name"
+              label={t('provider.name')}
               value={name}
               maxLength={LIMITS.name}
               required
               onChange={setName}
             />
             <TextField
-              label="Email"
-              hint="Orders are sent here."
+              label={t('provider.email')}
+              hint={t('provider.emailHint')}
               type="email"
               value={email}
               maxLength={254}
@@ -132,15 +129,15 @@ export function NewProviderPage() {
               onChange={setEmail}
             />
             <TextField
-              label="WhatsApp number"
+              label={t('provider.whatsapp')}
               type="tel"
               value={whatsappPhone}
               maxLength={LIMITS.phone}
               onChange={setWhatsappPhone}
             />
             <SelectField
-              label={LANGUAGE_LABEL}
-              hint={LANGUAGE_HINT}
+              label={t('provider.language')}
+              hint={t('provider.languageHint')}
               value={language}
               options={PROVIDER_LANGUAGES}
               labels={PROVIDER_LANGUAGE_LABELS}
@@ -151,7 +148,7 @@ export function NewProviderPage() {
           {error ? <p role="alert">{error}</p> : null}
           <div className="actions">
             <button type="submit" className="primary" disabled={busy}>
-              Create provider
+              {t('provider.create')}
             </button>
           </div>
         </form>
@@ -162,6 +159,7 @@ export function NewProviderPage() {
 
 /** /admin/providers/:id: contact, deal, status and the Provider's Offers. */
 export function ProviderPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -204,7 +202,7 @@ export function ProviderPage() {
   usePageTitle(provider?.name);
 
   if (!provider || !draft) {
-    return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
   }
 
   const set =
@@ -221,9 +219,9 @@ export function ProviderPage() {
     if (!provider) return;
     if (!active) {
       const yes = await confirm({
-        title: `Pause ${provider.name}?`,
-        body: 'Guests stop seeing their offers until you resume them. Orders already placed go on.',
-        action: 'Pause provider',
+        title: t('provider.pauseTitle', { name: provider.name }),
+        body: t('provider.pauseBody'),
+        action: t('provider.pause'),
       });
       if (!yes) return;
     }
@@ -233,15 +231,13 @@ export function ProviderPage() {
   async function remove() {
     if (!provider) return;
     if (offerCount > 0) {
-      setBlocked(
-        `To delete ${provider.name}, delete their ${offerCount === 1 ? 'offer' : `${offerCount} offers`} first.`,
-      );
+      setBlocked(t('provider.deleteBlocked', { name: provider.name, count: offerCount }));
       return;
     }
     const yes = await confirm({
-      title: `Delete ${provider.name}?`,
-      body: 'They have no offers left. This cannot be undone.',
-      action: 'Delete provider',
+      title: t('provider.deleteTitle', { name: provider.name }),
+      body: t('provider.deleteBody'),
+      action: t('provider.delete'),
       danger: true,
     });
     if (!yes) return;
@@ -252,10 +248,10 @@ export function ProviderPage() {
   }
 
   const sections: PageSection[] = [
-    { id: 'offers', label: 'Offers', icon: Tag, count: offerCount },
-    { id: 'contact', label: 'Contact', icon: AddressBook },
-    { id: 'deal', label: 'Deal', icon: Handshake },
-    { id: 'payments', label: 'Online payments', icon: CreditCard },
+    { id: 'offers', label: t('provider.offers'), icon: Tag, count: offerCount },
+    { id: 'contact', label: t('provider.contact'), icon: AddressBook },
+    { id: 'deal', label: t('provider.deal'), icon: Handshake },
+    { id: 'payments', label: t('providers.onlinePayments'), icon: CreditCard },
   ];
 
   const renderSection = (section: string) => {
@@ -263,7 +259,7 @@ export function ProviderPage() {
       case 'contact':
         return (
           <Section
-            title="Contact"
+            title={t('provider.contact')}
             onSave={save(['name', 'email', 'whatsappPhone', 'language', 'taxNumber'], {
               name: draft.name ?? '',
               email: draft.email ?? '',
@@ -273,15 +269,15 @@ export function ProviderPage() {
             })}
           >
             <TextField
-              label="Name"
+              label={t('provider.name')}
               value={draft.name}
               maxLength={LIMITS.name}
               required
               onChange={set('name')}
             />
             <TextField
-              label="Email"
-              hint="Orders are sent here."
+              label={t('provider.email')}
+              hint={t('provider.emailHint')}
               type="email"
               value={draft.email}
               maxLength={254}
@@ -289,23 +285,23 @@ export function ProviderPage() {
               onChange={set('email')}
             />
             <TextField
-              label="WhatsApp number"
+              label={t('provider.whatsapp')}
               type="tel"
               value={draft.whatsappPhone}
               maxLength={LIMITS.phone}
               onChange={set('whatsappPhone')}
             />
             <SelectField
-              label={LANGUAGE_LABEL}
-              hint={LANGUAGE_HINT}
+              label={t('provider.language')}
+              hint={t('provider.languageHint')}
               value={draft.language}
               options={PROVIDER_LANGUAGES}
               labels={PROVIDER_LANGUAGE_LABELS}
               onChange={(value) => set('language')(value ?? PROVIDER_DEFAULTS.language)}
             />
             <TextField
-              label="Tax number"
-              hint="Needed for the platform's reporting duty."
+              label={t('provider.taxNumber')}
+              hint={t('provider.taxHint')}
               value={draft.taxNumber}
               maxLength={OFFER_LIMITS.taxNumber}
               onChange={set('taxNumber')}
@@ -315,7 +311,7 @@ export function ProviderPage() {
       case 'deal':
         return (
           <Section
-            title="Deal"
+            title={t('provider.deal')}
             onSave={save(['commissionPercent', 'dealNotes'], {
               commissionBp: bpFromPercent(draft.commissionPercent) ?? 0,
               dealNotes: draft.dealNotes,
@@ -323,8 +319,8 @@ export function ProviderPage() {
           >
             <CommissionField value={draft.commissionPercent} onChange={set('commissionPercent')} />
             <TextArea
-              label="Deal notes"
-              hint="Only you see these."
+              label={t('provider.dealNotes')}
+              hint={t('provider.dealNotesHint')}
               value={draft.dealNotes}
               maxLength={OFFER_LIMITS.dealNotes}
               onChange={set('dealNotes')}
@@ -347,16 +343,16 @@ export function ProviderPage() {
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/providers">Providers</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/admin/providers">{t('providers.title')}</Link>
       </nav>
       <div className="page-head">
         <div className="page-title">
           <div className="title-line">
             {provider.active ? (
-              <span className="chip ok">Active</span>
+              <span className="chip ok">{t('providers.active')}</span>
             ) : (
-              <span className="chip neutral">Paused</span>
+              <span className="chip neutral">{t('providers.paused')}</span>
             )}
           </div>
           <p className="muted">
@@ -364,21 +360,21 @@ export function ProviderPage() {
           </p>
         </div>
         <MoreActions
-          label={`More actions for ${provider.name}`}
+          label={t('provider.moreActions', { name: provider.name })}
           items={[
             provider.active
               ? {
-                  label: 'Pause provider',
+                  label: t('provider.pause'),
                   icon: <Pause aria-hidden="true" />,
                   onSelect: () => void setActive(false),
                 }
               : {
-                  label: 'Resume provider',
+                  label: t('provider.resume'),
                   icon: <Play aria-hidden="true" />,
                   onSelect: () => void setActive(true),
                 },
             {
-              label: 'Delete provider',
+              label: t('provider.delete'),
               icon: <Trash aria-hidden="true" />,
               danger: true,
               onSelect: () => void remove(),
@@ -389,7 +385,7 @@ export function ProviderPage() {
       {error ? <p role="alert">{error}</p> : null}
       {blocked ? <p role="alert">{blocked}</p> : null}
 
-      <SectionLayout sections={sections} label="Provider sections" render={renderSection} />
+      <SectionLayout sections={sections} label={t('provider.sections')} render={renderSection} />
     </>
   );
 }
@@ -401,22 +397,24 @@ function OffersPanel({
   providerId: string;
   offers: OfferSummary[] | null;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const add = (
     <Link className="button primary" to={`/admin/providers/${providerId}/offers/new`}>
       <Plus aria-hidden="true" weight="bold" />
-      Add offer
+      {t('provider.addOffer')}
     </Link>
   );
   return (
     <section className="panel" aria-labelledby="offers-heading">
       <div className="panel-head">
-        <h2 id="offers-heading">Offers</h2>
+        <h2 id="offers-heading">{t('provider.offers')}</h2>
         {offers && offers.length > 0 ? add : null}
       </div>
-      {offers === null ? <p className="muted">Loading…</p> : null}
+      {offers === null ? <p className="muted">{t('common:loading')}</p> : null}
       {offers?.length === 0 ? (
-        <EmptyState icon={Tag} title="No offers yet" action={add}>
-          An offer is something guests can book or buy from this provider, such as a boat trip.
+        <EmptyState icon={Tag} title={t('provider.noOffers')} action={add}>
+          {t('provider.noOffersBody')}
         </EmptyState>
       ) : null}
       {offers && offers.length > 0 ? (
@@ -424,14 +422,14 @@ function OffersPanel({
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Offer</th>
+                <th scope="col">{t('provider.offer')}</th>
                 <th scope="col" className="wide-only">
-                  Booking
+                  {t('provider.booking')}
                 </th>
                 <th scope="col" className="num wide-only">
-                  Price
+                  {t('provider.price')}
                 </th>
-                <th scope="col">Status</th>
+                <th scope="col">{t('providers.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -443,22 +441,22 @@ function OffersPanel({
                         {o.title}
                       </Link>
                       <span className="cell-sub">
-                        {[o.destination?.name, OFFER_CATEGORY_LABELS[o.category]]
+                        {[o.destination?.name, labels.offerCategory[o.category]]
                           .filter(Boolean)
                           .join(' · ')}
                       </span>
                     </div>
                   </td>
-                  <td className="wide-only">{AVAILABILITY_MODE_SHORT[o.availabilityMode]}</td>
+                  <td className="wide-only">{labels.availabilityModeShort[o.availabilityMode]}</td>
                   <td className="num wide-only">
                     {formatPrice(o.priceMinor, o.currency, o.priceUnit)}
                   </td>
                   <td>
                     <span className="chip-stack">
                       {o.active ? (
-                        <span className="chip ok">Active</span>
+                        <span className="chip ok">{t('providers.active')}</span>
                       ) : (
-                        <span className="chip neutral">Paused</span>
+                        <span className="chip neutral">{t('providers.paused')}</span>
                       )}
                       <TranslationChip status={o.translation.status} />
                     </span>

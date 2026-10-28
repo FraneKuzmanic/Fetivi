@@ -358,6 +358,35 @@ button svg,
   display: none;
 }
 
+/* The signed-out language switch, at the top of the form column. */
+.language-switch {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  align-items: center;
+  align-self: flex-end;
+  gap: 2px;
+  color: var(--gray-500);
+}
+
+.language-switch svg {
+  margin-right: 4px;
+}
+
+.language-switch button {
+  min-height: var(--tap);
+  padding: 0 10px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--gray-500);
+}
+
+.language-switch button[aria-pressed="true"] {
+  font-weight: 600;
+  color: var(--navy-900);
+}
+
 .auth-main h1 {
   font-size: 24px;
 }
@@ -755,6 +784,20 @@ button.profile-button[aria-expanded="true"] {
 .menu-caption {
   font-size: 13px;
   color: var(--gray-500);
+}
+
+/* A group's caption inside the list, e.g. "Language" above the languages. */
+.menu-group {
+  display: block;
+  margin-top: 6px;
+  padding: 8px 10px 4px;
+  border-top: 1px solid var(--gray-200);
+}
+
+.menu-header + .menu-group {
+  margin-top: 0;
+  padding-top: 4px;
+  border-top: 0;
 }
 
 .menu-email {

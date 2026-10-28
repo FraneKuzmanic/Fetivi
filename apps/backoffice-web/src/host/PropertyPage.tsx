@@ -11,11 +11,12 @@ import {
   Trash,
 } from '@phosphor-icons/react';
 import { type FormEvent, Fragment, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { host, type PropertyDetail, type PropertyPatch } from '../api';
 import { Section, SelectField, TextField } from '../forms/fields';
-import { PROPERTY_TYPE_LABELS } from '../forms/labels';
 import { sectionBody } from '../forms/patch';
+import { useLabels } from '../i18n/useLabels';
 import { useConfirm } from '../shell/ConfirmDialog';
 import { MoreActions } from '../shell/MoreActions';
 import { usePageTitle } from '../shell/PageTitle';
@@ -33,6 +34,7 @@ const ZONES = Intl.supportedValuesOf('timeZone');
 
 /** /properties/new: just a name, then the full editor. */
 export function NewPropertyPage() {
+  const { t } = useTranslation(['host', 'common']);
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
   const [name, setName] = useState<string | null>(null);
@@ -46,30 +48,35 @@ export function NewPropertyPage() {
     });
   }
 
-  usePageTitle('Add property');
+  usePageTitle(t('property.addTitle'));
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/properties">Properties</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/properties">{t('properties.title')}</Link>
       </nav>
       <section className="panel narrow">
         <form onSubmit={submit}>
           <div className="fields">
             <TextField
-              label="Property name"
-              hint="Guests see this name, for example Villa Mare."
+              label={t('property.name')}
+              hint={t('property.nameHint')}
               value={name}
               maxLength={LIMITS.name}
               required
               onChange={setName}
             />
-            <TextField label="City" value={city} maxLength={LIMITS.shortText} onChange={setCity} />
+            <TextField
+              label={t('core.city')}
+              value={city}
+              maxLength={LIMITS.shortText}
+              onChange={setCity}
+            />
           </div>
           {error ? <p role="alert">{error}</p> : null}
           <div className="actions">
             <button type="submit" className="primary" disabled={busy}>
-              Create property
+              {t('property.create')}
             </button>
           </div>
         </form>
@@ -84,6 +91,8 @@ type Draft = Omit<
 >;
 
 export function PropertyPage() {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
@@ -126,7 +135,7 @@ export function PropertyPage() {
   usePageTitle(detail?.name);
 
   if (!detail || !draft) {
-    return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
   }
 
   const set =
@@ -175,41 +184,46 @@ export function PropertyPage() {
   };
 
   const sections: PageSection[] = [
-    { id: 'basics', label: 'Basics and location', icon: MapPin },
+    { id: 'basics', label: t('property.basics'), icon: MapPin },
     ...CORE_SECTIONS.map((section) => ({
       id: section.id,
       label: section.title,
       icon: CORE_SECTION_ICONS[section.id] ?? ClipboardText,
     })),
-    { id: 'amenities', label: 'Amenities', icon: Couch },
+    { id: 'amenities', label: t('core.amenities'), icon: Couch },
     {
       id: 'guide',
-      label: 'Guest guide',
+      label: t('property.guide'),
       icon: BookOpenText,
-      note: detail.blocks.length === 0 ? 'Empty' : undefined,
+      note: detail.blocks.length === 0 ? t('property.empty') : undefined,
     },
-    { id: 'picks', label: 'Host picks and tips', icon: Star, to: `/properties/${id}/picks` },
+    {
+      id: 'picks',
+      label: t('property.picks'),
+      icon: Star,
+      to: `/properties/${id}/picks`,
+    },
   ];
 
   const renderSection = (sectionId: string) => {
     if (sectionId === 'basics') {
       return (
-        <Section title="Basics and location" onSave={saveBasics}>
+        <Section title={t('property.basics')} onSave={saveBasics}>
           <TextField
-            label="Property name"
-            hint="Guests see this name, for example Villa Mare."
+            label={t('property.name')}
+            hint={t('property.nameHint')}
             value={draft.name}
             maxLength={LIMITS.name}
             required
             onChange={(v) => set('name')(v ?? '')}
           />
           <SelectField
-            label="Property type"
-            hint="Decides which questions the setup wizard asks."
+            label={t('property.type')}
+            hint={t('property.typeHint')}
             value={draft.propertyType}
             options={PROPERTY_TYPES}
-            labels={PROPERTY_TYPE_LABELS}
-            emptyLabel="Not set"
+            labels={labels.propertyType}
+            emptyLabel={t('common:field.notSet')}
             onChange={set('propertyType')}
           />
           <AddressFields
@@ -237,7 +251,7 @@ export function PropertyPage() {
             }}
           />
           <label className="field">
-            <span className="field-label">Time zone</span>
+            <span className="field-label">{t('property.timeZone')}</span>
             <select value={draft.timezone} onChange={(e) => set('timezone')(e.target.value)}>
               {zones.map((z) => (
                 <option key={z} value={z}>
@@ -272,8 +286,8 @@ export function PropertyPage() {
           ))}
           {isArrival ? (
             <TextField
-              label="Building door code"
-              hint="Shared by every unit. Shown to guests only from the arrival release."
+              label={t('property.doorCode')}
+              hint={t('property.doorCodeHint')}
               value={draft.buildingDoorCode}
               maxLength={LIMITS.code}
               onChange={set('buildingDoorCode')}
@@ -297,15 +311,12 @@ export function PropertyPage() {
       );
     }
     return (
-      <Section
-        title="Guest guide"
-        description="What every unit of this property shows in the guest's Guide. A unit can hide an entry or use its own version."
-      >
+      <Section title={t('property.guide')} description={t('property.guideHint')}>
         <BlockList
           blocks={detail.blocks}
           create={(input) => host.createPropertyBlock(id, input)}
           onChanged={reloadBlocks}
-          emptyText="Nothing in the guide yet. Start with how guests get in."
+          emptyText={t('property.guideEmpty')}
         />
       </Section>
     );
@@ -313,13 +324,13 @@ export function PropertyPage() {
 
   const meta = [
     detail.city,
-    detail.propertyType ? PROPERTY_TYPE_LABELS[detail.propertyType] : null,
+    detail.propertyType ? labels.propertyType[detail.propertyType] : null,
   ].filter(Boolean);
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/properties">Properties</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/properties">{t('properties.title')}</Link>
       </nav>
       <div className="page-head">
         <div className="page-title">
@@ -329,19 +340,19 @@ export function PropertyPage() {
           {meta.length > 0 ? <p className="muted">{meta.join(' · ')}</p> : null}
         </div>
         <MoreActions
-          label={`More actions for ${detail.name}`}
+          label={t('property.moreActions', { name: detail.name })}
           items={[
             {
-              label: 'Delete property',
+              label: t('property.delete'),
               icon: <Trash aria-hidden="true" />,
               danger: true,
               onSelect: async () => {
                 if (
                   !busy &&
                   (await confirm({
-                    title: `Delete ${detail.name}?`,
-                    body: 'All its units go with it, and their QR codes stop working. This cannot be undone.',
-                    action: 'Delete property',
+                    title: t('property.deleteTitle', { name: detail.name }),
+                    body: t('property.deleteBody'),
+                    action: t('property.delete'),
                     danger: true,
                   }))
                 ) {
@@ -359,7 +370,7 @@ export function PropertyPage() {
 
       <UnitsPanel detail={detail} onCreated={(unitId) => navigate(`/units/${unitId}`)} />
 
-      <SectionLayout sections={sections} label="Property sections" render={renderSection} />
+      <SectionLayout sections={sections} label={t('property.sections')} render={renderSection} />
     </>
   );
 }
@@ -371,6 +382,7 @@ function UnitsPanel({
   detail: PropertyDetail;
   onCreated: (unitId: string) => void;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   const [name, setName] = useState<string | null>(null);
 
@@ -385,11 +397,9 @@ function UnitsPanel({
   return (
     <section className="units-section" aria-labelledby="units-heading">
       <div className="section-head">
-        <h2 id="units-heading">Units</h2>
+        <h2 id="units-heading">{t('property.units')}</h2>
         <p className="muted">
-          {detail.approved
-            ? 'Each unit has its own QR code for guests.'
-            : 'Each unit gets its QR code once Fetivi approves the property.'}
+          {detail.approved ? t('property.unitsLive') : t('property.unitsWaiting')}
         </p>
       </div>
       <ul className="rows">
@@ -401,9 +411,9 @@ function UnitsPanel({
               </span>
               <strong>{u.name}</strong>
               {u.qrSlug ? (
-                <span className="chip ok">Live</span>
+                <span className="chip ok">{t('today.live')}</span>
               ) : (
-                <span className="chip neutral">Setting up</span>
+                <span className="chip neutral">{t('today.settingUp')}</span>
               )}
               <CaretRight className="row-caret" aria-hidden="true" />
             </Link>
@@ -412,9 +422,9 @@ function UnitsPanel({
         <li>
           <form className="add-row" onSubmit={submit}>
             <TextField
-              label="New unit name"
+              label={t('property.newUnit')}
               hideLabel
-              placeholder="New unit, for example Apartment 2"
+              placeholder={t('property.newUnitPlaceholder')}
               value={name}
               maxLength={LIMITS.name}
               required
@@ -422,7 +432,7 @@ function UnitsPanel({
             />
             <button type="submit" disabled={busy}>
               <Plus aria-hidden="true" weight="bold" />
-              Add unit
+              {t('property.addUnit')}
             </button>
           </form>
         </li>

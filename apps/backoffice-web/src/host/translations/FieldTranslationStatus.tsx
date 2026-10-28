@@ -1,14 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import { type FieldTranslation, host } from '../../api';
-import { TRANSLATION_ERROR_LABELS } from '../../forms/labels';
+import { useLabels } from '../../i18n/useLabels';
 import { useAction } from '../../useAction';
 import { TranslationChip } from './TranslationChip';
-
-// A field has no correction editor, so the block label's "Correct them below" does not apply.
-const ERROR_LABELS = {
-  ...TRANSLATION_ERROR_LABELS,
-  'structure-mismatch':
-    "Some languages did not keep the text's structure. Retry, or rephrase the text and save.",
-};
 
 /**
  * Ticket 50: the translation state of one free-text field or amenity note, with the reason and
@@ -21,6 +15,8 @@ export function FieldTranslationStatus({
   translation: FieldTranslation | undefined;
   onChanged: () => Promise<void>;
 }) {
+  const labels = useLabels();
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   // Translating runs by itself after a save; only a failure needs the host.
   if (translation?.status !== 'failed') return null;
@@ -29,7 +25,11 @@ export function FieldTranslationStatus({
       <TranslationChip status={translation.status} />
       {translation.status === 'failed' ? (
         <span className="translation-error">
-          {translation.error ? ERROR_LABELS[translation.error] : null}{' '}
+          {translation.error === 'structure-mismatch'
+            ? t('blocks.fieldStructure')
+            : translation.error
+              ? labels.translationError[translation.error]
+              : null}{' '}
           <button
             type="button"
             disabled={busy}
@@ -40,7 +40,7 @@ export function FieldTranslationStatus({
               })
             }
           >
-            Retry translation
+            {t('blocks.retryTranslation')}
           </button>
           {error ? <span role="alert"> {error}</span> : null}
         </span>

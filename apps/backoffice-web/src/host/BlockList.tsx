@@ -1,8 +1,10 @@
 import type { HostBlockCategory } from '@fetivi/domain/vocabulary';
 import { DotsThree, Image, PencilSimple, Plus, Translate, Trash } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Block, type BlockInput, type BlockResult, host, type SecretWarning } from '../api';
-import { CATEGORY_LABELS, TRANSLATION_ERROR_LABELS, VISIBILITY_LABELS } from '../forms/labels';
+import { i18next } from '../i18n';
+import { currentLabels, useLabels } from '../i18n/useLabels';
 import { useConfirm } from '../shell/ConfirmDialog';
 import { Menu } from '../shell/Menu';
 import { useAction } from '../useAction';
@@ -20,13 +22,14 @@ export function preview(body: string): string {
 
 /** "Arrival and access · After the arrival release · 2 photos": what a row needs besides its text. */
 function entryMeta(block: Block, withCategory: boolean): string {
+  const labels = currentLabels();
   const photos = block.media.filter((m) => m.kind !== 'video').length;
   const videos = block.media.length - photos;
   return [
-    withCategory ? CATEGORY_LABELS[block.category] : null,
-    block.visibility === 'after_release' ? VISIBILITY_LABELS.after_release : null,
-    photos ? (photos === 1 ? '1 photo' : `${photos} photos`) : null,
-    videos ? (videos === 1 ? '1 video' : `${videos} videos`) : null,
+    withCategory ? labels.category[block.category] : null,
+    block.visibility === 'after_release' ? labels.visibility.after_release : null,
+    photos ? i18next.t('host:blocks.photos', { count: photos }) : null,
+    videos ? i18next.t('host:blocks.videos', { count: videos }) : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -47,6 +50,8 @@ export function BlockList({
   /** Every block here is in this category: new ones are created in it and none can leave it. */
   category?: HostBlockCategory;
 }) {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const { busy, error, run } = useAction();
   const confirm = useConfirm();
   const [editing, setEditing] = useState<string | 'new' | null>(null);
@@ -77,7 +82,7 @@ export function BlockList({
             editing === block.id ? (
               <li key={block.id}>
                 <BlockEditor
-                  heading="Edit guide entry"
+                  heading={t('blocks.editEntry')}
                   initial={{ ...block, category: block.category as HostBlockCategory }}
                   categoryFixed={category !== undefined}
                   onSubmit={(input) => host.updateBlock(block.id, input)}
@@ -99,7 +104,7 @@ export function BlockList({
                   block.translation.error &&
                   translating !== block.id ? (
                     <span className="translation-error">
-                      {TRANSLATION_ERROR_LABELS[block.translation.error]}
+                      {labels.translationError[block.translation.error]}
                     </span>
                   ) : null}
                 </div>
@@ -113,34 +118,37 @@ export function BlockList({
                     }}
                   >
                     <PencilSimple aria-hidden="true" />
-                    Edit
+                    {t('common:edit')}
                   </button>
                   <Menu
-                    label={`More for ${block.title}`}
+                    label={t('blocks.moreFor', { title: block.title })}
                     trigger={<DotsThree aria-hidden="true" weight="bold" />}
                     items={[
                       {
-                        label: translating === block.id ? 'Hide translations' : 'Translations',
+                        label:
+                          translating === block.id
+                            ? t('blocks.hideTranslations')
+                            : t('blocks.translations'),
                         icon: <Translate aria-hidden="true" />,
                         onSelect: () => setTranslating(translating === block.id ? null : block.id),
                       },
                       {
                         label:
-                          showingMedia === block.id ? 'Hide photos and video' : 'Photos and video',
+                          showingMedia === block.id ? t('blocks.hideMedia') : t('blocks.media'),
                         icon: <Image aria-hidden="true" />,
                         onSelect: () =>
                           setShowingMedia(showingMedia === block.id ? null : block.id),
                       },
                       {
-                        label: 'Delete',
+                        label: t('common:delete'),
                         icon: <Trash aria-hidden="true" />,
                         danger: true,
                         onSelect: async () => {
                           if (
                             await confirm({
-                              title: `Delete “${block.title}”?`,
-                              body: 'Guests stop seeing it in the guide. This cannot be undone.',
-                              action: 'Delete entry',
+                              title: t('blocks.deleteTitle', { title: block.title }),
+                              body: t('blocks.deleteBody'),
+                              action: t('blocks.deleteEntry'),
                               danger: true,
                             })
                           ) {
@@ -167,7 +175,7 @@ export function BlockList({
       ) : null}
       {editing === 'new' ? (
         <BlockEditor
-          heading="New guide entry"
+          heading={t('blocks.newEntry')}
           initial={category ? { category } : undefined}
           categoryFixed={category !== undefined}
           withMedia
@@ -185,7 +193,7 @@ export function BlockList({
           }}
         >
           <Plus aria-hidden="true" weight="bold" />
-          Add guide entry
+          {t('blocks.addEntry')}
         </button>
       )}
     </div>

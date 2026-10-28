@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { auth } from '../api';
 import { useAction } from '../useAction';
@@ -6,6 +7,7 @@ import { AuthPage } from './AuthPage';
 import { EmailField } from './fields';
 
 export function ForgotPasswordPage() {
+  const { t } = useTranslation('auth');
   const { busy, error, run } = useAction();
   const [email, setEmail] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -20,17 +22,21 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthPage title={sentTo ? 'Check your email' : 'Reset your password'}>
+    <AuthPage title={sentTo ? t('checkEmail') : t('forgot.title')}>
       {sentTo ? (
         <div className="auth-note">
           <p>
-            If an account exists for <strong className="address">{sentTo}</strong>, we sent a link
-            to reset the password. It works for 1 hour.
+            <Trans
+              t={t}
+              i18nKey="forgot.sent"
+              values={{ email: sentTo }}
+              components={{ strong: <strong className="address" /> }}
+            />
           </p>
-          <p className="muted">Not there in a minute? Check your spam folder.</p>
+          <p className="muted">{t('spam')}</p>
           <div className="auth-actions">
             <button type="button" onClick={() => setSentTo(null)}>
-              Use a different email
+              {t('otherEmail')}
             </button>
           </div>
         </div>
@@ -43,12 +49,12 @@ export function ForgotPasswordPage() {
             </p>
           ) : null}
           <button type="submit" className="primary" aria-disabled={busy || undefined}>
-            {busy ? 'Sending…' : 'Send reset link'}
+            {busy ? t('sending') : t('forgot.submit')}
           </button>
         </form>
       )}
       <p className="auth-alt">
-        <Link to="/login">Back to log in</Link>
+        <Link to="/login">{t('backToLogin')}</Link>
       </p>
     </AuthPage>
   );

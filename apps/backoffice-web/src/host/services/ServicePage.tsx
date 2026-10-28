@@ -14,6 +14,7 @@ import {
 } from '@fetivi/domain/offer-vocabulary';
 import { LIMITS } from '@fetivi/domain/vocabulary';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { centsFromEuros, eurosFromCents } from '../../admin/providers/money';
 import { OfferTranslations } from '../../admin/providers/OfferTranslations';
@@ -28,12 +29,7 @@ import {
   TextField,
   TimeField,
 } from '../../forms/fields';
-import {
-  CONTACT_FIELDS_LABELS,
-  OFFER_CATEGORY_LABELS,
-  ORDER_KIND_LABELS,
-  PRICE_UNIT_LABELS,
-} from '../../forms/labels';
+import { useLabels } from '../../i18n/useLabels';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
@@ -44,20 +40,7 @@ import {
   CancellationRulesField,
   policyFromRules,
 } from './CancellationRules';
-import {
-  HOST_AVAILABILITY_LABELS,
-  HOST_AVAILABILITY_MODES,
-  HOST_AVAILABILITY_SHORT,
-  HOST_PAYMENT_LABELS,
-  type HostAvailabilityMode,
-} from './labels';
-
-const TRANSLATED_HINT = 'Translated into the seven guest languages when you save.';
-const REQUEST_PRICE_HINT = 'Optional for requests: you name the price when you accept.';
-const REQUEST_MODE_HINT = 'Requests always wait for your answer.';
-const POLICY_HINT =
-  'What guests read before they order. Start from the line we wrote from your choice above, and add anything else, for example what happens in bad weather.';
-const ONLINE_HINT = 'Guests can pay online once Stripe is connected in Settings → Payments.';
+import { HOST_AVAILABILITY_MODES, type HostAvailabilityMode } from './labels';
 
 const translationsClient: OfferTranslationsClient = {
   translations: host.offerTranslations,
@@ -81,15 +64,18 @@ function useCardsActive(): boolean | null {
 }
 
 function Crumbs() {
+  const { t } = useTranslation(['host', 'common']);
   return (
-    <nav className="crumbs" aria-label="Breadcrumb">
-      <Link to="/services">Services</Link>
+    <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+      <Link to="/services">{t('services.title')}</Link>
     </nav>
   );
 }
 
 /** /services/new: the required fields, then the full editor. */
 export function NewServicePage() {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
   const cardsActive = useCardsActive();
@@ -132,7 +118,7 @@ export function NewServicePage() {
     });
   }
 
-  usePageTitle('Add a service');
+  usePageTitle(t('services.addTitle'));
 
   return (
     <>
@@ -141,16 +127,16 @@ export function NewServicePage() {
         <form onSubmit={submit}>
           <div className="fields">
             <TextField
-              label="Title"
-              hint="What guests see, such as “Airport transfer” or “Home-made olive oil”."
+              label={t('services.serviceTitle')}
+              hint={t('services.titleHint')}
               value={title}
               maxLength={LIMITS.title}
               required
               onChange={setTitle}
             />
             <TextArea
-              label="Description"
-              hint={TRANSLATED_HINT}
+              label={t('services.description')}
+              hint={t('services.translatedHint')}
               value={description}
               maxLength={LIMITS.blockBody}
               rows={5}
@@ -159,8 +145,8 @@ export function NewServicePage() {
             />
             <CancellationRulesField value={rules} onChange={setRules} />
             <TextArea
-              label="Cancellation policy"
-              hint={POLICY_HINT}
+              label={t('services.policy')}
+              hint={t('services.policyHint')}
               value={policyText}
               maxLength={LIMITS.blockBody}
               rows={3}
@@ -169,40 +155,44 @@ export function NewServicePage() {
             />
             <div className="field-row">
               <SelectField
-                label="Category"
+                label={t('services.category')}
                 value={category}
                 options={OFFER_CATEGORIES}
-                labels={OFFER_CATEGORY_LABELS}
+                labels={labels.offerCategory}
                 onChange={(c) => c && setCategory(c)}
               />
               <SelectField
-                label="Type of order"
+                label={t('services.orderKind')}
                 value={orderKind}
                 options={ORDER_KINDS}
-                labels={ORDER_KIND_LABELS}
+                labels={labels.orderKind}
                 onChange={(k) => k && setOrderKind(k)}
               />
             </div>
             <SelectField
-              label="Availability"
-              hint={isRequest ? REQUEST_MODE_HINT : undefined}
+              label={t('services.availability')}
+              hint={isRequest ? t('services.requestModeHint') : undefined}
               value={effectiveMode}
               options={isRequest ? (['on_request'] as const) : HOST_AVAILABILITY_MODES}
-              labels={HOST_AVAILABILITY_LABELS}
+              labels={labels.hostAvailability}
               onChange={(m) => m && setMode(m)}
             />
             <SelectField
-              label="Payment"
-              hint={paymentMode === 'online' && cardsActive === false ? ONLINE_HINT : undefined}
+              label={t('services.payment')}
+              hint={
+                paymentMode === 'online' && cardsActive === false
+                  ? t('services.onlineHint')
+                  : undefined
+              }
               value={paymentMode}
               options={PAYMENT_MODES}
-              labels={HOST_PAYMENT_LABELS}
+              labels={labels.hostPayment}
               onChange={(p) => p && setPaymentMode(p)}
             />
             <div className="field-row">
               <NumberField
-                label="Price (€)"
-                hint={isRequest ? REQUEST_PRICE_HINT : undefined}
+                label={t('services.price')}
+                hint={isRequest ? t('services.requestPriceHint') : undefined}
                 value={price}
                 min={0}
                 max={OFFER_LIMITS.priceMinorMax / 100}
@@ -210,10 +200,10 @@ export function NewServicePage() {
                 onChange={setPrice}
               />
               <SelectField
-                label="Price unit"
+                label={t('services.priceUnit')}
                 value={priceUnit}
                 options={PRICE_UNITS}
-                labels={PRICE_UNIT_LABELS}
+                labels={labels.priceUnit}
                 onChange={(u) => u && setPriceUnit(u)}
               />
             </div>
@@ -221,7 +211,7 @@ export function NewServicePage() {
           {error ? <p role="alert">{error}</p> : null}
           <div className="actions">
             <button type="submit" className="primary" disabled={busy}>
-              Create service
+              {t('services.create')}
             </button>
           </div>
         </form>
@@ -281,6 +271,8 @@ const AVAILABILITY_KEYS = [
 
 /** /services/:id: the admin Offer editor's sections, minus destination, place and live (38). */
 export function ServicePage() {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
@@ -315,7 +307,7 @@ export function ServicePage() {
   usePageTitle(offer?.title);
 
   if (!offer || !draft) {
-    return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
   }
 
   const set =
@@ -348,24 +340,31 @@ export function ServicePage() {
       <Crumbs />
       <div className="page-head">
         <div className="record-chips">
-          <span className="chip neutral">{OFFER_CATEGORY_LABELS[offer.category]}</span>
+          <span className="chip neutral">{labels.offerCategory[offer.category]}</span>
           <span className="chip neutral">
-            {HOST_AVAILABILITY_SHORT[hostMode(offer.availabilityMode)]}
+            {labels.hostAvailabilityShort[hostMode(offer.availabilityMode)]}
           </span>
           <TranslationChip status={offer.translation.status} />
-          {offer.active ? null : <span className="chip neutral">Off</span>}
+          {offer.active ? null : <span className="chip neutral">{t('services.off')}</span>}
         </div>
       </div>
       <p className="muted">
-        {ORDER_KIND_LABELS[offer.orderKind]}. {HOST_PAYMENT_LABELS[offer.paymentMode]}. Orders reach
-        your <Link to="/inbox">inbox</Link>.
+        <Trans
+          t={t}
+          i18nKey="services.summary"
+          values={{
+            kind: labels.orderKind[offer.orderKind],
+            payment: labels.hostPayment[offer.paymentMode],
+          }}
+          components={{ anchor: <Link to="/inbox" /> }}
+        />
       </p>
       {error ? <p role="alert">{error}</p> : null}
 
       <div className="editor">
         <Section
-          title="Text"
-          description="Saving a change translates it again into the seven guest languages. The policy text is what guests read before ordering."
+          title={t('services.text')}
+          description={t('services.textHint')}
           onSave={save(['title', 'description', 'cancellationPolicy'], {
             title: draft.title,
             description: draft.description,
@@ -373,14 +372,14 @@ export function ServicePage() {
           })}
         >
           <TextField
-            label="Title"
+            label={t('services.serviceTitle')}
             value={draft.title}
             maxLength={LIMITS.title}
             required
             onChange={(v) => set('title')(v ?? '')}
           />
           <TextArea
-            label="Description"
+            label={t('services.description')}
             value={draft.description}
             maxLength={LIMITS.blockBody}
             rows={6}
@@ -388,8 +387,8 @@ export function ServicePage() {
             onChange={(v) => set('description')(v ?? '')}
           />
           <TextArea
-            label="Cancellation policy"
-            hint="What guests read before they order. Keep it in line with the cancellation rules below."
+            label={t('services.policy')}
+            hint={t('services.policyEditHint')}
             value={draft.cancellationPolicy}
             maxLength={LIMITS.blockBody}
             rows={3}
@@ -399,30 +398,30 @@ export function ServicePage() {
         </Section>
 
         <Section
-          title="Classification"
+          title={t('services.classification')}
           onSave={save(['category', 'orderKind', ...AVAILABILITY_KEYS], classificationBody())}
         >
           <div className="field-row">
             <SelectField
-              label="Category"
+              label={t('services.category')}
               value={draft.category}
               options={OFFER_CATEGORIES}
-              labels={OFFER_CATEGORY_LABELS}
+              labels={labels.offerCategory}
               onChange={(c) => c && set('category')(c)}
             />
             <SelectField
-              label="Type of order"
-              hint={isRequest ? REQUEST_MODE_HINT : undefined}
+              label={t('services.orderKind')}
+              hint={isRequest ? t('services.requestModeHint') : undefined}
               value={draft.orderKind}
               options={ORDER_KINDS}
-              labels={ORDER_KIND_LABELS}
+              labels={labels.orderKind}
               onChange={(k) => k && set('orderKind')(k)}
             />
           </div>
         </Section>
 
         <Section
-          title="Price and payment"
+          title={t('services.priceAndPayment')}
           onSave={save(['priceEuros', 'currency', 'priceUnit', 'paymentMode'], {
             priceMinor: centsFromEuros(draft.priceEuros),
             currency: draft.currency,
@@ -432,8 +431,8 @@ export function ServicePage() {
         >
           <div className="field-row">
             <NumberField
-              label="Price (€)"
-              hint={isRequest ? REQUEST_PRICE_HINT : undefined}
+              label={t('services.price')}
+              hint={isRequest ? t('services.requestPriceHint') : undefined}
               value={draft.priceEuros}
               min={0}
               max={OFFER_LIMITS.priceMinorMax / 100}
@@ -441,32 +440,36 @@ export function ServicePage() {
               onChange={set('priceEuros')}
             />
             <TextField
-              label="Currency"
+              label={t('services.currency')}
               value={draft.currency}
               maxLength={3}
               required
               onChange={(v) => set('currency')((v ?? '').toUpperCase())}
             />
             <SelectField
-              label="Unit"
+              label={t('services.unit')}
               value={draft.priceUnit}
               options={PRICE_UNITS}
-              labels={PRICE_UNIT_LABELS}
+              labels={labels.priceUnit}
               onChange={(u) => u && set('priceUnit')(u)}
             />
           </div>
           <SelectField
-            label="Payment"
-            hint={draft.paymentMode === 'online' && cardsActive === false ? ONLINE_HINT : undefined}
+            label={t('services.payment')}
+            hint={
+              draft.paymentMode === 'online' && cardsActive === false
+                ? t('services.onlineHint')
+                : undefined
+            }
             value={draft.paymentMode}
             options={PAYMENT_MODES}
-            labels={HOST_PAYMENT_LABELS}
+            labels={labels.hostPayment}
             onChange={(p) => p && set('paymentMode')(p)}
           />
         </Section>
 
         <Section
-          title="Availability"
+          title={t('services.availability')}
           onSave={save(AVAILABILITY_KEYS, {
             availabilityMode: draft.availabilityMode,
             responseWindowMinutes: draft.responseWindowMinutes ?? 0,
@@ -475,20 +478,20 @@ export function ServicePage() {
           })}
         >
           <SelectField
-            label="Mode"
-            hint={offer.orderKind === 'request' ? REQUEST_MODE_HINT : undefined}
+            label={t('services.mode')}
+            hint={offer.orderKind === 'request' ? t('services.requestModeHint') : undefined}
             value={draft.availabilityMode}
             options={
               offer.orderKind === 'request' ? (['on_request'] as const) : HOST_AVAILABILITY_MODES
             }
-            labels={HOST_AVAILABILITY_LABELS}
+            labels={labels.hostAvailability}
             onChange={(m) => m && set('availabilityMode')(m)}
           />
           {draft.availabilityMode === 'on_request' ? (
             <>
               <NumberField
-                label="Time to answer (minutes)"
-                hint="Counted only between the hours below. A missed answer goes to the Fetivi team."
+                label={t('services.answerTime')}
+                hint={t('services.answerTimeHint')}
                 value={draft.responseWindowMinutes}
                 min={1}
                 max={windowMax}
@@ -496,12 +499,12 @@ export function ServicePage() {
               />
               <div className="field-row">
                 <TimeField
-                  label="Counted from"
+                  label={t('services.countedFrom')}
                   value={draft.responseHoursFrom}
                   onChange={set('responseHoursFrom')}
                 />
                 <TimeField
-                  label="Until"
+                  label={t('services.until')}
                   value={draft.responseHoursTo}
                   onChange={set('responseHoursTo')}
                 />
@@ -515,14 +518,14 @@ export function ServicePage() {
         </Section>
 
         {offer.availabilityMode === 'allotment' ? (
-          <Section title="Times and seats">
+          <Section title={t('services.timesAndSeats')}>
             <SlotsPanel offerId={offer.id} timezone={offer.timezone} client={host} />
           </Section>
         ) : null}
 
         <Section
-          title="Cancellation rules"
-          description="What is applied when a guest cancels. Keep the policy text above in line with it."
+          title={t('services.rules')}
+          description={t('services.rulesHint')}
           onSave={save(['freeCancelHoursBefore', 'refundPercentAfter'], {
             freeCancelHoursBefore: draft.freeCancelHoursBefore ?? 0,
             refundPercentAfter: draft.refundPercentAfter ?? 0,
@@ -538,25 +541,25 @@ export function ServicePage() {
         </Section>
 
         <Section
-          title="Guest details you receive"
+          title={t('services.guestDetails')}
           onSave={save(['contactFields'], { contactFields: draft.contactFields })}
         >
           <SelectField
-            label="You receive"
-            hint="Shown with each order in your inbox. The guest's email stays with Fetivi."
+            label={t('services.youReceive')}
+            hint={t('services.youReceiveHint')}
             value={draft.contactFields}
             options={CONTACT_FIELDS}
-            labels={CONTACT_FIELDS_LABELS}
+            labels={labels.contactFields}
             onChange={(c) => c && set('contactFields')(c)}
           />
         </Section>
 
-        <Section title="Status" onSave={save(['active'], { active: draft.active })}>
-          <CheckboxField label="On" checked={draft.active} onChange={set('active')} />
-          <small>Services that are off are hidden from guests. Existing orders stay.</small>
+        <Section title={t('services.status')} onSave={save(['active'], { active: draft.active })}>
+          <CheckboxField label={t('services.on')} checked={draft.active} onChange={set('active')} />
+          <small>{t('services.offHint')}</small>
         </Section>
 
-        <Section title="Translations">
+        <Section title={t('services.translations')}>
           <OfferTranslations
             offer={offer}
             client={translationsClient}
@@ -566,11 +569,8 @@ export function ServicePage() {
         </Section>
 
         <section className="panel danger-zone">
-          <h2>Delete service</h2>
-          <p className="muted">
-            Deletes the service with its times and translations. A service with orders can only be
-            turned off.
-          </p>
+          <h2>{t('services.delete')}</h2>
+          <p className="muted">{t('services.deleteBody')}</p>
           <button
             type="button"
             className="danger"
@@ -578,9 +578,9 @@ export function ServicePage() {
             onClick={async () => {
               if (
                 await confirm({
-                  title: `Delete ${offer.title}?`,
-                  body: 'Guests stop seeing it. This cannot be undone.',
-                  action: 'Delete service',
+                  title: t('services.deleteTitle', { title: offer.title }),
+                  body: t('services.deleteAskBody'),
+                  action: t('services.delete'),
                   danger: true,
                 })
               ) {
@@ -591,7 +591,7 @@ export function ServicePage() {
               }
             }}
           >
-            Delete service
+            {t('services.delete')}
           </button>
         </section>
       </div>

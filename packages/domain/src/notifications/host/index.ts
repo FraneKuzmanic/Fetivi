@@ -1,4 +1,5 @@
 export * from './compose';
+export * from './copy';
 export * from './deliver';
 export * from './digests';
 export * from './enqueue';

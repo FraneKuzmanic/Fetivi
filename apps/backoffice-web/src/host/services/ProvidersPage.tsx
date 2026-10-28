@@ -1,12 +1,14 @@
 import { CURATION_LIMITS } from '@fetivi/domain/curation-vocabulary';
 import { type FormEvent, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { type HostProvider, host } from '../../api';
 import { CheckboxField, SelectField, TextArea, TextField } from '../../forms/fields';
+import { i18next } from '../../i18n';
 import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 
-const offersLabel = (n: number) => (n === 1 ? '1 offer' : `${n} offers`);
+const offersLabel = (n: number) => i18next.t('host:services.offers', { count: n });
 
 function ProviderRow({
   provider,
@@ -15,6 +17,7 @@ function ProviderRow({
   provider: HostProvider;
   onChanged: (provider: HostProvider) => void;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   return (
     <li className="host-provider-row">
@@ -25,11 +28,11 @@ function ProviderRow({
         </span>
       </span>
       <span className="host-provider-toggle">
-        {provider.hidden ? <span className="chip neutral">Hidden</span> : null}
+        {provider.hidden ? <span className="chip neutral">{t('services.hidden')}</span> : null}
         <CheckboxField
           label={
             <>
-              Shown to your guests
+              {t('services.shown')}
               <span className="visually-hidden"> ({provider.name})</span>
             </>
           }
@@ -47,6 +50,7 @@ function ProviderRow({
 
 /** /services/providers: hide approved Providers from your guests, or suggest one (38). */
 export function ProvidersPage() {
+  const { t } = useTranslation(['host', 'common']);
   const { error, run } = useAction();
   const [providers, setProviders] = useState<HostProvider[] | null>(null);
   const [destinations, setDestinations] = useState<{ id: string; name: string }[]>([]);
@@ -62,28 +66,23 @@ export function ProvidersPage() {
   const replace = (updated: HostProvider) =>
     setProviders((list) => list?.map((p) => (p.id === updated.id ? updated : p)) ?? list);
 
-  usePageTitle('Providers your guests see');
+  usePageTitle(t('services.providersSeen'));
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/services">Services</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/services">{t('services.title')}</Link>
       </nav>
-      <p className="muted">
-        Every approved Provider near your property is shown to your guests unless you hide it.
-        Hiding never changes orders already made.
-      </p>
+      <p className="muted">{t('services.providersIntro')}</p>
       {error ? <p role="alert">{error}</p> : null}
-      {providers === null && !error ? <p className="muted">Loading…</p> : null}
+      {providers === null && !error ? <p className="muted">{t('common:loading')}</p> : null}
       {providers?.length === 0 ? (
         <p className="muted">
-          {destinations.length === 0
-            ? 'Fetivi has no Providers near your properties yet.'
-            : 'No approved Providers near your properties yet.'}
+          {destinations.length === 0 ? t('services.noProvidersAtAll') : t('services.noProviders')}
         </p>
       ) : null}
       {providers && providers.length > 0 ? (
-        <ul className="rows" aria-label="Providers">
+        <ul className="rows" aria-label={t('services.local')}>
           {providers.map((p) => (
             <ProviderRow key={p.id} provider={p} onChanged={replace} />
           ))}
@@ -95,6 +94,7 @@ export function ProvidersPage() {
 }
 
 function SuggestForm({ destinations }: { destinations: { id: string; name: string }[] }) {
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   const [name, setName] = useState<string | null>(null);
   const [contact, setContact] = useState<string | null>(null);
@@ -122,28 +122,26 @@ function SuggestForm({ destinations }: { destinations: { id: string; name: strin
 
   return (
     <section className="panel narrow" aria-labelledby="suggest-provider">
-      <h2 id="suggest-provider">Suggest a provider</h2>
-      <p className="muted">
-        A local business you trust. The Fetivi team checks it before guests see it.
-      </p>
+      <h2 id="suggest-provider">{t('services.suggest')}</h2>
+      <p className="muted">{t('services.suggestIntro')}</p>
       <form onSubmit={submit}>
         <div className="fields">
           <TextField
-            label="Name"
+            label={t('services.name')}
             value={name}
             maxLength={CURATION_LIMITS.suggestionName}
             required
             onChange={setName}
           />
           <TextField
-            label="Contact"
-            hint="Phone, email or website, if you have one."
+            label={t('services.contact')}
+            hint={t('services.contactHint')}
             value={contact}
             maxLength={CURATION_LIMITS.suggestionContact}
             onChange={setContact}
           />
           <TextArea
-            label="Why you recommend them"
+            label={t('services.why')}
             value={note}
             maxLength={CURATION_LIMITS.suggestionNote}
             rows={3}
@@ -151,11 +149,11 @@ function SuggestForm({ destinations }: { destinations: { id: string; name: strin
           />
           {destinations.length > 1 ? (
             <SelectField
-              label="Area"
+              label={t('services.area')}
               value={destinationId}
               options={destinations.map((d) => d.id)}
               labels={Object.fromEntries(destinations.map((d) => [d.id, d.name]))}
-              emptyLabel="Not sure"
+              emptyLabel={t('services.notSure')}
               onChange={setDestinationId}
             />
           ) : null}
@@ -164,11 +162,11 @@ function SuggestForm({ destinations }: { destinations: { id: string; name: strin
         <div className="section-foot">
           {sent && !error ? (
             <output className="saved" aria-live="polite">
-              Thanks — the Fetivi team will review it.
+              {t('services.thanks')}
             </output>
           ) : null}
           <button type="submit" className="primary" disabled={busy}>
-            Send suggestion
+            {t('services.sendSuggestion')}
           </button>
         </div>
       </form>

@@ -1,9 +1,11 @@
 import { CHECK_IN_METHODS, LIMITS, PARKING_TYPES } from '@fetivi/domain/vocabulary';
 import { Car, type Icon, IdentificationCard, Key, Phone, Scroll } from '@phosphor-icons/react';
 import { type ReactNode, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CoreValues } from '../api';
 import { SelectField, TextArea, TextField, TimeField, TriStateField } from '../forms/fields';
-import { CHECK_IN_METHOD_LABELS, CORE_FIELD_LABELS, PARKING_LABELS } from '../forms/labels';
+import { i18next } from '../i18n';
+import { currentLabels, useLabels } from '../i18n/useLabels';
 
 type CoreKey = keyof CoreValues;
 
@@ -11,12 +13,16 @@ type CoreKey = keyof CoreValues;
 export const CORE_SECTIONS: { id: string; title: string; fields: readonly CoreKey[] }[] = [
   {
     id: 'arrival',
-    title: 'Arrival and access',
+    get title() {
+      return i18next.t('host:core.arrival');
+    },
     fields: ['checkInTime', 'checkoutTime', 'checkInMethod', 'accessInstructions'],
   },
   {
     id: 'house-rules',
-    title: 'House rules',
+    get title() {
+      return i18next.t('host:core.houseRules');
+    },
     fields: [
       'petsAllowed',
       'smokingAllowed',
@@ -26,13 +32,27 @@ export const CORE_SECTIONS: { id: string; title: string; fields: readonly CoreKe
       'houseRulesNotes',
     ],
   },
-  { id: 'parking', title: 'Parking', fields: ['parkingType', 'parkingNotes'] },
+  {
+    id: 'parking',
+    get title() {
+      return i18next.t('host:core.parking');
+    },
+    fields: ['parkingType', 'parkingNotes'],
+  },
   {
     id: 'contacts',
-    title: 'Contacts',
+    get title() {
+      return i18next.t('host:core.contacts');
+    },
     fields: ['hostPhone', 'emergencyContactName', 'emergencyContactPhone'],
   },
-  { id: 'licence', title: 'Licence', fields: ['licenceNumber'] },
+  {
+    id: 'licence',
+    get title() {
+      return i18next.t('host:core.licence');
+    },
+    fields: ['licenceNumber'],
+  },
 ];
 
 /** The icon each core section has in the property and unit section lists. */
@@ -51,19 +71,18 @@ const PHONES = new Set<CoreKey>(['hostPhone', 'emergencyContactPhone']);
 
 /** A property value as the unit page shows it, in full. */
 export function formatCoreValue(key: CoreKey, value: CoreValues[CoreKey]): string {
-  if (value === null) return 'Not set on the property';
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  const labels = currentLabels();
+  if (value === null) return i18next.t('host:core.notSetOnProperty');
+  if (typeof value === 'boolean') return value ? i18next.t('common:yes') : i18next.t('common:no');
   if (key === 'checkInMethod')
-    return CHECK_IN_METHOD_LABELS[value as keyof typeof CHECK_IN_METHOD_LABELS];
-  if (key === 'parkingType') return PARKING_LABELS[value as keyof typeof PARKING_LABELS];
+    return labels.checkInMethod[value as keyof typeof labels.checkInMethod];
+  if (key === 'parkingType') return labels.parking[value as keyof typeof labels.parking];
   return value;
 }
 
 /** What a field is for, where the label alone leaves a host guessing. */
-const HINTS: Partial<Record<CoreKey, string>> = {
-  licenceNumber:
-    'The official registration number of the rental, for example 2181-03-01-24-0001. It shows guests the place is registered.',
-};
+const hintOf = (field: CoreKey): string | null =>
+  field === 'licenceNumber' ? i18next.t('host:core.licenceHint') : null;
 
 /**
  * One shared core field. On a unit (`inherited` given) the property's value is shown as text
@@ -80,11 +99,20 @@ export function CoreField({
   onChange: (value: CoreValues[CoreKey]) => void;
   inherited?: CoreValues;
 }) {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const [overriding, setOverriding] = useState(value !== null);
-  const label = CORE_FIELD_LABELS[field];
+  const label = labels.coreField[field];
 
   if (!inherited) {
-    return <CoreInput field={field} value={value} onChange={onChange} hint={HINTS[field]} />;
+    return (
+      <CoreInput
+        field={field}
+        value={value}
+        onChange={onChange}
+        hint={hintOf(field) ?? undefined}
+      />
+    );
   }
 
   if (!overriding && value === null) {
@@ -97,13 +125,13 @@ export function CoreField({
           <button
             type="button"
             className="link-button"
-            aria-label={`Set ${label.toLowerCase()} for this unit`}
+            aria-label={t('core.setForUnitAria', { field: label.toLowerCase() })}
             onClick={() => {
               setOverriding(true);
               onChange(inherited[field]);
             }}
           >
-            Set for this unit
+            {t('core.setForUnit')}
           </button>
         </div>
       </div>
@@ -117,8 +145,8 @@ export function CoreField({
       onChange={onChange}
       hint={
         <>
-          {HINTS[field] ? `${HINTS[field]} ` : null}
-          Only this unit.{' '}
+          {hintOf(field) ? `${hintOf(field)} ` : null}
+          {t('core.onlyThisUnit')}{' '}
           <button
             type="button"
             className="link"
@@ -127,7 +155,7 @@ export function CoreField({
               onChange(null);
             }}
           >
-            Use the property's value
+            {t('core.useProperty')}
           </button>
         </>
       }
@@ -146,14 +174,16 @@ function CoreInput({
   onChange: (value: CoreValues[CoreKey]) => void;
   hint?: ReactNode;
 }) {
-  const label = CORE_FIELD_LABELS[field];
-  const nullLabel = 'Not set';
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
+  const label = labels.coreField[field];
+  const nullLabel = t('common:field.notSet');
 
   if (TIMES.has(field)) {
     return (
       <TimeField
         label={label}
-        hint={hint}
+        hint={hint ?? hintOf(field)}
         value={value as string | null}
         onChange={(v) => onChange(v)}
       />
@@ -177,7 +207,7 @@ function CoreInput({
         hint={hint}
         value={value as CoreValues['checkInMethod']}
         options={CHECK_IN_METHODS}
-        labels={CHECK_IN_METHOD_LABELS}
+        labels={labels.checkInMethod}
         emptyLabel={nullLabel}
         onChange={(v) => onChange(v)}
       />
@@ -190,7 +220,7 @@ function CoreInput({
         hint={hint}
         value={value as CoreValues['parkingType']}
         options={PARKING_TYPES}
-        labels={PARKING_LABELS}
+        labels={labels.parking}
         emptyLabel={nullLabel}
         onChange={(v) => onChange(v)}
       />

@@ -2,7 +2,9 @@ import type { GeocodeKind, GeoPlace } from '@fetivi/domain/geocode-vocabulary';
 import { loadMapLibre, MAP_STYLE_URL } from '@fetivi/ui';
 import { MapPin } from '@phosphor-icons/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { geo } from '../api';
+import { i18next } from '../i18n';
 import { circlePolygon } from './circle';
 import { NumberField } from './fields';
 import { SearchField } from './SearchField';
@@ -24,7 +26,7 @@ const PIN_COLOUR = '#0047ab';
 const NO_AREA = { type: 'FeatureCollection' as const, features: [] };
 
 /** Shown, and thrown by the form on submit, while a required point is missing. */
-export const NO_LOCATION = 'Place the pin on the map or enter the coordinates.';
+export const noLocation = () => i18next.t('field.noLocation');
 
 /** Six decimals is about 10 cm; a map click gives sixteen. */
 const coord = (n: number | null) => (n === null ? null : Number(n.toFixed(6)));
@@ -109,6 +111,7 @@ function LocationMap({
   onMove: (lat: number, lng: number) => void;
   onFail: () => void;
 }) {
+  const { t } = useTranslation();
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapInstance | null>(null);
   const pin = useRef<InstanceType<MapLibre['Marker']> | null>(null);
@@ -218,7 +221,7 @@ function LocationMap({
   }, [key, radiusKm]);
 
   if (failed) {
-    return <p className="muted">The map could not load here. Enter the coordinates below.</p>;
+    return <p className="muted">{t('misc.mapFailed')}</p>;
   }
   return <div ref={container} className="location-map" aria-hidden="true" />;
 }
@@ -256,6 +259,7 @@ export function MapPicker({
   /** Shows that a point is still missing; the caller checks it before saving. */
   required?: boolean;
 }) {
+  const { t } = useTranslation();
   const [text, setText] = useState('');
   const [manual, setManual] = useState(false);
   const point = pointOf(value);
@@ -280,9 +284,9 @@ export function MapPicker({
           loading={found.loading}
           message={
             found.failed
-              ? 'Search is not available right now. Click the map or enter the coordinates.'
+              ? t('field.searchUnavailable')
               : text.trim().length >= 3
-                ? 'Nothing found. Try a shorter name.'
+                ? t('field.nothingFound')
                 : null
           }
           onPick={(place) => {
@@ -305,15 +309,15 @@ export function MapPicker({
           onFail={() => setManual(true)}
         />
         {hint ? <small>{hint}</small> : null}
-        {required && !point ? <small>{NO_LOCATION}</small> : null}
+        {required && !point ? <small>{t('field.noLocation')}</small> : null}
         <button type="button" className="link-button" onClick={() => setManual(!manual)}>
-          {manual ? 'Hide coordinates' : 'Enter coordinates by hand'}
+          {manual ? t('field.hideCoordinates') : t('field.enterCoordinates')}
         </button>
       </div>
       {manual ? (
         <div className="field-row">
           <NumberField
-            label="Latitude"
+            label={t('field.latitude')}
             value={coord(value.lat)}
             min={-90}
             max={90}
@@ -321,7 +325,7 @@ export function MapPicker({
             onChange={(lat) => onChange({ ...value, lat })}
           />
           <NumberField
-            label="Longitude"
+            label={t('field.longitude')}
             value={coord(value.lng)}
             min={-180}
             max={180}

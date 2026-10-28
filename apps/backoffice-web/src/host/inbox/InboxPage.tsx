@@ -9,13 +9,14 @@ import {
   Wrench,
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { type HostMessage, type HostOrder, host } from '../../api';
 import { EmptyState } from '../../shell/EmptyState';
 import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { dateRange } from '../stays/format';
-import { messageState, preview, receivedAt, STATE_CHIPS } from './format';
+import { messageState, preview, receivedAt, stateChip } from './format';
 import { InboxMessage } from './InboxMessage';
 import { inboxChanged, onPushMessage } from './inbox-events';
 import { OrdersSection } from './OrdersSection';
@@ -37,6 +38,7 @@ const POLL_MS = 15_000;
  * host's own services come first, with their one-tap answers (38).
  */
 export function InboxPage() {
+  const { t } = useTranslation(['host', 'common']);
   const { error, run } = useAction();
   const [messages, setMessages] = useState<HostMessage[] | null>(null);
   const [orders, setOrders] = useState<HostOrder[]>([]);
@@ -113,14 +115,14 @@ export function InboxPage() {
   const showTab = (next: 'messages' | 'orders') =>
     setParams(next === 'messages' ? {} : { tab: next }, { replace: true });
 
-  usePageTitle('Inbox');
+  usePageTitle(t('inbox.title'));
 
   return (
     <>
       {error ? <p role="alert">{error}</p> : null}
-      {messages === null && !error ? <p className="muted">Loading…</p> : null}
+      {messages === null && !error ? <p className="muted">{t('common:loading')}</p> : null}
       {messages !== null && orders.length > 0 ? (
-        <div className="tabs" role="tablist" aria-label="Inbox">
+        <div className="tabs" role="tablist" aria-label={t('inbox.title')}>
           <button
             type="button"
             role="tab"
@@ -130,7 +132,7 @@ export function InboxPage() {
             onClick={() => showTab('messages')}
           >
             <ChatCircleText aria-hidden="true" />
-            Guest messages
+            {t('inbox.guestMessages')}
             {unread > 0 ? <span className="tab-count">{unread}</span> : null}
           </button>
           <button
@@ -142,7 +144,7 @@ export function InboxPage() {
             onClick={() => showTab('orders')}
           >
             <Receipt aria-hidden="true" />
-            Orders
+            {t('inbox.orders')}
             {waiting > 0 ? <span className="tab-count">{waiting}</span> : null}
           </button>
         </div>
@@ -151,17 +153,16 @@ export function InboxPage() {
         <OrdersSection orders={orders} onChanged={load} />
       ) : null}
       {tab === 'messages' && messages?.length === 0 ? (
-        <EmptyState icon={ChatCircleText} title="No guest messages yet">
-          When a guest sends you a message from the chat, it shows up here, translated into your
-          language.
+        <EmptyState icon={ChatCircleText} title={t('inbox.none')}>
+          {t('inbox.noneBody')}
         </EmptyState>
       ) : null}
       {tab === 'messages' && messages && messages.length > 0 ? (
         <div className="inbox-layout" data-open={current ? 'true' : undefined}>
-          <ul className="rows inbox-list" aria-label="Guest messages">
+          <ul className="rows inbox-list" aria-label={t('inbox.guestMessages')}>
             {messages.map((m) => {
               const state = messageState(m);
-              const chip = STATE_CHIPS[state];
+              const chip = stateChip(state);
               const Reason = REASON_ICONS[m.reason];
               return (
                 <li key={m.id}>
@@ -195,7 +196,7 @@ export function InboxPage() {
                         <span className="muted">{dateRange(m.checkIn, m.checkout)}</span>
                         <span className="chips">
                           {m.urgency === 'urgent' ? (
-                            <span className="chip fail">Urgent</span>
+                            <span className="chip fail">{t('inbox.urgent')}</span>
                           ) : null}
                           <span className={`chip ${chip.tone}`}>{chip.label}</span>
                         </span>
@@ -215,7 +216,7 @@ export function InboxPage() {
               onReplied={replace}
             />
           ) : (
-            <p className="muted inbox-empty-detail">Choose a message to read it and reply.</p>
+            <p className="muted inbox-empty-detail">{t('inbox.choose')}</p>
           )}
         </div>
       ) : null}

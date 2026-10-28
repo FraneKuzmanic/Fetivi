@@ -1,8 +1,9 @@
 import { ThumbsUp } from '@phosphor-icons/react';
 import { useEffect, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { type AdminFeedbackStats, admin } from '../../api';
-import { FEEDBACK_REASON_LABELS } from '../../forms/labels';
+import { useLabels } from '../../i18n/useLabels';
 import { EmptyState } from '../../shell/EmptyState';
 import { usePageTitle } from '../../shell/PageTitle';
 import { Figures, percent, TopTopics, thumbsRatio } from '../../stats/StatsWidgets';
@@ -12,6 +13,8 @@ const FLAGGED = '/admin/curation?kind=guest_flagged';
 
 /** Answer feedback across every unit (43 AC 4), with the PRD's proposed target beside it. */
 export function FeedbackStatsPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const { error, run } = useAction();
   const [stats, setStats] = useState<AdminFeedbackStats | null>(null);
   const unitsId = useId();
@@ -20,18 +23,19 @@ export function FeedbackStatsPage() {
     void run(async () => setStats(await admin.feedbackStats()));
   }, [run]);
 
-  usePageTitle('Feedback');
+  usePageTitle(t('feedback.title'));
 
-  if (!stats) return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+  if (!stats)
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
   const { totals } = stats;
 
   return (
     <div className="editor">
-      <section className="panel" aria-label="Totals">
+      <section className="panel" aria-label={t('common:misc.totals')}>
         <Figures totals={totals} />
         <p className="reasons-line">
-          {FEEDBACK_REASON_LABELS.wrong} {totals.wrong} · {FEEDBACK_REASON_LABELS.outdated}{' '}
-          {totals.outdated} · {FEEDBACK_REASON_LABELS.not_helpful} {totals.notHelpful}
+          {labels.feedbackReason.wrong} {totals.wrong} · {labels.feedbackReason.outdated}{' '}
+          {totals.outdated} · {labels.feedbackReason.not_helpful} {totals.notHelpful}
           <span className="muted">
             {' '}
             · wrong or outdated: {percent(totals.wrong + totals.outdated, totals.answers)} of
@@ -41,33 +45,33 @@ export function FeedbackStatsPage() {
       </section>
       <TopTopics topics={stats.topTopics} />
       <section className="panel" aria-labelledby={unitsId}>
-        <h2 id={unitsId}>Units</h2>
+        <h2 id={unitsId}>{t('feedback.units')}</h2>
         {stats.units.length > 0 ? (
           <div className="table-frame">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th scope="col">Unit</th>
+                  <th scope="col">{t('feedback.unit')}</th>
                   <th scope="col" className="num wide-only">
-                    Stays
+                    {t('feedback.stays')}
                   </th>
                   <th scope="col" className="num wide-only">
-                    Conversations
+                    {t('feedback.conversations')}
                   </th>
                   <th scope="col" className="num">
-                    Answers
+                    {t('feedback.answers')}
                   </th>
                   <th scope="col" className="num">
-                    Helpful
+                    {t('feedback.helpful')}
                   </th>
                   <th scope="col" className="num wide-only">
-                    {FEEDBACK_REASON_LABELS.wrong}
+                    {labels.feedbackReason.wrong}
                   </th>
                   <th scope="col" className="num wide-only">
-                    {FEEDBACK_REASON_LABELS.outdated}
+                    {labels.feedbackReason.outdated}
                   </th>
                   <th scope="col" className="num wide-only">
-                    {FEEDBACK_REASON_LABELS.not_helpful}
+                    {labels.feedbackReason.not_helpful}
                   </th>
                 </tr>
               </thead>
@@ -99,8 +103,8 @@ export function FeedbackStatsPage() {
             </table>
           </div>
         ) : (
-          <EmptyState icon={ThumbsUp} title="No rated answers yet">
-            When guests rate Fetivi’s answers, each unit’s results show up here.
+          <EmptyState icon={ThumbsUp} title={t('feedback.none')}>
+            {t('feedback.noneBody')}
           </EmptyState>
         )}
       </section>

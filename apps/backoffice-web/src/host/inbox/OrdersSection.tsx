@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { HostOrder } from '../../api';
 import { OrderCard } from './OrderCard';
 
@@ -9,11 +10,12 @@ export function OrdersSection({
   orders: HostOrder[];
   onChanged: () => Promise<void>;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   // Stable: the API's newest-first order is kept within each group.
   const sorted = [...orders.filter((o) => o.waiting), ...orders.filter((o) => !o.waiting)];
   return (
     <section className="inbox-orders" aria-labelledby="inbox-orders">
-      <h2 id="inbox-orders">Orders for your services</h2>
+      <h2 id="inbox-orders">{t('inbox.ordersTitle')}</h2>
       <ul className="rows">
         {sorted.map((o) => (
           <OrderCard key={o.orderId} order={o} onChanged={onChanged} />

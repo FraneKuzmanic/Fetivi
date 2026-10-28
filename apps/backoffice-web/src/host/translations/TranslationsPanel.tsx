@@ -1,25 +1,25 @@
 import { type GuestLanguage, LIMITS } from '@fetivi/domain/vocabulary';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Block, host, type TranslationsView } from '../../api';
 import { TextArea, TextField } from '../../forms/fields';
-import {
-  LANGUAGE_LABELS,
-  TRANSLATION_ERROR_LABELS,
-  TRANSLATION_ORIGIN_LABELS,
-} from '../../forms/labels';
+import { i18next } from '../../i18n';
+import { currentLabels, useLabels } from '../../i18n/useLabels';
 import { useAction } from '../../useAction';
 
 function sourceLine(view: TranslationsView): string {
   const { sourceLanguage } = view;
-  if (sourceLanguage === null) return 'Source language not detected yet.';
-  if (sourceLanguage === 'other') return 'Written in a language other than the seven guest ones.';
-  return `Written in ${LANGUAGE_LABELS[sourceLanguage]}.`;
+  if (sourceLanguage === null) return i18next.t('host:blocks.sourceUnknown');
+  if (sourceLanguage === 'other') return i18next.t('host:blocks.sourceOther');
+  return i18next.t('host:blocks.writtenIn', {
+    language: currentLabels().language[sourceLanguage],
+  });
 }
 
 function guestsLine(view: TranslationsView): string | null {
   if (view.publishedRevision === view.revision) return null;
-  if (view.publishedRevision === null) return "Guests don't see this block until it is translated.";
-  return 'Guests see the previously published version until this one is published.';
+  if (view.publishedRevision === null) return i18next.t('host:blocks.notYetTranslated');
+  return i18next.t('host:blocks.previousVersion');
 }
 
 /** Every guest language of one block: read, correct, and retry a failed translation. */
@@ -30,6 +30,8 @@ export function TranslationsPanel({
   block: Block;
   onChanged: () => Promise<void>;
 }) {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const { busy, error, run } = useAction();
   const [view, setView] = useState<TranslationsView | null>(null);
   const [correcting, setCorrecting] = useState<GuestLanguage | null>(null);
@@ -49,7 +51,8 @@ export function TranslationsPanel({
     void load();
   }, [load, block.revision, block.translation.status]);
 
-  if (!view) return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+  if (!view)
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
 
   const retry = () =>
     void run(async () => {
@@ -67,16 +70,16 @@ export function TranslationsPanel({
       </p>
       {view.status === 'failed' && view.error ? (
         <div className="translation-failed">
-          <p className="translation-error">{TRANSLATION_ERROR_LABELS[view.error]}</p>
+          <p className="translation-error">{labels.translationError[view.error]}</p>
           <button type="button" disabled={busy} onClick={retry}>
-            Retry translation
+            {t('blocks.retryTranslation')}
           </button>
         </div>
       ) : null}
       {warnings.length > 0 ? (
         <div className="translation-warnings" role="status">
           <p>
-            <strong>Saved. Check these:</strong>
+            <strong>{t('blocks.checkThese')}</strong>
           </p>
           <ul>
             {warnings.map((w) => (
@@ -92,9 +95,9 @@ export function TranslationsPanel({
           return (
             <li key={language} className="translation-row">
               <div className="translation-head">
-                <strong>{LANGUAGE_LABELS[language]}</strong>
+                <strong>{labels.language[language]}</strong>
                 <span className="muted">
-                  {current ? TRANSLATION_ORIGIN_LABELS[current.origin] : 'Missing'}
+                  {current ? labels.translationOrigin[current.origin] : t('blocks.missing')}
                 </span>
                 {isSource || correcting === language ? null : (
                   <button
@@ -105,7 +108,7 @@ export function TranslationsPanel({
                       setCorrecting(language);
                     }}
                   >
-                    Edit
+                    {t('common:edit')}
                   </button>
                 )}
               </div>
@@ -147,6 +150,7 @@ function CorrectionForm({
   onSave: (text: { title: string; body: string }) => Promise<void>;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   const [title, setTitle] = useState<string | null>(initial.title);
   const [body, setBody] = useState<string | null>(initial.body);
@@ -159,14 +163,14 @@ function CorrectionForm({
   return (
     <form className="fields" onSubmit={submit}>
       <TextField
-        label="Title"
+        label={t('blocks.title')}
         value={title}
         maxLength={LIMITS.title}
         required
         onChange={setTitle}
       />
       <TextArea
-        label="Text"
+        label={t('blocks.text')}
         value={body}
         maxLength={LIMITS.blockBody}
         rows={8}
@@ -177,10 +181,10 @@ function CorrectionForm({
       {error ? <p role="alert">{error}</p> : null}
       <div className="actions">
         <button type="submit" className="primary" disabled={busy}>
-          Save
+          {t('common:save')}
         </button>
         <button type="button" disabled={busy} onClick={onCancel}>
-          Cancel
+          {t('common:cancel')}
         </button>
       </div>
     </form>

@@ -7,25 +7,27 @@ import {
 } from '@fetivi/domain/wizard';
 import { CaretRight, CheckCircle, FileArrowUp } from '@phosphor-icons/react';
 import { type ReactNode, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import type { WizardStatus } from '../../api';
 import { CompletenessBar } from './CompletenessBar';
-import { format, useWizardCopy } from './copy';
+import { useWizardCopy } from './copy';
 
 /** The status of one step as a short chip text: Done, or what is left. */
 export function useStepState() {
   const { ui } = useWizardCopy();
+  const { t } = useTranslation('wizard');
   return (status: WizardStatus, stepId: WizardStepId) => {
     // A step with no questions (Saved places) is not "Done": the host filled nothing in.
     if (fieldsOfStep(stepId).length === 0) return { tone: 'neutral', text: ui.noFields };
     const step = status.progress.steps[stepId];
     if (step.missingRequired.length > 0) {
-      return { tone: 'wait', text: format(ui.requiredLeft, { n: step.missingRequired.length }) };
+      return { tone: 'wait', text: t('requiredLeft', { count: step.missingRequired.length }) };
     }
     if (step.missingRecommended.length > 0) {
       return {
         tone: 'neutral',
-        text: format(ui.recommendedLeft, { n: step.missingRecommended.length }),
+        text: t('recommendedLeft', { count: step.missingRecommended.length }),
       };
     }
     return { tone: 'ok', text: ui.stepDone };
@@ -85,6 +87,7 @@ export function WizardOverview({
   manualPending?: number | null;
 }) {
   const { ui, steps, manualImport: mi } = useWizardCopy();
+  const { t } = useTranslation('wizard');
   const importId = useId();
   const stepState = useStepState();
   const stepsId = useId();
@@ -113,7 +116,7 @@ export function WizardOverview({
           <h2 id={importId}>{mi.title}</h2>
           {manualPending ? (
             <div className="prompt-row">
-              <span>{format(mi.pendingCount, { n: manualPending })}</span>
+              <span>{t('pendingCount', { count: manualPending })}</span>
               <Link className="button" to={`/units/${status.unitId}/setup/import`}>
                 {mi.review}
               </Link>

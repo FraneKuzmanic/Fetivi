@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { setLanguage } from '../../i18n';
 import { bpFromPercent, centsFromEuros, eurosFromCents, formatPrice, percentFromBp } from './money';
 
 describe('money', () => {
+  afterEach(() => setLanguage('en'));
+
   it('converts euros to cents without float drift', () => {
     expect(centsFromEuros(19.99)).toBe(1999);
     expect(centsFromEuros(45)).toBe(4500);
@@ -24,5 +27,11 @@ describe('money', () => {
     expect(formatPrice(4500, 'EUR', 'person')).toBe('€45.00 per person');
     expect(formatPrice(25000, 'EUR', 'group')).toBe('€250.00 per group');
     expect(formatPrice(null, 'EUR', 'person')).toBe('Price on request');
+  });
+
+  it('formats a price in Croatian, with a decimal comma', () => {
+    setLanguage('hr');
+    expect(formatPrice(4500, 'EUR', 'person')).toBe('45,00 € po osobi');
+    expect(formatPrice(null, 'EUR', 'person')).toBe('Cijena na upit');
   });
 });

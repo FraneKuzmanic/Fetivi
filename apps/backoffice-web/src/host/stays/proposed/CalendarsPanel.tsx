@@ -1,8 +1,10 @@
 import { CALENDAR_LIMITS, CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
 import { Trash } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type CalendarFeed, host, type UnitCalendars } from '../../../api';
 import { TextField } from '../../../forms/fields';
+import { i18next } from '../../../i18n';
 import { useConfirm } from '../../../shell/ConfirmDialog';
 import { useAction } from '../../../useAction';
 import { agoLabel } from '../format';
@@ -11,22 +13,25 @@ import { BookingLinksStep } from './BookingLinksStep';
 /** What went wrong on the last check, in plain words. */
 export function feedErrorText(code: string): string {
   if (code === 'http-404' || code === 'http-410') {
-    return 'The link no longer works. Copy a fresh export link.';
+    return i18next.t('host:stays.linkGone');
   }
-  if (code === 'fetch-failed') return 'Fetivi could not reach the calendar.';
-  if (code === 'not-a-calendar') return 'This is not a calendar file.';
-  if (code === 'too-large') return 'The calendar file is too large.';
-  return 'The calendar could not be read. Fetivi tries again in 30 minutes.';
+  if (code === 'fetch-failed') return i18next.t('host:stays.fetchFailed');
+  if (code === 'not-a-calendar') return i18next.t('host:stays.notCalendar');
+  if (code === 'too-large') return i18next.t('host:stays.tooLarge');
+  return i18next.t('host:stays.unreadable');
 }
 
 function FeedStatus({ feed }: { feed: CalendarFeed }) {
+  const { t } = useTranslation(['host', 'common']);
   if (feed.lastError) return <span className="feed-error">{feedErrorText(feed.lastError)}</span>;
-  if (feed.lastOkAt) return <span className="muted">Checked {agoLabel(feed.lastOkAt)}</span>;
-  return <span className="muted">Waiting for the first check</span>;
+  if (feed.lastOkAt)
+    return <span className="muted">{t('stays.checked', { ago: agoLabel(feed.lastOkAt) })}</span>;
+  return <span className="muted">{t('stays.firstCheck')}</span>;
 }
 
 /** The unit's Airbnb and Booking.com calendar links, read about every 30 minutes. */
 export function CalendarsPanel({ unitId }: { unitId: string }) {
+  const { t } = useTranslation(['host', 'common']);
   const headingId = useId();
   const { busy, error, run } = useAction();
   const confirm = useConfirm();
@@ -54,9 +59,9 @@ export function CalendarsPanel({ unitId }: { unitId: string }) {
   async function remove(feed: CalendarFeed) {
     if (
       !(await confirm({
-        title: 'Remove this calendar?',
-        body: 'Stays already registered stay as they are.',
-        action: 'Remove calendar',
+        title: t('stays.removeTitle'),
+        body: t('stays.removeBody'),
+        action: t('stays.removeAction'),
         danger: true,
       }))
     )
@@ -70,11 +75,8 @@ export function CalendarsPanel({ unitId }: { unitId: string }) {
   return (
     <>
       <section className="panel" aria-labelledby={headingId}>
-        <h2 id={headingId}>Calendars</h2>
-        <p className="muted">
-          Fetivi reads these calendars about every 30 minutes and shows each new booking on the
-          Stays page for you to confirm.
-        </p>
+        <h2 id={headingId}>{t('stays.calendars')}</h2>
+        <p className="muted">{t('stays.calendarsIntro')}</p>
         {data && data.feeds.length > 0 ? (
           <ul className="rows">
             {data.feeds.map((feed) => (
@@ -89,7 +91,9 @@ export function CalendarsPanel({ unitId }: { unitId: string }) {
                 <button
                   type="button"
                   className="icon-button ghost"
-                  aria-label={`Remove the ${CALENDAR_SOURCE_LABELS[feed.source]} calendar`}
+                  aria-label={t('stays.removeCalendar', {
+                    source: CALENDAR_SOURCE_LABELS[feed.source],
+                  })}
                   disabled={busy}
                   onClick={() => remove(feed)}
                 >
@@ -101,8 +105,8 @@ export function CalendarsPanel({ unitId }: { unitId: string }) {
         ) : null}
         <form onSubmit={add} className="fields">
           <TextField
-            label="Calendar export link"
-            hint="From Airbnb or Booking.com. It starts with https://."
+            label={t('stays.exportLink')}
+            hint={t('stays.exportHint')}
             value={url}
             maxLength={CALENDAR_LIMITS.urlLength}
             required
@@ -111,19 +115,17 @@ export function CalendarsPanel({ unitId }: { unitId: string }) {
           {error ? <p role="alert">{error}</p> : null}
           <div className="actions">
             <button type="submit" className="primary" disabled={busy}>
-              Add calendar
+              {t('stays.addCalendar')}
             </button>
           </div>
         </form>
         <details className="help">
-          <summary>Where do I find the link?</summary>
+          <summary>{t('stays.whereLink')}</summary>
           <p>
-            <strong>Airbnb:</strong> Calendar → Availability → Connect calendars → Export calendar,
-            then copy the link.
+            <strong>Airbnb:</strong> {t('stays.airbnbSteps')}
           </p>
           <p>
-            <strong>Booking.com:</strong> Extranet → Rates & Availability → Sync calendars → Export
-            calendar, then copy the link.
+            <strong>Booking.com:</strong> {t('stays.bookingSteps')}
           </p>
         </details>
       </section>

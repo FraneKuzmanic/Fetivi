@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { host } from '../../api';
 import { SelectField } from '../../forms/fields';
@@ -8,6 +9,7 @@ import { liveUnits } from './format';
 import { type StayDraft, StayFields, stayBody } from './StayFields';
 
 export function NewStayPage() {
+  const { t } = useTranslation(['host', 'common']);
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { busy, error, run } = useAction();
@@ -39,19 +41,19 @@ export function NewStayPage() {
     });
   }
 
-  usePageTitle('Register a Stay');
+  usePageTitle(t('stays.newTitle'));
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/stays">Stays</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/stays">{t('stays.title')}</Link>
       </nav>
-      {units === null && !error ? <p className="muted">Loading…</p> : null}
+      {units === null && !error ? <p className="muted">{t('common:loading')}</p> : null}
       {units?.length === 0 ? (
         <section className="panel narrow">
-          <p>Stays can be registered once Fetivi has approved a property.</p>
+          <p>{t('stays.notApprovedYet')}</p>
           <p>
-            <Link to="/properties">Go to Properties</Link>
+            <Link to="/properties">{t('stays.goToProperties')}</Link>
           </p>
         </section>
       ) : null}
@@ -61,7 +63,7 @@ export function NewStayPage() {
           <form onSubmit={submit}>
             <div className="fields">
               <SelectField
-                label="Unit"
+                label={t('stays.unit')}
                 value={unitId}
                 options={units.map((u) => u.id)}
                 labels={Object.fromEntries(units.map((u) => [u.id, u.label]))}
@@ -70,10 +72,10 @@ export function NewStayPage() {
               <StayFields value={draft} onChange={setDraft} />
             </div>
             {error ? <p role="alert">{error}</p> : null}
-            <p className="muted">Fetivi creates a six-digit PIN for the guests.</p>
+            <p className="muted">{t('stays.createsPin')}</p>
             <div className="actions">
               <button type="submit" className="primary" disabled={busy}>
-                Register Stay
+                {t('stays.register')}
               </button>
             </div>
           </form>

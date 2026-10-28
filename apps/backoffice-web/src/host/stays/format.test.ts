@@ -1,16 +1,31 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { setLanguage } from '../../i18n';
 import {
   agoLabel,
   dateRange,
   guestsLabel,
   nights,
   nightsLabel,
-  PHASE_LABELS,
+  phaseLabel,
   pinWarningText,
   releaseText,
 } from './format';
 
 describe('Stay labels', () => {
+  afterEach(() => setLanguage('en'));
+
+  it('speaks Croatian, with three plural forms and day-first dates', () => {
+    setLanguage('hr');
+    expect(dateRange('2026-10-21', '2026-10-24')).toBe('21. lis – 24. lis 2026.');
+    expect(guestsLabel(1)).toBe('1 gost');
+    expect(guestsLabel(3)).toBe('3 gosta');
+    expect(guestsLabel(5)).toBe('5 gostiju');
+    expect(guestsLabel(21)).toBe('21 gost');
+    expect(nightsLabel('2026-10-24', '2026-10-25')).toBe('1 noćenje');
+    expect(nightsLabel('2026-10-24', '2026-10-31')).toBe('7 noćenja');
+    expect(phaseLabel('in_stay')).toBe('U boravku');
+  });
+
   it('formats a date range day first', () => {
     expect(dateRange('2026-10-21', '2026-10-24')).toBe('21 Oct – 24 Oct 2026');
   });
@@ -27,7 +42,7 @@ describe('Stay labels', () => {
   });
 
   it('labels the phase, the release time and the party', () => {
-    expect(PHASE_LABELS.in_stay).toBe('In stay');
+    expect(phaseLabel('in_stay')).toBe('In stay');
     expect(releaseText('2026-10-20T00:00')).toBe('Arrival details from 20 Oct, 00:00');
     expect(guestsLabel(1)).toBe('1 guest');
     expect(guestsLabel(4)).toBe('4 guests');

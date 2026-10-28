@@ -25,6 +25,7 @@ import {
   Trash,
 } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import {
   type CatalogRecord,
@@ -41,15 +42,11 @@ import {
   TextArea,
   TextField,
 } from '../../forms/fields';
-import {
-  CATALOG_KIND_LABELS,
-  PLACE_CATEGORY_LABELS,
-  TRANSPORT_MODE_LABELS,
-} from '../../forms/labels';
-import { MapPicker, NO_LOCATION } from '../../forms/MapPicker';
+import { MapPicker, noLocation } from '../../forms/MapPicker';
 import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
+import { useLabels } from '../../i18n/useLabels';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { MoreActions } from '../../shell/MoreActions';
 import { usePageTitle } from '../../shell/PageTitle';
@@ -89,23 +86,22 @@ function LocationPicker({
   onAddress?: (address: string) => void;
   required?: boolean;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   return (
     <MapPicker
-      label="Location on the map"
+      label={t('record.mapLocation')}
       value={value}
       onChange={onChange}
       required={required}
       search={{
-        label: 'Find the place',
-        placeholder: 'Name or address',
+        label: t('record.findPlace'),
+        placeholder: t('record.nameOrAddress'),
         kind: 'address',
         onPick: onAddress ? (place) => onAddress(place.addressLine ?? place.label) : undefined,
       }}
     />
   );
 }
-
-const EVENT_TIME_HINT = "In the destination's time zone.";
 
 /** Ticked lines, kept in table order. */
 function FerryLinesField({
@@ -115,14 +111,13 @@ function FerryLinesField({
   value: readonly string[];
   onChange: (lines: string[]) => void;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const toggle = (id: string, on: boolean) =>
     onChange(FERRY_LINES.map((l) => l.id).filter((l) => (l === id ? on : value.includes(l))));
   return (
     <fieldset className="row-editor check-group">
-      <legend>Ferry and catamaran lines</legend>
-      <small className="muted">
-        Guests get Jadrolinija notices and wind advisories for these lines.
-      </small>
+      <legend>{t('record.ferryLines')}</legend>
+      <small className="muted">{t('record.ferryHint')}</small>
       {FERRY_LINES.map((line) => (
         <CheckboxField
           key={line.id}
@@ -135,25 +130,14 @@ function FerryLinesField({
   );
 }
 
-const INTEREST_LABELS: Record<Interest, string> = {
-  beaches: 'Beaches & swimming',
-  sights: 'History & sights',
-  food: 'Food & wine',
-  nature: 'Nature & walks',
-  day_trips: 'Boat & day trips',
-  active: 'Sport & activities',
-  nightlife: 'Nightlife',
-  shopping: 'Markets & shopping',
-  slow: 'Slow days',
-};
-
 /** Places and day trips: one box, for the daily tips' rain rule. */
 function RainyDayField({ value, onChange }: { value: boolean; onChange: (on: boolean) => void }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   return (
     <fieldset className="row-editor check-group">
-      <legend>Daily tips</legend>
-      <small className="muted">Daily tips suggest it when rain is forecast.</small>
-      <CheckboxField label="Good on a rainy day" checked={value} onChange={onChange} />
+      <legend>{t('record.dailyTips')}</legend>
+      <small className="muted">{t('record.rainyHint')}</small>
+      <CheckboxField label={t('record.rainy')} checked={value} onChange={onChange} />
     </fieldset>
   );
 }
@@ -166,16 +150,17 @@ function InterestsField({
   value: readonly string[];
   onChange: (interests: string[]) => void;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const toggle = (code: string, on: boolean) =>
     onChange(INTERESTS.filter((c) => (c === code ? on : value.includes(c))));
   return (
     <fieldset className="row-editor check-group">
-      <legend>Suits guests who like</legend>
-      <small className="muted">Daily tips suggest the event to guests with these interests.</small>
+      <legend>{t('record.suits')}</legend>
+      <small className="muted">{t('record.suitsHint')}</small>
       {INTERESTS.map((code) => (
         <CheckboxField
           key={code}
-          label={INTEREST_LABELS[code]}
+          label={t(`record.interests.${code as Interest}`)}
           checked={value.includes(code)}
           onChange={(on) => toggle(code, on)}
         />
@@ -186,6 +171,8 @@ function InterestsField({
 
 /** /admin/catalog/destinations/:id/new/:kind: the kind's required fields, then the full editor. */
 export function NewRecordPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const { id = '', kind: kindParam = '' } = useParams();
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
@@ -212,7 +199,7 @@ export function NewRecordPage() {
 
   usePageTitle(
     (CATALOG_KINDS as readonly string[]).includes(kindParam)
-      ? `Add ${CATALOG_KIND_LABELS[kindParam as CatalogKind].toLowerCase()}`
+      ? t(`record.addKind.${kindParam as CatalogKind}`)
       : undefined,
   );
 
@@ -254,7 +241,7 @@ export function NewRecordPage() {
   function submit(event: FormEvent) {
     event.preventDefault();
     void run(async () => {
-      if (kind === 'place' && locationOf(coords) === null) throw new Error(NO_LOCATION);
+      if (kind === 'place' && locationOf(coords) === null) throw new Error(noLocation());
       const created = await catalog.createRecord(id, body());
       navigate(`/admin/catalog/records/${created.id}`, { replace: true });
     });
@@ -262,24 +249,26 @@ export function NewRecordPage() {
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/catalog">Catalog</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/admin/catalog">{t('catalog.title')}</Link>
         <span aria-hidden="true">/</span>
-        <Link to={`/admin/catalog/destinations/${id}`}>{destinationName ?? 'Destination'}</Link>
+        <Link to={`/admin/catalog/destinations/${id}`}>
+          {destinationName ?? t('catalog.destination')}
+        </Link>
       </nav>
       <section className="panel narrow">
         <form onSubmit={submit}>
           <div className="fields">
             <TextField
-              label="Title"
+              label={t('record.title')}
               value={title}
               maxLength={LIMITS.title}
               required
               onChange={setTitle}
             />
             <TextArea
-              label="Description"
-              hint="Markdown. Translated into the seven guest languages on save."
+              label={t('record.description')}
+              hint={t('record.descriptionHint')}
               value={description}
               maxLength={LIMITS.blockBody}
               rows={6}
@@ -290,10 +279,10 @@ export function NewRecordPage() {
             {kind === 'place' ? (
               <>
                 <SelectField
-                  label="Category"
+                  label={t('record.category')}
                   value={placeCategory}
                   options={PLACE_CATEGORIES}
-                  labels={PLACE_CATEGORY_LABELS}
+                  labels={labels.placeCategory}
                   onChange={(c) => c && setPlaceCategory(c)}
                 />
                 <LocationPicker value={coords} onChange={setCoords} required />
@@ -302,14 +291,14 @@ export function NewRecordPage() {
             {kind === 'event' ? (
               <div className="field-row">
                 <InputField
-                  label="Starts"
+                  label={t('record.starts')}
                   type="datetime-local"
                   value={startsAt}
                   required
                   onChange={setStartsAt}
                 />
                 <InputField
-                  label="Ends"
+                  label={t('record.ends')}
                   type="datetime-local"
                   value={endsAt}
                   required
@@ -319,10 +308,10 @@ export function NewRecordPage() {
             ) : null}
             {kind === 'event' ? (
               <>
-                <small>{EVENT_TIME_HINT}</small>
+                <small>{t('record.eventTimeHint')}</small>
                 <TextField
-                  label="Address"
-                  hint="Optional."
+                  label={t('record.address')}
+                  hint={t('record.optional')}
                   value={address}
                   maxLength={LIMITS.shortText}
                   onChange={setAddress}
@@ -336,18 +325,18 @@ export function NewRecordPage() {
             ) : null}
             {kind === 'transport_note' ? (
               <SelectField
-                label="Mode"
+                label={t('record.mode')}
                 value={transportMode}
                 options={TRANSPORT_MODES}
-                labels={TRANSPORT_MODE_LABELS}
+                labels={labels.transportMode}
                 onChange={(m) => m && setTransportMode(m)}
               />
             ) : null}
             {kind === 'day_trip' ? (
               <>
                 <NumberField
-                  label="Travel time (minutes)"
-                  hint="One way, from the destination."
+                  label={t('record.travelTime')}
+                  hint={t('record.travelHint')}
                   value={travelMinutes}
                   min={1}
                   max={CATALOG_LIMITS.travelMinutesMax}
@@ -367,7 +356,7 @@ export function NewRecordPage() {
           {error ? <p role="alert">{error}</p> : null}
           <div className="actions">
             <button type="submit" className="primary" disabled={busy}>
-              Create {CATALOG_KIND_LABELS[kind].toLowerCase()}
+              Create {labels.catalogKind[kind].toLowerCase()}
             </button>
           </div>
         </form>
@@ -458,6 +447,8 @@ function detailsBody(kind: CatalogKind, d: Draft, location: LatLng | null): Cata
 
 /** /admin/catalog/records/:id */
 export function RecordPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -493,7 +484,7 @@ export function RecordPage() {
   usePageTitle(record?.title);
 
   if (!record || !draft) {
-    return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
   }
 
   const { kind } = record;
@@ -529,9 +520,9 @@ export function RecordPage() {
   async function verify() {
     if (!record) return;
     const yes = await confirm({
-      title: `Mark ${record.title} as verified?`,
-      body: 'Check every field first. This sets today as the last-checked date for the whole record.',
-      action: 'Mark verified',
+      title: t('record.verifyTitle', { title: record.title }),
+      body: t('record.verifyBody'),
+      action: t('record.markVerified'),
     });
     if (yes) void run(async () => setRecord(await catalog.verify(id)));
   }
@@ -539,9 +530,9 @@ export function RecordPage() {
   async function remove() {
     if (!record) return;
     const yes = await confirm({
-      title: `Delete ${record.title}?`,
-      body: 'Its seasons, hours, photos and translations go with it. This cannot be undone.',
-      action: 'Delete record',
+      title: t('record.deleteTitle', { title: record.title }),
+      body: t('record.deleteBody'),
+      action: t('record.deleteRecord'),
       danger: true,
     });
     if (!yes) return;
@@ -552,20 +543,29 @@ export function RecordPage() {
   }
 
   const sections: PageSection[] = [
-    { id: 'details', label: 'Details', icon: Info },
-    { id: 'description', label: 'Description', icon: TextAlignLeft },
+    { id: 'details', label: t('record.details'), icon: Info },
+    { id: 'description', label: t('record.description'), icon: TextAlignLeft },
     ...(KIND_HAS_SEASONS[kind]
-      ? [{ id: 'seasons', label: 'Seasons', icon: CalendarBlank, count: draft.seasons.length }]
+      ? [
+          {
+            id: 'seasons',
+            label: t('record.seasons'),
+            icon: CalendarBlank,
+            count: draft.seasons.length,
+          },
+        ]
       : []),
     ...(KIND_HAS_HOURS[kind]
-      ? [{ id: 'hours', label: 'Opening hours', icon: Clock, count: draft.openingHours.length }]
+      ? [{ id: 'hours', label: t('record.hours'), icon: Clock, count: draft.openingHours.length }]
       : []),
-    ...(kind === 'transport_note' ? [{ id: 'links', label: 'Links', icon: LinkSimple }] : []),
+    ...(kind === 'transport_note'
+      ? [{ id: 'links', label: t('record.links'), icon: LinkSimple }]
+      : []),
     ...(kind === 'place'
-      ? [{ id: 'photos', label: 'Photos', icon: ImageSquare, count: draft.images.length }]
+      ? [{ id: 'photos', label: t('record.photos'), icon: ImageSquare, count: draft.images.length }]
       : []),
-    { id: 'sources', label: 'Sources', icon: BookOpen },
-    { id: 'translations', label: 'Translations', icon: Translate },
+    { id: 'sources', label: t('record.sources'), icon: BookOpen },
+    { id: 'translations', label: t('record.translations'), icon: Translate },
   ];
 
   const renderSection = (section: string) => {
@@ -573,21 +573,21 @@ export function RecordPage() {
       case 'description':
         return (
           <Section
-            title="Description"
+            title={t('record.description')}
             onSave={savePatch(['title', 'description'], {
               title: draft.title,
               description: draft.description,
             })}
           >
             <TextField
-              label="Title"
+              label={t('record.title')}
               value={draft.title}
               maxLength={LIMITS.title}
               required
               onChange={(v) => set('title')(v ?? '')}
             />
             <TextArea
-              label="Description"
+              label={t('record.description')}
               value={draft.description}
               maxLength={LIMITS.blockBody}
               rows={8}
@@ -599,7 +599,7 @@ export function RecordPage() {
       case 'seasons':
         return (
           <Section
-            title="Seasons"
+            title={t('record.seasons')}
             onSave={async () => accept(await catalog.setSeasons(id, draft.seasons), ['seasons'])}
           >
             <SeasonsEditor seasons={draft.seasons} onChange={set('seasons')} />
@@ -608,7 +608,7 @@ export function RecordPage() {
       case 'hours':
         return (
           <Section
-            title="Opening hours"
+            title={t('record.hours')}
             onSave={async () =>
               accept(await catalog.setOpeningHours(id, draft.openingHours), ['openingHours'])
             }
@@ -618,14 +618,14 @@ export function RecordPage() {
         );
       case 'links':
         return (
-          <Section title="Links" onSave={savePatch(['links'], { links: draft.links })}>
+          <Section title={t('record.links')} onSave={savePatch(['links'], { links: draft.links })}>
             <LinksEditor links={draft.links} onChange={set('links')} />
           </Section>
         );
       case 'photos':
         return (
           <Section
-            title="Photos"
+            title={t('record.photos')}
             onSave={async () => accept(await catalog.setImages(id, draft.images), ['images'])}
           >
             <ImagesEditor images={draft.images} onChange={set('images')} />
@@ -634,8 +634,8 @@ export function RecordPage() {
       case 'sources':
         return (
           <Section
-            title="Sources"
-            description="Where each fact was checked. One https link per field."
+            title={t('record.sources')}
+            description={t('record.sourcesHint')}
             onSave={savePatch(['fieldSources'], { fieldSources: draft.fieldSources })}
           >
             <SourcesEditor
@@ -647,30 +647,30 @@ export function RecordPage() {
         );
       case 'translations':
         return (
-          <Section title="Translations">
+          <Section title={t('record.translations')}>
             <CatalogTranslations record={record} onChanged={reload} />
           </Section>
         );
       default:
         return (
-          <Section title="Details" onSave={saveDetails}>
+          <Section title={t('record.details')} onSave={saveDetails}>
             {kind === 'place' ? (
               <>
                 <SelectField
-                  label="Category"
+                  label={t('record.category')}
                   value={draft.placeCategory}
                   options={PLACE_CATEGORIES}
-                  labels={PLACE_CATEGORY_LABELS}
+                  labels={labels.placeCategory}
                   onChange={(c) => c && set('placeCategory')(c)}
                 />
                 <TextField
-                  label="Address"
+                  label={t('record.address')}
                   value={draft.address}
                   maxLength={LIMITS.shortText}
                   onChange={set('address')}
                 />
                 <TextField
-                  label="Phone"
+                  label={t('record.phone')}
                   type="tel"
                   value={draft.phone}
                   maxLength={LIMITS.phone}
@@ -682,14 +682,14 @@ export function RecordPage() {
               <>
                 <div className="field-row">
                   <InputField
-                    label="Starts"
+                    label={t('record.starts')}
                     type="datetime-local"
                     value={draft.startsAt}
                     required
                     onChange={set('startsAt')}
                   />
                   <InputField
-                    label="Ends"
+                    label={t('record.ends')}
                     type="datetime-local"
                     value={draft.endsAt}
                     required
@@ -697,17 +697,17 @@ export function RecordPage() {
                   />
                 </div>
                 <small>
-                  {EVENT_TIME_HINT} ({record.destination.timezone})
+                  {t('record.eventTimeHintZone', { zone: record.destination.timezone })}
                 </small>
                 <TextField
-                  label="Venue"
+                  label={t('record.venue')}
                   value={draft.venueName}
                   maxLength={LIMITS.shortText}
                   onChange={set('venueName')}
                 />
                 <TextField
-                  label="Address"
-                  hint="Optional."
+                  label={t('record.address')}
+                  hint={t('record.optional')}
                   value={draft.address}
                   maxLength={LIMITS.shortText}
                   onChange={set('address')}
@@ -716,17 +716,17 @@ export function RecordPage() {
             ) : null}
             {kind === 'transport_note' ? (
               <SelectField
-                label="Mode"
+                label={t('record.mode')}
                 value={draft.transportMode}
                 options={TRANSPORT_MODES}
-                labels={TRANSPORT_MODE_LABELS}
+                labels={labels.transportMode}
                 onChange={(m) => m && set('transportMode')(m)}
               />
             ) : null}
             {kind === 'day_trip' ? (
               <NumberField
-                label="Travel time (minutes)"
-                hint="One way, from the destination."
+                label={t('record.travelTime')}
+                hint={t('record.travelHint')}
                 value={draft.travelMinutes}
                 min={1}
                 max={CATALOG_LIMITS.travelMinutesMax}
@@ -748,7 +748,7 @@ export function RecordPage() {
                   }
                 />
                 <InputField
-                  label="Website"
+                  label={t('record.website')}
                   type="url"
                   placeholder="https://"
                   value={draft.websiteUrl}
@@ -770,10 +770,14 @@ export function RecordPage() {
 
   const verifiedLine = [
     record.verifiedAt
-      ? `Verified ${day(record.verifiedAt)}${record.verifiedByEmail ? ` by ${record.verifiedByEmail}` : ''}`
-      : 'Never verified',
+      ? record.verifiedByEmail
+        ? t('record.verifiedBy', { day: day(record.verifiedAt), email: record.verifiedByEmail })
+        : t('record.verified', { day: day(record.verifiedAt) })
+      : t('record.neverVerified'),
     record.staleness.staleAt
-      ? `${record.staleness.status === 'stale' ? 'Re-check due since' : 'Next re-check'} ${day(record.staleness.staleAt)}`
+      ? record.staleness.status === 'stale'
+        ? t('record.dueSince', { day: day(record.staleness.staleAt) })
+        : t('record.nextDue', { day: day(record.staleness.staleAt) })
       : null,
   ]
     .filter(Boolean)
@@ -781,8 +785,8 @@ export function RecordPage() {
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/catalog">Catalog</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/admin/catalog">{t('catalog.title')}</Link>
         <span aria-hidden="true">/</span>
         <Link to={`/admin/catalog/destinations/${record.destination.id}`}>
           {record.destination.name}
@@ -797,19 +801,19 @@ export function RecordPage() {
             <TranslationChip status={record.translation.status} />
           </div>
           <p className="muted">
-            {CATALOG_KIND_LABELS[kind]} · {verifiedLine}
+            {labels.catalogKind[kind]} · {verifiedLine}
           </p>
         </div>
         <div className="actions">
           <button type="button" disabled={busy} onClick={() => void verify()}>
             <SealCheck aria-hidden="true" />
-            Mark verified
+            {t('record.markVerified')}
           </button>
           <MoreActions
-            label={`More actions for ${record.title}`}
+            label={t('record.moreActions', { title: record.title })}
             items={[
               {
-                label: 'Delete record',
+                label: t('record.deleteRecord'),
                 icon: <Trash aria-hidden="true" />,
                 danger: true,
                 onSelect: () => void remove(),
@@ -820,7 +824,7 @@ export function RecordPage() {
       </div>
       {error ? <p role="alert">{error}</p> : null}
 
-      <SectionLayout sections={sections} label="Record sections" render={renderSection} />
+      <SectionLayout sections={sections} label={t('record.sections')} render={renderSection} />
     </>
   );
 }

@@ -9,20 +9,14 @@ import {
   type DraftedHours,
   type DraftedSeason,
 } from '@fetivi/domain/curation-vocabulary';
-import { SOURCE_LABELS } from '@fetivi/domain/seeding-vocabulary';
+import type { FeedbackReason } from '@fetivi/domain/feedback-vocabulary';
 import { ClockCounterClockwise, DotsThree, ListChecks } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ApiError, type CurationItem, catalog, curation, type Destination } from '../../api';
 import { formatDate, formatDay } from '../../forms/datetime';
-import {
-  CURATION_ACTION_LABELS,
-  CURATION_KIND_LABELS,
-  CURATION_STATUS_LABELS,
-  PLACE_CATEGORY_LABELS,
-  SOURCE_FIELD_LABELS,
-  WEEKDAY_LABELS,
-} from '../../forms/labels';
+import { i18next, localeOf } from '../../i18n';
+import { currentLabels, useLabels } from '../../i18n/useLabels';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { EmptyState } from '../../shell/EmptyState';
 import { Menu } from '../../shell/Menu';
@@ -30,21 +24,12 @@ import { usePageTitle } from '../../shell/PageTitle';
 import { Tabs } from '../../shell/Tabs';
 import { useAction } from '../../useAction';
 
-const TABS: { id: CurationTab; label: string; empty: [string, string] }[] = [
-  {
-    id: 'open',
-    label: 'To review',
-    empty: [
-      'All caught up',
-      'Drafts, website changes, guest flags and host suggestions wait here for your review.',
-    ],
-  },
-  {
-    id: 'needs_visit',
-    label: 'Needs a visit',
-    empty: ['Nothing needs a visit', 'Items you can only check in person wait here.'],
-  },
-  { id: 'done', label: 'Done', empty: ['Nothing reviewed yet', 'Items you review end up here.'] },
+const t = i18next.getFixedT(null, 'admin', 'curation');
+
+const tabs = (): { id: CurationTab; label: string; empty: [string, string] }[] => [
+  { id: 'open', label: t('toReview'), empty: [t('caughtUp'), t('caughtUpBody')] },
+  { id: 'needs_visit', label: t('needsVisit'), empty: [t('noVisit'), t('noVisitBody')] },
+  { id: 'done', label: t('done'), empty: [t('noneDone'), t('noneDoneBody')] },
 ];
 
 const KIND_TONE: Record<CurationKind, string> = {
@@ -61,20 +46,26 @@ const date = formatDay;
 /** A YYYY-MM-DD day as written, whatever the viewer's zone. */
 const calendarDay = formatDate;
 
-const categoryLabel = (code: string) => PLACE_CATEGORY_LABELS[code as PlaceCategory] ?? code;
+const categoryLabel = (code: string) =>
+  currentLabels().placeCategory[code as PlaceCategory] ?? code;
 
 /** The row's one-line headline, per kind. */
 function headline(item: CurationItem): string {
   const p = item.payload;
   switch (p.kind) {
     case 'host_place_suggestion':
-      return `${p.name} · ${categoryLabel(p.placeCategory)}`;
+      return t('nameCategory', { name: p.name, category: categoryLabel(p.placeCategory) });
     case 'host_provider_suggestion':
       return p.name;
     case 'fallback_topic_cluster':
-      return `“${p.topic}”: ${p.count} ${p.count === 1 ? 'search' : 'searches'}, ${p.noResults} without results, week of ${calendarDay(p.weekStart)}`;
+      return t('cluster', {
+        topic: p.topic,
+        count: p.count,
+        noResults: p.noResults,
+        week: calendarDay(p.weekStart),
+      });
     default:
-      return item.record?.title ?? item.candidate?.name ?? 'Record removed';
+      return item.record?.title ?? item.candidate?.name ?? t('recordRemoved');
   }
 }
 
@@ -86,22 +77,31 @@ function detail(item: CurationItem): string | null {
     case 'refresh_diff': {
       if (p.kind === 'draft' && !item.record && item.candidate && !item.drafted) {
         if (p.drafting?.status === 'no_sources') {
-          return 'Couldn’t be drafted: no readable web page about it';
+          return t('noSources');
         }
-        if (p.drafting?.status === 'failed') return 'Drafting didn’t work';
-        return p.drafting ? 'Being drafted' : 'Waiting to be drafted';
+        if (p.drafting?.status === 'failed') return t('draftFailed');
+        return p.drafting ? t('beingDrafted') : t('waitingDraft');
       }
       const fields = proposedFields(p.changes);
       if (fields.length === 0) return null;
-      const names = fields.map((f) => SOURCE_FIELD_LABELS[f as SourceField] ?? f).join(', ');
-      return p.kind === 'draft' ? `Proposes ${names}` : `Changed: ${names}`;
+      const names = fields
+        .map((f) => currentLabels().sourceField[f as SourceField] ?? f)
+        .join(', ');
+      return p.kind === 'draft'
+        ? t('proposes', { fields: names })
+        : t('changed', { fields: names });
     }
     case 'guest_flagged':
-      return `Flagged as ${p.reason} in ${p.count} ${p.count === 1 ? 'answer' : 'answers'}`;
+      return t('flagged', {
+        reason: (
+          currentLabels().feedbackReason[p.reason as FeedbackReason] ?? p.reason
+        ).toLowerCase(),
+        count: p.count,
+      });
     case 'fallback_topic_cluster':
       return [
-        p.topics.length > 1 ? `Asked as ${p.topics.join(', ')}` : null,
-        p.places.length > 0 ? `Near ${p.places.join(', ')}` : null,
+        p.topics.length > 1 ? t('askedAs', { topics: p.topics.join(', ') }) : null,
+        p.places.length > 0 ? t('near', { places: p.places.join(', ') }) : null,
       ]
         .filter(Boolean)
         .join(' · ');
@@ -122,7 +122,7 @@ const proposedFields = (changes: CuratedChanges) =>
   );
 
 const dayMonth = (month: number, day: number) =>
-  new Date(Date.UTC(2000, month - 1, day)).toLocaleDateString('en-GB', {
+  new Date(Date.UTC(2000, month - 1, day)).toLocaleDateString(localeOf(i18next.language), {
     day: 'numeric',
     month: 'short',
     timeZone: 'UTC',
@@ -133,9 +133,12 @@ const hoursText = (hours: DraftedHours[]) =>
     .map((h) => {
       const dates =
         h.validFrom || h.validTo
-          ? ` (${h.validFrom ? calendarDay(h.validFrom) : '…'} to ${h.validTo ? calendarDay(h.validTo) : '…'})`
+          ? ` ${t('validRange', {
+              from: h.validFrom ? calendarDay(h.validFrom) : '…',
+              to: h.validTo ? calendarDay(h.validTo) : '…',
+            })}`
           : '';
-      return `${WEEKDAY_LABELS[h.weekday]?.slice(0, 3) ?? h.weekday} ${h.opens}–${h.closes}${dates}`;
+      return `${currentLabels().weekday[h.weekday]?.slice(0, 3) ?? h.weekday} ${h.opens}–${h.closes}${dates}`;
     })
     .join(', ');
 
@@ -148,8 +151,8 @@ const seasonsText = (seasons: DraftedSeason[]) =>
 function valueText(changes: CuratedChanges, field: keyof CuratedChanges): string | null {
   const value = changes[field];
   if (value === undefined) return null;
-  if (field === 'openingHours') return hoursText(value as DraftedHours[]) || 'None';
-  if (field === 'seasons') return seasonsText(value as DraftedSeason[]) || 'None';
+  if (field === 'openingHours') return hoursText(value as DraftedHours[]) || t('none');
+  if (field === 'seasons') return seasonsText(value as DraftedSeason[]) || t('none');
   return typeof value === 'string' ? value : null;
 }
 
@@ -160,13 +163,14 @@ const isWebUrl = (url: string | null | undefined): url is string =>
 function SourceLink({ url }: { url: string | null | undefined }) {
   return isWebUrl(url) ? (
     <a className="proposal-source" href={url} target="_blank" rel="noreferrer noopener">
-      source
+      {t('source')}
     </a>
   ) : null;
 }
 
 /** "Show proposal": each field a draft or diff proposes, with its source and previous value. */
 function Proposal({ item }: { item: CurationItem }) {
+  const labels = useLabels();
   const p = item.payload;
   if (p.kind !== 'draft' && p.kind !== 'refresh_diff') return null;
   if (p.kind === 'draft' && !item.record && !item.drafted) return null;
@@ -175,17 +179,17 @@ function Proposal({ item }: { item: CurationItem }) {
   const sources = p.changes.fieldSources ?? {};
   return (
     <details className="proposal">
-      <summary>Show proposal</summary>
+      <summary>{t('showProposal')}</summary>
       <dl>
         {fields.map((field) => {
           const previous = p.kind === 'refresh_diff' ? valueText(p.previous, field) : null;
           return (
             <div key={field} className="proposal-field">
-              <dt>{SOURCE_FIELD_LABELS[field as SourceField] ?? field}</dt>
+              <dt>{labels.sourceField[field as SourceField] ?? field}</dt>
               <dd>
                 {p.kind === 'refresh_diff' ? (
                   previous === null ? (
-                    <span className="muted">Was empty. </span>
+                    <span className="muted">{t('wasEmpty')} </span>
                   ) : (
                     <>
                       <del>{previous}</del>{' '}
@@ -200,16 +204,16 @@ function Proposal({ item }: { item: CurationItem }) {
         {p.kind === 'draft' && p.place ? (
           <>
             <div className="proposal-field">
-              <dt>{SOURCE_FIELD_LABELS.placeCategory}</dt>
+              <dt>{labels.sourceField.placeCategory}</dt>
               <dd>
                 {categoryLabel(p.place.placeCategory)}{' '}
                 <SourceLink url={p.place.categorySourceUrl} />
               </dd>
             </div>
             <div className="proposal-field">
-              <dt>{SOURCE_FIELD_LABELS.location}</dt>
+              <dt>{labels.sourceField.location}</dt>
               <dd>
-                From {SOURCE_LABELS[p.place.locationSource]}{' '}
+                {t('from', { source: labels.seedingSource[p.place.locationSource] })}{' '}
                 <SourceLink url={p.place.locationSourceUrl} />
               </dd>
             </div>
@@ -218,7 +222,7 @@ function Proposal({ item }: { item: CurationItem }) {
         {p.kind === 'draft'
           ? (p.images ?? []).map((image) => (
               <div key={image.url} className="proposal-field">
-                <dt>Image</dt>
+                <dt>{t('image')}</dt>
                 <dd>
                   Wikimedia Commons, {image.attribution} · {image.licence}{' '}
                   <SourceLink url={image.sourcePageUrl} />
@@ -236,20 +240,25 @@ function subject(item: CurationItem): string {
   const p = item.payload;
   if (p.kind === 'fallback_topic_cluster') return `“${p.topic}”`;
   if ('name' in p) return p.name;
-  return item.record?.title ?? item.candidate?.name ?? 'The item';
+  return item.record?.title ?? item.candidate?.name ?? t('theItem');
 }
 
-const DONE: Partial<Record<CurationAction, string>> = {
-  approve: 'approved. It is under Done.',
-  reject: 'rejected. It is under Done.',
-  needs_visit: 'moved to Needs a visit.',
-};
+const doneText = (action: CurationAction, item: CurationItem): string | null =>
+  action === 'approve'
+    ? t('approved', { subject: subject(item) })
+    : action === 'reject'
+      ? t('rejected', { subject: subject(item) })
+      : action === 'needs_visit'
+        ? t('movedToVisit', { subject: subject(item) })
+        : null;
 
 function meta(item: CurationItem): string {
   return [
-    item.destination?.name ?? 'No destination',
+    item.destination?.name ?? t('noDestination'),
     item.host?.email,
-    item.reviewedAt ? `Reviewed ${date(item.reviewedAt)}` : `Added ${date(item.createdAt)}`,
+    item.reviewedAt
+      ? t('reviewed', { date: date(item.reviewedAt) })
+      : t('added', { date: date(item.createdAt) }),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -257,6 +266,7 @@ function meta(item: CurationItem): string {
 
 /** /admin/curation: the one queue of everything waiting for the admin's review. */
 export function CurationPage() {
+  const labels = useLabels();
   const navigate = useNavigate();
   const confirm = useConfirm();
   const [params] = useSearchParams();
@@ -302,9 +312,9 @@ export function CurationPage() {
   const act = async (item: CurationItem, action: CurationAction) => {
     if (action === 'reject') {
       const yes = await confirm({
-        title: `Reject ${subject(item)}?`,
-        body: 'Nothing changes in the catalog. The item moves to Done.',
-        action: 'Reject',
+        title: t('rejectTitle', { subject: subject(item) }),
+        body: t('rejectBody'),
+        action: t('reject'),
         danger: true,
       });
       if (!yes) return;
@@ -321,7 +331,7 @@ export function CurationPage() {
         if (action === 'reject') await curation.reject(item.id);
         if (action === 'needs_visit') await curation.needsVisit(item.id);
         setItems((rows) => rows?.filter((r) => r.id !== item.id) ?? null);
-        setNotice(`${subject(item)} ${DONE[action]}`);
+        setNotice(doneText(action, item));
         setCounts((await query()).counts);
       } catch (e) {
         // Another admin reviewed it first: show the list as it is now.
@@ -332,19 +342,19 @@ export function CurationPage() {
   };
 
   const total = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : null;
-  const [emptyTitle, emptyText] = TABS.find((t) => t.id === tab)?.empty ?? ['', ''];
+  const [emptyTitle, emptyText] = tabs().find((x) => x.id === tab)?.empty ?? ['', ''];
   const filtered = kind !== null || destinationId !== '';
 
-  usePageTitle('Curation');
+  usePageTitle(t('title'));
 
   return (
     <>
-      <Tabs label="Status" items={TABS} value={tab} onChange={setTab} />
+      <Tabs label={t('status')} items={tabs()} value={tab} onChange={setTab} />
       <div className="toolbar">
         <label className="field inline-field">
-          <span className="field-label">Destination</span>
+          <span className="field-label">{t('destination')}</span>
           <select value={destinationId} onChange={(e) => setDestinationId(e.target.value)}>
-            <option value="">All destinations</option>
+            <option value="">{t('allDestinations')}</option>
             {destinations.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
@@ -353,23 +363,24 @@ export function CurationPage() {
           </select>
         </label>
         <label className="field inline-field">
-          <span className="field-label">Kind</span>
+          <span className="field-label">{t('kind')}</span>
           <select
             value={kind ?? ''}
             onChange={(e) => setKind((e.target.value || null) as CurationKind | null)}
           >
-            <option value="">All kinds{total ? ` (${total})` : ''}</option>
+            <option value="">{total ? t('allKindsCount', { count: total }) : t('allKinds')}</option>
             {CURATION_KINDS.map((k) => (
               <option key={k} value={k}>
-                {CURATION_KIND_LABELS[k]}
-                {counts?.[k] ? ` (${counts[k]})` : ''}
+                {counts?.[k]
+                  ? t('withCount', { label: labels.curationKind[k], count: counts[k] })
+                  : labels.curationKind[k]}
               </option>
             ))}
           </select>
         </label>
         <Link className="button toolbar-end" to="/admin/curation/staleness">
           <ClockCounterClockwise aria-hidden="true" />
-          Due for a re-check
+          {t('due')}
         </Link>
       </div>
       {notice && !error ? (
@@ -378,12 +389,12 @@ export function CurationPage() {
         </output>
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
-      {items === null && !error ? <p className="muted">Loading…</p> : null}
+      {items === null && !error ? <p className="muted">{i18next.t('common:loading')}</p> : null}
       {items?.length === 0 ? (
         filtered ? (
           <EmptyState
             icon={ListChecks}
-            title="Nothing matches these filters"
+            title={t('noMatch')}
             action={
               <button
                 type="button"
@@ -392,7 +403,7 @@ export function CurationPage() {
                   setDestinationId('');
                 }}
               >
-                Show everything
+                {t('showAll')}
               </button>
             }
           />
@@ -412,7 +423,7 @@ export function CurationPage() {
                 <div className="block-text">
                   <span className="block-title">
                     <span className={`chip ${KIND_TONE[item.kind]}`}>
-                      {CURATION_KIND_LABELS[item.kind]}
+                      {labels.curationKind[item.kind]}
                     </span>
                     <strong>{headline(item)}</strong>
                   </span>
@@ -428,14 +439,14 @@ export function CurationPage() {
                       disabled={busy}
                       onClick={() => void act(item, first)}
                     >
-                      {CURATION_ACTION_LABELS[first]}
+                      {labels.curationAction[first]}
                     </button>
                     {rest.length > 0 ? (
                       <Menu
-                        label={`More for ${subject(item)}`}
+                        label={t('moreFor', { subject: subject(item) })}
                         trigger={<DotsThree aria-hidden="true" weight="bold" />}
                         items={rest.map((a) => ({
-                          label: CURATION_ACTION_LABELS[a],
+                          label: labels.curationAction[a],
                           danger: a === 'reject',
                           onSelect: () => void act(item, a),
                         }))}
@@ -444,7 +455,7 @@ export function CurationPage() {
                   </div>
                 ) : (
                   <span className={`chip ${item.status === 'approved' ? 'ok' : 'neutral'}`}>
-                    {CURATION_STATUS_LABELS[item.status]}
+                    {labels.curationStatus[item.status]}
                   </span>
                 )}
               </li>

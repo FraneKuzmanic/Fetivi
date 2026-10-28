@@ -1,7 +1,9 @@
 import { ClipboardText } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type AuditEntry, admin } from '../api';
 import { formatMoment } from '../forms/datetime';
+import { i18next } from '../i18n';
 import { EmptyState } from '../shell/EmptyState';
 import { Pager } from '../shell/Pager';
 import { usePageTitle } from '../shell/PageTitle';
@@ -11,62 +13,66 @@ import { useAction } from '../useAction';
 const PAGE = 50;
 
 /** Requests that read best as their own sentence. */
-const SENTENCES: Record<string, string> = {
-  '/api/admin/act-as': 'Started acting as the host',
-  '/api/admin/act-as/stop': 'Stopped acting as the host',
-  '/api/host/inbox/:id/read': 'Read a guest message',
-  '/api/host/inbox/:id/reply': 'Replied to a guest',
-  '/api/host/units/:id/go-live': 'Put a unit live',
-  '/api/host/probe': 'Checked the host account',
-  '/api/host/payments/stripe/disconnect': 'Disconnected online payments',
-  '/api/host/payments/stripe/onboarding-link': 'Started online payments setup',
-  '/api/host/stay-proposals/:id/confirm': 'Confirmed a proposed stay',
-  '/api/host/stay-proposals/:id/dismiss': 'Dismissed a proposed stay',
-  '/api/host/orders/:id/actions': 'Answered an order',
-  '/api/host/stays/:id/keep': 'Kept a stay',
-  '/api/host/properties/:id/booking-links-approved': 'Approved booking links',
-  '/api/host/payments/stripe/refresh': 'Checked online payments',
-};
+const SENTENCES = {
+  '/api/admin/act-as': 'actAs',
+  '/api/admin/act-as/stop': 'stopActing',
+  '/api/host/inbox/:id/read': 'readMessage',
+  '/api/host/inbox/:id/reply': 'replied',
+  '/api/host/units/:id/go-live': 'goLive',
+  '/api/host/probe': 'probe',
+  '/api/host/payments/stripe/disconnect': 'stripeDisconnect',
+  '/api/host/payments/stripe/onboarding-link': 'stripeOnboarding',
+  '/api/host/stay-proposals/:id/confirm': 'confirmProposal',
+  '/api/host/stay-proposals/:id/dismiss': 'dismissProposal',
+  '/api/host/orders/:id/actions': 'orderAction',
+  '/api/host/stays/:id/keep': 'keepStay',
+  '/api/host/properties/:id/booking-links-approved': 'bookingLinks',
+  '/api/host/payments/stripe/refresh': 'stripeRefresh',
+} as const;
 
 /** The thing a request touched, by the last named part of its path. */
-const THINGS: [RegExp, string][] = [
-  [/\/translations/, 'a translation'],
+const THINGS = [
+  [/\/translations/, 'translation'],
   [/\/amenities$/, 'amenities'],
-  [/\/hidden-blocks$/, 'which guide entries the unit hides'],
-  [/\/(picks|added-places|host-places)/, "the host's picks"],
-  [/\/calendars/, 'a calendar'],
-  [/\/allotment-slots|\/slots/, 'time slots'],
-  [/\/blocks/, 'a guide entry'],
-  [/\/stays/, 'a stay'],
-  [/\/units/, 'a unit'],
-  [/\/offers/, 'a service'],
-  [/\/orders/, 'an order'],
-  [/\/media/, 'a photo'],
-  [/\/providers|\/provider-suggestions/, 'a provider'],
-  [/\/notification-settings|\/push/, 'notification settings'],
-  [/\/payments/, 'online payments'],
-  [/\/properties/, 'a property'],
-];
+  [/\/hidden-blocks$/, 'hiddenBlocks'],
+  [/\/(picks|added-places|host-places)/, 'picks'],
+  [/\/calendars/, 'calendar'],
+  [/\/allotment-slots|\/slots/, 'slots'],
+  [/\/blocks/, 'block'],
+  [/\/stays/, 'stay'],
+  [/\/units/, 'unit'],
+  [/\/offers/, 'offer'],
+  [/\/orders/, 'order'],
+  [/\/media/, 'media'],
+  [/\/providers|\/provider-suggestions/, 'provider'],
+  [/\/notification-settings|\/push/, 'notifications'],
+  [/\/payments/, 'payments'],
+  [/\/properties/, 'property'],
+] as const;
+
+const t = i18next.getFixedT(null, 'admin', 'audit');
 
 /** "Started acting as the host", "Changed a property": an audit line in words. */
 export function auditAction(entry: Pick<AuditEntry, 'method' | 'route'>): string {
-  const sentence = SENTENCES[entry.route];
-  if (sentence) return sentence;
-  const thing = THINGS.find(([pattern]) => pattern.test(entry.route))?.[1] ?? 'the account';
-  if (/\/retry$/.test(entry.route)) return `Retried ${thing}`;
-  if (entry.method === 'DELETE') return `Deleted ${thing}`;
+  const sentence = SENTENCES[entry.route as keyof typeof SENTENCES];
+  if (sentence) return t(sentence);
+  const thing = t(THINGS.find(([pattern]) => pattern.test(entry.route))?.[1] ?? 'account');
+  if (/\/retry$/.test(entry.route)) return t('retried', { thing });
+  if (entry.method === 'DELETE') return t('deleted', { thing });
   if (entry.method === 'POST' && !entry.route.endsWith(':id')) {
     return /\/:id\/[a-z-]+$|^\/api\/host\/[a-z-]+$/.test(entry.route)
-      ? `Added ${thing}`
-      : `Updated ${thing}`;
+      ? t('added', { thing })
+      : t('updated', { thing });
   }
-  return `Changed ${thing}`;
+  return t('changed', { thing });
 }
 
 const failed = (code: number | null) => code !== null && code >= 400;
 
 /** /admin/audit: everything done while acting as a host, newest first. */
 export function AuditPage() {
+  useTranslation('admin');
+  const { t: tc } = useTranslation();
   const { error, run } = useAction();
   const [entries, setEntries] = useState<AuditEntry[] | null>(null);
   const [query, setQuery] = useState('');
@@ -85,25 +91,25 @@ export function AuditPage() {
     ) ?? [];
   const page = shown.slice(offset, offset + PAGE);
 
-  usePageTitle('Audit log');
+  usePageTitle(t('title'));
 
   return (
     <>
-      <p className="muted">Everything done while acting as a host, newest first.</p>
+      <p className="muted">{t('intro')}</p>
       {error ? <p role="alert">{error}</p> : null}
-      {entries === null && !error ? <p className="muted">Loading…</p> : null}
+      {entries === null && !error ? <p className="muted">{tc('loading')}</p> : null}
       {entries?.length === 0 ? (
-        <EmptyState icon={ClipboardText} title="Nothing logged yet">
-          When you act as a host, every change you make in their account is listed here.
+        <EmptyState icon={ClipboardText} title={t('none')}>
+          {t('noneBody')}
         </EmptyState>
       ) : null}
       {entries && entries.length > 0 ? (
         <>
           <div className="toolbar">
             <SearchBox
-              label="Search the log"
+              label={t('search')}
               value={query}
-              placeholder="Host or admin email"
+              placeholder={t('searchPlaceholder')}
               onChange={(v) => {
                 setQuery(v);
                 setOffset(0);
@@ -113,10 +119,10 @@ export function AuditPage() {
           {shown.length === 0 ? (
             <EmptyState
               icon={ClipboardText}
-              title={`Nothing logged for “${query.trim()}”`}
+              title={t('noMatch', { query: query.trim() })}
               action={
                 <button type="button" onClick={() => setQuery('')}>
-                  Clear search
+                  {tc('table.clearSearch')}
                 </button>
               }
             />
@@ -126,11 +132,11 @@ export function AuditPage() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th scope="col">When</th>
-                      <th scope="col">What happened</th>
-                      <th scope="col">Host</th>
+                      <th scope="col">{t('when')}</th>
+                      <th scope="col">{t('what')}</th>
+                      <th scope="col">{t('host')}</th>
                       <th scope="col" className="wide-only">
-                        By
+                        {t('by')}
                       </th>
                     </tr>
                   </thead>
@@ -143,12 +149,12 @@ export function AuditPage() {
                           {failed(e.statusCode) ? (
                             <>
                               {' '}
-                              <span className="chip fail">Didn’t go through</span>
+                              <span className="chip fail">{t('failed')}</span>
                             </>
                           ) : null}
                         </td>
                         <td>{e.hostEmail}</td>
-                        <td className="wide-only">{e.adminEmail ?? 'A removed admin'}</td>
+                        <td className="wide-only">{e.adminEmail ?? t('removedAdmin')}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -81,6 +81,7 @@ import type {
   WizardPromptKey,
   WizardStepId,
 } from '@fetivi/domain/wizard';
+import { currentLanguage } from './i18n';
 
 export class ApiError extends Error {
   override name = 'ApiError';
@@ -122,7 +123,14 @@ export async function upload<T>(path: string, file: File): Promise<T> {
 }
 
 export interface Me {
-  account: { id: string; email: string; role: 'host' | 'admin'; language: GuestLanguage };
+  account: {
+    id: string;
+    email: string;
+    role: 'host' | 'admin';
+    language: GuestLanguage;
+    /** False while the language is the default from the browser, not one the person picked. */
+    languageChosen: boolean;
+  };
   actingAs: { id: string; email: string } | null;
 }
 
@@ -788,12 +796,16 @@ const remove = (path: string) => api<void>(path, { method: 'DELETE' });
 
 export const auth = {
   me: () => api<Me>('/api/auth/me'),
-  login: (email: string, password: string) => post<Me>('/api/auth/login', { email, password }),
+  login: (email: string, password: string) =>
+    post<Me>('/api/auth/login', { email, password, language: currentLanguage() }),
   logout: () => post('/api/auth/logout'),
-  signUp: (email: string, password: string) => post('/api/auth/sign-up', { email, password }),
+  signUp: (email: string, password: string) =>
+    post('/api/auth/sign-up', { email, password, language: currentLanguage() }),
   verifyEmail: (token: string) => post('/api/auth/verify-email', { token }),
-  resendVerification: (email: string) => post('/api/auth/resend-verification', { email }),
-  requestReset: (email: string) => post('/api/auth/password-reset/request', { email }),
+  resendVerification: (email: string) =>
+    post('/api/auth/resend-verification', { email, language: currentLanguage() }),
+  requestReset: (email: string) =>
+    post('/api/auth/password-reset/request', { email, language: currentLanguage() }),
   confirmReset: (token: string, password: string) =>
     post('/api/auth/password-reset/confirm', { token, password }),
   setLanguage: (language: GuestLanguage) => put<Me>('/api/auth/me/language', { language }),

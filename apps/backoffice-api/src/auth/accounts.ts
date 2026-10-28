@@ -1,8 +1,11 @@
 import {
   accounts,
   accountTokens,
+  type BackofficeLanguage,
+  backofficeLanguageOf,
   type Db,
   type Executor,
+  HOST_COPY,
   hashToken,
   type Mailer,
   newToken,
@@ -72,26 +75,44 @@ async function issueToken(deps: AccountDeps, accountId: string, purpose: Purpose
   return token;
 }
 
-async function sendVerification(deps: AccountDeps, account: Account): Promise<void> {
+/**
+ * The language of an account email: the person's choice, else the language the signed-out page
+ * was showing, else the browser default stored at the last sign-up or login (ticket 53).
+ */
+function mailLanguage(account: Account, requestLanguage?: BackofficeLanguage): BackofficeLanguage {
+  if (account.uiLanguageChosenAt) return backofficeLanguageOf(account.uiLanguage);
+  return requestLanguage ?? backofficeLanguageOf(account.uiLanguage);
+}
+
+async function sendVerification(
+  deps: AccountDeps,
+  account: Account,
+  language?: BackofficeLanguage,
+): Promise<void> {
   const token = await issueToken(deps, account.id, 'verify_email');
   if (!token) return;
+  const copy = HOST_COPY[mailLanguage(account, language)].account.verify;
   await deps.mailer.send({
     to: account.email,
-    subject: 'Confirm your Fetivi email address',
-    text: `Open this link to confirm your email address. It works for 24 hours.\n\n${deps.webOrigin}/verify-email?token=${token}`,
+    subject: copy.subject,
+    text: `${copy.text}\n\n${deps.webOrigin}/verify-email?token=${token}`,
   });
 }
 
-async function sendReset(deps: AccountDeps, account: Account, alreadyRegistered: boolean) {
+async function sendReset(
+  deps: AccountDeps,
+  account: Account,
+  alreadyRegistered: boolean,
+  language?: BackofficeLanguage,
+) {
   const token = await issueToken(deps, account.id, 'reset_password');
   if (!token) return;
-  const intro = alreadyRegistered
-    ? 'Someone tried to sign up with this email address, but you already have a Fetivi account. If you forgot your password, reset it here.'
-    : 'Open this link to choose a new password.';
+  const { account: mails } = HOST_COPY[mailLanguage(account, language)];
+  const copy = alreadyRegistered ? mails.alreadyRegistered : mails.reset;
   await deps.mailer.send({
     to: account.email,
-    subject: alreadyRegistered ? 'You already have a Fetivi account' : 'Reset your Fetivi password',
-    text: `${intro} The link works for 1 hour.\n\n${deps.webOrigin}/reset-password?token=${token}`,
+    subject: copy.subject,
+    text: `${copy.text}\n\n${deps.webOrigin}/reset-password?token=${token}`,
   });
 }
 
@@ -111,21 +132,34 @@ async function consumeToken(tx: Executor, token: string, purpose: Purpose, now: 
   return row.accountId;
 }
 
-/** Answers the same way whether or not the email is known. */
-export async function signUp(deps: AccountDeps, email: string, password: string): Promise<void> {
+/**
+ * Answers the same way whether or not the email is known. `language` is the signed-out page's
+ * language; a new account starts in it, not yet marked as chosen.
+ */
+export async function signUp(
+  deps: AccountDeps,
+  email: string,
+  password: string,
+  language?: BackofficeLanguage,
+): Promise<void> {
   const existing = await findByEmail(deps.db, email);
   if (!existing) {
     const [account] = await deps.db
       .insert(accounts)
-      .values({ email, passwordHash: await hashPassword(password), role: 'host' })
+      .values({
+        email,
+        passwordHash: await hashPassword(password),
+        role: 'host',
+        uiLanguage: language ?? 'en',
+      })
       .onConflictDoNothing()
       .returning();
     // A concurrent sign-up for the same email won the race; it sends its own mail.
-    if (account) await sendVerification(deps, account);
+    if (account) await sendVerification(deps, account, language);
     return;
   }
-  if (!existing.emailVerifiedAt) return sendVerification(deps, existing);
-  return sendReset(deps, existing, true);
+  if (!existing.emailVerifiedAt) return sendVerification(deps, existing, language);
+  return sendReset(deps, existing, true, language);
 }
 
 export async function verifyEmail(deps: AccountDeps, token: string): Promise<void> {
@@ -144,9 +178,13 @@ export async function verifyEmail(deps: AccountDeps, token: string): Promise<voi
   });
 }
 
-export async function resendVerification(deps: AccountDeps, email: string): Promise<void> {
+export async function resendVerification(
+  deps: AccountDeps,
+  email: string,
+  language?: BackofficeLanguage,
+): Promise<void> {
   const account = await findByEmail(deps.db, email);
-  if (account && !account.emailVerifiedAt) await sendVerification(deps, account);
+  if (account && !account.emailVerifiedAt) await sendVerification(deps, account, language);
 }
 
 export async function login(
@@ -154,6 +192,7 @@ export async function login(
   email: string,
   password: string,
   ip: string,
+  language?: BackofficeLanguage,
 ): Promise<{ token: string; principal: Principal }> {
   const { db } = deps;
   const now = deps.now();
@@ -174,6 +213,15 @@ export async function login(
   if (account.suspendedAt) throw new HttpError(403, 'account-suspended');
 
   await clearFailures(db, email);
+  // Until the person chooses, the account follows the language of the page they signed in on.
+  let uiLanguage = account.uiLanguage;
+  if (!account.uiLanguageChosenAt && language && language !== uiLanguage) {
+    uiLanguage = language;
+    await db
+      .update(accounts)
+      .set({ uiLanguage, updatedAt: now })
+      .where(eq(accounts.id, account.id));
+  }
   const { token, id } = await createSession(db, account.id, now);
   return {
     token,
@@ -183,16 +231,21 @@ export async function login(
         id: account.id,
         email: account.email,
         role: account.role,
-        language: account.uiLanguage,
+        language: uiLanguage,
+        languageChosen: account.uiLanguageChosenAt !== null,
       },
       actingAs: null,
     },
   };
 }
 
-export async function requestPasswordReset(deps: AccountDeps, email: string): Promise<void> {
+export async function requestPasswordReset(
+  deps: AccountDeps,
+  email: string,
+  language?: BackofficeLanguage,
+): Promise<void> {
   const account = await findByEmail(deps.db, email);
-  if (account) await sendReset(deps, account, false);
+  if (account) await sendReset(deps, account, false, language);
 }
 
 export async function confirmPasswordReset(

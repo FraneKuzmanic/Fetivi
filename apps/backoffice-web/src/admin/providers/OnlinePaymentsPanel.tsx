@@ -1,42 +1,47 @@
 import type { ProviderCardStatus } from '@fetivi/domain/payments-vocabulary';
 import { ArrowSquareOut } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import type { PaymentsStatus } from '../../api';
 import { CopyButton } from '../../host/stays/StayPage';
+import { i18next, localeOf } from '../../i18n';
 import { useAction } from '../../useAction';
 
 type Status = ProviderCardStatus | 'none';
-const STATUS: Record<Status, { chip: string; tone: string; text: string }> = {
+const statusOf = (): Record<Status, { chip: string; tone: string; text: string }> => ({
   none: {
-    chip: 'Not set up',
+    chip: i18next.t('admin:providers.notSetUp'),
     tone: 'neutral',
-    text: 'Offers paid online need a Stripe account.',
+    text: i18next.t('admin:providers.notSetUpText'),
   },
   pending: {
-    chip: 'Onboarding',
+    chip: i18next.t('admin:providers.onboarding'),
     tone: 'wait',
-    text: 'Waiting for the Provider to finish Stripe onboarding.',
+    text: i18next.t('admin:providers.onboardingText'),
   },
   active: {
-    chip: 'Active',
+    chip: i18next.t('admin:providers.active'),
     tone: 'ok',
-    text: 'Can take card payments.',
+    text: i18next.t('admin:providers.activeText'),
   },
   restricted: {
-    chip: 'Restricted',
+    chip: i18next.t('admin:providers.restricted'),
     tone: 'fail',
-    text: 'Stripe needs more information from the Provider.',
+    text: i18next.t('admin:providers.restrictedText'),
   },
   unsupported: {
-    chip: 'Unsupported',
+    chip: i18next.t('admin:providers.unsupported'),
     tone: 'fail',
-    text: "Stripe can't take card payments for this account.",
+    text: i18next.t('admin:providers.unsupportedText'),
   },
-};
+});
 
 const when = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+  new Date(iso).toLocaleString(localeOf(i18next.language), {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
 
 /**
  * A Provider's Stripe Connect onboarding: the card capability status, a fresh onboarding link the
@@ -44,7 +49,7 @@ const when = (iso: string) =>
  * refreshes once. Hosts manage their own account in Settings → Payments.
  */
 export function OnlinePaymentsPanel<T extends PaymentsStatus>({
-  title = 'Online payments',
+  title,
   status: current,
   onLink,
   onRefresh,
@@ -56,6 +61,7 @@ export function OnlinePaymentsPanel<T extends PaymentsStatus>({
   onRefresh: () => Promise<T>;
   onChange: (status: T) => void;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const { busy, error, run } = useAction();
   const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(null);
   const [params, setParams] = useSearchParams();
@@ -74,12 +80,12 @@ export function OnlinePaymentsPanel<T extends PaymentsStatus>({
     void run(async () => onChange(await onRefresh()));
   }, [params, setParams, run, onChange, onRefresh]);
 
-  const status = STATUS[current.stripeCardPayments ?? 'none'];
+  const status = statusOf()[current.stripeCardPayments ?? 'none'];
   const active = current.stripeCardPayments === 'active';
 
   return (
     <section className="panel" aria-labelledby="online-payments">
-      <h2 id="online-payments">{title}</h2>
+      <h2 id="online-payments">{title ?? t('providers.onlinePayments')}</h2>
       <p>
         <span className={`chip ${status.tone}`}>{status.chip}</span> {status.text}
       </p>
@@ -90,14 +96,14 @@ export function OnlinePaymentsPanel<T extends PaymentsStatus>({
       {link ? (
         <div className="onboarding-link">
           <label className="field-label" htmlFor="onboarding-link">
-            Onboarding link for the Provider
+            {t('providers.onboardingLink')}
           </label>
           <input id="onboarding-link" type="text" value={link.url} readOnly />
           <div className="actions">
-            <CopyButton text={link.url} label="Copy" />
+            <CopyButton text={link.url} label={t('providers.copy')} />
             <a className="button" href={link.url} target="_blank" rel="noreferrer">
               <ArrowSquareOut aria-hidden="true" />
-              Open
+              {t('providers.open')}
             </a>
           </div>
           <small className="muted">
@@ -117,7 +123,7 @@ export function OnlinePaymentsPanel<T extends PaymentsStatus>({
             })
           }
         >
-          Create onboarding link
+          {t('providers.createLink')}
         </button>
         {/* A created link means the account exists, even before this page reloads. */}
         {current.stripeConnected || link ? (
@@ -126,7 +132,7 @@ export function OnlinePaymentsPanel<T extends PaymentsStatus>({
             disabled={busy}
             onClick={() => void run(async () => onChange(await onRefresh()))}
           >
-            Refresh status
+            {t('providers.refresh')}
           </button>
         ) : null}
       </div>

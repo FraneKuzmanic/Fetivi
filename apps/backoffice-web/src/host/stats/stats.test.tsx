@@ -59,11 +59,23 @@ const ADMIN_STATS: AdminFeedbackStats = {
 };
 
 const HOST_ME: Me = {
-  account: { id: 'h1', email: 'host@example.test', role: 'host', language: 'en' },
+  account: {
+    id: 'h1',
+    email: 'host@example.test',
+    role: 'host',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: null,
 };
 const ADMIN_ME: Me = {
-  account: { id: 'a1', email: 'admin@example.test', role: 'admin', language: 'en' },
+  account: {
+    id: 'a1',
+    email: 'admin@example.test',
+    role: 'admin',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: null,
 };
 

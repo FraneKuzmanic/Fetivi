@@ -1,11 +1,13 @@
 import type { GeoPlace } from '@fetivi/domain/geocode-vocabulary';
 import { LIMITS } from '@fetivi/domain/vocabulary';
 import { useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { geo } from '../../api';
 import { countryOptions } from '../../forms/countries';
 import { TextField } from '../../forms/fields';
 import { MapPicker, placeOptions, useGeoSearch } from '../../forms/MapPicker';
 import { SearchField } from '../../forms/SearchField';
+import { i18next } from '../../i18n';
 
 export interface AddressValue {
   addressLine: string | null;
@@ -16,8 +18,6 @@ export interface AddressValue {
   lat: number | null;
   lng: number | null;
 }
-
-const COUNTRIES = countryOptions();
 
 /** The house number the host typed, kept when the picked result is only the street. */
 function houseNumberOf(text: string): string | null {
@@ -38,6 +38,7 @@ export function AddressFields({
   /** The setup wizard asks for the address and the map location as two questions. */
   parts?: 'all' | 'address' | 'map';
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const address = parts !== 'map';
   const map = parts !== 'address';
   const [search, setSearch] = useState('');
@@ -93,37 +94,37 @@ export function AddressFields({
       {address ? (
         <>
           <SearchField
-            label="Find the address"
-            hint="Type the street and number, then pick it. It fills in the fields below and places the pin."
-            placeholder="For example Gospe kraj mora 13, Trogir"
+            label={t('core.findAddress')}
+            hint={t('core.findAddressHint')}
+            placeholder={t('core.findAddressPlaceholder')}
             value={search}
             onText={setSearch}
             options={placeOptions(addresses.places)}
             loading={addresses.loading}
             message={
               addresses.failed
-                ? 'Search is not available right now. Fill in the fields and place the pin by hand.'
+                ? t('core.searchUnavailable')
                 : search.trim().length >= 3
-                  ? 'No matching address. Try the street name only.'
+                  ? t('core.noAddress')
                   : null
             }
             onPick={pickAddress}
           />
           <TextField
-            label="Street address"
+            label={t('core.street')}
             value={value.addressLine}
             maxLength={LIMITS.shortText}
             onChange={(addressLine) => onChange({ ...value, addressLine })}
           />
           <div className="field-row">
             <TextField
-              label="Postal code"
+              label={t('core.postalCode')}
               value={value.postalCode}
               maxLength={LIMITS.shortText}
               onChange={(postalCode) => onChange({ ...value, postalCode })}
             />
             <SearchField
-              label="City"
+              label={t('core.city')}
               icon={false}
               value={cityText}
               maxLength={LIMITS.shortText}
@@ -149,14 +150,14 @@ export function AddressFields({
           {value.country !== undefined ? (
             <div className="field">
               <label className="field-label" htmlFor={countryId}>
-                Country
+                {t('core.country')}
               </label>
               <select
                 id={countryId}
                 value={value.country}
                 onChange={(e) => onChange({ ...value, country: e.target.value })}
               >
-                {COUNTRIES.map((c) => (
+                {countryOptions(i18next.language).map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.name}
                   </option>
@@ -168,15 +169,11 @@ export function AddressFields({
       ) : null}
       {map ? (
         <MapPicker
-          label="Location on the map"
+          label={t('core.mapLocation')}
           value={{ lat: value.lat, lng: value.lng }}
           onChange={(p) => onChange({ ...latest.current, ...p })}
           onPinMoved={pinMoved}
-          hint={
-            point
-              ? 'Drag the pin onto your entrance. Walking distances for guests start here.'
-              : 'Find the address above, or click the map where your building is.'
-          }
+          hint={point ? t('core.dragPin') : t('core.findOrClick')}
         />
       ) : null}
     </div>

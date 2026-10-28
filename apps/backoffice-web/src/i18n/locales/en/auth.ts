@@ -1,0 +1,58 @@
+// The source strings. Every hr file has exactly these keys and placeholders.
+/** The signed-out pages. `<strong>` wraps an email address. */
+export const auth = {
+  pitch: 'Your property, explained to every guest',
+  pitchBody:
+    "Write down the details once: Wi-Fi, check-in, house rules, the places you love. Fetivi answers your guests' questions from them, in their own language, and tells you when someone needs you.",
+  email: 'Email',
+  password: 'Password',
+  newPassword: 'New password',
+  showPassword: 'Show password',
+  passwordHint: 'Use at least 10 characters.',
+  sending: 'Sending…',
+  backToLogin: 'Back to log in',
+  logIn: 'Log in',
+  checkEmail: 'Check your email',
+  spam: 'Not there in a minute? Check your spam folder.',
+  otherEmail: 'Use a different email',
+  login: {
+    loggingIn: 'Logging in…',
+    forgot: 'Forgot password?',
+    resend: 'Send a new confirmation link',
+    newHost: 'New host? <anchor>Create an account</anchor>',
+  },
+  signUp: {
+    title: 'Create a host account',
+    submit: 'Create account',
+    creating: 'Creating account…',
+    haveAccount: 'Already have an account? <anchor>Log in</anchor>',
+    sent: 'We sent a confirmation link to <strong>{{email}}</strong>. It works for 24 hours.',
+    sendAgain: 'Send it again',
+    nextTitle: 'What happens next',
+    next1: 'Open the link to confirm your email, then log in.',
+    next2: 'Add your property and its units.',
+    next3: 'Fetivi checks and approves the property.',
+    next4: 'Fill in the guide. Once the essentials are in, your unit goes live.',
+  },
+  forgot: {
+    title: 'Reset your password',
+    submit: 'Send reset link',
+    sent: 'If an account exists for <strong>{{email}}</strong>, we sent a link to reset the password. It works for 1 hour.',
+  },
+  reset: {
+    title: 'Choose a new password',
+    done: 'Your password is changed',
+    submit: 'Set new password',
+    saving: 'Saving…',
+    invalid: 'This link is invalid or has expired. <anchor>Request a new one</anchor>',
+  },
+  verify: {
+    title: 'Confirm your email',
+    done: 'Your email is confirmed',
+    checking: 'Checking your link…',
+    invalid: 'This link is invalid or has expired.',
+    resent: 'If <strong>{{email}}</strong> still needs confirming, we sent a new link.',
+    submit: 'Send a new link',
+  },
+  resent: 'We sent a new link to {{email}}.',
+};

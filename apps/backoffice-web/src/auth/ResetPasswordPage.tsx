@@ -1,4 +1,5 @@
 import { type FormEvent, type ReactNode, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { auth } from '../api';
 import { useAction } from '../useAction';
@@ -8,6 +9,7 @@ import { PasswordField } from './fields';
 export function ResetPasswordPage() {
   const [params] = useSearchParams();
   const token = params.get('token');
+  const { t } = useTranslation('auth');
   const { busy, error, run } = useAction();
   const [password, setPassword] = useState('');
   const [done, setDone] = useState(false);
@@ -25,23 +27,27 @@ export function ResetPasswordPage() {
   if (!token) {
     body = (
       <p>
-        This link is invalid or has expired. <Link to="/forgot-password">Request a new one</Link>
+        <Trans
+          t={t}
+          i18nKey="reset.invalid"
+          components={{ anchor: <Link to="/forgot-password" /> }}
+        />
       </p>
     );
   } else if (done) {
     body = (
       <Link className="button primary" to="/login">
-        Log in
+        {t('logIn')}
       </Link>
     );
   } else {
     body = (
       <form onSubmit={submit}>
         <PasswordField
-          label="New password"
+          label={t('newPassword')}
           autoComplete="new-password"
           isNew
-          hint="Use at least 10 characters."
+          hint={t('passwordHint')}
           value={password}
           onChange={setPassword}
           invalid={!!error}
@@ -53,18 +59,18 @@ export function ResetPasswordPage() {
           </p>
         ) : null}
         <button type="submit" className="primary" aria-disabled={busy || undefined}>
-          {busy ? 'Saving…' : 'Set new password'}
+          {busy ? t('reset.saving') : t('reset.submit')}
         </button>
       </form>
     );
   }
 
   return (
-    <AuthPage title={done ? 'Your password is changed' : 'Choose a new password'}>
+    <AuthPage title={done ? t('reset.done') : t('reset.title')}>
       {body}
       {done ? null : (
         <p className="auth-alt">
-          <Link to="/login">Back to log in</Link>
+          <Link to="/login">{t('backToLogin')}</Link>
         </p>
       )}
     </AuthPage>

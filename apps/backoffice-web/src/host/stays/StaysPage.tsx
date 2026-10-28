@@ -1,5 +1,6 @@
 import { Plus } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { host, type PropertySummary, type Stay } from '../../api';
 import { usePageTitle } from '../../shell/PageTitle';
@@ -9,28 +10,32 @@ import {
   guestsLabel,
   liveUnits,
   nightsLabel,
-  PHASE_LABELS,
+  phaseLabel,
   pinWarningText,
 } from './format';
 import { ProposedList } from './proposed/ProposedList';
 
 export function StayChips({ stay }: { stay: Stay }) {
+  const { t } = useTranslation(['host', 'common']);
   return (
     <span className="chips">
       <span className={`chip ${stay.phase === 'in_stay' ? 'ok' : 'neutral'}`}>
-        {PHASE_LABELS[stay.phase]}
+        {phaseLabel(stay.phase)}
       </span>
-      {stay.possiblyCancelled ? <span className="chip fail">Possibly cancelled</span> : null}
+      {stay.possiblyCancelled ? (
+        <span className="chip fail">{t('stays.possiblyCancelled')}</span>
+      ) : null}
       {stay.pinSentAt ? (
-        <span className="chip ok">PIN sent</span>
+        <span className="chip ok">{t('stays.pinSent')}</span>
       ) : stay.pinWarning ? (
-        <span className="chip wait">PIN not sent</span>
+        <span className="chip wait">{t('stays.pinNotSent')}</span>
       ) : null}
     </span>
   );
 }
 
 export function StaysPage() {
+  const { t } = useTranslation(['host', 'common']);
   const [params, setParams] = useSearchParams();
   const { error, run } = useAction();
   const [properties, setProperties] = useState<PropertySummary[]>([]);
@@ -64,18 +69,18 @@ export function StaysPage() {
     past ? 0 : proposalsWarned,
   );
 
-  usePageTitle('Stays');
+  usePageTitle(t('stays.title'));
 
   return (
     <>
       <div className="page-head">
         <Link className="button primary" to={unitId ? `/stays/new?unit=${unitId}` : '/stays/new'}>
           <Plus aria-hidden="true" weight="bold" />
-          Register a Stay
+          {t('stays.registerStay')}
         </Link>
       </div>
       <div className="filters">
-        <div className="segmented wrap" role="tablist" aria-label="When">
+        <div className="segmented wrap" role="tablist" aria-label={t('stays.when')}>
           {[false, true].map((isPast) => (
             <button
               key={String(isPast)}
@@ -84,15 +89,15 @@ export function StaysPage() {
               aria-selected={past === isPast}
               onClick={() => setFilter({ past: isPast })}
             >
-              {isPast ? 'Past' : 'Current and upcoming'}
+              {isPast ? t('stays.past') : t('stays.current')}
             </button>
           ))}
         </div>
         {units.length > 1 ? (
           <label className="field inline-field">
-            <span className="field-label">Unit</span>
+            <span className="field-label">{t('stays.unit')}</span>
             <select value={unitId} onChange={(e) => setFilter({ unit: e.target.value })}>
-              <option value="">All units</option>
+              <option value="">{t('stays.allUnits')}</option>
               {units.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.label}
@@ -111,19 +116,17 @@ export function StaysPage() {
           onWarned={setProposalsWarned}
         />
       )}
-      {list === null && !error ? <p className="muted">Loading…</p> : null}
+      {list === null && !error ? <p className="muted">{t('common:loading')}</p> : null}
       {list?.length === 0 ? (
-        <p className="muted">
-          {past ? 'No past Stays.' : 'No Stays yet. Register one to get a PIN for your guests.'}
-        </p>
+        <p className="muted">{past ? t('stays.noPast') : t('stays.none')}</p>
       ) : null}
       {list && list.length > 0 ? (
         <ul className="rows table stays-table">
           <li className="table-head" aria-hidden="true">
-            <span>Dates</span>
-            <span>Unit</span>
-            <span>PIN</span>
-            <span>Status</span>
+            <span>{t('stays.dates')}</span>
+            <span>{t('stays.unit')}</span>
+            <span>{t('stays.pin')}</span>
+            <span>{t('stays.status')}</span>
           </li>
           {list.map((s) => (
             <li key={s.id}>

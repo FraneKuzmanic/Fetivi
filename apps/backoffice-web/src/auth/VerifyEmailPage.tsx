@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { auth } from '../api';
 import { useAction } from '../useAction';
@@ -12,6 +13,7 @@ export function VerifyEmailPage() {
     token ? 'checking' : 'invalid',
   );
   const posted = useRef(false);
+  const { t } = useTranslation('auth');
 
   useEffect(() => {
     // A token is single-use, so post it once even when StrictMode runs effects twice.
@@ -24,17 +26,17 @@ export function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <AuthPage title={state === 'verified' ? 'Your email is confirmed' : 'Confirm your email'}>
-      {state === 'checking' ? <p role="status">Checking your link…</p> : null}
+    <AuthPage title={state === 'verified' ? t('verify.done') : t('verify.title')}>
+      {state === 'checking' ? <p role="status">{t('verify.checking')}</p> : null}
       {state === 'verified' ? (
         <Link className="button primary" to="/login">
-          Log in
+          {t('logIn')}
         </Link>
       ) : null}
       {state === 'invalid' ? <ResendForm /> : null}
       {state === 'verified' ? null : (
         <p className="auth-alt">
-          <Link to="/login">Back to log in</Link>
+          <Link to="/login">{t('backToLogin')}</Link>
         </p>
       )}
     </AuthPage>
@@ -42,6 +44,7 @@ export function VerifyEmailPage() {
 }
 
 function ResendForm() {
+  const { t } = useTranslation('auth');
   const { busy, error, run } = useAction();
   const [email, setEmail] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -57,11 +60,15 @@ function ResendForm() {
 
   return (
     <>
-      <p>This link is invalid or has expired.</p>
+      <p>{t('verify.invalid')}</p>
       {sentTo ? (
         <p role="status">
-          If <strong className="address">{sentTo}</strong> still needs confirming, we sent a new
-          link.
+          <Trans
+            t={t}
+            i18nKey="verify.resent"
+            values={{ email: sentTo }}
+            components={{ strong: <strong className="address" /> }}
+          />
         </p>
       ) : (
         <form onSubmit={submit}>
@@ -72,7 +79,7 @@ function ResendForm() {
             </p>
           ) : null}
           <button type="submit" className="primary" aria-disabled={busy || undefined}>
-            {busy ? 'Sending…' : 'Send a new link'}
+            {busy ? t('sending') : t('verify.submit')}
           </button>
         </form>
       )}

@@ -1,28 +1,30 @@
 import { DIGEST_LIMITS, type HostDeliveryMode } from '@fetivi/domain/host-notification-vocabulary';
 import { Plus, X } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type HostNotificationSettings, host } from '../../../api';
 import { Section, TimeField } from '../../../forms/fields';
+import { i18next } from '../../../i18n';
 import { useSession } from '../../../session';
 import { useAction } from '../../../useAction';
 import { SettingsTabs } from '../SettingsTabs';
 import { platform } from './install';
 import { PhoneAlerts } from './PhoneAlerts';
 
-const MODES: { mode: HostDeliveryMode; label: string; help: string }[] = [
+const modes = (): { mode: HostDeliveryMode; label: string; help: string }[] => [
   {
     mode: 'immediate',
-    label: 'Immediate',
-    help: 'We email you as soon as a guest sends a message.',
+    label: i18next.t('host:settings.immediate'),
+    help: i18next.t('host:settings.immediateHelp'),
   },
   {
     mode: 'digest',
-    label: 'Digest',
-    help: 'We email you once at each time below with the messages that are waiting. Urgent messages still come straight away.',
+    label: i18next.t('host:settings.digest'),
+    help: i18next.t('host:settings.digestHelp'),
   },
 ];
 
-/** A time not in the list yet, for "Add a time". */
+/** A time not in the list yet, for "{t('settings.addTime')}". */
 function nextTime(times: string[]): string {
   for (let h = 12; h < 36; h++) {
     const time = `${String(h % 24).padStart(2, '0')}:00`;
@@ -33,6 +35,7 @@ function nextTime(times: string[]): string {
 
 /** Settings → Notifications (PRD §6.6): how guest messages reach the host, by email and on a phone. */
 export function NotificationsPage() {
+  const { t } = useTranslation(['host', 'common']);
   const { me } = useSession();
   const { error, run } = useAction();
   const [settings, setSettings] = useState<HostNotificationSettings | null>(null);
@@ -58,7 +61,7 @@ export function NotificationsPage() {
   };
 
   const account = me && me !== 'loading' ? me : null;
-  const help = MODES.find((m) => m.mode === mode)?.help;
+  const help = modes().find((m) => m.mode === mode)?.help;
   // Push needs the server's key and the host's own phone; elsewhere the section has nothing to do.
   const phoneAlerts =
     settings !== null &&
@@ -70,18 +73,18 @@ export function NotificationsPage() {
     <>
       <SettingsTabs />
       {error ? <p role="alert">{error}</p> : null}
-      {settings === null && !error ? <p className="muted">Loading…</p> : null}
+      {settings === null && !error ? <p className="muted">{t('common:loading')}</p> : null}
       {settings ? (
         <div className="editor">
           <Section
-            title="Guest messages"
+            title={t('settings.guestMessages')}
             onSave={async () =>
               apply(await host.saveNotificationSettings({ mode, digestTimes: times }))
             }
           >
             <fieldset className="segmented choice">
-              <legend className="visually-hidden">Delivery</legend>
-              {MODES.map((m) => (
+              <legend className="visually-hidden">{t('settings.delivery')}</legend>
+              {modes().map((m) => (
                 <label key={m.mode}>
                   <input
                     type="radio"
@@ -97,12 +100,12 @@ export function NotificationsPage() {
             <p className="muted">{help}</p>
             {mode === 'digest' ? (
               <>
-                <ul className="digest-times" aria-label="Digest times">
+                <ul className="digest-times" aria-label={t('settings.digestTimes')}>
                   {times.map((time, i) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: times can repeat while editing
                     <li key={i} className="digest-time">
                       <TimeField
-                        label={`Time ${i + 1}`}
+                        label={t('settings.time', { n: i + 1 })}
                         value={time}
                         onChange={(v) => setTimes(times.map((t, j) => (j === i ? (v ?? '') : t)))}
                       />
@@ -110,7 +113,7 @@ export function NotificationsPage() {
                         <button
                           type="button"
                           className="ghost"
-                          aria-label={`Remove time ${i + 1}`}
+                          aria-label={t('settings.removeTime', { n: i + 1 })}
                           onClick={() => setTimes(times.filter((_, j) => j !== i))}
                         >
                           <X aria-hidden="true" />
@@ -123,7 +126,7 @@ export function NotificationsPage() {
                   <div className="actions">
                     <button type="button" onClick={() => setTimes([...times, nextTime(times)])}>
                       <Plus aria-hidden="true" />
-                      Add a time
+                      {t('settings.addTime')}
                     </button>
                   </div>
                 ) : null}
@@ -134,7 +137,7 @@ export function NotificationsPage() {
             ) : null}
           </Section>
           {phoneAlerts ? (
-            <Section title="Phone alerts">
+            <Section title={t('settings.phoneAlerts')}>
               <PhoneAlerts
                 publicKey={settings.push.publicKey}
                 devices={settings.push.devices}

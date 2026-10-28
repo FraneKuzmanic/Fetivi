@@ -1,5 +1,6 @@
 import type { PriceUnit } from '@fetivi/domain/offer-vocabulary';
-import { PRICE_UNIT_LABELS } from '../../forms/labels';
+import { i18next, localeOf } from '../../i18n';
+import { currentLabels } from '../../i18n/useLabels';
 
 // The API stores cents and basis points; the admin types euros and percentages.
 
@@ -16,7 +17,10 @@ export const percentFromBp = (value: number): number => value / 100;
 
 /** "€45.00 per person", or "Price on request" when the Provider names it. */
 export function formatPrice(minor: number | null, currency: string, unit: PriceUnit): string {
-  if (minor === null) return 'Price on request';
-  const amount = new Intl.NumberFormat('en', { style: 'currency', currency }).format(minor / 100);
-  return `${amount} ${PRICE_UNIT_LABELS[unit]}`;
+  if (minor === null) return i18next.t('admin:price.onRequest');
+  const amount = new Intl.NumberFormat(localeOf(i18next.language), {
+    style: 'currency',
+    currency,
+  }).format(minor / 100);
+  return i18next.t('admin:price.perUnit', { amount, unit: currentLabels().priceUnit[unit] });
 }

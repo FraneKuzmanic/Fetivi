@@ -1,8 +1,10 @@
 import { OFFER_LIMITS } from '@fetivi/domain/offer-vocabulary';
 import { type FormEvent, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { centsFromEuros } from '../../admin/providers/money';
 import { type HostOrderActionBody, type HostOrderView, host, type OrderAction } from '../../api';
 import { DateField, NumberField, TimeField } from '../../forms/fields';
+import { i18next, localeOf } from '../../i18n';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { useAction } from '../../useAction';
 import { inboxChanged } from './inbox-events';
@@ -10,66 +12,62 @@ import { inboxChanged } from './inbox-events';
 // One Order on the host's own service (38): the Provider link's view and one-tap answers, in the
 // back office. Each answer is bound to the proposal the card shows; a changed Order refreshes.
 
-const day = new Intl.DateTimeFormat('en-GB', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-  timeZone: 'UTC',
-});
+const t = i18next.getFixedT(null, 'host', 'order');
 
 /** 'YYYY-MM-DD' → "Sun 25 Oct"; a civil date never shifts a day. */
-export const orderDay = (date: string) => day.format(new Date(`${date}T00:00:00Z`));
+export const orderDay = (date: string) =>
+  new Date(`${date}T00:00:00Z`).toLocaleDateString(localeOf(i18next.language), {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
 
 const money = (minor: number, currency: string) =>
-  new Intl.NumberFormat('en', { style: 'currency', currency }).format(minor / 100);
-
-const people = (n: number) => (n === 1 ? '1 person' : `${n} people`);
+  new Intl.NumberFormat(localeOf(i18next.language), { style: 'currency', currency }).format(
+    minor / 100,
+  );
 
 // A per-group price is flat and its quantity is the party size (machine.ts), so both read as people.
 const QUANTITY: Record<HostOrderView['priceUnit'], (n: number) => string> = {
-  person: people,
-  group: people,
-  item: (n) => `${n} ×`,
-  litre: (n) => `${n} l`,
-  kilogram: (n) => `${n} kg`,
-  hour: (n) => (n === 1 ? '1 hour' : `${n} hours`),
-  day: (n) => (n === 1 ? '1 day' : `${n} days`),
+  person: (n) => t('people', { count: n }),
+  group: (n) => t('people', { count: n }),
+  item: (n) => t('items', { count: n }),
+  litre: (n) => t('litres', { count: n }),
+  kilogram: (n) => t('kilograms', { count: n }),
+  hour: (n) => t('hours', { count: n }),
+  day: (n) => t('days', { count: n }),
 };
 
 export function orderChip(order: HostOrderView): { label: string; tone: string } {
-  if (order.status === 'pending_provider') return { label: 'Waiting for you', tone: 'wait' };
+  if (order.status === 'pending_provider') return { label: t('waitingYou'), tone: 'wait' };
   if (order.status === 'awaiting_confirmation')
-    return { label: 'Waiting for the guest', tone: 'neutral' };
-  if (order.status === 'declined') return { label: 'Declined', tone: 'fail' };
+    return { label: t('waitingGuest'), tone: 'neutral' };
+  if (order.status === 'declined') return { label: t('declined'), tone: 'fail' };
   if (order.status === 'confirmed') {
-    if (order.acknowledgedAt) return { label: 'Acknowledged', tone: 'ok' };
-    // An allotment Order waits for Got it; an accepted request asks nothing more.
+    if (order.acknowledgedAt) return { label: t('acknowledged'), tone: 'ok' };
+    // An allotment Order waits for {t('gotIt')}; an accepted request asks nothing more.
     return order.actions.includes('acknowledge')
-      ? { label: 'New order', tone: 'wait' }
-      : { label: 'Confirmed', tone: 'ok' };
+      ? { label: t('newOrder'), tone: 'wait' }
+      : { label: t('confirmed'), tone: 'ok' };
   }
-  if (order.status === 'cancelled') return { label: 'Cancelled', tone: 'fail' };
-  if (order.final) return { label: 'Closed', tone: 'neutral' };
-  return { label: 'In progress', tone: 'neutral' };
+  if (order.status === 'cancelled') return { label: t('cancelled'), tone: 'fail' };
+  if (order.final) return { label: t('closed'), tone: 'neutral' };
+  return { label: t('inProgress'), tone: 'neutral' };
 }
 
-const APPLIED: Record<OrderAction, string> = {
-  acknowledge: 'Thanks, your acknowledgement is recorded.',
-  cannot_fulfil: 'The order is cancelled. The guest has been told.',
-  accept: 'Accepted. The guest has been told.',
-  decline: 'Declined. The guest has been told.',
-  suggest_time: 'Your suggestion was sent to the guest.',
-  accept_with_price: 'Your price was sent to the guest.',
-};
+const applied = (action: OrderAction): string =>
+  ({
+    acknowledge: t('appliedAcknowledge'),
+    cannot_fulfil: t('appliedCannotFulfil'),
+    accept: t('appliedAccept'),
+    decline: t('appliedDecline'),
+    suggest_time: t('appliedSuggestTime'),
+    accept_with_price: t('appliedAcceptWithPrice'),
+  })[action];
 
-const OUTCOME = {
-  unchanged: 'This was already recorded.',
-  stale: 'This order changed — refreshed.',
-  rejected: 'This order changed — refreshed.',
-} as const;
-
-const CANNOT_FULFIL =
-  'It will be cancelled, the guest is told, and anything they paid is refunded in full.';
+const outcomeText = (outcome: 'unchanged' | 'stale' | 'rejected'): string =>
+  outcome === 'unchanged' ? t('unchanged') : t('changed');
 
 type Form = 'suggest_time' | 'accept_with_price' | null;
 
@@ -81,6 +79,7 @@ export function OrderCard({
   /** Reloads the inbox after an answer. */
   onChanged: () => Promise<void>;
 }) {
+  useTranslation(['host', 'common']);
   const id = useId();
   const { busy, error, run } = useAction();
   const confirm = useConfirm();
@@ -99,7 +98,7 @@ export function OrderCard({
         proposalId: order.proposalId,
         ...terms,
       });
-      setOutcome(result.outcome === 'applied' ? APPLIED[action] : OUTCOME[result.outcome]);
+      setOutcome(result.outcome === 'applied' ? applied(action) : outcomeText(result.outcome));
       setForm(null);
       await onChanged();
       inboxChanged();
@@ -123,7 +122,7 @@ export function OrderCard({
     orderDay(order.date),
     order.startTime,
     QUANTITY[order.priceUnit](order.quantity),
-    order.priceMinor !== null ? money(order.priceMinor, order.currency) : 'Price to name',
+    order.priceMinor !== null ? money(order.priceMinor, order.currency) : t('priceToName'),
   ].filter(Boolean);
 
   return (
@@ -142,7 +141,10 @@ export function OrderCard({
       ) : null}
       {order.respondBy ? (
         <p className="order-card-due">
-          Answer by {orderDay(order.respondBy.slice(0, 10))}, {order.respondBy.slice(11, 16)}
+          {t('answerBy', {
+            day: orderDay(order.respondBy.slice(0, 10)),
+            time: order.respondBy.slice(11, 16),
+          })}
         </p>
       ) : null}
 
@@ -155,28 +157,24 @@ export function OrderCard({
 
       {form ? (
         <form className="order-card-form" onSubmit={submitTerms}>
-          <p className="muted">
-            {form === 'suggest_time'
-              ? 'The guest gets your suggestion and can accept or decline it.'
-              : 'Enter the total price for this order. The guest can accept or decline it.'}
-          </p>
+          <p className="muted">{form === 'suggest_time' ? t('suggestHint') : t('priceHint')}</p>
           <div className="field-row">
             {form === 'suggest_time' ? (
               <>
                 <DateField
-                  label="Date"
+                  label={t('date')}
                   value={date}
                   min={order.stayFrom}
                   max={order.stayTo}
                   required
                   onChange={setDate}
                 />
-                <TimeField label="Time (optional)" value={time} onChange={setTime} />
+                <TimeField label={t('timeOptional')} value={time} onChange={setTime} />
               </>
             ) : null}
             {form === 'accept_with_price' || order.needsPrice ? (
               <NumberField
-                label="Total price (€)"
+                label={t('totalPrice')}
                 value={price}
                 min={0.01}
                 max={OFFER_LIMITS.priceMinorMax / 100}
@@ -188,10 +186,10 @@ export function OrderCard({
           </div>
           <div className="actions">
             <button type="submit" className="primary" disabled={busy}>
-              Send to the guest
+              {t('send')}
             </button>
             <button type="button" disabled={busy} onClick={() => setForm(null)}>
-              Back
+              {i18next.t('common:back')}
             </button>
           </div>
         </form>
@@ -204,7 +202,7 @@ export function OrderCard({
               disabled={busy}
               onClick={() => void answer('accept')}
             >
-              Accept
+              {t('accept')}
             </button>
           ) : null}
           {can('accept_with_price') ? (
@@ -214,12 +212,12 @@ export function OrderCard({
               disabled={busy}
               onClick={() => setForm('accept_with_price')}
             >
-              Accept with price
+              {t('acceptWithPrice')}
             </button>
           ) : null}
           {can('suggest_time') ? (
             <button type="button" disabled={busy} onClick={() => setForm('suggest_time')}>
-              Suggest another time
+              {t('suggestTime')}
             </button>
           ) : null}
           {can('decline') ? (
@@ -229,7 +227,7 @@ export function OrderCard({
               disabled={busy}
               onClick={() => void answer('decline')}
             >
-              Decline
+              {t('decline')}
             </button>
           ) : null}
           {can('acknowledge') ? (
@@ -239,7 +237,7 @@ export function OrderCard({
               disabled={busy}
               onClick={() => void answer('acknowledge')}
             >
-              Got it
+              {t('gotIt')}
             </button>
           ) : null}
           {can('cannot_fulfil') ? (
@@ -250,16 +248,16 @@ export function OrderCard({
               onClick={async () => {
                 if (
                   await confirm({
-                    title: "Can't fulfil this order?",
-                    body: CANNOT_FULFIL,
-                    action: "Can't fulfil",
+                    title: t('cannotFulfilTitle'),
+                    body: t('cannotFulfilBody'),
+                    action: t('cannotFulfil'),
                     danger: true,
                   })
                 )
                   void answer('cannot_fulfil');
               }}
             >
-              Can't fulfil
+              {t('cannotFulfil')}
             </button>
           ) : null}
         </div>

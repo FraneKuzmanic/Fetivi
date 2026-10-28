@@ -1,4 +1,4 @@
-import { accounts, GUEST_LANGUAGES, type GuestLanguage } from '@fetivi/domain';
+import { accounts, BACKOFFICE_LANGUAGES, GUEST_LANGUAGES } from '@fetivi/domain';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -23,7 +23,7 @@ import {
 } from './sessions';
 
 export interface Me {
-  account: { id: string; email: string; role: 'host' | 'admin'; language: GuestLanguage };
+  account: Principal['account'];
   actingAs: { id: string; email: string } | null;
 }
 
@@ -31,9 +31,15 @@ export function toMe(principal: Principal): Me {
   return { account: principal.account, actingAs: principal.actingAs };
 }
 
-const Credentials = z.object({ email: Email, password: z.string().min(1).max(1024) });
-const SignUpBody = z.object({ email: Email, password: Password });
-const EmailBody = z.object({ email: Email });
+/** The language the signed-out page was showing; optional for older clients (ticket 53). */
+const PageLanguage = z.enum(BACKOFFICE_LANGUAGES).optional();
+const Credentials = z.object({
+  email: Email,
+  password: z.string().min(1).max(1024),
+  language: PageLanguage,
+});
+const SignUpBody = z.object({ email: Email, password: Password, language: PageLanguage });
+const EmailBody = z.object({ email: Email, language: PageLanguage });
 const TokenBody = z.object({ token: z.string().min(1).max(256) });
 const LanguageBody = z.strictObject({ language: z.enum(GUEST_LANGUAGES) });
 const ResetBody = z.object({ token: z.string().min(1).max(256), password: Password });
@@ -44,7 +50,7 @@ export async function authRoutes(app: FastifyInstance, deps: AccountDeps): Promi
 
   app.post('/api/auth/sign-up', pub, async (request, reply) => {
     const body = SignUpBody.parse(request.body);
-    await signUp(deps, body.email, body.password);
+    await signUp(deps, body.email, body.password, body.language);
     return reply.status(202).send({});
   });
 
@@ -54,13 +60,14 @@ export async function authRoutes(app: FastifyInstance, deps: AccountDeps): Promi
   });
 
   app.post('/api/auth/resend-verification', pub, async (request, reply) => {
-    await resendVerification(deps, EmailBody.parse(request.body).email);
+    const body = EmailBody.parse(request.body);
+    await resendVerification(deps, body.email, body.language);
     return reply.status(202).send({});
   });
 
   app.post('/api/auth/login', pub, async (request, reply) => {
     const body = Credentials.parse(request.body);
-    const result = await login(deps, body.email, body.password, request.ip);
+    const result = await login(deps, body.email, body.password, request.ip, body.language);
     // Rotate: a session the browser already carried is replaced, never reused.
     const previous = request.auth.principal;
     if (previous) await deleteSession(deps.db, previous.sessionId);
@@ -75,7 +82,8 @@ export async function authRoutes(app: FastifyInstance, deps: AccountDeps): Promi
   });
 
   app.post('/api/auth/password-reset/request', pub, async (request, reply) => {
-    await requestPasswordReset(deps, EmailBody.parse(request.body).email);
+    const body = EmailBody.parse(request.body);
+    await requestPasswordReset(deps, body.email, body.language);
     return reply.status(202).send({});
   });
 
@@ -87,14 +95,21 @@ export async function authRoutes(app: FastifyInstance, deps: AccountDeps): Promi
 
   app.get('/api/auth/me', authed, async (request) => toMe(principalOf(request)));
 
-  /** The signed-in person's own language; an acting admin changes theirs, not the host's. */
+  /**
+   * The signed-in person's own language, marked as chosen so logins no longer follow the
+   * browser; an acting admin changes theirs, not the host's.
+   */
   app.put('/api/auth/me/language', authed, async (request) => {
     const principal = principalOf(request);
     const { language } = LanguageBody.parse(request.body);
+    const now = deps.now();
     await deps.db
       .update(accounts)
-      .set({ uiLanguage: language, updatedAt: deps.now() })
+      .set({ uiLanguage: language, uiLanguageChosenAt: now, updatedAt: now })
       .where(eq(accounts.id, principal.account.id));
-    return toMe({ ...principal, account: { ...principal.account, language } });
+    return toMe({
+      ...principal,
+      account: { ...principal.account, language, languageChosen: true },
+    });
   });
 }

@@ -21,10 +21,12 @@ import {
   UsersThree,
 } from '@phosphor-icons/react';
 import { Fragment, type ReactNode, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { host, type PropertySummary, type Stay } from '../../api';
 import { HarbourHouse } from '../../auth/HarbourHouse';
 import { addDays, todayIso } from '../../forms/datetime';
+import { i18next, localeOf } from '../../i18n';
 import { EmptyState } from '../../shell/EmptyState';
 import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
@@ -50,11 +52,11 @@ interface Attention {
   action: string;
 }
 
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+const t = i18next.getFixedT(null, 'host', 'today');
 
 const civil = (iso: string) => new Date(`${iso}T00:00:00Z`);
 const dayName = (iso: string) =>
-  civil(iso).toLocaleDateString('en-GB', {
+  civil(iso).toLocaleDateString(localeOf(i18next.language), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -63,9 +65,16 @@ const dayName = (iso: string) =>
 
 /** "Today", "Tomorrow", or "Thursday 29 October". */
 export function dayHeading(iso: string, today: string): string {
-  if (iso === today) return 'Today';
-  if (iso === addDays(today, 1)) return 'Tomorrow';
+  if (iso === today) return t('title');
+  if (iso === addDays(today, 1)) return t('tomorrow');
   return dayName(iso);
+}
+
+/** The PIN reminder, with the arrival day in the sentence. */
+function pinText(unit: string, checkIn: string, today: string): string {
+  if (checkIn === today) return t('pinToday', { unit });
+  if (checkIn === addDays(today, 1)) return t('pinTomorrow', { unit });
+  return t('pinOn', { unit, day: dayName(checkIn) });
 }
 
 /** Everything that waits on the host, most pressing first. */
@@ -75,36 +84,36 @@ export function attentionItems(data: TodayData): Attention[] {
     items.push({
       key: 'messages',
       icon: ChatCircleText,
-      text: `${data.unread} ${plural(data.unread, 'guest message', 'guest messages')} not read yet`,
+      text: t('unread', { count: data.unread }),
       to: '/inbox',
-      action: 'Open inbox',
+      action: t('openInbox'),
     });
   }
   if (data.ordersWaiting > 0) {
     items.push({
       key: 'orders',
       icon: Receipt,
-      text: `${data.ordersWaiting} ${plural(data.ordersWaiting, 'order waits', 'orders wait')} for your answer`,
+      text: t('ordersWaiting', { count: data.ordersWaiting }),
       to: '/inbox',
-      action: 'Answer',
+      action: t('answer'),
     });
   }
   for (const stay of data.stays.filter((s) => s.pinWarning)) {
     items.push({
       key: `pin-${stay.id}`,
       icon: Key,
-      text: `Send the PIN for ${stay.unitName}: guests arrive ${dayHeading(stay.checkIn, todayIso()).toLowerCase()}`,
+      text: pinText(stay.unitName, stay.checkIn, todayIso()),
       to: `/stays/${stay.id}`,
-      action: 'Send PIN',
+      action: t('sendPin'),
     });
   }
   if (data.proposals > 0) {
     items.push({
       key: 'proposals',
       icon: CalendarPlus,
-      text: `${data.proposals} ${plural(data.proposals, 'booking', 'bookings')} from your calendars to confirm`,
+      text: t('proposals', { count: data.proposals }),
       to: '/stays',
-      action: 'Review',
+      action: t('review'),
     });
   }
   for (const p of data.properties) {
@@ -112,9 +121,9 @@ export function attentionItems(data: TodayData): Attention[] {
       items.push({
         key: `approval-${p.id}`,
         icon: SealCheck,
-        text: `${p.name} is waiting for approval by Fetivi`,
+        text: t('awaitingApproval', { property: p.name }),
         to: `/properties/${p.id}`,
-        action: 'View',
+        action: t('view'),
       });
       continue;
     }
@@ -122,9 +131,9 @@ export function attentionItems(data: TodayData): Attention[] {
       items.push({
         key: `setup-${u.id}`,
         icon: ListChecks,
-        text: `Finish setting up ${u.name} so guests can use it`,
+        text: t('finishSetup', { unit: u.name }),
         to: `/units/${u.id}/setup`,
-        action: 'Continue setup',
+        action: t('continueSetup'),
       });
     }
   }
@@ -132,9 +141,9 @@ export function attentionItems(data: TodayData): Attention[] {
     items.push({
       key: 'suggestions',
       icon: Lightbulb,
-      text: `Guests asked about ${data.suggestions} ${plural(data.suggestions, 'thing', 'things')} your guide does not cover`,
+      text: t('suggestions', { count: data.suggestions }),
       to: '/suggestions',
-      action: 'See what',
+      action: t('seeWhat'),
     });
   }
   return items;
@@ -167,6 +176,7 @@ export function movementsByDay(stays: Stay[], today: string): [string, Movement[
 
 function MovementRow({ movement }: { movement: Movement }) {
   const { stay, kind } = movement;
+  useTranslation(['host', 'common']);
   const Glyph = kind === 'arrival' ? SuitcaseRolling : DoorOpen;
   return (
     <li>
@@ -176,7 +186,9 @@ function MovementRow({ movement }: { movement: Movement }) {
         </span>
         <span className="block-text">
           <strong>
-            {kind === 'arrival' ? 'Arrival' : 'Departure'} · {stay.unitName}
+            {kind === 'arrival'
+              ? t('arrival', { unit: stay.unitName })
+              : t('departure', { unit: stay.unitName })}
           </strong>
           <span className="muted">
             {[
@@ -190,9 +202,9 @@ function MovementRow({ movement }: { movement: Movement }) {
         </span>
         {kind === 'arrival' ? (
           stay.pinSentAt ? (
-            <span className="chip ok">PIN sent</span>
+            <span className="chip ok">{t('pinSent')}</span>
           ) : (
-            <span className="chip wait">PIN not sent</span>
+            <span className="chip wait">{t('pinNotSent')}</span>
           )
         ) : (
           <span />
@@ -207,7 +219,7 @@ function MovementRow({ movement }: { movement: Movement }) {
 const CALENDAR_DAYS = 14;
 
 const shortDate = (iso: string, withYear = false) =>
-  civil(iso).toLocaleDateString('en-GB', {
+  civil(iso).toLocaleDateString(localeOf(i18next.language), {
     day: 'numeric',
     month: 'short',
     ...(withYear ? { year: 'numeric' } : {}),
@@ -252,6 +264,7 @@ function StayCalendar({
   stays: Stay[];
   today: string;
 }) {
+  useTranslation(['host', 'common']);
   const [weeks, setWeeks] = useState(0);
   const days = calendarDays(today, weeks);
   const first = days[0] ?? today;
@@ -266,7 +279,7 @@ function StayCalendar({
     <section className="today-section" aria-labelledby="calendar">
       <div className="staycal-head">
         <SectionTitle id="calendar" icon={CalendarBlank}>
-          Calendar
+          {t('calendar')}
         </SectionTitle>
         <div className="staycal-nav">
           <span className="staycal-range" aria-live="polite">
@@ -278,12 +291,12 @@ function StayCalendar({
             disabled={weeks === 0}
             onClick={() => setWeeks(0)}
           >
-            Today
+            {t('title')}
           </button>
           <button
             type="button"
             className="icon-button"
-            aria-label="Earlier weeks"
+            aria-label={t('earlierWeeks')}
             onClick={() => setWeeks((w) => w - 1)}
           >
             <CaretLeft aria-hidden="true" />
@@ -291,7 +304,7 @@ function StayCalendar({
           <button
             type="button"
             className="icon-button"
-            aria-label="Later weeks"
+            aria-label={t('laterWeeks')}
             onClick={() => setWeeks((w) => w + 1)}
           >
             <CaretRight aria-hidden="true" />
@@ -325,7 +338,10 @@ function StayCalendar({
                   style={{ gridRow: 1, gridColumn: column }}
                 >
                   <span>
-                    {civil(d).toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}
+                    {civil(d).toLocaleDateString(localeOf(i18next.language), {
+                      weekday: 'short',
+                      timeZone: 'UTC',
+                    })}
                   </span>
                   <strong>{Number(d.slice(8))}</strong>
                 </span>
@@ -355,7 +371,13 @@ function StayCalendar({
                         .filter(Boolean)
                         .join(' ')}
                       style={{ gridRow: row + 2, gridColumn: `${span.start} / ${span.end}` }}
-                      aria-label={`${name}, ${u.name}, ${shortDate(s.checkIn)} to ${shortDate(s.checkout)}, ${guestsLabel(s.partySize)}`}
+                      aria-label={t('bar', {
+                        name,
+                        unit: u.name,
+                        from: shortDate(s.checkIn),
+                        to: shortDate(s.checkout),
+                        guests: guestsLabel(s.partySize),
+                      })}
                     >
                       {name}
                     </Link>
@@ -388,6 +410,8 @@ function SectionTitle({
 }
 
 export function TodayPage() {
+  useTranslation(['host', 'common']);
+  const { t: tc } = useTranslation();
   const { error, run } = useAction();
   const [data, setData] = useState<TodayData | null>(null);
   const today = todayIso();
@@ -417,39 +441,39 @@ export function TodayPage() {
   const inStay = data?.stays.filter((s) => s.phase === 'in_stay') ?? [];
   const units = data?.properties.flatMap((p) => p.units.map((u) => ({ ...u, property: p }))) ?? [];
 
-  usePageTitle('Today');
+  usePageTitle(t('title'));
 
   return (
     <>
       <div className="page-head">
         <Link className="button primary" to="/stays/new">
           <Plus aria-hidden="true" weight="bold" />
-          Register a Stay
+          {t('registerStay')}
         </Link>
       </div>
       {error ? <p role="alert">{error}</p> : null}
-      {data === null && !error ? <p className="muted">Loading…</p> : null}
+      {data === null && !error ? <p className="muted">{tc('loading')}</p> : null}
 
       {data ? (
         data.properties.length === 0 ? (
           <EmptyState
             art={<HarbourHouse className="empty-art" />}
-            title="Add your property to get started"
+            title={t('emptyTitle')}
             action={
               <Link className="button primary" to="/properties/new">
                 <Plus aria-hidden="true" weight="bold" />
-                Add property
+                {t('addProperty')}
               </Link>
             }
           >
-            Describe your building once; Fetivi explains it to every guest in their language.
+            {t('emptyBody')}
           </EmptyState>
         ) : (
           <div className="today">
             <div className="today-main">
               <section className="today-section" aria-labelledby="attention">
                 <SectionTitle id="attention" icon={BellSimple}>
-                  Needs your attention
+                  {t('attention')}
                 </SectionTitle>
                 {attention.length > 0 ? (
                   <ul className="rows">
@@ -466,7 +490,7 @@ export function TodayPage() {
                 ) : (
                   <p className="all-clear">
                     <CheckCircle className="all-clear-icon" aria-hidden="true" weight="fill" />
-                    Nothing waits for you. Guests can reach you from the chat.
+                    {t('allClear')}
                   </p>
                 )}
               </section>
@@ -477,7 +501,7 @@ export function TodayPage() {
 
               <section className="today-section" aria-labelledby="movements">
                 <SectionTitle id="movements" icon={ArrowsLeftRight}>
-                  Arrivals and departures
+                  {t('movements')}
                 </SectionTitle>
                 {days.length > 0 ? (
                   <div className="day-groups">
@@ -495,24 +519,23 @@ export function TodayPage() {
                 ) : (
                   <EmptyState
                     icon={SuitcaseRolling}
-                    title={`No arrivals in the next ${AHEAD_DAYS} days`}
+                    title={t('noArrivals', { count: AHEAD_DAYS })}
                     action={
                       <Link className="button" to="/stays/new">
-                        Register a Stay
+                        {t('registerStay')}
                       </Link>
                     }
                   >
-                    Register a Stay when a booking comes in, or connect your Airbnb and Booking.com
-                    calendars on a unit and confirm what they find.
+                    {t('noArrivalsBody')}
                   </EmptyState>
                 )}
               </section>
             </div>
 
-            <aside className="today-aside" aria-label="Your units">
+            <aside className="today-aside" aria-label={t('yourUnits')}>
               <section className="today-section" aria-labelledby="units">
                 <SectionTitle id="units" icon={Buildings}>
-                  Your units
+                  {t('yourUnits')}
                 </SectionTitle>
                 <ul className="rows">
                   {units.map((u) => (
@@ -522,11 +545,11 @@ export function TodayPage() {
                           <span className="title-line">
                             <strong>{u.name}</strong>
                             {!u.property.approved ? (
-                              <span className="chip wait">Awaiting approval</span>
+                              <span className="chip wait">{t('awaitingApprovalChip')}</span>
                             ) : u.live ? (
-                              <span className="chip ok">Live</span>
+                              <span className="chip ok">{t('live')}</span>
                             ) : (
-                              <span className="chip neutral">Setting up</span>
+                              <span className="chip neutral">{t('settingUp')}</span>
                             )}
                           </span>
                           <span className="muted">{u.property.name}</span>
@@ -538,14 +561,14 @@ export function TodayPage() {
               </section>
               <dl className="today-facts">
                 <div>
-                  <dt>Guests in stay now</dt>
+                  <dt>{t('inStayNow')}</dt>
                   <dd>
                     <UsersThree className="fact-icon" aria-hidden="true" />
                     {inStay.reduce((n, s) => n + s.partySize, 0)}
                   </dd>
                 </div>
                 <div>
-                  <dt>Stays coming up</dt>
+                  <dt>{t('upcoming')}</dt>
                   <dd>
                     <CalendarCheck className="fact-icon" aria-hidden="true" />
                     {data.stays.filter((s) => s.phase === 'upcoming').length}

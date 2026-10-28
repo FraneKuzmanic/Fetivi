@@ -1,5 +1,6 @@
 import { LIMITS, MEDIA_CONTENT_TYPES } from '@fetivi/domain/vocabulary';
 import { type FormEvent, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Block, type BlockMedia, host } from '../../api';
 import { TextField } from '../../forms/fields';
 import { useConfirm } from '../../shell/ConfirmDialog';
@@ -10,13 +11,11 @@ const ACCEPT = MEDIA_CONTENT_TYPES.join(',');
 
 /** The photos and short videos of one guide entry: add with a caption, edit captions, remove. */
 export function MediaPanel({ block, onChanged }: { block: Block; onChanged: () => Promise<void> }) {
+  const { t } = useTranslation(['host', 'common']);
   const full = block.media.length >= LIMITS.mediaPerBlock;
   return (
     <div className="media-panel">
-      <p className="muted">
-        Guests see a new photo once the entry's translations are published. The caption is shown to
-        guests and read aloud to blind guests; it is translated with the entry.
-      </p>
+      <p className="muted">{t('blocks.mediaIntro')}</p>
       {block.media.length > 0 ? (
         <ul className="media-list">
           {block.media.map((item) => (
@@ -25,7 +24,7 @@ export function MediaPanel({ block, onChanged }: { block: Block; onChanged: () =
         </ul>
       ) : null}
       {full ? (
-        <p className="muted">This entry has the maximum of 6 photos or videos.</p>
+        <p className="muted">{t('blocks.mediaFull')}</p>
       ) : (
         <UploadForm blockId={block.id} onChanged={onChanged} />
       )}
@@ -44,6 +43,7 @@ function MediaPreview({ item }: { item: BlockMedia }) {
 }
 
 function MediaItem({ item, onChanged }: { item: BlockMedia; onChanged: () => Promise<void> }) {
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   const confirm = useConfirm();
   const [caption, setCaption] = useState<string | null>(item.caption);
@@ -61,7 +61,7 @@ function MediaItem({ item, onChanged }: { item: BlockMedia; onChanged: () => Pro
       <MediaPreview item={item} />
       <form className="media-fields" onSubmit={save}>
         <TextField
-          label="Caption"
+          label={t('blocks.caption')}
           value={caption}
           maxLength={LIMITS.caption}
           required
@@ -70,7 +70,7 @@ function MediaItem({ item, onChanged }: { item: BlockMedia; onChanged: () => Pro
         {error ? <p role="alert">{error}</p> : null}
         <div className="actions">
           <button type="submit" disabled={busy || caption === item.caption}>
-            Save caption
+            {t('blocks.saveCaption')}
           </button>
           <button
             type="button"
@@ -79,9 +79,9 @@ function MediaItem({ item, onChanged }: { item: BlockMedia; onChanged: () => Pro
             onClick={async () => {
               if (
                 await confirm({
-                  title: `Remove “${item.caption}”?`,
-                  body: 'Guests stop seeing this photo.',
-                  action: 'Remove photo',
+                  title: t('blocks.removeTitle', { caption: item.caption }),
+                  body: t('blocks.removeBody'),
+                  action: t('blocks.removePhoto'),
                   danger: true,
                 })
               ) {
@@ -92,7 +92,7 @@ function MediaItem({ item, onChanged }: { item: BlockMedia; onChanged: () => Pro
               }
             }}
           >
-            Remove
+            {t('common:remove')}
           </button>
         </div>
       </form>
@@ -101,6 +101,7 @@ function MediaItem({ item, onChanged }: { item: BlockMedia; onChanged: () => Pro
 }
 
 function UploadForm({ blockId, onChanged }: { blockId: string; onChanged: () => Promise<void> }) {
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState<string | null>(null);
@@ -123,10 +124,10 @@ function UploadForm({ blockId, onChanged }: { blockId: string; onChanged: () => 
 
   return (
     <form className="media-upload fields" onSubmit={submit}>
-      <h4>Add a photo or video</h4>
+      <h4>{t('blocks.addMedia')}</h4>
       <div className="field">
         <label className="field-label" htmlFor={fileId}>
-          File
+          {t('blocks.file')}
         </label>
         <input
           key={inputKey}
@@ -141,13 +142,11 @@ function UploadForm({ blockId, onChanged }: { blockId: string; onChanged: () => 
             setProblem(chosen ? fileProblem(chosen) : null);
           }}
         />
-        <small id={`${fileId}-hint`}>
-          JPEG, PNG or WebP up to 10 MB; MP4 or WebM up to 50 MB; up to 6 per entry.
-        </small>
+        <small id={`${fileId}-hint`}>{t('blocks.fileHint')}</small>
       </div>
       <TextField
-        label="Caption"
-        hint="Say what it shows, e.g. “The washing machine dial, set to program 3”."
+        label={t('blocks.caption')}
+        hint={t('blocks.captionHint')}
         value={caption}
         maxLength={LIMITS.caption}
         required
@@ -157,7 +156,7 @@ function UploadForm({ blockId, onChanged }: { blockId: string; onChanged: () => 
       {error ? <p role="alert">{error}</p> : null}
       <div className="actions">
         <button type="submit" className="primary" disabled={busy || !file || problem !== null}>
-          {busy ? 'Uploading…' : 'Upload'}
+          {busy ? t('blocks.uploading') : t('blocks.upload')}
         </button>
       </div>
     </form>

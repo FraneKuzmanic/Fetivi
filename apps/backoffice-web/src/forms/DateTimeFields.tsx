@@ -8,6 +8,8 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
+import { i18next, localeOf } from '../i18n';
 import {
   addDays,
   addMonths,
@@ -23,12 +25,13 @@ import { Field, type FieldProps } from './Field';
 // The back office's own date and time fields. Native pickers follow the browser's locale (10/27
 // and 03:00 PM on an English browser); hosts read days first and a 24-hour clock everywhere.
 
-const LOCALE = 'en-GB';
+// Weekday and month names follow the interface language; numbers stay day first in both.
+const locale = () => localeOf(i18next.language);
 const utc = (iso: string) => new Date(`${iso}T00:00:00Z`);
 const weekdayShort = (iso: string) =>
-  utc(iso).toLocaleDateString(LOCALE, { weekday: 'short', timeZone: 'UTC' });
+  utc(iso).toLocaleDateString(locale(), { weekday: 'short', timeZone: 'UTC' });
 const longDay = (iso: string) =>
-  utc(iso).toLocaleDateString(LOCALE, {
+  utc(iso).toLocaleDateString(locale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -36,8 +39,9 @@ const longDay = (iso: string) =>
     timeZone: 'UTC',
   });
 const monthTitle = (iso: string) =>
-  utc(iso).toLocaleDateString(LOCALE, { month: 'long', year: 'numeric', timeZone: 'UTC' });
-const WEEKDAYS = monthGrid(2026, 6)[0]?.map((d) => (d ? weekdayShort(d).slice(0, 2) : '')) ?? [];
+  utc(iso).toLocaleDateString(locale(), { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const weekdays = () =>
+  monthGrid(2026, 6)[0]?.map((d) => (d ? weekdayShort(d).slice(0, 2) : '')) ?? [];
 
 /** Closes a popup on a click outside `root`. */
 function useOutside(open: boolean, root: RefObject<HTMLElement | null>, close: () => void) {
@@ -59,8 +63,8 @@ function useValidity(input: RefObject<HTMLInputElement | null>, error: string | 
 }
 
 function rangeError(iso: string, min?: string, max?: string): string | null {
-  if (min && iso < min) return `Pick ${formatDate(min)} or later.`;
-  if (max && iso > max) return `Pick ${formatDate(max)} or earlier.`;
+  if (min && iso < min) return i18next.t('field.pickOrLater', { date: formatDate(min) });
+  if (max && iso > max) return i18next.t('field.pickOrEarlier', { date: formatDate(max) });
   return null;
 }
 
@@ -78,6 +82,7 @@ function Calendar({
   onClose: () => void;
 }) {
   const start = value ?? (min && todayIso() < min ? min : todayIso());
+  const { t } = useTranslation();
   const [focus, setFocus] = useState(start);
   const grid = useRef<HTMLTableElement>(null);
   const year = Number(focus.slice(0, 4));
@@ -112,12 +117,12 @@ function Calendar({
 
   const today = todayIso();
   return (
-    <div className="calendar" role="dialog" aria-label="Choose a day" onKeyDown={onKeyDown}>
+    <div className="calendar" role="dialog" aria-label={t('field.chooseDay')} onKeyDown={onKeyDown}>
       <div className="calendar-head">
         <button
           type="button"
           className="ghost icon-button"
-          aria-label="Previous month"
+          aria-label={t('field.previousMonth')}
           onClick={() => setFocus(addMonths(focus, -1))}
         >
           <CaretLeft aria-hidden="true" />
@@ -128,7 +133,7 @@ function Calendar({
         <button
           type="button"
           className="ghost icon-button"
-          aria-label="Next month"
+          aria-label={t('field.nextMonth')}
           onClick={() => setFocus(addMonths(focus, 1))}
         >
           <CaretRight aria-hidden="true" />
@@ -137,7 +142,7 @@ function Calendar({
       <table ref={grid} className="calendar-grid" aria-label={title}>
         <thead>
           <tr>
-            {WEEKDAYS.map((d) => (
+            {weekdays().map((d) => (
               <th key={d} scope="col" abbr={d}>
                 {d}
               </th>
@@ -179,7 +184,7 @@ function Calendar({
           disabled={!allowed(today)}
           onClick={() => onPick(today)}
         >
-          Today
+          {t('field.today')}
         </button>
       </div>
     </div>
@@ -204,6 +209,7 @@ export function DateField({
   min?: string;
   max?: string;
 }) {
+  const { t } = useTranslation();
   const [text, setText] = useState(formatDate(value));
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -236,7 +242,7 @@ export function DateField({
   const check = () => {
     if (text.trim() === '') return;
     const iso = parseDate(text, year);
-    if (!iso) setError('Use day.month.year, for example 27.10.2026.');
+    if (!iso) setError(t('field.dateFormat'));
     else {
       setError(rangeError(iso, min, max));
       setText(formatDate(iso));
@@ -266,7 +272,7 @@ export function DateField({
               type="text"
               inputMode="text"
               autoComplete="off"
-              placeholder="dd.mm.yyyy"
+              placeholder={t('field.datePlaceholder')}
               value={text}
               required={required}
               onChange={(e) => typed(e.target.value)}
@@ -287,7 +293,7 @@ export function DateField({
               ref={button}
               type="button"
               className="picker-button"
-              aria-label={`Choose ${label.toLowerCase()} on a calendar`}
+              aria-label={t('field.chooseOnCalendar', { label: label.toLowerCase() })}
               aria-expanded={open}
               onClick={() => setOpen(!open)}
             >
@@ -325,6 +331,7 @@ export function TimeField({
   onChange: (value: string | null) => void;
   required?: boolean;
 }) {
+  const { t } = useTranslation();
   const [text, setText] = useState(value ?? '');
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -387,7 +394,7 @@ export function TimeField({
   const check = () => {
     if (text.trim() === '') return;
     const time = parseTime(text);
-    if (!time) setError('Use the 24-hour clock, for example 15:00.');
+    if (!time) setError(t('field.timeFormat'));
     else {
       setError(null);
       setText(time);
@@ -448,7 +455,7 @@ export function TimeField({
               type="button"
               className="picker-button"
               tabIndex={-1}
-              aria-label={`Show times for ${label.toLowerCase()}`}
+              aria-label={t('field.showTimes', { label: label.toLowerCase() })}
               onClick={() => {
                 setOpen(!open);
                 input.current?.focus();
@@ -496,6 +503,7 @@ export function DateTimeField({
   onChange: (value: string | null) => void;
   required?: boolean;
 }) {
+  const { t } = useTranslation();
   const [day, setDay] = useState<string | null>(value?.slice(0, 10) ?? null);
   const [time, setTime] = useState<string | null>(value?.slice(11, 16) ?? null);
   const update = (d: string | null, t: string | null) => {
@@ -508,14 +516,14 @@ export function DateTimeField({
       <legend className="field-label">{label}</legend>
       <div className="datetime-row">
         <DateField
-          label={`${label}, day`}
+          label={t('field.dayOf', { label })}
           hideLabel
           value={day}
           required={required}
           onChange={(d) => update(d, time)}
         />
         <TimeField
-          label={`${label}, time`}
+          label={t('field.timeOf', { label })}
           hideLabel
           value={time}
           required={required}

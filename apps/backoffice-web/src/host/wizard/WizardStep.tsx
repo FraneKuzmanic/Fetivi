@@ -17,6 +17,7 @@ import {
 } from '@fetivi/domain/wizard';
 import { ArrowLeft, CheckCircle, Plus, Trash } from '@phosphor-icons/react';
 import { type FormEvent, useEffect, useId, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { host, type PropertyDetail, type UnitDetail, type WizardStatus } from '../../api';
 import {
@@ -98,6 +99,8 @@ export function WizardStep({
   manualPending: number;
 }) {
   const copy = useWizardCopy();
+
+  const { t } = useTranslation(['wizard', 'common']);
   const { ui } = copy;
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
@@ -263,7 +266,7 @@ export function WizardStep({
                     ? ui.releaseSameDay
                     : d === '1'
                       ? ui.releaseOneDay
-                      : format(ui.releaseDays, { n: d }),
+                      : t('releaseDays', { count: Number(d) }),
                 ]),
               ) as Record<(typeof RELEASE_DAYS)[number], string>
             }
@@ -437,7 +440,7 @@ export function WizardStep({
       <Stepper status={status} current={stepId} />
       <div className="wizard-content">
         <div className="wizard-step-top">
-          <nav className="crumbs" aria-label="Breadcrumb">
+          <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
             <Link to={`/units/${detail.id}`}>{detail.name}</Link>
             <span aria-hidden="true">/</span>
             <Link to={overviewPath}>{ui.setup}</Link>
@@ -468,7 +471,7 @@ export function WizardStep({
         <div className="panel wizard-body">
           {manualPending > 0 ? (
             <div className="manual-notice" role="status">
-              <span>{format(copy.manualImport.stepNotice, { n: manualPending })}</span>
+              <span>{t('stepNotice', { count: manualPending })}</span>
               <Link to={`/units/${detail.id}/setup/import#step-${stepId}`}>
                 {copy.manualImport.review}
               </Link>

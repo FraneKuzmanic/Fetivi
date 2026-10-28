@@ -3,6 +3,7 @@ import { composeHostOrderEmail, type HostOrderEmailInput } from './order-email';
 
 const base: HostOrderEmailInput = {
   kind: 'provider_request',
+  language: 'en',
   offerTitle: 'Airport transfer',
   date: '2027-05-04',
   startTime: null,
@@ -59,5 +60,15 @@ describe('composeHostOrderEmail', () => {
     expect(text).toContain('People: 3');
     expect(text).toContain('See it in your inbox: http://admin.test/inbox');
     expect(text).not.toContain('confirm you got it');
+  });
+
+  it('writes to a Croatian host in Croatian, with day-first dates and a Croatian price', () => {
+    const { subject, text } = composeHostOrderEmail({ ...base, language: 'hr' });
+    expect(subject).toBe('Novi upit: Airport transfer');
+    expect(text).toContain('Molimo odgovorite do 1.5.2027. 12:30 u svojim Fetivi porukama.');
+    expect(text).toContain('Datum: 4.5.2027.');
+    expect(text).toContain('Broj osoba: 2');
+    expect(text).toMatch(/Cijena: 50,00\s€/);
+    expect(text).toContain('Fetivi ne uzima proviziju na vaše vlastite usluge.');
   });
 });

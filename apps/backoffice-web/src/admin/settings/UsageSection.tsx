@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { admin, type UsageEstimate } from '../../api';
 import { Section } from '../../forms/fields';
-import { MODEL_USE_LABELS } from '../../forms/labels';
+import { i18next, localeOf } from '../../i18n';
+import { useLabels } from '../../i18n/useLabels';
 import { useAction } from '../../useAction';
 
-const usd = (amount: number) =>
-  amount > 0 && amount < 0.005 ? '< $0.01' : `$${amount.toFixed(2)}`;
+const usd = (amount: number) => {
+  const format = (n: number) =>
+    new Intl.NumberFormat(localeOf(i18next.language), {
+      style: 'currency',
+      currency: 'USD',
+      currencyDisplay: 'narrowSymbol',
+    }).format(n);
+  return amount > 0 && amount < 0.005
+    ? i18next.t('admin:settings.lessThan', { amount: format(0.01) })
+    : format(amount);
+};
 
 const checkedOn = (date: string) =>
-  new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', {
+  new Date(`${date}T00:00:00Z`).toLocaleDateString(localeOf(i18next.language), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -17,6 +28,8 @@ const checkedOn = (date: string) =>
 
 /** Read-only estimate of Fetivi's Anthropic spend, today and this month, by use (52 AC 5). */
 export function UsageSection() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const { error, run } = useAction();
   const [usage, setUsage] = useState<UsageEstimate | null>(null);
 
@@ -26,11 +39,11 @@ export function UsageSection() {
 
   return (
     <Section
-      title="Anthropic usage"
+      title={t('settings.usage')}
       description={
         usage
-          ? `An estimate: the tokens Fetivi records × Anthropic's published prices (checked ${checkedOn(usage.pricesCheckedOn)}). Your actual bill can differ. Days and months are in UTC.`
-          : "An estimate: the tokens Fetivi records × Anthropic's published prices. Your actual bill can differ. Days and months are in UTC."
+          ? t('settings.usageHintChecked', { date: checkedOn(usage.pricesCheckedOn) })
+          : t('settings.usageHint')
       }
     >
       {usage ? (
@@ -39,19 +52,19 @@ export function UsageSection() {
             <table className="data-table keep-columns">
               <thead>
                 <tr>
-                  <th scope="col">Use</th>
+                  <th scope="col">{t('settings.use')}</th>
                   <th scope="col" className="num">
-                    Today
+                    {t('settings.today')}
                   </th>
                   <th scope="col" className="num">
-                    This month
+                    {t('settings.month')}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {usage.month.byUse.map((month) => (
                   <tr key={month.use}>
-                    <th scope="row">{MODEL_USE_LABELS[month.use]}</th>
+                    <th scope="row">{labels.modelUse[month.use]}</th>
                     <td className="num">
                       {usd(usage.today.byUse.find((t) => t.use === month.use)?.costUsd ?? 0)}
                     </td>
@@ -61,7 +74,7 @@ export function UsageSection() {
               </tbody>
               <tfoot>
                 <tr>
-                  <th scope="row">Total</th>
+                  <th scope="row">{t('settings.total')}</th>
                   <td className="num">{usd(usage.today.totalUsd)}</td>
                   <td className="num">{usd(usage.month.totalUsd)}</td>
                 </tr>
@@ -79,7 +92,7 @@ export function UsageSection() {
       ) : error ? (
         <p role="alert">{error}</p>
       ) : (
-        <p className="muted">Loading…</p>
+        <p className="muted">{t('common:loading')}</p>
       )}
     </Section>
   );

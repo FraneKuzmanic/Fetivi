@@ -111,7 +111,7 @@ describe('adminAttention', () => {
       ['orders', '1 order needs you', '/admin/orders?view=needs_action'],
       ['payments', '1 payment check needs a look', '/admin/reconciliation'],
       ['approvals', '1 property waits for approval', '/admin/approvals'],
-      ['curation', '1 draft to review before guests see them', '/admin/curation'],
+      ['curation', '1 draft to review before guests see it', '/admin/curation'],
       ['due', '1 place is due for a re-check', '/admin/curation/staleness'],
     ]);
   });

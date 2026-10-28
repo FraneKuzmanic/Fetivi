@@ -1,7 +1,8 @@
 import { LIMITS } from '@fetivi/domain/vocabulary';
 import { LinkSimple, ListBullets, ListNumbers, TextB } from '@phosphor-icons/react';
 import { useId, useRef } from 'react';
-import { format, useWizardCopy } from './copy';
+import { useTranslation } from 'react-i18next';
+import { useWizardCopy } from './copy';
 
 type Edit = (text: string, start: number, end: number) => [string, number, number];
 
@@ -40,6 +41,7 @@ export function MarkdownField({
   onChange: (value: string) => void;
 }) {
   const { ui } = useWizardCopy();
+  const { t } = useTranslation('wizard');
   const id = useId();
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -106,7 +108,7 @@ export function MarkdownField({
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
       />
-      <small>{format(ui.charactersLeft, { n: LIMITS.blockBody - value.length })}</small>
+      <small>{t('charactersLeft', { count: LIMITS.blockBody - value.length })}</small>
     </div>
   );
 }

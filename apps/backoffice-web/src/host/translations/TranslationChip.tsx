@@ -1,5 +1,5 @@
 import type { TranslationStatus } from '@fetivi/domain/vocabulary';
-import { TRANSLATION_STATUS_LABELS } from '../../forms/labels';
+import { useLabels } from '../../i18n/useLabels';
 
 const TONE: Record<TranslationStatus, string> = {
   pending: 'wait',
@@ -12,6 +12,7 @@ const TONE: Record<TranslationStatus, string> = {
  * runs on its own after every save, and a host has nothing to do until something goes wrong.
  */
 export function TranslationChip({ status }: { status: TranslationStatus }) {
+  const labels = useLabels();
   if (status !== 'failed') return null;
-  return <span className={`chip ${TONE[status]}`}>{TRANSLATION_STATUS_LABELS[status]}</span>;
+  return <span className={`chip ${TONE[status]}`}>{labels.translationStatus[status]}</span>;
 }

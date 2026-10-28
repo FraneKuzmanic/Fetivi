@@ -1,10 +1,12 @@
 import { OFFER_LIMITS } from '@fetivi/domain/offer-vocabulary';
 import { Plus, Trash } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AllotmentSlot, SlotsClient } from '../../api';
 import { formatDate } from '../../forms/datetime';
 import { CheckboxField, NumberField, TimeField } from '../../forms/fields';
-import { WEEKDAY_LABELS } from '../../forms/labels';
+import { i18next } from '../../i18n';
+import { currentLabels } from '../../i18n/useLabels';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { Pager } from '../../shell/Pager';
 import { Tabs } from '../../shell/Tabs';
@@ -12,13 +14,17 @@ import { useAction } from '../../useAction';
 import { InputField } from '../catalog/RowEditors';
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7];
-const short = (weekday: number) => (WEEKDAY_LABELS[weekday] ?? '').slice(0, 3);
+const short = (weekday: number) => (currentLabels().weekday[weekday as 1] ?? '').slice(0, 3);
 
 /** 'YYYY-MM-DDTHH:mm' → 'Mon 04.01.2027, 09:00'. */
 function startLine(local: string): string {
   const [date = '', time = ''] = local.split('T');
   const weekday = new Date(`${date}T00:00:00Z`).getUTCDay() || 7;
-  return `${short(weekday)} ${formatDate(date)}, ${time.slice(0, 5)}`;
+  return i18next.t('admin:slots.startLine', {
+    weekday: short(weekday),
+    date: formatDate(date),
+    time: time.slice(0, 5),
+  });
 }
 
 const PAGE = 30;
@@ -44,6 +50,7 @@ export function SlotsPanel({
   timezone: string;
   client: SlotsClient;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const { busy, error, run } = useAction();
   const [past, setPast] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -79,8 +86,8 @@ export function SlotsPanel({
       });
       setResult(
         skipped > 0
-          ? `Created ${created}, skipped ${skipped} (already there, in the past, or skipped by a clock change).`
-          : `Created ${created}.`,
+          ? t('slots.createdSkipped', { created, skipped })
+          : t('slots.created', { created }),
       );
       await reload();
     });
@@ -99,17 +106,17 @@ export function SlotsPanel({
   return (
     <div className="slots">
       <form className="slots-bulk" onSubmit={create}>
-        <h3>Add slots from a weekly schedule</h3>
+        <h3>{t('slots.addFromSchedule')}</h3>
         <div className="field-row">
           <InputField
-            label="From"
+            label={t('slots.from')}
             type="date"
             value={draft.from}
             required
             onChange={(from) => setDraft((d) => ({ ...d, from }))}
           />
           <InputField
-            label="To"
+            label={t('slots.to')}
             type="date"
             value={draft.to}
             required
@@ -117,7 +124,7 @@ export function SlotsPanel({
           />
         </div>
         <fieldset className="weekdays">
-          <legend>Days</legend>
+          <legend>{t('slots.days')}</legend>
           {WEEKDAYS.map((day) => (
             <CheckboxField
               key={day}
@@ -128,16 +135,20 @@ export function SlotsPanel({
           ))}
         </fieldset>
         <fieldset className="row-editor">
-          <legend>Start times</legend>
+          <legend>{t('slots.startTimes')}</legend>
           {draft.times.map((time, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: rows have no identity of their own
             <div className="slot-time" key={i}>
-              <TimeField label={`Time ${i + 1}`} value={time} onChange={(v) => setTime(i, v)} />
+              <TimeField
+                label={t('slots.time', { n: i + 1 })}
+                value={time}
+                onChange={(v) => setTime(i, v)}
+              />
               {draft.times.length > 1 ? (
                 <button
                   type="button"
                   className="icon-button"
-                  aria-label={`Remove time ${i + 1}`}
+                  aria-label={t('slots.removeTime', { n: i + 1 })}
                   onClick={() =>
                     setDraft((d) => ({ ...d, times: d.times.filter((_, j) => j !== i) }))
                   }
@@ -153,12 +164,12 @@ export function SlotsPanel({
               onClick={() => setDraft((d) => ({ ...d, times: [...d.times, null] }))}
             >
               <Plus aria-hidden="true" weight="bold" />
-              Add time
+              {t('slots.addTime')}
             </button>
           ) : null}
         </fieldset>
         <NumberField
-          label="Seats per slot"
+          label={t('slots.seatsPerSlot')}
           value={draft.capacity}
           min={1}
           max={OFFER_LIMITS.capacityMax}
@@ -172,17 +183,17 @@ export function SlotsPanel({
             </output>
           ) : null}
           <button type="submit" className="primary" disabled={busy}>
-            Create slots
+            {t('slots.create')}
           </button>
         </div>
       </form>
 
-      <h3>Slots</h3>
+      <h3>{t('slots.slots')}</h3>
       <Tabs
-        label="When"
+        label={t('slots.when')}
         items={[
-          { id: 'upcoming', label: 'Upcoming' },
-          { id: 'past', label: 'Past' },
+          { id: 'upcoming', label: t('slots.upcoming') },
+          { id: 'past', label: t('slots.past') },
         ]}
         value={past ? 'past' : 'upcoming'}
         onChange={(v) => {
@@ -191,18 +202,16 @@ export function SlotsPanel({
         }}
       />
       {error ? <p role="alert">{error}</p> : null}
-      {slots === null ? <p className="muted">Loading…</p> : null}
+      {slots === null ? <p className="muted">{t('common:loading')}</p> : null}
       {slots?.length === 0 ? (
-        <p className="muted">
-          {past ? 'No past slots.' : 'No upcoming slots. Add them from a weekly schedule above.'}
-        </p>
+        <p className="muted">{past ? t('slots.noPast') : t('slots.noUpcoming')}</p>
       ) : null}
       {slots && slots.length > 0 ? (
         <ul className="rows slot-list">
           <li className="slot-row slot-head" aria-hidden="true">
-            <span>Start</span>
-            <span>Seats</span>
-            <span>Left</span>
+            <span>{t('slots.start')}</span>
+            <span>{t('slots.seats')}</span>
+            <span>{t('slots.left')}</span>
             <span />
           </li>
           {slots.slice(offset, offset + PAGE).map((slot) => (
@@ -227,6 +236,7 @@ function SlotRow({
   client: SlotsClient;
   onChanged: () => Promise<void>;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const { busy, error, run } = useAction();
   const confirm = useConfirm();
   const [capacity, setCapacity] = useState<number | null>(slot.capacity);
@@ -246,7 +256,7 @@ function SlotRow({
         }}
       >
         <NumberField
-          label={`Seats on ${start}`}
+          label={t('slots.seatsOn', { start })}
           value={capacity}
           min={1}
           max={OFFER_LIMITS.capacityMax}
@@ -255,27 +265,24 @@ function SlotRow({
         {/* Shown only for a changed value, so 60 rows don't carry 60 idle buttons. */}
         {capacity !== slot.capacity ? (
           <button type="submit" disabled={busy}>
-            Save
+            {t('common:save')}
           </button>
         ) : null}
       </form>
       <span className="slot-left">
-        <span className="slot-label">Left: </span>
+        <span className="slot-label">{t('slots.leftLabel')}</span>
         {slot.remaining}
       </span>
       <button
         type="button"
         className="icon-button"
-        aria-label={`Delete slot ${start}`}
+        aria-label={t('slots.deleteAria', { start })}
         disabled={busy}
         onClick={async () => {
           const yes = await confirm({
-            title: `Delete the slot on ${start}?`,
-            body:
-              slot.remaining < slot.capacity
-                ? 'Some seats on it are already booked.'
-                : 'Nobody has booked it yet.',
-            action: 'Delete slot',
+            title: t('slots.deleteTitle', { start }),
+            body: slot.remaining < slot.capacity ? t('slots.booked') : t('slots.notBooked'),
+            action: t('slots.deleteSlot'),
             danger: true,
           });
           if (!yes) return;

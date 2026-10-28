@@ -5,6 +5,7 @@ import { offers } from '../../db/schema/offers';
 import { orders } from '../../db/schema/orders';
 import type { Mailer } from '../../mail';
 import { orderJobKey } from '../../orders/timers';
+import { backofficeLanguageOf } from '../../property/vocabulary';
 import { findHostOrder } from '../../services/host-orders';
 import {
   findOrderByLinkToken,
@@ -101,7 +102,7 @@ async function sendHostNotification(
   hostId: string,
 ): Promise<SendOutcome> {
   const [host] = await deps.db
-    .select({ email: accounts.email })
+    .select({ email: accounts.email, uiLanguage: accounts.uiLanguage })
     .from(accounts)
     .where(eq(accounts.id, hostId));
   const found = await findHostOrder(deps.db, hostId, job.orderId);
@@ -112,6 +113,7 @@ async function sendHostNotification(
   }
   const message = composeHostOrderEmail({
     kind: job.kind,
+    language: backofficeLanguageOf(host.uiLanguage),
     offerTitle: view.offerTitle,
     date: view.date,
     startTime: view.startTime,

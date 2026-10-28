@@ -55,6 +55,7 @@ export async function resolveSession(db: Db, token: string, now: Date): Promise<
         email: accounts.email,
         role: accounts.role,
         language: accounts.uiLanguage,
+        languageChosenAt: accounts.uiLanguageChosenAt,
         suspendedAt: accounts.suspendedAt,
       },
       actingAs: { id: actingHost.id, email: actingHost.email },
@@ -86,6 +87,7 @@ export async function resolveSession(db: Db, token: string, now: Date): Promise<
       email: account.email,
       role: account.role,
       language: account.language,
+      languageChosen: account.languageChosenAt !== null,
     },
     actingAs: row.actingAs?.id ? { id: row.actingAs.id, email: row.actingAs.email } : null,
   };

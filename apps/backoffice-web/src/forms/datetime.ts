@@ -1,6 +1,8 @@
 // Dates and times as the back office shows them: day first, 24-hour clock, whatever the browser's
 // locale. Values stay ISO ("2026-10-27", "15:00") so the API sees what it always saw.
 
+import { localeOf } from '../i18n';
+
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export const isoDate = (y: number, m: number, d: number) => `${y}-${pad(m)}-${pad(d)}`;
@@ -90,9 +92,9 @@ export function todayIso(now = new Date()): string {
   return isoDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
 
-/** Today's date in the header, day first: "Tuesday 27 October". Ticket 53 switches the locale here. */
-export function longDay(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
+/** Today's date in the header, day first: "Tuesday 27 October", "utorak, 27. listopada". */
+export function longDay(iso: string, language: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(localeOf(language), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

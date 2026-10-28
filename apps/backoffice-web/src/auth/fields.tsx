@@ -1,5 +1,6 @@
 import { Eye, EyeSlash } from '@phosphor-icons/react';
 import { type ReactNode, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /** A password input with a show/hide toggle; `aside` sits at the end of the label row. */
 export function PasswordField({
@@ -25,6 +26,7 @@ export function PasswordField({
   isNew?: boolean;
 }) {
   const id = useId();
+  const { t } = useTranslation('auth');
   const [shown, setShown] = useState(false);
   const describedBy = [hint ? `${id}-hint` : null, invalid && errorId ? errorId : null]
     .filter(Boolean)
@@ -53,7 +55,7 @@ export function PasswordField({
           type="button"
           className="reveal"
           aria-pressed={shown}
-          aria-label="Show password"
+          aria-label={t('showPassword')}
           onClick={() => setShown((s) => !s)}
         >
           {shown ? <EyeSlash aria-hidden="true" /> : <Eye aria-hidden="true" />}
@@ -76,10 +78,11 @@ export function EmailField({
   invalid?: boolean;
   errorId?: string;
 }) {
+  const { t } = useTranslation('auth');
   const id = useId();
   return (
     <div className="field-block">
-      <label htmlFor={id}>Email</label>
+      <label htmlFor={id}>{t('email')}</label>
       <input
         id={id}
         type="email"

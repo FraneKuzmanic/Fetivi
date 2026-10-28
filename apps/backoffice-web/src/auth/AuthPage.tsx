@@ -1,8 +1,8 @@
 import { Wordmark } from '@fetivi/ui';
 import { type ReactNode, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitch } from '../shell/LanguageSwitch';
 import { HarbourHouse } from './HarbourHouse';
-
-const PITCH = 'Your property, explained to every guest';
 
 /**
  * The frame of every signed-out page: the wordmark, the page's heading and its content. On a phone
@@ -20,18 +20,19 @@ export function AuthPage({
   intro?: boolean;
   children: ReactNode;
 }) {
+  const { t } = useTranslation(['auth', 'shell']);
   const heading = useRef<HTMLHeadingElement>(null);
   const first = useRef(true);
 
   useEffect(() => {
     const previous = document.title;
-    document.title = `${title} · Fetivi`;
+    document.title = t('shell:documentTitle', { page: title });
     if (first.current) first.current = false;
     else heading.current?.focus();
     return () => {
       document.title = previous;
     };
-  }, [title]);
+  }, [title, t]);
 
   return (
     <div className="auth">
@@ -40,9 +41,10 @@ export function AuthPage({
           <Wordmark />
           <HarbourHouse className="auth-masthead-scene" />
         </div>
-        {intro ? <p className="auth-masthead-line">{PITCH}</p> : null}
+        {intro ? <p className="auth-masthead-line">{t('pitch')}</p> : null}
       </header>
       <main className="auth-main">
+        <LanguageSwitch />
         <Wordmark />
         <h1 ref={heading} tabIndex={-1}>
           {title}
@@ -51,12 +53,8 @@ export function AuthPage({
       </main>
       <aside className="auth-side" aria-labelledby="auth-side-title">
         <HarbourHouse />
-        <h2 id="auth-side-title">{PITCH}</h2>
-        <p>
-          Write down the details once: Wi-Fi, check-in, house rules, the places you love. Fetivi
-          answers your guests' questions from them, in their own language, and tells you when
-          someone needs you.
-        </p>
+        <h2 id="auth-side-title">{t('pitch')}</h2>
+        <p>{t('pitchBody')}</p>
       </aside>
     </div>
   );

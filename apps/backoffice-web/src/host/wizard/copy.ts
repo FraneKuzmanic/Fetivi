@@ -1,11 +1,11 @@
 import { WIZARD_COPY, type WizardCopy } from '@fetivi/domain/wizard';
-import { useOptionalSession } from '../../session';
+import { useTranslation } from 'react-i18next';
+import { isBackofficeLanguage } from '../../i18n/browser-language';
 
-/** The wizard copy in the viewer's own language; an acting admin sees theirs, not the host's. */
+/** The wizard copy in the interface language; an acting admin sees theirs, not the host's. */
 export function useWizardCopy(): WizardCopy {
-  const me = useOptionalSession()?.me;
-  const language = me && me !== 'loading' ? me.account.language : 'en';
-  return WIZARD_COPY[language] ?? WIZARD_COPY.en;
+  const { i18n } = useTranslation();
+  return WIZARD_COPY[isBackofficeLanguage(i18n.language) ? i18n.language : 'en'];
 }
 
 /** Fills `{name}` placeholders. */

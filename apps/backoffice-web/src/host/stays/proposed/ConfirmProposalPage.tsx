@@ -1,17 +1,19 @@
-import { CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
 import { STAY_LIMITS } from '@fetivi/domain/stay-vocabulary';
 import { GUEST_LANGUAGES, type GuestLanguage } from '@fetivi/domain/vocabulary';
 import { type FormEvent, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { host, type StayProposal } from '../../../api';
 import { NumberField, SelectField, TextField } from '../../../forms/fields';
-import { LANGUAGE_LABELS } from '../../../forms/labels';
+import { useLabels } from '../../../i18n/useLabels';
 import { usePageTitle } from '../../../shell/PageTitle';
 import { useAction } from '../../../useAction';
-import { dateRange, nightsLabel } from '../format';
+import { calendarNames, dateRange, nightsLabel } from '../format';
 
 /** Confirm a calendar booking: the dates come from the calendar, the host adds the party. */
 export function ConfirmProposalPage() {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
@@ -41,20 +43,20 @@ export function ConfirmProposalPage() {
     });
   }
 
-  usePageTitle('Confirm booking');
+  usePageTitle(t('stays.confirmTitle'));
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/stays">Stays</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/stays">{t('stays.title')}</Link>
       </nav>
-      {proposal === undefined && !error ? <p className="muted">Loading…</p> : null}
+      {proposal === undefined && !error ? <p className="muted">{t('common:loading')}</p> : null}
       {proposal === undefined && error ? <p role="alert">{error}</p> : null}
       {proposal === null ? (
         <section className="panel narrow">
-          <p>This booking was already handled.</p>
+          <p>{t('stays.handled')}</p>
           <p>
-            <Link to="/stays">Back to Stays</Link>
+            <Link to="/stays">{t('stays.backToStays')}</Link>
           </p>
         </section>
       ) : null}
@@ -66,15 +68,17 @@ export function ConfirmProposalPage() {
               <span className="muted"> · {nightsLabel(proposal.checkIn, proposal.checkout)}</span>
             </p>
             <p className="muted">
-              {proposal.propertyName} · {proposal.unitName} · from the{' '}
-              {proposal.sources.map((s) => CALENDAR_SOURCE_LABELS[s]).join(' and ')}{' '}
-              {proposal.sources.length > 1 ? 'calendars' : 'calendar'}
+              {proposal.propertyName} · {proposal.unitName} ·{' '}
+              {t('stays.fromCalendarsLower', {
+                count: proposal.sources.length,
+                names: calendarNames(proposal.sources),
+              })}
             </p>
           </div>
           <form onSubmit={submit}>
             <div className="fields">
               <NumberField
-                label="Guests"
+                label={t('stays.guests')}
                 value={partySize}
                 min={STAY_LIMITS.partySize.min}
                 max={STAY_LIMITS.partySize.max}
@@ -83,36 +87,34 @@ export function ConfirmProposalPage() {
               />
               <div className="field-row">
                 <TextField
-                  label="Booker name"
-                  hint="Optional. Only you see this."
+                  label={t('stays.bookerName')}
+                  hint={t('common:page.optional')}
                   value={bookerName}
                   maxLength={STAY_LIMITS.bookerName}
                   onChange={setBookerName}
                 />
                 <TextField
-                  label="Reservation number"
-                  hint="Optional. The number from Airbnb or Booking.com."
+                  label={t('stays.reservationNumber')}
+                  hint={t('stays.reservationHint')}
                   value={reservationNumber}
                   maxLength={STAY_LIMITS.reservationNumber}
                   onChange={setReservationNumber}
                 />
               </div>
               <SelectField
-                label="Message language"
-                hint="The language of the message with the PIN. You can change it later."
+                label={t('stays.messageLanguage')}
+                hint={t('stays.messageLanguageHint')}
                 value={language}
                 options={GUEST_LANGUAGES}
-                labels={LANGUAGE_LABELS}
+                labels={labels.language}
                 onChange={(l) => l && setLanguage(l)}
               />
             </div>
             {error ? <p role="alert">{error}</p> : null}
-            <p className="muted">
-              The dates come from the calendar. You can change them later on the Stay.
-            </p>
+            <p className="muted">{t('stays.datesFromCalendar')}</p>
             <div className="actions">
               <button type="submit" className="primary" disabled={busy}>
-                Confirm and get PIN
+                {t('stays.confirmAndPin')}
               </button>
             </div>
           </form>

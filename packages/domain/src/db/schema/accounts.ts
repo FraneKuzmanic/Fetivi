@@ -11,8 +11,16 @@ export const accounts = pgTable('accounts', {
   role: accountRole('role').notNull(),
   emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
   suspendedAt: timestamp('suspended_at', { withTimezone: true }),
-  /** The back-office language this person reads the setup wizard in (ticket 20). */
+  /**
+   * The back-office language: UI, setup wizard (ticket 20), host emails and the target of
+   * Host-message translation (ticket 53).
+   */
   uiLanguage: guestLanguage('ui_language').notNull().default('en'),
+  /**
+   * When the person last chose `uiLanguage`. Null = never chosen; `uiLanguage` then holds the
+   * browser default from the last sign-up or login.
+   */
+  uiLanguageChosenAt: timestamp('ui_language_chosen_at', { withTimezone: true }),
   /**
    * A host's own Stripe connected account (38), for own services paid online; the host is
    * merchant of record. Mirrors the `providers` columns.

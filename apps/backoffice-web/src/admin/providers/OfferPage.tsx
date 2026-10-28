@@ -30,6 +30,7 @@ import {
   Trash,
 } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { catalog, type Destination, type Offer, type OfferPatch, providers } from '../../api';
 import {
@@ -40,19 +41,12 @@ import {
   TextField,
   TimeField,
 } from '../../forms/fields';
-import {
-  ADAPTER_KIND_LABELS,
-  AVAILABILITY_MODE_LABELS,
-  AVAILABILITY_MODE_SHORT,
-  CONTACT_FIELDS_LABELS,
-  OFFER_CATEGORY_LABELS,
-  ORDER_KIND_LABELS,
-  PAYMENT_MODE_LABELS,
-  PRICE_UNIT_LABELS,
-} from '../../forms/labels';
+import { ADAPTER_KIND_LABELS } from '../../forms/labels';
 import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
+import { i18next } from '../../i18n';
+import { useLabels } from '../../i18n/useLabels';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { MoreActions } from '../../shell/MoreActions';
 import { usePageTitle } from '../../shell/PageTitle';
@@ -61,20 +55,15 @@ import { centsFromEuros, eurosFromCents } from './money';
 import { OfferTranslations } from './OfferTranslations';
 import { SlotsPanel } from './SlotsPanel';
 
-const TRANSLATED_HINT = 'Markdown. Translated into the seven guest languages on save.';
-const REQUEST_PRICE_HINT = 'Optional for requests: the Provider names the price.';
-const REQUEST_MODE_HINT = 'Requests always wait for the Provider.';
-
 /** "Free cancellation until 24 h before the start, then no refund." */
 export function refundLine(hours: number | null, percent: number | null): string {
-  const after =
-    !percent || percent === 0
-      ? 'no refund'
-      : percent === 100
-        ? 'a full refund'
-        : `${percent} % refunded`;
-  if (!hours) return percent === 100 ? 'Always a full refund.' : `No free cancellation; ${after}.`;
-  return `Free cancellation until ${hours} h before the start, then ${after}.`;
+  const t = i18next.getFixedT(null, 'admin', 'offer');
+  if (!hours) {
+    if (percent === 100) return t('alwaysFull');
+    return !percent ? t('noFreeNoRefund') : t('noFreePercent', { percent });
+  }
+  if (!percent) return t('untilNoRefund', { hours });
+  return percent === 100 ? t('untilFull', { hours }) : t('untilPercent', { hours, percent });
 }
 
 /** Live mode's adapter fields; shown only for live. */
@@ -89,20 +78,21 @@ function LiveFields({
   onAdapter: (value: Offer['adapterKind']) => void;
   onRef: (value: string | null) => void;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   return (
     <div className="field-row">
       <SelectField
-        label="Booking system"
+        label={t('offer.bookingSystem')}
         value={adapterKind}
         options={ADAPTER_KINDS}
         labels={ADAPTER_KIND_LABELS}
-        emptyLabel="Choose…"
+        emptyLabel={t('offer.choose')}
         required
         onChange={onAdapter}
       />
       <TextField
-        label="Product reference"
-        hint="The Offer's id in that system."
+        label={t('offer.productRef')}
+        hint={t('offer.productRefHint')}
         value={externalProductRef}
         maxLength={OFFER_LIMITS.externalRef}
         required
@@ -114,6 +104,8 @@ function LiveFields({
 
 /** /admin/providers/:id/offers/new: the required fields, then the full editor. */
 export function NewOfferPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
@@ -169,41 +161,45 @@ export function NewOfferPage() {
   const destinationIds = destinations?.map((d) => d.id) ?? [];
   const destinationLabels = Object.fromEntries(destinations?.map((d) => [d.id, d.name]) ?? []);
 
-  usePageTitle('Add offer');
+  usePageTitle(t('offer.add'));
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/providers">Providers</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/admin/providers">{t('providers.title')}</Link>
         <span aria-hidden="true">/</span>
-        <Link to={`/admin/providers/${id}`}>{providerName ?? 'Provider'}</Link>
+        <Link to={`/admin/providers/${id}`}>{providerName ?? t('providers.provider')}</Link>
       </nav>
       {destinations?.length === 0 ? (
         <p className="muted">
-          Add a destination in the <Link to="/admin/catalog">Catalog</Link> first.
+          <Trans
+            t={t}
+            i18nKey="offer.needDestination"
+            components={{ anchor: <Link to="/admin/catalog" /> }}
+          />
         </p>
       ) : null}
       <section className="panel narrow">
         <form onSubmit={submit}>
           <div className="fields">
             <SelectField
-              label="Destination"
-              hint="Guests staying there can order this Offer. It cannot be changed later."
+              label={t('offer.destination')}
+              hint={t('offer.destinationHint')}
               value={destinationId}
               options={destinationIds}
               labels={destinationLabels}
               onChange={setDestinationId}
             />
             <TextField
-              label="Title"
+              label={t('offer.title')}
               value={title}
               maxLength={LIMITS.title}
               required
               onChange={setTitle}
             />
             <TextArea
-              label="Description"
-              hint={TRANSLATED_HINT}
+              label={t('offer.description')}
+              hint={t('offer.translatedHint')}
               value={description}
               maxLength={LIMITS.blockBody}
               rows={5}
@@ -212,8 +208,8 @@ export function NewOfferPage() {
               onChange={setDescription}
             />
             <TextArea
-              label="Cancellation policy"
-              hint="What guests read. The refund rules are set on the next page."
+              label={t('offer.policy')}
+              hint={t('offer.policyHint')}
               value={policy}
               maxLength={LIMITS.blockBody}
               rows={3}
@@ -222,26 +218,26 @@ export function NewOfferPage() {
             />
             <div className="field-row">
               <SelectField
-                label="Category"
+                label={t('offer.category')}
                 value={category}
                 options={OFFER_CATEGORIES}
-                labels={OFFER_CATEGORY_LABELS}
+                labels={labels.offerCategory}
                 onChange={(c) => c && setCategory(c)}
               />
               <SelectField
-                label="Order kind"
+                label={t('offer.orderKind')}
                 value={orderKind}
                 options={ORDER_KINDS}
-                labels={ORDER_KIND_LABELS}
+                labels={labels.orderKind}
                 onChange={(k) => k && setOrderKind(k)}
               />
             </div>
             <SelectField
-              label="Availability"
-              hint={isRequest ? REQUEST_MODE_HINT : undefined}
+              label={t('offer.availability')}
+              hint={isRequest ? t('offer.requestModeHint') : undefined}
               value={effectiveMode}
               options={isRequest ? (['on_request'] as const) : AVAILABILITY_MODES}
-              labels={AVAILABILITY_MODE_LABELS}
+              labels={labels.availabilityMode}
               onChange={(m) => m && setMode(m)}
             />
             {live ? (
@@ -253,16 +249,16 @@ export function NewOfferPage() {
               />
             ) : null}
             <SelectField
-              label="Payment"
+              label={t('offer.payment')}
               value={paymentMode}
               options={PAYMENT_MODES}
-              labels={PAYMENT_MODE_LABELS}
+              labels={labels.paymentMode}
               onChange={(p) => p && setPaymentMode(p)}
             />
             <div className="field-row">
               <NumberField
-                label="Price (€)"
-                hint={isRequest ? REQUEST_PRICE_HINT : undefined}
+                label={t('offer.price')}
+                hint={isRequest ? t('offer.requestPriceHint') : undefined}
                 value={price}
                 min={0}
                 max={OFFER_LIMITS.priceMinorMax / 100}
@@ -270,10 +266,10 @@ export function NewOfferPage() {
                 onChange={setPrice}
               />
               <SelectField
-                label="Price unit"
+                label={t('offer.priceUnit')}
                 value={priceUnit}
                 options={PRICE_UNITS}
-                labels={PRICE_UNIT_LABELS}
+                labels={labels.priceUnit}
                 onChange={(u) => u && setPriceUnit(u)}
               />
             </div>
@@ -281,7 +277,7 @@ export function NewOfferPage() {
           {error ? <p role="alert">{error}</p> : null}
           <div className="actions">
             <button type="submit" className="primary" disabled={busy || !destinations?.length}>
-              Create offer
+              {t('offer.create')}
             </button>
           </div>
         </form>
@@ -349,6 +345,8 @@ const AVAILABILITY_KEYS = [
 
 /** /admin/offers/:id */
 export function OfferPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -390,7 +388,7 @@ export function OfferPage() {
   usePageTitle(offer?.title);
 
   if (!offer || !draft) {
-    return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
   }
 
   const set =
@@ -431,9 +429,9 @@ export function OfferPage() {
     if (!offer) return;
     if (!active) {
       const yes = await confirm({
-        title: `Pause ${offer.title}?`,
-        body: 'Guests stop seeing it until you resume it. Orders already placed go on.',
-        action: 'Pause offer',
+        title: t('offer.pauseTitle', { title: offer.title }),
+        body: t('offer.pauseBody'),
+        action: t('offer.pause'),
       });
       if (!yes) return;
     }
@@ -443,9 +441,9 @@ export function OfferPage() {
   async function remove() {
     if (!offer) return;
     const yes = await confirm({
-      title: `Delete ${offer.title}?`,
-      body: 'Its time slots and translations go with it. This cannot be undone.',
-      action: 'Delete offer',
+      title: t('offer.deleteTitle', { title: offer.title }),
+      body: t('offer.deleteBody'),
+      action: t('offer.delete'),
       danger: true,
     });
     if (!yes) return;
@@ -458,16 +456,16 @@ export function OfferPage() {
   }
 
   const sections: PageSection[] = [
-    { id: 'text', label: 'Text', icon: TextAlignLeft },
-    { id: 'type', label: 'Kind and place', icon: Tag },
-    { id: 'price', label: 'Price and payment', icon: CurrencyEur },
-    { id: 'availability', label: 'Availability', icon: CalendarCheck },
+    { id: 'text', label: t('offer.text'), icon: TextAlignLeft },
+    { id: 'type', label: t('offer.kindPlace'), icon: Tag },
+    { id: 'price', label: t('offer.priceAndPayment'), icon: CurrencyEur },
+    { id: 'availability', label: t('offer.availability'), icon: CalendarCheck },
     ...(offer.availabilityMode === 'allotment'
-      ? [{ id: 'slots', label: 'Time slots', icon: Clock }]
+      ? [{ id: 'slots', label: t('offer.slots'), icon: Clock }]
       : []),
-    { id: 'cancellation', label: 'Cancellation', icon: ArrowUDownLeft },
-    { id: 'guest', label: 'Guest details', icon: IdentificationCard },
-    { id: 'translations', label: 'Translations', icon: Translate },
+    { id: 'cancellation', label: t('offer.cancellation'), icon: ArrowUDownLeft },
+    { id: 'guest', label: t('offer.guest'), icon: IdentificationCard },
+    { id: 'translations', label: t('offer.translations'), icon: Translate },
   ];
 
   const renderSection = (section: string) => {
@@ -475,7 +473,7 @@ export function OfferPage() {
       case 'type':
         return (
           <Section
-            title="Classification"
+            title={t('offer.classification')}
             onSave={save(
               ['category', 'orderKind', 'placeId', ...AVAILABILITY_KEYS],
               classificationBody(),
@@ -483,28 +481,30 @@ export function OfferPage() {
           >
             <div className="field-row">
               <SelectField
-                label="Category"
+                label={t('offer.category')}
                 value={draft.category}
                 options={OFFER_CATEGORIES}
-                labels={OFFER_CATEGORY_LABELS}
+                labels={labels.offerCategory}
                 onChange={(c) => c && set('category')(c)}
               />
               <SelectField
-                label="Order kind"
-                hint={isRequest ? REQUEST_MODE_HINT : undefined}
+                label={t('offer.orderKind')}
+                hint={isRequest ? t('offer.requestModeHint') : undefined}
                 value={draft.orderKind}
                 options={ORDER_KINDS}
-                labels={ORDER_KIND_LABELS}
+                labels={labels.orderKind}
                 onChange={(k) => k && set('orderKind')(k)}
               />
             </div>
             <SelectField
-              label="Linked place"
-              hint={`A catalog place in ${offer.destination?.name ?? 'the destination'}, for recommendations.`}
+              label={t('offer.linkedPlace')}
+              hint={t('offer.linkedPlaceHint', {
+                destination: offer.destination?.name ?? t('offer.theDestination'),
+              })}
               value={draft.placeId}
               options={placeIds}
               labels={placeLabels}
-              emptyLabel="None"
+              emptyLabel={t('offer.none')}
               onChange={set('placeId')}
             />
           </Section>
@@ -512,7 +512,7 @@ export function OfferPage() {
       case 'price':
         return (
           <Section
-            title="Price and payment"
+            title={t('offer.priceAndPayment')}
             onSave={save(['priceEuros', 'currency', 'priceUnit', 'paymentMode'], {
               priceMinor: centsFromEuros(draft.priceEuros),
               currency: draft.currency,
@@ -522,8 +522,8 @@ export function OfferPage() {
           >
             <div className="field-row">
               <NumberField
-                label="Price (€)"
-                hint={isRequest ? REQUEST_PRICE_HINT : undefined}
+                label={t('offer.price')}
+                hint={isRequest ? t('offer.requestPriceHint') : undefined}
                 value={draft.priceEuros}
                 min={0}
                 max={OFFER_LIMITS.priceMinorMax / 100}
@@ -531,30 +531,26 @@ export function OfferPage() {
                 onChange={set('priceEuros')}
               />
               <TextField
-                label="Currency"
+                label={t('offer.currency')}
                 value={draft.currency}
                 maxLength={3}
                 required
                 onChange={(v) => set('currency')((v ?? '').toUpperCase())}
               />
               <SelectField
-                label="Unit"
+                label={t('offer.unit')}
                 value={draft.priceUnit}
                 options={PRICE_UNITS}
-                labels={PRICE_UNIT_LABELS}
+                labels={labels.priceUnit}
                 onChange={(u) => u && set('priceUnit')(u)}
               />
             </div>
             <SelectField
-              label="Payment"
-              hint={
-                draft.paymentMode === 'online'
-                  ? "Needs the Provider's online payment setup (coming with online payments)."
-                  : undefined
-              }
+              label={t('offer.payment')}
+              hint={draft.paymentMode === 'online' ? t('offer.onlineHint') : undefined}
               value={draft.paymentMode}
               options={PAYMENT_MODES}
-              labels={PAYMENT_MODE_LABELS}
+              labels={labels.paymentMode}
               onChange={(p) => p && set('paymentMode')(p)}
             />
           </Section>
@@ -562,7 +558,7 @@ export function OfferPage() {
       case 'availability':
         return (
           <Section
-            title="Availability"
+            title={t('offer.availability')}
             onSave={save(AVAILABILITY_KEYS, {
               availabilityMode: draft.availabilityMode,
               adapterKind: live ? draft.adapterKind : null,
@@ -573,13 +569,13 @@ export function OfferPage() {
             })}
           >
             <SelectField
-              label="Mode"
-              hint={offer.orderKind === 'request' ? REQUEST_MODE_HINT : undefined}
+              label={t('offer.mode')}
+              hint={offer.orderKind === 'request' ? t('offer.requestModeHint') : undefined}
               value={draft.availabilityMode}
               options={
                 offer.orderKind === 'request' ? (['on_request'] as const) : AVAILABILITY_MODES
               }
-              labels={AVAILABILITY_MODE_LABELS}
+              labels={labels.availabilityMode}
               onChange={(m) => m && set('availabilityMode')(m)}
             />
             {live ? (
@@ -593,7 +589,7 @@ export function OfferPage() {
             {draft.availabilityMode === 'on_request' ? (
               <>
                 <NumberField
-                  label="Response window (minutes)"
+                  label={t('offer.responseWindow')}
                   value={draft.responseWindowMinutes}
                   min={1}
                   max={windowMax}
@@ -601,12 +597,12 @@ export function OfferPage() {
                 />
                 <div className="field-row">
                   <TimeField
-                    label="Counted from"
+                    label={t('offer.countedFrom')}
                     value={draft.responseHoursFrom}
                     onChange={set('responseHoursFrom')}
                   />
                   <TimeField
-                    label="Until"
+                    label={t('offer.until')}
                     value={draft.responseHoursTo}
                     onChange={set('responseHoursTo')}
                   />
@@ -622,8 +618,8 @@ export function OfferPage() {
       case 'cancellation':
         return (
           <Section
-            title="Cancellation rules"
-            description="What is applied when a guest cancels. Keep the policy text above in line with it."
+            title={t('offer.rules')}
+            description={t('offer.rulesHint')}
             onSave={save(['freeCancelHoursBefore', 'refundPercentAfter'], {
               freeCancelHoursBefore: draft.freeCancelHoursBefore ?? 0,
               refundPercentAfter: draft.refundPercentAfter ?? 0,
@@ -631,14 +627,14 @@ export function OfferPage() {
           >
             <div className="field-row">
               <NumberField
-                label="Free until (hours before start)"
+                label={t('offer.freeHours')}
                 value={draft.freeCancelHoursBefore}
                 min={0}
                 max={OFFER_LIMITS.freeCancelHoursMax}
                 onChange={set('freeCancelHoursBefore')}
               />
               <NumberField
-                label="Refund after that (%)"
+                label={t('offer.refundAfter')}
                 value={draft.refundPercentAfter}
                 min={0}
                 max={100}
@@ -653,36 +649,36 @@ export function OfferPage() {
       case 'guest':
         return (
           <Section
-            title="Guest details for the Provider"
+            title={t('offer.guestDetails')}
             onSave={save(['contactFields'], { contactFields: draft.contactFields })}
           >
             <SelectField
-              label="The Provider receives"
-              hint="The guest's email is always required; it is not sent to the Provider."
+              label={t('offer.receives')}
+              hint={t('offer.receivesHint')}
               value={draft.contactFields}
               options={CONTACT_FIELDS}
-              labels={CONTACT_FIELDS_LABELS}
+              labels={labels.contactFields}
               onChange={(c) => c && set('contactFields')(c)}
             />
           </Section>
         );
       case 'slots':
         return (
-          <Section title="Time slots">
+          <Section title={t('offer.slots')}>
             <SlotsPanel offerId={offer.id} timezone={offer.timezone} client={providers} />
           </Section>
         );
       case 'translations':
         return (
-          <Section title="Translations">
+          <Section title={t('offer.translations')}>
             <OfferTranslations offer={offer} client={providers} onChanged={reload} />
           </Section>
         );
       default:
         return (
           <Section
-            title="Text"
-            description="Saving a change translates it again into the seven guest languages. The policy text is what guests read before ordering."
+            title={t('offer.text')}
+            description={t('offer.textHint')}
             onSave={save(['title', 'description', 'cancellationPolicy'], {
               title: draft.title,
               description: draft.description,
@@ -690,15 +686,15 @@ export function OfferPage() {
             })}
           >
             <TextField
-              label="Title"
+              label={t('offer.title')}
               value={draft.title}
               maxLength={LIMITS.title}
               required
               onChange={(v) => set('title')(v ?? '')}
             />
             <TextArea
-              label="Description"
-              hint="Markdown."
+              label={t('offer.description')}
+              hint={t('offer.markdown')}
               value={draft.description}
               maxLength={LIMITS.blockBody}
               rows={6}
@@ -707,7 +703,7 @@ export function OfferPage() {
               onChange={(v) => set('description')(v ?? '')}
             />
             <TextArea
-              label="Cancellation policy"
+              label={t('offer.policy')}
               value={draft.cancellationPolicy}
               maxLength={LIMITS.blockBody}
               rows={3}
@@ -721,8 +717,8 @@ export function OfferPage() {
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/providers">Providers</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/admin/providers">{t('providers.title')}</Link>
         {offer.provider ? (
           <>
             <span aria-hidden="true">/</span>
@@ -734,39 +730,39 @@ export function OfferPage() {
         <div className="page-title">
           <div className="title-line">
             {offer.active ? (
-              <span className="chip ok">Active</span>
+              <span className="chip ok">{t('providers.active')}</span>
             ) : (
-              <span className="chip neutral">Paused</span>
+              <span className="chip neutral">{t('providers.paused')}</span>
             )}
             <TranslationChip status={offer.translation.status} />
           </div>
           <p className="muted">
             {[
               offer.destination?.name,
-              OFFER_CATEGORY_LABELS[offer.category],
-              AVAILABILITY_MODE_SHORT[offer.availabilityMode],
-              PAYMENT_MODE_LABELS[offer.paymentMode],
+              labels.offerCategory[offer.category],
+              labels.availabilityModeShort[offer.availabilityMode],
+              labels.paymentMode[offer.paymentMode],
             ]
               .filter(Boolean)
               .join(' · ')}
           </p>
         </div>
         <MoreActions
-          label={`More actions for ${offer.title}`}
+          label={t('offer.moreActions', { title: offer.title })}
           items={[
             offer.active
               ? {
-                  label: 'Pause offer',
+                  label: t('offer.pause'),
                   icon: <Pause aria-hidden="true" />,
                   onSelect: () => void setActive(false),
                 }
               : {
-                  label: 'Resume offer',
+                  label: t('offer.resume'),
                   icon: <Play aria-hidden="true" />,
                   onSelect: () => void setActive(true),
                 },
             {
-              label: 'Delete offer',
+              label: t('offer.delete'),
               icon: <Trash aria-hidden="true" />,
               danger: true,
               onSelect: () => void remove(),
@@ -776,7 +772,7 @@ export function OfferPage() {
       </div>
       {error ? <p role="alert">{error}</p> : null}
 
-      <SectionLayout sections={sections} label="Offer sections" render={renderSection} />
+      <SectionLayout sections={sections} label={t('offer.sections')} render={renderSection} />
     </>
   );
 }

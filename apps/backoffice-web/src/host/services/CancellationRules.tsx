@@ -1,7 +1,9 @@
 import { OFFER_DEFAULTS, OFFER_LIMITS } from '@fetivi/domain/offer-vocabulary';
 import { Fragment, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import { refundLine } from '../../admin/providers/OfferPage';
 import { NumberField } from '../../forms/fields';
+import { i18next } from '../../i18n';
 
 export type CancellationKind = 'free' | 'until' | 'none';
 
@@ -17,18 +19,22 @@ export function cancellationKind(rules: CancellationRules): CancellationKind {
   return 'none';
 }
 
-const CHOICES: { kind: CancellationKind; label: string; help: string }[] = [
+const choices = (): { kind: CancellationKind; label: string; help: string }[] => [
   {
     kind: 'free',
-    label: 'Free cancellation',
-    help: 'Guests can cancel at any time and get all their money back.',
+    label: i18next.t('host:services.freeCancel'),
+    help: i18next.t('host:services.freeCancelHelp'),
   },
   {
     kind: 'until',
-    label: 'Free until shortly before',
-    help: 'Free up to a number of hours before the start, a partial refund or none after that.',
+    label: i18next.t('host:services.freeUntil'),
+    help: i18next.t('host:services.freeUntilHelp'),
   },
-  { kind: 'none', label: 'No refunds', help: 'Once confirmed, the order is paid in full.' },
+  {
+    kind: 'none',
+    label: i18next.t('host:services.noRefunds'),
+    help: i18next.t('host:services.noRefundsHelp'),
+  },
 ];
 
 /** The rules each choice sets when picked; "until" starts from the usual 24 hours. */
@@ -52,12 +58,13 @@ export function CancellationRulesField({
   value: CancellationRules;
   onChange: (rules: CancellationRules) => void;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const name = useId();
   const kind = cancellationKind(value);
   return (
     <fieldset className="choice-list">
-      <legend className="field-label">When a guest cancels</legend>
-      {CHOICES.map((choice) => (
+      <legend className="field-label">{t('services.whenCancels')}</legend>
+      {choices().map((choice) => (
         <Fragment key={choice.kind}>
           <label className="choice-option">
             <input
@@ -74,14 +81,14 @@ export function CancellationRulesField({
           {choice.kind === 'until' && kind === 'until' ? (
             <div className="field-row choice-detail">
               <NumberField
-                label="Free until (hours before the start)"
+                label={t('services.freeHours')}
                 value={value.freeCancelHoursBefore}
                 min={1}
                 max={OFFER_LIMITS.freeCancelHoursMax}
                 onChange={(h) => onChange({ ...value, freeCancelHoursBefore: h })}
               />
               <NumberField
-                label="Refund after that (%)"
+                label={t('services.refundAfter')}
                 value={value.refundPercentAfter}
                 min={0}
                 max={99}

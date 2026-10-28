@@ -1,7 +1,9 @@
 import { MagnifyingGlass, Receipt } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { type AdminOrderRow, type AdminOrderView, adminOrders } from '../../api';
+import { i18next } from '../../i18n';
 import { EmptyState } from '../../shell/EmptyState';
 import { Pager } from '../../shell/Pager';
 import { usePageTitle } from '../../shell/PageTitle';
@@ -12,25 +14,27 @@ import { OrdersTable } from './OrdersTable';
 
 const PAGE = 50;
 
-const VIEWS: { id: AdminOrderView; label: string }[] = [
-  { id: 'needs_action', label: 'Needs you' },
-  { id: 'active', label: 'Open' },
-  { id: 'done', label: 'Done' },
+const t = i18next.getFixedT(null, 'admin', 'orders');
+
+const views = (): { id: AdminOrderView; label: string }[] => [
+  { id: 'needs_action', label: t('needsYou') },
+  { id: 'active', label: t('open') },
+  { id: 'done', label: t('done') },
 ];
 
-const EMPTY: Record<AdminOrderView, [string, string]> = {
-  needs_action: [
-    'All caught up',
-    'Orders show up here when a Provider misses their answer window.',
-  ],
-  active: ['No open orders', 'Orders guests place in the chat show up here until they are done.'],
-  done: ['No finished orders yet', 'Completed, cancelled and declined orders end up here.'],
-};
+const empty = (view: AdminOrderView): [string, string] =>
+  ({
+    needs_action: [t('caughtUp'), t('caughtUpBody')] as [string, string],
+    active: [t('noOpen'), t('noOpenBody')] as [string, string],
+    done: [t('noDone'), t('noDoneBody')] as [string, string],
+  })[view];
 
-const isView = (v: string | null): v is AdminOrderView => VIEWS.some((x) => x.id === v);
+const isView = (v: string | null): v is AdminOrderView =>
+  v === 'needs_action' || v === 'active' || v === 'done';
 
 /** /admin/orders: every Order, filtered by what it needs, searchable by offer, seller or ID. */
 export function OrdersPage() {
+  useTranslation('admin');
   const { error, run } = useAction();
   const [params, setParams] = useSearchParams();
   const asked = params.get('view');
@@ -64,45 +68,43 @@ export function OrdersPage() {
     };
   }, [run, view, search, offset]);
 
-  const [emptyTitle, emptyText] = EMPTY[view];
+  const [emptyTitle, emptyText] = empty(view);
 
-  usePageTitle('Orders');
+  usePageTitle(t('title'));
 
   return (
     <>
       <Tabs
-        label="Order status"
-        items={VIEWS}
+        label={t('status')}
+        items={views()}
         value={view}
         onChange={(v) => setParams(v === 'active' ? {} : { view: v }, { replace: true })}
       />
       <div className="toolbar">
         <SearchBox
-          label="Search orders"
+          label={t('search')}
           value={query}
-          placeholder="Offer, Provider, host or order ID"
+          placeholder={t('searchPlaceholder')}
           onChange={setQuery}
         />
         {page && page.total > 0 ? (
-          <span className="toolbar-note">
-            {page.total === 1 ? '1 order' : `${page.total} orders`}
-          </span>
+          <span className="toolbar-note">{t('count', { count: page.total })}</span>
         ) : null}
       </div>
       {error ? <p role="alert">{error}</p> : null}
-      {page === null && !error ? <p className="muted">Loading…</p> : null}
+      {page === null && !error ? <p className="muted">{i18next.t('common:loading')}</p> : null}
       {page && page.orders.length === 0 ? (
         search ? (
           <EmptyState
             icon={MagnifyingGlass}
-            title={`No orders match “${search}”`}
+            title={t('noMatch', { query: search })}
             action={
               <button type="button" onClick={() => setQuery('')}>
-                Clear search
+                {i18next.t('common:table.clearSearch')}
               </button>
             }
           >
-            Search looks at the offer, the Provider, the host’s email and the order ID.
+            {t('searchHint')}
           </EmptyState>
         ) : (
           <EmptyState icon={Receipt} title={emptyTitle}>

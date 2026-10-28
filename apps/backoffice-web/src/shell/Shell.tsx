@@ -1,8 +1,10 @@
+import { BACKOFFICE_LANGUAGES, type BackofficeLanguage } from '@fetivi/domain/vocabulary';
 import { Mascot } from '@fetivi/ui';
 import {
   Buildings,
   CalendarCheck,
   CaretDown,
+  Check,
   ClipboardText,
   DotsThreeOutline,
   GearSix,
@@ -19,17 +21,23 @@ import {
   SignOut,
   Storefront,
   ThumbsUp,
+  Translate,
   Tray,
   UsersThree,
 } from '@phosphor-icons/react';
+import type { TFunction } from 'i18next';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { admin, host, type Me } from '../api';
+import { admin, auth, host, type Me } from '../api';
 import { longDay, todayIso } from '../forms/datetime';
 import { onInboxChanged, onPushMessage } from '../host/inbox/inbox-events';
+import { currentLanguage, setLanguage } from '../i18n';
+import { LANGUAGE_NAMES } from '../i18n/languages';
+import { storeLanguage } from '../i18n/stored-language';
 import { useSession } from '../session';
 import { useAction } from '../useAction';
-import { Menu } from './Menu';
+import { Menu, type MenuItem } from './Menu';
 import { PageTitleContext } from './PageTitle';
 
 interface NavItem {
@@ -62,13 +70,18 @@ export interface AdminCounts {
   payments: number;
 }
 
-function navItems(me: Me, unread: number, counts: AdminCounts | null): NavItem[] {
+function navItems(
+  t: TFunction<'shell'>,
+  me: Me,
+  unread: number,
+  counts: AdminCounts | null,
+): NavItem[] {
   if (!isHostView(me)) {
     return [
-      { to: '/', label: 'Today', icon: House, prefixes: [], group: 'work', phone: true },
+      { to: '/', label: t('nav.today'), icon: House, prefixes: [], group: 'work', phone: true },
       {
         to: '/admin/approvals',
-        label: 'Approvals',
+        label: t('nav.approvals'),
         icon: SealCheck,
         prefixes: [],
         badge: counts?.approvals,
@@ -78,7 +91,7 @@ function navItems(me: Me, unread: number, counts: AdminCounts | null): NavItem[]
       },
       {
         to: '/admin/curation',
-        label: 'Curation',
+        label: t('nav.curation'),
         icon: ListChecks,
         prefixes: ['/admin/curation'],
         badge: counts?.curation,
@@ -88,7 +101,7 @@ function navItems(me: Me, unread: number, counts: AdminCounts | null): NavItem[]
       },
       {
         to: '/admin/orders',
-        label: 'Orders',
+        label: t('nav.orders'),
         icon: Receipt,
         prefixes: ['/admin/orders'],
         badge: counts?.orders,
@@ -97,7 +110,7 @@ function navItems(me: Me, unread: number, counts: AdminCounts | null): NavItem[]
       },
       {
         to: '/admin/reconciliation',
-        label: 'Payment checks',
+        label: t('nav.paymentChecks'),
         icon: Scales,
         prefixes: [],
         badge: counts?.payments,
@@ -105,55 +118,74 @@ function navItems(me: Me, unread: number, counts: AdminCounts | null): NavItem[]
       },
       {
         to: '/admin/catalog',
-        label: 'Catalog',
+        label: t('nav.catalog'),
         icon: MapTrifold,
         prefixes: ['/admin/catalog'],
         group: 'manage',
       },
       {
         to: '/admin/providers',
-        label: 'Providers',
+        label: t('nav.providers'),
         icon: Handshake,
         prefixes: ['/admin/providers', '/admin/offers'],
         group: 'manage',
       },
-      { to: '/admin/hosts', label: 'Hosts', icon: UsersThree, prefixes: [], group: 'manage' },
-      { to: '/admin/feedback', label: 'Feedback', icon: ThumbsUp, prefixes: [], group: 'insight' },
+      {
+        to: '/admin/hosts',
+        label: t('nav.hosts'),
+        icon: UsersThree,
+        prefixes: [],
+        group: 'manage',
+      },
+      {
+        to: '/admin/feedback',
+        label: t('nav.feedback'),
+        icon: ThumbsUp,
+        prefixes: [],
+        group: 'insight',
+      },
       {
         to: '/admin/audit',
-        label: 'Audit log',
+        label: t('nav.audit'),
         icon: ClipboardText,
         prefixes: [],
         group: 'insight',
       },
-      { to: '/admin/settings', label: 'Settings', icon: GearSix, prefixes: [], foot: true },
+      { to: '/admin/settings', label: t('nav.settings'), icon: GearSix, prefixes: [], foot: true },
     ];
   }
   return [
-    { to: '/', label: 'Today', icon: House, prefixes: [] },
+    { to: '/', label: t('nav.today'), icon: House, prefixes: [] },
     {
       to: '/properties',
-      label: 'Properties',
+      label: t('nav.properties'),
       icon: Buildings,
       prefixes: ['/properties', '/units'],
     },
-    { to: '/stays', label: 'Stays', icon: CalendarCheck, prefixes: ['/stays'] },
-    { to: '/services', label: 'Services', icon: Storefront, prefixes: ['/services'] },
-    { to: '/inbox', label: 'Inbox', icon: Tray, prefixes: ['/inbox'], badge: unread },
+    { to: '/stays', label: t('nav.stays'), icon: CalendarCheck, prefixes: ['/stays'] },
+    { to: '/services', label: t('nav.services'), icon: Storefront, prefixes: ['/services'] },
+    { to: '/inbox', label: t('nav.inbox'), icon: Tray, prefixes: ['/inbox'], badge: unread },
     {
       to: '/suggestions',
-      label: 'Suggestions',
-      short: 'To add',
+      label: t('nav.suggestions'),
+      short: t('nav.suggestionsShort'),
       icon: Lightbulb,
       prefixes: ['/suggestions'],
     },
-    { to: '/settings', label: 'Settings', icon: GearSix, prefixes: ['/settings'], foot: true },
+    {
+      to: '/settings',
+      label: t('nav.settings'),
+      icon: GearSix,
+      prefixes: ['/settings'],
+      foot: true,
+    },
   ];
 }
 
 function Brand() {
+  const { t } = useTranslation('shell');
   return (
-    <Link to="/" className="brand" aria-label="Fetivi, home">
+    <Link to="/" className="brand" aria-label={t('brandHome')}>
       <Mascot className="brand-mascot" />
       <span className="brand-name">Fetivi</span>
     </Link>
@@ -200,6 +232,7 @@ const initialOf = (email: string) => (email.trim()[0] ?? '?').toUpperCase();
 
 export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const { setMe, logout } = useSession();
+  const { t, i18n } = useTranslation('shell');
   const { busy, error, run } = useAction();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -212,7 +245,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const foldTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(foldTimer.current), []);
   const hostView = isHostView(me);
-  const items = navItems(me, unread, counts);
+  const items = navItems(t, me, unread, counts);
   // Setup has its own sticky footer; the phone's bottom nav would squeeze the form between them.
   const focused = /^\/units\/[^/]+\/setup(\/|$)/.test(pathname);
 
@@ -274,11 +307,11 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
 
   useEffect(() => {
     const previous = document.title;
-    document.title = `${shown} · Fetivi`;
+    document.title = t('documentTitle', { page: shown });
     return () => {
       document.title = previous;
     };
-  }, [shown]);
+  }, [shown, t]);
 
   const links = (list: NavItem[], className: string, short = false) =>
     // On a phone a host reaches Settings from the profile menu, leaving room for six items.
@@ -303,7 +336,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
             <span
               className={item.calm ? 'nav-badge calm' : 'nav-badge'}
               role="img"
-              aria-label={`${item.badge} waiting`}
+              aria-label={t('waiting', { count: item.badge })}
             >
               {item.badge > 99 ? '99+' : item.badge}
             </span>
@@ -322,20 +355,42 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
     }
   };
 
-  // The language switch (ticket 53) goes here.
-  const menuItems = [
+  const chooseLanguage = (language: BackofficeLanguage) =>
+    void run(async () => {
+      const next = await auth.setLanguage(language);
+      setLanguage(language);
+      storeLanguage(language);
+      setMe(next);
+    });
+  const current = currentLanguage();
+
+  const menuItems: MenuItem[] = [
     // The sidebar has Settings at its foot; a host's phone has it only here.
     ...(hostView && !wide
       ? [
           {
-            label: 'Settings',
+            label: t('nav.settings'),
             icon: <GearSix aria-hidden="true" />,
             onSelect: () => navigate('/settings'),
           },
         ]
       : []),
+    // Each language under its own name; the current one is checked.
+    ...BACKOFFICE_LANGUAGES.map((language, i) => ({
+      label: LANGUAGE_NAMES[language],
+      lang: language,
+      caption: i === 0 ? t('language') : undefined,
+      icon:
+        language === current ? (
+          <Check aria-hidden="true" weight="bold" />
+        ) : (
+          <Translate aria-hidden="true" />
+        ),
+      current: language === current,
+      onSelect: () => chooseLanguage(language),
+    })),
     {
-      label: 'Sign out',
+      label: t('signOut'),
       icon: <SignOut aria-hidden="true" />,
       onSelect: () => void run(logout),
     },
@@ -343,7 +398,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
 
   const profile = (
     <Menu
-      label="Account"
+      label={t('account')}
       className="profile-button"
       trigger={
         <>
@@ -355,7 +410,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
       }
       header={
         <>
-          <span className="menu-caption">Signed in as</span>
+          <span className="menu-caption">{t('signedInAs')}</span>
           <strong className="menu-email">{me.account.email}</strong>
         </>
       }
@@ -375,7 +430,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   return (
     <div className={appClass}>
       <a className="skip-link" href="#main">
-        Skip to content
+        {t('skipToContent')}
       </a>
       <aside className="sidebar">
         <div className="sidebar-head">
@@ -383,8 +438,8 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
           <button
             type="button"
             className="ghost icon-button sidebar-toggle"
-            aria-label={collapsed ? 'Expand the sidebar' : 'Collapse the sidebar'}
-            title={collapsed ? 'Expand the sidebar' : 'Collapse the sidebar'}
+            aria-label={collapsed ? t('expandSidebar') : t('collapseSidebar')}
+            title={collapsed ? t('expandSidebar') : t('collapseSidebar')}
             aria-expanded={!collapsed}
             aria-controls="side-nav"
             onClick={toggle}
@@ -392,7 +447,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
             <SidebarSimple aria-hidden="true" />
           </button>
         </div>
-        <nav id="side-nav" className="side-nav" aria-label="Main">
+        <nav id="side-nav" className="side-nav" aria-label={t('nav.main')}>
           {links(
             items.filter((item) => !item.foot),
             'side-link',
@@ -410,7 +465,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         <header className="topbar">
           <div className="topbar-title">
             <h1>{shown}</h1>
-            <p className="topbar-date">{longDay(todayIso())}</p>
+            <p className="topbar-date">{longDay(todayIso(), i18n.language)}</p>
           </div>
           {profile}
         </header>
@@ -419,14 +474,19 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
           <div className="acting">
             <div className="banner" role="status">
               <span>
-                Acting as <strong>{me.actingAs.email}</strong>. Every change is logged.
+                <Trans
+                  t={t}
+                  i18nKey="acting"
+                  values={{ email: me.actingAs.email }}
+                  components={{ strong: <strong /> }}
+                />
               </span>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => void run(async () => setMe(await admin.stopActing()))}
               >
-                Stop
+                {t('stopActing')}
               </button>
             </div>
           </div>
@@ -440,7 +500,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         </div>
       </div>
 
-      <nav className="bottom-nav" aria-label="Main">
+      <nav className="bottom-nav" aria-label={t('nav.main')}>
         {hostView ? (
           links(items, 'bottom-link', true)
         ) : (
@@ -464,23 +524,24 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
 /** The admin's phone bar has room for four items; the rest open from More. */
 function MoreMenu({ items, current }: { items: NavItem[]; current: boolean }) {
   const navigate = useNavigate();
+  const { t } = useTranslation('shell');
   const waiting = items.reduce((n, item) => n + (item.badge ?? 0), 0);
   const calm = items.every((item) => !item.badge || item.calm);
   return (
     <Menu
-      label="More pages"
+      label={t('nav.morePages')}
       className={current ? 'bottom-link bottom-more current' : 'bottom-link bottom-more'}
       align="end"
       up
       trigger={
         <>
           <DotsThreeOutline aria-hidden="true" weight={current ? 'fill' : 'regular'} />
-          <span className="nav-label">More</span>
+          <span className="nav-label">{t('nav.more')}</span>
           {waiting ? (
             <span
               className={calm ? 'nav-badge calm' : 'nav-badge'}
               role="img"
-              aria-label={`${waiting} waiting`}
+              aria-label={t('waiting', { count: waiting })}
             >
               {waiting > 99 ? '99+' : waiting}
             </span>
@@ -488,7 +549,9 @@ function MoreMenu({ items, current }: { items: NavItem[]; current: boolean }) {
         </>
       }
       items={items.map((item) => ({
-        label: item.badge ? `${item.label} (${item.badge})` : item.label,
+        label: item.badge
+          ? t('itemWithCount', { label: item.label, count: item.badge })
+          : item.label,
         icon: <item.icon aria-hidden="true" />,
         onSelect: () => navigate(item.to),
       }))}

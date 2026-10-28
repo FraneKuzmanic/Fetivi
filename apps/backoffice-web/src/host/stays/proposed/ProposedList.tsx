@@ -1,5 +1,6 @@
 import { CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
 import { useCallback, useEffect, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { host, type StayProposals } from '../../../api';
 import { useConfirm } from '../../../shell/ConfirmDialog';
@@ -21,6 +22,7 @@ export function ProposedList({
   several: boolean;
   onWarned?: (count: number) => void;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const headingId = useId();
   const { busy, error, run } = useAction();
   const confirm = useConfirm();
@@ -44,9 +46,9 @@ export function ProposedList({
   async function dismiss(id: string) {
     if (
       !(await confirm({
-        title: 'Not a booking?',
-        body: 'Fetivi will not propose this calendar entry again.',
-        action: 'Not a booking',
+        title: t('stays.notBookingTitle'),
+        body: t('stays.notBookingBody'),
+        action: t('stays.notBooking'),
       }))
     )
       return;
@@ -60,7 +62,7 @@ export function ProposedList({
     <>
       {proposals.length > 0 ? (
         <section className="proposals" aria-labelledby={headingId}>
-          <h2 id={headingId}>To confirm ({proposals.length})</h2>
+          <h2 id={headingId}>{t('stays.toConfirm', { count: proposals.length })}</h2>
           {error ? <p role="alert">{error}</p> : null}
           <ul className="rows">
             {proposals.map((p) => (
@@ -92,14 +94,16 @@ export function ProposedList({
                       {CALENDAR_SOURCE_LABELS[s]}
                     </span>
                   ))}
-                  {p.pinWarning ? <span className="chip wait">Check-in soon</span> : null}
+                  {p.pinWarning ? (
+                    <span className="chip wait">{t('stays.checkInSoon')}</span>
+                  ) : null}
                 </span>
                 <span className="actions">
                   <Link className="button primary" to={`/stays/proposed/${p.id}`}>
-                    Confirm
+                    {t('stays.confirm')}
                   </Link>
                   <button type="button" disabled={busy} onClick={() => dismiss(p.id)}>
-                    Not a booking
+                    {t('stays.notBooking')}
                   </button>
                 </span>
               </li>

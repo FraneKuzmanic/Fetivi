@@ -5,8 +5,17 @@ export type Role = 'host' | 'admin';
 
 export interface Principal {
   sessionId: string;
-  /** `language`: the person's back-office language, which the setup wizard follows. */
-  account: { id: string; email: string; role: Role; language: GuestLanguage };
+  /**
+   * `language`: the person's back-office language (UI, setup wizard, host emails).
+   * `languageChosen`: they picked it; otherwise it is the browser default (ticket 53).
+   */
+  account: {
+    id: string;
+    email: string;
+    role: Role;
+    language: GuestLanguage;
+    languageChosen: boolean;
+  };
   actingAs: { id: string; email: string } | null;
 }
 

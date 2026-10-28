@@ -387,4 +387,23 @@ describe('calendar sync with fixture feeds', () => {
       'skipped',
     );
   });
+
+  it('emails a Croatian host in Croatian, with day-first dates', async () => {
+    const s = await seed();
+    await testDb.db
+      .update(accounts)
+      .set({ uiLanguage: 'hr' })
+      .where(eq(accounts.email, s.host.email));
+    await poll(s, s.airbnb.id, airbnbFile([{ uid: 'n', ...OCT_24 }]));
+    const stay = await confirm(s, (await proposals(s))[0]?.id as string);
+    const mailer = createMemoryMailer();
+    const notifyDeps = { db: testDb.db, mailer, now: () => NOW, webOrigin: 'http://host.test' };
+    const job = { stayId: stay.id, kind: 'dates_changed' as const, ...OCT_24 };
+    expect(await sendStayDatesChanged(notifyDeps, job)).toBe('sent');
+    expect(mailer.sent[0]?.subject).toMatch(
+      /^Promijenjeni datumi boravka: .+, 24\.10\.2026\. – 27\.10\.2026\.$/,
+    );
+    expect(mailer.sent[0]?.text).toContain('PIN ostaje isti.');
+    expect(mailer.sent[0]?.text).toContain(`Otvorite boravak: http://host.test/stays/${stay.id}`);
+  });
 });

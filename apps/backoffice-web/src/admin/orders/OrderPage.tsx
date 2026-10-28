@@ -1,36 +1,18 @@
 import type { OrderTrigger, Proposer } from '@fetivi/domain/order-vocabulary';
 import { ArrowUDownLeft, CalendarX, Check, ClockClockwise, X } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { type AdminOrder, adminOrders } from '../../api';
 import { formatDate, formatMoment } from '../../forms/datetime';
 import { DateField, NumberField, TextArea, TimeField } from '../../forms/fields';
+import { i18next } from '../../i18n';
+import { useLabels } from '../../i18n/useLabels';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { centsFromEuros } from '../providers/money';
-import { Chip, money, ORDER_STATUS, PAYMENT_STATUS } from './labels';
-
-const TRIGGERS: Record<OrderTrigger, string> = {
-  guest: 'Guest',
-  adapter: 'Provider system',
-  provider_link: 'Provider link',
-  card_timer: 'Card timer',
-  hold_timer: 'Hold timer',
-  window_timer: 'Response window',
-  completion_timer: 'Completion timer',
-  admin: 'Admin',
-  payment_webhook: 'Stripe',
-  payment_job: 'Payment',
-  reconciliation: 'Payment check',
-};
-
-const PROPOSERS: Record<Proposer, string> = {
-  offer: 'the offer',
-  provider_time: 'the Provider (new time)',
-  provider_price: 'the Provider (price)',
-  admin: 'an admin',
-};
+import { Chip, money, ORDER_STATUS_TONE, PAYMENT_STATUS_TONE } from './labels';
 
 const NOTE_MAX = 500;
 
@@ -38,11 +20,12 @@ const time = formatMoment;
 const day = formatDate;
 
 function rulesText(o: AdminOrder): string {
-  const free =
-    o.freeCancelHoursBefore === 0
-      ? 'Free until the start'
-      : `Free until ${o.freeCancelHoursBefore} h before the start`;
-  return `${free}, then ${o.refundPercentAfter} % back.`;
+  return o.freeCancelHoursBefore === 0
+    ? i18next.t('admin:order.freeUntilStart', { percent: o.refundPercentAfter })
+    : i18next.t('admin:order.freeUntilHours', {
+        hours: o.freeCancelHoursBefore,
+        percent: o.refundPercentAfter,
+      });
 }
 
 /**
@@ -50,6 +33,8 @@ function rulesText(o: AdminOrder): string {
  * refund override, and a refund of a released Order whose money is still captured.
  */
 export function OrderPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const { id = '' } = useParams();
   const { busy, error, run } = useAction();
   const confirm = useConfirm();
@@ -78,11 +63,13 @@ export function OrderPage() {
       order.paidAmountMinor === null
         ? null
         : money(refundMinor ?? order.paidAmountMinor, order.currency);
-    const payee = order.providerName === null ? 'host' : 'Provider';
+    const isHost = order.providerName === null;
     const yes = await confirm({
-      title: 'Cancel this order?',
-      body: `${amount ? `The guest gets ${amount} back. ` : ''}The guest and the ${payee} are told. This cannot be undone.`,
-      action: amount ? `Cancel and refund ${amount}` : 'Cancel order',
+      title: t('order.cancelTitle'),
+      body: amount
+        ? t(isHost ? 'order.cancelRefundHost' : 'order.cancelRefundProvider', { amount })
+        : t(isHost ? 'order.cancelBodyHost' : 'order.cancelBodyProvider'),
+      action: amount ? t('order.cancelAndRefund', { amount }) : t('order.cancelOrder'),
       danger: true,
     });
     if (!yes) return;
@@ -103,9 +90,9 @@ export function OrderPage() {
     if (refundMinor === null) return;
     const amount = money(refundMinor, order.currency);
     const yes = await confirm({
-      title: `Refund ${amount} to the guest?`,
-      body: 'A payment can be refunded once from here. This cannot be undone.',
-      action: `Refund ${amount}`,
+      title: t('order.refundTitle', { amount }),
+      body: t('order.refundBody'),
+      action: t('order.refundAmount', { amount }),
       danger: true,
     });
     if (!yes) return;
@@ -120,20 +107,20 @@ export function OrderPage() {
     const body = { proposalId: order.proposalId, note: answerNote };
     const ask = {
       accept: {
-        title: 'Record that the Provider accepted?',
-        body: 'The order is confirmed and the guest is told.',
-        action: 'Confirm order',
+        title: t('order.acceptTitle'),
+        body: t('order.acceptBody'),
+        action: t('order.confirmOrder'),
       },
       decline: {
-        title: 'Record that the Provider declined?',
-        body: 'The guest is told the order cannot go ahead.',
-        action: 'Decline order',
+        title: t('order.declineTitle'),
+        body: t('order.declineBody'),
+        action: t('order.declineOrder'),
         danger: true,
       },
       propose: {
-        title: 'Send the new terms to the guest?',
-        body: 'They accept or decline them in the chat.',
-        action: 'Send new terms',
+        title: t('order.proposeTitle'),
+        body: t('order.proposeBody'),
+        action: t('order.sendTerms'),
       },
     }[kind];
     if (!(await confirm(ask))) return;
@@ -157,51 +144,66 @@ export function OrderPage() {
   if (!order) {
     return (
       <>
-        <nav className="crumbs" aria-label="Breadcrumb">
-          <Link to="/admin/orders">Orders</Link>
+        <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+          <Link to="/admin/orders">{t('orders.title')}</Link>
         </nav>
-        {error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>}
+        {error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>}
       </>
     );
   }
 
-  const [statusLabel, statusTone] = ORDER_STATUS[order.status];
-  const [paymentText, paymentTone] = PAYMENT_STATUS[order.paymentStatus];
+  const statusLabel = labels.orderStatus[order.status];
+  const statusTone = ORDER_STATUS_TONE[order.status];
+  const paymentText = labels.paymentStatus[order.paymentStatus];
+  const paymentTone = PAYMENT_STATUS_TONE[order.paymentStatus];
   const paidEuros = order.paidAmountMinor === null ? 0 : order.paidAmountMinor / 100;
   // A host's own Offer (38) has no Provider: the host is paid and is merchant of record.
-  const payee = order.providerName === null ? 'host' : 'Provider';
-  const statusText = order.status === 'pending_provider' ? `Waiting for the ${payee}` : statusLabel;
+  const isHost = order.providerName === null;
+  const statusText =
+    order.status === 'pending_provider'
+      ? t(isHost ? 'order.waitingHost' : 'order.waitingProvider')
+      : statusLabel;
   const facts: [string, string][] = [
     order.providerName === null
-      ? ['Host', `${order.hostEmail ?? 'Host'} (own service)`]
-      : ['Provider', order.providerName],
-    ['When', order.startsAt ? time(order.startsAt) : day(order.date)],
-    ['Quantity', String(order.quantity)],
+      ? [t('order.host'), t('order.ownService', { email: order.hostEmail ?? t('order.host') })]
+      : [t('order.provider'), order.providerName],
+    [t('order.when'), order.startsAt ? time(order.startsAt) : day(order.date)],
+    [t('order.quantity'), String(order.quantity)],
     [
-      'Terms',
+      t('order.terms'),
       order.version === 1 && order.proposer === 'offer'
-        ? 'As offered'
-        : `Changed by ${PROPOSERS[order.proposer]} (version ${order.version})`,
+        ? t('order.asOffered')
+        : t('order.changedBy', {
+            who: t(`order.proposers.${order.proposer as Proposer}`),
+            version: order.version,
+          }),
     ],
     [
-      'Total',
-      order.priceMinor === null ? 'Set by the Provider' : money(order.priceMinor, order.currency),
+      t('order.total'),
+      order.priceMinor === null
+        ? t('order.setByProvider')
+        : money(order.priceMinor, order.currency),
     ],
-    ['Payment', order.paymentMode === 'online' ? 'Paid online' : `Paid to the ${payee} directly`],
-    ['Refund rules', rulesText(order)],
-    ['Policy text', order.cancellationPolicy],
+    [
+      t('order.payment'),
+      order.paymentMode === 'online'
+        ? t('order.paidOnline')
+        : t(isHost ? 'order.paidHost' : 'order.paidProvider'),
+    ],
+    [t('order.refundRules'), rulesText(order)],
+    [t('order.policyText'), order.cancellationPolicy],
   ];
   if (order.policyRefundMinor !== null) {
-    facts.push(['Policy refund now', money(order.policyRefundMinor, order.currency)]);
+    facts.push([t('order.policyRefund'), money(order.policyRefundMinor, order.currency)]);
   }
   if (order.refundAmountMinor !== null) {
-    facts.push(['Refund decided', money(order.refundAmountMinor, order.currency)]);
+    facts.push([t('order.refundDecided'), money(order.refundAmountMinor, order.currency)]);
   }
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/orders">Orders</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/admin/orders">{t('orders.title')}</Link>
       </nav>
       <div className="page-head">
         <div className="record-chips">
@@ -213,7 +215,7 @@ export function OrderPage() {
 
       <div className="editor">
         <section className="panel" aria-labelledby="order-facts">
-          <h2 id="order-facts">Order</h2>
+          <h2 id="order-facts">{t('order.order')}</h2>
           <dl className="order-facts">
             {facts.map(([term, value]) => (
               <div key={term}>
@@ -222,7 +224,9 @@ export function OrderPage() {
               </div>
             ))}
           </dl>
-          <p className="muted">Any later refund is made in the {payee}'s Stripe dashboard.</p>
+          <p className="muted">
+            {t(isHost ? 'order.laterRefundHost' : 'order.laterRefundProvider')}
+          </p>
         </section>
 
         {order.canAnswer ? (
@@ -231,16 +235,18 @@ export function OrderPage() {
             aria-labelledby="order-answer"
             onSubmit={(event) => event.preventDefault()}
           >
-            <h2 id="order-answer">Provider's answer</h2>
+            <h2 id="order-answer">{t('order.answer')}</h2>
             <p className="muted">
-              {order.windowMissed ? <Chip text="Answer overdue" tone="fail" /> : null}{' '}
-              {order.responseDueAt ? `The answer is due ${time(order.responseDueAt)}. ` : ''}
-              Phone the Provider and record what they said.
+              {order.windowMissed ? <Chip text={t('order.overdue')} tone="fail" /> : null}{' '}
+              {order.responseDueAt
+                ? `${t('order.dueAt', { when: time(order.responseDueAt) })} `
+                : ''}
+              {t('order.phone')}
             </p>
             <div className="fields">
               <TextArea
-                label="What the Provider said on the phone"
-                hint="Required. Saved on the Order's history."
+                label={t('order.said')}
+                hint={t('order.saidHint')}
                 value={answerNote}
                 maxLength={NOTE_MAX}
                 rows={2}
@@ -249,22 +255,22 @@ export function OrderPage() {
               />
               <div className="field-row">
                 <DateField
-                  label="New date"
-                  hint={`Within the stay, ${day(order.stayFrom)} – ${day(order.stayTo)}.`}
+                  label={t('order.newDate')}
+                  hint={t('order.withinStay', { from: day(order.stayFrom), to: day(order.stayTo) })}
                   value={newDate ?? order.date}
                   min={order.stayFrom}
                   max={order.stayTo}
                   onChange={setNewDate}
                 />
                 <TimeField
-                  label="New time"
-                  hint={`Optional. ${order.zone} time.`}
+                  label={t('order.newTime')}
+                  hint={t('order.timeHint', { zone: order.zone })}
                   value={newTime}
                   onChange={setNewTime}
                 />
                 <NumberField
-                  label={`New total price (${order.currency})`}
-                  hint={order.priceMinor === null ? 'Required: no price yet.' : 'Optional.'}
+                  label={t('order.newPrice', { currency: order.currency })}
+                  hint={order.priceMinor === null ? t('order.priceRequired') : t('order.optional')}
                   value={newPrice}
                   min={0.01}
                   max={100_000}
@@ -282,7 +288,7 @@ export function OrderPage() {
                   onClick={() => answer('accept')}
                 >
                   <Check aria-hidden="true" weight="bold" />
-                  Accept
+                  {t('order.accept')}
                 </button>
               )}
               <button
@@ -293,7 +299,7 @@ export function OrderPage() {
                 onClick={() => answer('propose')}
               >
                 <ClockClockwise aria-hidden="true" weight="bold" />
-                Send new terms
+                {t('order.sendTerms')}
               </button>
               <button
                 type="button"
@@ -302,7 +308,7 @@ export function OrderPage() {
                 onClick={() => answer('decline')}
               >
                 <X aria-hidden="true" weight="bold" />
-                Decline
+                {t('order.decline')}
               </button>
             </div>
           </form>
@@ -310,20 +316,22 @@ export function OrderPage() {
 
         {order.canCancel ? (
           <form className="panel" aria-labelledby="order-cancel" onSubmit={cancel}>
-            <h2 id="order-cancel">Cancel order</h2>
+            <h2 id="order-cancel">{t('order.cancelOrder')}</h2>
             <p className="muted">
               {order.paidAmountMinor === null
-                ? 'Nothing is captured through Fetivi, so the cancel moves no money.'
-                : `A cancel refunds the full ${money(order.paidAmountMinor, order.currency)} with Fetivi's fee, unless you set another amount.`}
+                ? t('order.nothingCaptured')
+                : t('order.refundsFull', { amount: money(order.paidAmountMinor, order.currency) })}
             </p>
             <div className="fields">
               {order.paidAmountMinor !== null ? (
                 <NumberField
-                  label={`Refund instead of the full amount (${order.currency})`}
+                  label={t('order.refundInstead', { currency: order.currency })}
                   hint={
                     order.policyRefundMinor === null
                       ? undefined
-                      : `The policy gives ${money(order.policyRefundMinor, order.currency)} now.`
+                      : t('order.policyGives', {
+                          amount: money(order.policyRefundMinor, order.currency),
+                        })
                   }
                   value={override}
                   min={0}
@@ -333,8 +341,8 @@ export function OrderPage() {
                 />
               ) : null}
               <TextArea
-                label="Note"
-                hint="Saved on the Order's history."
+                label={t('order.note')}
+                hint={t('order.noteHint')}
                 value={cancelNote}
                 maxLength={NOTE_MAX}
                 rows={2}
@@ -344,7 +352,7 @@ export function OrderPage() {
             <div className="section-foot">
               <button type="submit" className="danger" disabled={busy}>
                 <CalendarX aria-hidden="true" weight="bold" />
-                Cancel order
+                {t('order.cancelOrder')}
               </button>
             </div>
           </form>
@@ -352,14 +360,13 @@ export function OrderPage() {
 
         {order.canRefund ? (
           <form className="panel" aria-labelledby="order-refund" onSubmit={refundNow}>
-            <h2 id="order-refund">Refund</h2>
+            <h2 id="order-refund">{t('order.refund')}</h2>
             <p className="muted">
-              The guest paid {money(order.paidAmountMinor ?? 0, order.currency)}. You can refund
-              part or all of it once; Fetivi's fee is refunded in proportion.
+              {t('order.guestPaid', { amount: money(order.paidAmountMinor ?? 0, order.currency) })}
             </p>
             <div className="fields">
               <NumberField
-                label={`Amount (${order.currency})`}
+                label={t('order.amount', { currency: order.currency })}
                 value={refund}
                 min={0.01}
                 max={paidEuros}
@@ -368,8 +375,8 @@ export function OrderPage() {
                 onChange={setRefund}
               />
               <TextArea
-                label="Note"
-                hint="Saved on the Order's history."
+                label={t('order.note')}
+                hint={t('order.noteHint')}
                 value={refundNote}
                 maxLength={NOTE_MAX}
                 rows={2}
@@ -379,24 +386,24 @@ export function OrderPage() {
             <div className="section-foot">
               <button type="submit" className="primary" disabled={busy}>
                 <ArrowUDownLeft aria-hidden="true" weight="bold" />
-                Refund
+                {t('order.refund')}
               </button>
             </div>
           </form>
         ) : null}
 
         <section className="panel" aria-labelledby="order-history">
-          <h2 id="order-history">History</h2>
+          <h2 id="order-history">{t('order.history')}</h2>
           <div className="table-scroll">
             <table className="events-table">
               <thead>
                 <tr>
-                  <th scope="col">Time</th>
-                  <th scope="col">Order</th>
-                  <th scope="col">Payment</th>
-                  <th scope="col">Cause</th>
-                  <th scope="col">Note</th>
-                  <th scope="col">By</th>
+                  <th scope="col">{t('order.time')}</th>
+                  <th scope="col">{t('order.order')}</th>
+                  <th scope="col">{t('order.payment')}</th>
+                  <th scope="col">{t('order.cause')}</th>
+                  <th scope="col">{t('order.note')}</th>
+                  <th scope="col">{t('order.by')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -405,15 +412,15 @@ export function OrderPage() {
                     <td>{time(e.at)}</td>
                     <td>
                       {e.from && e.from !== e.to
-                        ? `${ORDER_STATUS[e.from][0]} → ${ORDER_STATUS[e.to][0]}`
-                        : ORDER_STATUS[e.to][0]}
+                        ? `${labels.orderStatus[e.from]} → ${labels.orderStatus[e.to]}`
+                        : labels.orderStatus[e.to]}
                     </td>
                     <td>
                       {e.fromPayment && e.fromPayment !== e.toPayment
-                        ? `${PAYMENT_STATUS[e.fromPayment][0]} → ${PAYMENT_STATUS[e.toPayment][0]}`
-                        : PAYMENT_STATUS[e.toPayment][0]}
+                        ? `${labels.paymentStatus[e.fromPayment]} → ${labels.paymentStatus[e.toPayment]}`
+                        : labels.paymentStatus[e.toPayment]}
                     </td>
-                    <td>{TRIGGERS[e.trigger]}</td>
+                    <td>{t(`order.triggers.${e.trigger as OrderTrigger}`)}</td>
                     <td>{e.note ?? ''}</td>
                     <td>{e.actorEmail ?? ''}</td>
                   </tr>

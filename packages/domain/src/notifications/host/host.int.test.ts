@@ -423,3 +423,32 @@ describe('settings and subscriptions', () => {
     expect(HOST_CHANNELS).toEqual(['email', 'push']);
   });
 });
+
+describe('in the host language (ticket 53)', () => {
+  it('a Croatian host gets the message email, the push and the digest in Croatian', async () => {
+    const g = await host({ mode: 'digest' });
+    await testDb.db.update(accounts).set({ uiLanguage: 'hr' }).where(eq(accounts.id, g.hostId));
+    const urgent = await message(g, { urgency: 'urgent' });
+    await message(g);
+    await message(g);
+    const { mailer, push, deps: d } = deps();
+
+    await deliverHostMessageNotification(d, urgent);
+    expect(mailer.sent[0]?.subject).toBe(`Hitna poruka gosta: ${g.unitName}`);
+    expect(mailer.sent[0]?.text).toContain('Razlog: Problem');
+    expect(push.sent[0]?.message.title).toBe('Hitna poruka gosta');
+
+    await deliverHostDigest(d, { hostId: g.hostId, slot: SLOT });
+    expect(mailer.sent[1]?.subject).toBe('2 nove poruke gosta');
+    expect(mailer.sent[1]?.text).toContain('Čekaju vas 2 poruke gosta:');
+  });
+
+  it('a legacy German host language falls back to English', async () => {
+    const g = await host();
+    await testDb.db.update(accounts).set({ uiLanguage: 'de' }).where(eq(accounts.id, g.hostId));
+    const id = await message(g);
+    const { mailer, deps: d } = deps();
+    await deliverHostMessageNotification(d, id);
+    expect(mailer.sent[0]?.subject).toBe(`New guest message: ${g.unitName}`);
+  });
+});

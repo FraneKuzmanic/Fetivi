@@ -6,6 +6,7 @@ import { hostNotificationDeliveries } from '../../db/schema/notifications';
 import { properties, units } from '../../db/schema/properties';
 import { stays } from '../../db/schema/stays';
 import type { Mailer } from '../../mail';
+import { type BackofficeLanguage, backofficeLanguageOf } from '../../property/vocabulary';
 import { type PushMessage, type PushSender, type PushSendOptions, pushTopic } from '../guest/push';
 import {
   composeHostDigestEmail,
@@ -64,13 +65,21 @@ function toFacts(row: HostMessageFacts): HostMessageFacts {
   return { id, unitName, propertyName, checkIn, checkout, reason, urgency };
 }
 
-/** The host's address, or null when the account is gone or suspended. */
-async function hostEmail(db: Executor, hostId: string): Promise<string | null> {
+/** The host's address and language, or null when the account is gone or suspended. */
+async function hostContact(
+  db: Executor,
+  hostId: string,
+): Promise<{ email: string; language: BackofficeLanguage } | null> {
   const [host] = await db
-    .select({ email: accounts.email, suspendedAt: accounts.suspendedAt })
+    .select({
+      email: accounts.email,
+      uiLanguage: accounts.uiLanguage,
+      suspendedAt: accounts.suspendedAt,
+    })
     .from(accounts)
     .where(eq(accounts.id, hostId));
-  return host && !host.suspendedAt ? host.email : null;
+  if (!host || host.suspendedAt) return null;
+  return { email: host.email, language: backofficeLanguageOf(host.uiLanguage) };
 }
 
 /**
@@ -87,8 +96,8 @@ export async function deliverHostMessageNotification(
   const [row] = await factsQuery(deps.db).where(eq(handoffMessages.id, handoffId));
   // The host already opened it: nothing to tell them.
   if (!row || row.readAt) return skipped;
-  const email = await hostEmail(deps.db, row.hostId);
-  if (!email) return skipped;
+  const contact = await hostContact(deps.db, row.hostId);
+  if (!contact) return skipped;
   const ours = row.hostNotificationKey === key;
   if (!ours && row.urgency === 'normal') {
     const { mode } = await getHostNotificationSettings(deps.db, row.hostId);
@@ -115,9 +124,9 @@ export async function deliverHostMessageNotification(
   const channels = await send(deps, {
     key,
     hostId: row.hostId,
-    email,
-    message: composeHostMessageEmail(facts, deps.webOrigin),
-    push: composeHostMessagePush(facts),
+    email: contact.email,
+    message: composeHostMessageEmail(facts, deps.webOrigin, contact.language),
+    push: composeHostMessagePush(facts, contact.language),
     urgency: facts.urgency === 'urgent' ? 'high' : 'normal',
   });
   return { outcome: 'notified', channels };
@@ -126,7 +135,8 @@ export async function deliverHostMessageNotification(
 /**
  * One digest for a host and slot: claims the host's pending normal messages sent at or before the
  * slot, then sends one email (and push) listing them. A retry finds the key already on its
- * messages and claims nothing more, so it composes the same email for the same idempotency key.
+ * messages and claims nothing more, so it composes the same email for the same idempotency key
+ * (in the host's language at retry time; the ledger dedupes the send either way).
  * A digest enqueued before the host switched to Immediate still sends: its messages were deferred.
  */
 export async function deliverHostDigest(
@@ -134,8 +144,8 @@ export async function deliverHostDigest(
   data: { hostId: string; slot: string },
 ): Promise<{ outcome: 'notified' | 'skipped'; count: number; channels: HostDeliveryResult }> {
   const skipped = { outcome: 'skipped' as const, count: 0, channels: { ...SKIPPED } };
-  const email = await hostEmail(deps.db, data.hostId);
-  if (!email) return skipped;
+  const contact = await hostContact(deps.db, data.hostId);
+  if (!contact) return skipped;
   const key = hostNotificationKey({ kind: 'digest', ...data });
   const now = deps.now();
   await deps.db.transaction(async (tx) => {
@@ -178,9 +188,9 @@ export async function deliverHostDigest(
   const channels = await send(deps, {
     key,
     hostId: data.hostId,
-    email,
-    message: composeHostDigestEmail(list, deps.webOrigin),
-    push: composeHostDigestPush(list),
+    email: contact.email,
+    message: composeHostDigestEmail(list, deps.webOrigin, contact.language),
+    push: composeHostDigestPush(list, contact.language),
     urgency: 'normal',
   });
   return { outcome: 'notified', count: list.length, channels };

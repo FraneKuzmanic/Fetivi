@@ -322,3 +322,44 @@ _Avoid_: cancellation notice (Fetivi never states a cancellation)
 **Daily tip**:
 A Notice with one rule-picked catalog idea for tomorrow (rain plans, an event matching About me, or an empty day), at most one a day per Space; inbox by default, email only with its separate opt-in, never push.
 _Avoid_: suggestion (that is Suggestions' term), push tip
+
+## Croatian terms (back office)
+
+The back office and the emails to hosts speak Croatian and English (ticket 53). Each term below has one Croatian word, used everywhere in the `hr` locale, the setup wizard copy and the host emails. Croatian copy addresses the host formally, in lower case ("vi", "vaš"). Dates are day first in both languages.
+
+| Term | Croatian |
+|---|---|
+| Host | domaćin |
+| Property | objekt |
+| Unit | jedinica (in full: smještajna jedinica) |
+| Info block | unos (in full: unos u Vodiču) |
+| Block media | fotografije i videozapisi |
+| Translation | prijevod |
+| Guide | Vodič |
+| Setup wizard | postavljanje (page: "Postavljanje jedinice") |
+| Draft | nacrt |
+| Suggestion | prijedlog |
+| Go-live minimum | minimum za objavu |
+| Live (unit) | objavljeno |
+| QR link | QR poveznica |
+| Arrival release | otključavanje dolaska |
+| Stay | boravak |
+| Proposed Stay | predloženi boravak |
+| Possibly cancelled | moguće otkazano |
+| Calendar feed | kalendar (poveznica za izvoz) |
+| Order | narudžba |
+| Offer | ponuda |
+| Provider | pružatelj usluge |
+| Own service | usluga (in full: vlastita usluga) |
+| Allotment slot | termin |
+| Destination | destinacija |
+| Catalog record | zapis (u katalogu) |
+| Curation item | stavka za provjeru (the queue: Provjera) |
+| Host pick | preporuka domaćina |
+| Host message | poruka gosta |
+| Inbox | Poruke |
+| Digest | sažetak |
+| Reconciliation finding | problem (the page: Provjera plaćanja) |
+| Answer feedback | ocjena odgovora |
+
+The Setup wizard is "postavljanje", never "vodič", so that "Vodič" always means the Guide. An Info block is a "unos", matching the English UI's "guide entry"; "blok" is not used.

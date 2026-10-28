@@ -1,5 +1,8 @@
+import { backofficeLanguageOf } from '@fetivi/domain/vocabulary';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { ApiError, auth, type Me } from './api';
+import { currentLanguage, setLanguage } from './i18n';
+import { storeLanguage } from './i18n/stored-language';
 
 interface SessionValue {
   me: Me | null | 'loading';
@@ -26,6 +29,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       await auth.logout();
     } finally {
+      // The sign-in page stays in the language the person was using.
+      storeLanguage(currentLanguage());
       setMe(null);
     }
   }, []);
@@ -33,6 +38,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Signed in, the account's language rules: chosen, or the default from the last sign-in.
+  useEffect(() => {
+    if (me && me !== 'loading') setLanguage(backofficeLanguageOf(me.account.language));
+  }, [me]);
 
   return (
     <SessionContext.Provider value={{ me, setMe, refresh, logout }}>

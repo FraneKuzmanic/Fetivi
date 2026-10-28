@@ -1,8 +1,9 @@
 import { AMENITIES, type Amenity, LIMITS } from '@fetivi/domain/vocabulary';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AmenityEntry, FieldTranslation } from '../api';
 import { CheckboxField, Section } from '../forms/fields';
-import { AMENITY_LABELS } from '../forms/labels';
+import { useLabels } from '../i18n/useLabels';
 import { FieldTranslationStatus } from './translations/FieldTranslationStatus';
 
 /**
@@ -23,6 +24,8 @@ export function AmenitiesEditor({
   onTranslationChanged?: () => Promise<void>;
   onSave: (amenities: AmenityEntry[]) => Promise<AmenityEntry[]>;
 }) {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const [notes, setNotes] = useState(() => new Map(value.map((a) => [a.amenity, a.note ?? ''])));
   const fromProperty = new Map(inherited.map((a) => [a.amenity, a.note]));
 
@@ -46,12 +49,8 @@ export function AmenitiesEditor({
 
   return (
     <Section
-      title="Amenities"
-      description={
-        inherited.length > 0
-          ? 'Amenities of the property apply to this unit too. Add what only this unit has.'
-          : 'Tick what guests can use. A note is optional, for example "Heated May to October".'
-      }
+      title={t('core.amenities')}
+      description={inherited.length > 0 ? t('core.amenitiesUnitHint') : t('core.amenitiesHint')}
       onSave={save}
     >
       <ul className="amenities">
@@ -63,7 +62,8 @@ export function AmenitiesEditor({
                 <CheckboxField
                   label={
                     <>
-                      {AMENITY_LABELS[amenity]} <span className="muted">· from property</span>
+                      {labels.amenity[amenity]}{' '}
+                      <span className="muted">{t('core.fromProperty')}</span>
                       {inheritedNote ? <span className="muted"> · {inheritedNote}</span> : null}
                     </>
                   }
@@ -78,14 +78,14 @@ export function AmenitiesEditor({
           return (
             <li key={amenity}>
               <CheckboxField
-                label={AMENITY_LABELS[amenity]}
+                label={labels.amenity[amenity]}
                 checked={checked}
                 onChange={(on) => toggle(amenity, on)}
               />
               {checked ? (
                 <input
-                  aria-label={`Note for ${AMENITY_LABELS[amenity]}`}
-                  placeholder="Note (optional)"
+                  aria-label={t('core.noteFor', { amenity: labels.amenity[amenity] })}
+                  placeholder={t('core.notePlaceholder')}
                   maxLength={LIMITS.amenityNote}
                   value={notes.get(amenity) ?? ''}
                   onChange={(e) =>

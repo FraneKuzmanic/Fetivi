@@ -1,7 +1,9 @@
 import { LIMITS, MEDIA_CONTENT_TYPES, MEDIA_TYPES } from '@fetivi/domain/vocabulary';
 import { ImageSquare, X } from '@phosphor-icons/react';
 import { useEffect, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TextField } from '../../forms/fields';
+import { i18next } from '../../i18n';
 
 export interface PendingFile {
   /** Only for React: the same file can be picked twice. */
@@ -15,9 +17,9 @@ const ACCEPT = MEDIA_CONTENT_TYPES.join(',');
 /** Why the server would refuse a file, said before the upload; the server stays the authority. */
 export function fileProblem(file: File): string | null {
   const type = MEDIA_TYPES[file.type as keyof typeof MEDIA_TYPES];
-  if (!type) return 'Use a JPEG, PNG or WebP photo, or an MP4 or WebM video.';
+  if (!type) return i18next.t('errors:unsupported-media');
   const limit = type.kind === 'image' ? LIMITS.imageBytes : LIMITS.videoBytes;
-  if (file.size > limit) return 'This file is too large: photos up to 10 MB, videos up to 50 MB.';
+  if (file.size > limit) return i18next.t('errors:media-too-large');
   return null;
 }
 
@@ -47,13 +49,14 @@ export function PendingMedia({
   files: PendingFile[];
   onChange: (files: PendingFile[]) => void;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const inputId = useId();
   const [problem, setProblem] = useState<string | null>(null);
   const room = LIMITS.mediaPerBlock - files.length;
 
   return (
     <fieldset className="pending-media">
-      <legend className="field-label">Photos and video (optional)</legend>
+      <legend className="field-label">{t('blocks.mediaOptional')}</legend>
       {files.length > 0 ? (
         <ul className="media-list">
           {files.map((item, i) => (
@@ -61,8 +64,8 @@ export function PendingMedia({
               <Preview file={item.file} />
               <div className="media-fields">
                 <TextField
-                  label={`Caption for ${item.file.name}`}
-                  hint="What it shows, in a few words."
+                  label={t('blocks.captionFor', { file: item.file.name })}
+                  hint={t('blocks.captionShortHint')}
                   value={item.caption}
                   maxLength={LIMITS.caption}
                   required
@@ -76,7 +79,7 @@ export function PendingMedia({
                   onClick={() => onChange(files.filter((_, j) => j !== i))}
                 >
                   <X aria-hidden="true" />
-                  Remove
+                  {t('common:remove')}
                 </button>
               </div>
             </li>
@@ -86,7 +89,7 @@ export function PendingMedia({
       {room > 0 ? (
         <label className="button file-button" htmlFor={inputId}>
           <ImageSquare aria-hidden="true" />
-          Add photos or video
+          {t('blocks.addPhotos')}
           <input
             id={inputId}
             type="file"

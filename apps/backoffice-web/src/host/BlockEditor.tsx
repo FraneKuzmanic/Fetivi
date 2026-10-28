@@ -1,39 +1,36 @@
 import { HOST_BLOCK_CATEGORIES, type HostBlockCategory, LIMITS } from '@fetivi/domain/vocabulary';
 import { type FormEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Block, type BlockInput, type BlockResult, host, type SecretWarning } from '../api';
 import { SelectField, TextField } from '../forms/fields';
-import { CATEGORY_LABELS } from '../forms/labels';
+import { i18next } from '../i18n';
+import { useLabels } from '../i18n/useLabels';
 import { useAction } from '../useAction';
 import { type PendingFile, PendingMedia } from './media/PendingMedia';
 import { MarkdownField } from './wizard/MarkdownField';
 
-const WARNING_KIND: Record<SecretWarning['kind'], string> = {
-  code: 'a door or key code',
-  phone: 'a phone number',
-  password: 'a password',
-};
+const looksLike = (kind: SecretWarning['kind']): string =>
+  kind === 'code'
+    ? i18next.t('host:blocks.looksLikeCode')
+    : kind === 'phone'
+      ? i18next.t('host:blocks.looksLikePhone')
+      : i18next.t('host:blocks.looksLikePassword');
 
 /**
  * Shown after a save whose text looks like it holds a secret. The save itself succeeded. A draft
  * that is not saved yet passes its own lead.
  */
-export function SecretWarnings({
-  warnings,
-  lead = 'Saved, but check this.',
-}: {
-  warnings: SecretWarning[];
-  lead?: string;
-}) {
+export function SecretWarnings({ warnings, lead }: { warnings: SecretWarning[]; lead?: string }) {
+  const { t } = useTranslation(['host', 'common']);
   return (
     <div className="warning" role="status">
       <p>
-        <strong>{lead}</strong> Parts of the text look like a secret. Put secrets in the typed
-        fields (Wi-Fi, door codes, phone numbers) so guests only see them when they should.
+        <strong>{lead ?? t('blocks.secretLead')}</strong> {t('blocks.secretBody')}
       </p>
       <ul>
         {warnings.map((w) => (
           <li key={`${w.kind}:${w.excerpt}`}>
-            Looks like {WARNING_KIND[w.kind]}: <q>{w.excerpt}</q>
+            {looksLike(w.kind)} <q>{w.excerpt}</q>
           </li>
         ))}
       </ul>
@@ -64,6 +61,8 @@ export function BlockEditor({
   onDone: (warnings: SecretWarning[], uploadProblem?: string) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const { busy, error, run } = useAction();
   const [category, setCategory] = useState<HostBlockCategory>(
     initial?.category ?? 'arrival_access',
@@ -87,9 +86,7 @@ export function BlockEditor({
       }
       onDone(
         result.warnings,
-        failed > 0
-          ? `Saved, but ${failed === 1 ? 'one photo or video' : `${failed} photos or videos`} did not upload. Add ${failed === 1 ? 'it' : 'them'} again from the entry's menu.`
-          : undefined,
+        failed > 0 ? i18next.t('host:blocks.uploadFailed', { count: failed }) : undefined,
       );
     });
   }
@@ -100,30 +97,34 @@ export function BlockEditor({
       <div className="fields">
         {categoryFixed ? null : (
           <SelectField
-            label="Guide section"
+            label={t('blocks.section')}
             value={category}
             options={HOST_BLOCK_CATEGORIES}
-            labels={CATEGORY_LABELS}
+            labels={labels.category}
             onChange={(v) => v && setCategory(v)}
           />
         )}
         <TextField
-          label="Title"
+          label={t('blocks.title')}
           value={title}
           maxLength={LIMITS.title}
           required
           onChange={setTitle}
         />
-        <MarkdownField label="Text" value={body ?? ''} onChange={(v) => setBody(v || null)} />
+        <MarkdownField
+          label={t('blocks.text')}
+          value={body ?? ''}
+          onChange={(v) => setBody(v || null)}
+        />
         {withMedia ? <PendingMedia files={media} onChange={setMedia} /> : null}
       </div>
       {error ? <p role="alert">{error}</p> : null}
       <div className="actions">
         <button type="submit" className="primary" disabled={busy}>
-          Save
+          {t('common:save')}
         </button>
         <button type="button" disabled={busy} onClick={onCancel}>
-          Cancel
+          {t('common:cancel')}
         </button>
       </div>
     </form>

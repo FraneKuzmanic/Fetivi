@@ -1,9 +1,11 @@
 import type { FindingKind } from '@fetivi/domain/payments-vocabulary';
 import { ArrowsClockwise, Scales } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { type ReconciliationFinding, reconciliation } from '../../api';
 import { formatMoment } from '../../forms/datetime';
+import { i18next } from '../../i18n';
 import { EmptyState } from '../../shell/EmptyState';
 import { usePageTitle } from '../../shell/PageTitle';
 import { Tabs } from '../../shell/Tabs';
@@ -11,42 +13,33 @@ import { useAction } from '../../useAction';
 
 type Tab = 'needs_attention' | 'resolved';
 
-const KIND_LABELS: Record<FindingKind, string> = {
-  session_completed: 'Payment went through, but Fetivi missed it',
-  session_expired: 'Checkout ran out, but Fetivi missed it',
-  intent_canceled: 'Card hold ran out',
-  intent_captured: 'Payment taken, recorded late',
-  refund_succeeded: 'Refund went through, but Fetivi missed it',
-  refund_failed: 'Refund failed at Stripe',
-  hold_expired: 'Card hold past its end',
-  hold_on_active_order: 'Card hold ended on an active order',
-  orphan_session: 'Stripe payment with no order',
-  check_failed: 'Couldn’t check a payment',
-};
+const t = i18next.getFixedT(null, 'admin', 'reconciliation');
 
 /** The stored action is `<what was fed>: <machine outcome>`; the admin reads it in words. */
-const ACTIONS: Record<string, string> = {
-  authorize: 'Card hold recorded',
-  'session expired': 'Checkout expiry recorded',
-  void: 'Released hold recorded',
-  capture: 'Payment recorded',
-  refunded: 'Refund recorded',
-  'refund failed': 'Refund failure recorded',
-  expire: 'Order expired',
-  fail: 'Order failed, admin alerted',
-  release: 'Hold released',
-};
+const ACTIONS = {
+  authorize: 'authorize',
+  'session expired': 'sessionExpired',
+  void: 'void',
+  capture: 'capture',
+  refunded: 'refunded',
+  'refund failed': 'refundFailed',
+  expire: 'expire',
+  fail: 'fail',
+  release: 'release',
+} as const;
 
-const OUTCOMES: Record<string, string> = {
-  unchanged: 'already up to date',
-  stale: 'older proposal, nothing changed',
-  rejected: 'refused',
-};
+const OUTCOMES = ['unchanged', 'stale', 'rejected'] as const;
 
 function actionText(action: string): string {
   const [what = action, outcome = 'applied'] = action.split(': ');
-  const done = ACTIONS[what] ?? what;
-  return outcome === 'applied' ? done : `${done} (${OUTCOMES[outcome] ?? outcome})`;
+  const key = ACTIONS[what as keyof typeof ACTIONS];
+  const done = key ? t(`actions.${key}`) : what;
+  if (outcome === 'applied') return done;
+  const known = (OUTCOMES as readonly string[]).includes(outcome);
+  return t('withOutcome', {
+    action: done,
+    outcome: known ? t(`outcomes.${outcome as (typeof OUTCOMES)[number]}`) : outcome,
+  });
 }
 
 /** How long after Run now the page reloads once; a run takes seconds. */
@@ -62,7 +55,7 @@ function SubjectLink({ subject }: { subject: ReconciliationFinding['subject'] })
     subject.kind === 'order' ? `/admin/orders/${subject.id}` : `/admin/providers/${subject.id}`;
   return (
     <span className="cell-sub">
-      {subject.kind === 'order' ? 'Order: ' : 'Provider: '}
+      {subject.kind === 'order' ? t('order') : t('provider')}
       <Link to={to}>{subject.label}</Link>
     </span>
   );
@@ -70,6 +63,7 @@ function SubjectLink({ subject }: { subject: ReconciliationFinding['subject'] })
 
 /** /admin/reconciliation: what the payment check could not put right on its own. */
 export function ReconciliationPage() {
+  useTranslation('admin');
   const { busy, error, run } = useAction();
   const [tab, setTab] = useState<Tab>('needs_attention');
   const [findings, setFindings] = useState<ReconciliationFinding[] | null>(null);
@@ -109,40 +103,40 @@ export function ReconciliationPage() {
       setFindings((rows) => rows?.filter((r) => r.id !== f.id) ?? null);
     });
 
-  usePageTitle('Payment checks');
+  usePageTitle(t('title'));
 
   return (
     <>
       <div className="tabs-row">
         <Tabs
-          label="Status"
+          label={t('status')}
           items={[
-            { id: 'needs_attention', label: 'Needs you' },
-            { id: 'resolved', label: 'Resolved' },
+            { id: 'needs_attention', label: t('needsYou') },
+            { id: 'resolved', label: t('resolved') },
           ]}
           value={tab}
           onChange={setTab}
         />
         <button type="button" className="primary" disabled={busy || queued} onClick={runNow}>
           <ArrowsClockwise aria-hidden="true" weight="bold" />
-          Check now
+          {t('checkNow')}
         </button>
       </div>
       {queued ? (
         <output className="saved" aria-live="polite">
-          Check started. It finishes within a minute.
+          {t('started')}
         </output>
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
-      {findings === null && !error ? <p className="muted">Loading…</p> : null}
+      {findings === null && !error ? <p className="muted">{i18next.t('common:loading')}</p> : null}
       {findings?.length === 0 ? (
         tab === 'needs_attention' ? (
-          <EmptyState icon={Scales} title="All caught up">
-            Every payment matches Stripe, or the check put it right on its own.
+          <EmptyState icon={Scales} title={t('caughtUp')}>
+            {t('caughtUpBody')}
           </EmptyState>
         ) : (
-          <EmptyState icon={Scales} title="Nothing resolved yet">
-            Problems you mark resolved are listed here.
+          <EmptyState icon={Scales} title={t('noneResolved')}>
+            {t('noneResolvedBody')}
           </EmptyState>
         )
       ) : null}
@@ -151,15 +145,15 @@ export function ReconciliationPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Problem</th>
+                <th scope="col">{t('problem')}</th>
                 <th scope="col" className="wide-only">
-                  What Fetivi did
+                  {t('whatDone')}
                 </th>
                 <th scope="col" className="wide-only">
-                  Seen
+                  {t('seen')}
                 </th>
                 <th scope="col">
-                  <span className="visually-hidden">Actions</span>
+                  <span className="visually-hidden">{i18next.t('common:table.actions')}</span>
                 </th>
               </tr>
             </thead>
@@ -168,11 +162,11 @@ export function ReconciliationPage() {
                 <tr key={f.id}>
                   <td>
                     <div className="cell-main">
-                      <strong>{KIND_LABELS[f.kind]}</strong>
+                      <strong>{t(`kinds.${f.kind as FindingKind}`)}</strong>
                       <SubjectLink subject={f.subject} />
                       {f.detail ? (
                         <details className="tech-details">
-                          <summary>Technical details</summary>
+                          <summary>{t('technical')}</summary>
                           <span className="mono-text">{f.detail}</span>
                         </details>
                       ) : null}
@@ -180,8 +174,8 @@ export function ReconciliationPage() {
                   </td>
                   <td className="wide-only">
                     {[
-                      f.action ? actionText(f.action) : 'Nothing yet',
-                      f.status === 'dismissed' ? 'marked resolved' : null,
+                      f.action ? actionText(f.action) : t('nothingYet'),
+                      f.status === 'dismissed' ? t('markedResolved') : null,
                     ]
                       .filter(Boolean)
                       .join(' · ')}
@@ -191,15 +185,17 @@ export function ReconciliationPage() {
                       time(f.lastSeenAt)
                     ) : (
                       <div className="cell-main">
-                        <span>Last {time(f.lastSeenAt)}</span>
-                        <span className="cell-sub">First {time(f.firstSeenAt)}</span>
+                        <span>{t('last', { when: time(f.lastSeenAt) })}</span>
+                        <span className="cell-sub">
+                          {t('first', { when: time(f.firstSeenAt) })}
+                        </span>
                       </div>
                     )}
                   </td>
                   <td className="cell-actions">
                     {f.status === 'needs_attention' ? (
                       <button type="button" disabled={busy} onClick={() => resolve(f)}>
-                        Mark resolved
+                        {t('markResolved')}
                       </button>
                     ) : null}
                   </td>

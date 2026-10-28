@@ -1,13 +1,16 @@
 import { DateTime } from 'luxon';
 import type { PriceUnit } from '../../offers/vocabulary';
+import type { BackofficeLanguage } from '../../property/vocabulary';
 import type { CivilDate } from '../../time';
 import { formatCivilDate, type GuestFields } from '../provider/compose';
+import { HOST_COPY } from './copy';
 
-// The host's email about an Order on one of their own services (38): plain English like every
-// host email, and no per-order link: the host answers in the back-office inbox.
+// The host's email about an Order on one of their own services (38), in the host's back-office
+// language (ticket 53), and no per-order link: the host answers in the back-office inbox.
 
 export interface HostOrderEmailInput {
   kind: 'provider_request' | 'provider_confirmed';
+  language: BackofficeLanguage;
   offerTitle: string;
   date: CivilDate;
   /** 'HH:mm' in the property's zone; null when the Order has no start time. */
@@ -25,52 +28,45 @@ export interface HostOrderEmailInput {
   inboxUrl: string;
 }
 
-// A per-group price is flat and its quantity is the party size, so both count people.
-const QUANTITY_LABELS: Record<PriceUnit, string> = {
-  person: 'People',
-  group: 'People',
-  item: 'Quantity',
-  litre: 'Litres',
-  kilogram: 'Kilograms',
-  hour: 'Hours',
-  day: 'Days',
-};
-
 export function composeHostOrderEmail(input: HostOrderEmailInput): {
   subject: string;
   text: string;
 } {
+  const copy = HOST_COPY[input.language];
+  const o = copy.order;
   const request = input.kind === 'provider_request';
   const at = input.respondBy
-    ? DateTime.fromISO(input.respondBy, { locale: 'en' }).toFormat('d MMM yyyy HH:mm')
+    ? DateTime.fromISO(input.respondBy, { locale: input.language }).toFormat(copy.dateTimeFormat)
     : null;
   const price =
     input.priceMinor === null
       ? []
       : [
-          `Price: ${new Intl.NumberFormat('en', { style: 'currency', currency: input.currency }).format(input.priceMinor / 100)}`,
+          `${o.price}: ${new Intl.NumberFormat(copy.numberLocale, { style: 'currency', currency: input.currency }).format(input.priceMinor / 100)}`,
         ];
   return {
-    subject: `${request ? 'New request' : 'New order'}: ${input.offerTitle}`,
+    subject: request ? o.subjectRequest(input.offerTitle) : o.subjectOrder(input.offerTitle),
     text: [
       request
-        ? `A guest asked for ${input.offerTitle}.${at ? ` Please answer by ${at} in your Fetivi inbox.` : ''}`
-        : `A guest ordered ${input.offerTitle}.`,
+        ? at
+          ? o.askedAnswerBy(input.offerTitle, at)
+          : o.asked(input.offerTitle)
+        : o.ordered(input.offerTitle),
       '',
-      `Date: ${formatCivilDate(input.date, 'en')}`,
-      ...(input.startTime ? [`Time: ${input.startTime}`] : []),
-      `${QUANTITY_LABELS[input.priceUnit]}: ${input.quantity}`,
+      `${o.date}: ${formatCivilDate(input.date, input.language)}`,
+      ...(input.startTime ? [`${o.time}: ${input.startTime}`] : []),
+      `${o.quantity[input.priceUnit]}: ${input.quantity}`,
       ...price,
-      ...(input.guest.name ? [`Guest: ${input.guest.name}`] : []),
-      ...(input.guest.phone ? [`Guest phone: ${input.guest.phone}`] : []),
+      ...(input.guest.name ? [`${o.guest}: ${input.guest.name}`] : []),
+      ...(input.guest.phone ? [`${o.guestPhone}: ${input.guest.phone}`] : []),
       '',
       request
-        ? `Accept, decline or suggest another time: ${input.inboxUrl}`
+        ? o.respond(input.inboxUrl)
         : input.acknowledge
-          ? `Open your inbox to confirm you got it: ${input.inboxUrl}`
-          : `See it in your inbox: ${input.inboxUrl}`,
+          ? o.acknowledge(input.inboxUrl)
+          : o.see(input.inboxUrl),
       '',
-      'Fetivi takes no commission on your own services.',
+      o.noCommission,
     ].join('\n'),
   };
 }

@@ -1,5 +1,6 @@
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Field } from './Field';
 
 export interface SearchOption {
@@ -41,6 +42,7 @@ export function SearchField<T extends SearchOption>({
   /** A magnifying glass in the field: for a pure search, not a field that also takes free text. */
   icon?: boolean;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const root = useRef<HTMLDivElement>(null);
@@ -112,7 +114,9 @@ export function SearchField<T extends SearchOption>({
           />
           {showList ? (
             <div id={listId} role="listbox" aria-label={label} className="search-list">
-              {loading && options.length === 0 ? <p className="search-note">Searching…</p> : null}
+              {loading && options.length === 0 ? (
+                <p className="search-note">{t('field.searching')}</p>
+              ) : null}
               {message && options.length === 0 && !loading ? (
                 <p className="search-note">{message}</p>
               ) : null}

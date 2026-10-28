@@ -20,7 +20,13 @@ const SUGGESTION: HostSuggestion = {
 };
 
 const HOST_ME: Me = {
-  account: { id: 'h1', email: 'host@example.test', role: 'host', language: 'en' },
+  account: {
+    id: 'h1',
+    email: 'host@example.test',
+    role: 'host',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: null,
 };
 

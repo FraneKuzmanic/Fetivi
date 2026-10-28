@@ -82,7 +82,7 @@ describe('signed-out pages', () => {
     );
     expect(posts.at(-1)).toEqual({
       url: '/api/auth/resend-verification',
-      body: { email: 'host@example.test' },
+      body: { email: 'host@example.test', language: 'en' },
     });
 
     await click('Use a different email');
@@ -109,7 +109,7 @@ describe('signed-out pages', () => {
     await vi.waitFor(() =>
       expect(posts.at(-1)).toEqual({
         url: '/api/auth/resend-verification',
-        body: { email: 'new@example.test' },
+        body: { email: 'new@example.test', language: 'en' },
       }),
     );
   });

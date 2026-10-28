@@ -1,15 +1,18 @@
 import { HOST_PLACE_LIMITS } from '@fetivi/domain/host-picks-vocabulary';
 import { type FormEvent, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type CatalogPlaceOption, type HostPicks, host } from '../../api';
 import { TextArea, TextField } from '../../forms/fields';
-import { CATALOG_KIND_LABELS, PLACE_CATEGORY_LABELS } from '../../forms/labels';
+import { currentLabels } from '../../i18n/useLabels';
 import { useAction } from '../../useAction';
 
 const DEBOUNCE_MS = 250;
 
 /** A catalog place's category, or "Day trip". */
 export const placeKindLabel = (p: Pick<CatalogPlaceOption, 'kind' | 'placeCategory'>) =>
-  p.placeCategory ? PLACE_CATEGORY_LABELS[p.placeCategory] : CATALOG_KIND_LABELS[p.kind];
+  p.placeCategory
+    ? currentLabels().placeCategory[p.placeCategory]
+    : currentLabels().catalogKind[p.kind];
 
 /** Searches the destination's published catalog places; Pick asks for an optional note. */
 export function PickSearch({
@@ -21,6 +24,7 @@ export function PickSearch({
   onPicked: (picks: HostPicks) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const search = useAction();
   const save = useAction();
   const [query, setQuery] = useState<string | null>(null);
@@ -47,10 +51,10 @@ export function PickSearch({
 
   return (
     <div className="block-editor">
-      <h3>Add a pick</h3>
+      <h3>{t('picks.addPick')}</h3>
       <TextField
-        label="Search Fetivi's places"
-        placeholder="Beach, konoba, Krka…"
+        label={t('picks.search')}
+        placeholder={t('picks.searchPlaceholder')}
         value={query}
         maxLength={80}
         onChange={(q) => {
@@ -59,9 +63,9 @@ export function PickSearch({
         }}
       />
       {search.error ? <p role="alert">{search.error}</p> : null}
-      {places?.length === 0 ? <p className="muted">No places match.</p> : null}
+      {places?.length === 0 ? <p className="muted">{t('picks.noMatch')}</p> : null}
       {places && places.length > 0 ? (
-        <ul className="rows" aria-label="Catalog places">
+        <ul className="rows" aria-label={t('picks.catalogPlaces')}>
           {places.map((p) => (
             <li key={p.id} className="block-row">
               <span className="block-text">
@@ -71,7 +75,7 @@ export function PickSearch({
                 </span>
               </span>
               {p.picked ? (
-                <span className="chip neutral">Already picked</span>
+                <span className="chip neutral">{t('picks.alreadyPicked')}</span>
               ) : choosing === p.id ? null : (
                 <button
                   type="button"
@@ -80,14 +84,15 @@ export function PickSearch({
                     setNote(null);
                   }}
                 >
-                  Pick<span className="visually-hidden"> {p.title}</span>
+                  {t('picks.pick')}
+                  <span className="visually-hidden"> {p.title}</span>
                 </button>
               )}
               {choosing === p.id ? (
                 <form className="pick-note" onSubmit={(e) => submit(e, p.id)}>
                   <TextArea
-                    label="Your note (optional)"
-                    hint="Why you recommend it. Guests read it in their language."
+                    label={t('picks.noteOptional')}
+                    hint={t('picks.noteOptionalHint')}
                     value={note}
                     maxLength={HOST_PLACE_LIMITS.note}
                     rows={3}
@@ -96,10 +101,10 @@ export function PickSearch({
                   {save.error ? <p role="alert">{save.error}</p> : null}
                   <div className="actions">
                     <button type="submit" className="primary" disabled={save.busy}>
-                      Save pick
+                      {t('picks.savePick')}
                     </button>
                     <button type="button" onClick={() => setChoosing(null)}>
-                      Cancel
+                      {t('common:cancel')}
                     </button>
                   </div>
                 </form>
@@ -110,7 +115,7 @@ export function PickSearch({
       ) : null}
       <div className="actions">
         <button type="button" onClick={onClose}>
-          Done
+          {t('picks.done')}
         </button>
       </div>
     </div>

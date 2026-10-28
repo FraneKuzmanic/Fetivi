@@ -1,6 +1,7 @@
 import type { HostMessage } from '../../api';
+import { i18next, localeOf } from '../../i18n';
 
-export { HANDOFF_REASON_LABELS as REASON_LABELS } from '@fetivi/domain/handoff-vocabulary';
+const t = i18next.getFixedT(null, 'host', 'inbox');
 
 /** The words the host reads: the translation once it is there, else the guest's own. */
 export const shownText = (m: HostMessage) => m.translation ?? m.text;
@@ -12,21 +13,22 @@ export function messageState(m: HostMessage): MessageState {
   return m.readAt ? 'read' : 'new';
 }
 
-export const STATE_CHIPS: Record<MessageState, { label: string; tone: string }> = {
-  new: { label: 'New', tone: 'wait' },
-  read: { label: 'Read', tone: 'neutral' },
-  replied: { label: 'Replied', tone: 'ok' },
-};
+const STATE_TONES: Record<MessageState, string> = { new: 'wait', read: 'neutral', replied: 'ok' };
 
-const time = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
+/** A message's state as a chip, in the interface language. */
+export const stateChip = (state: MessageState): { label: string; tone: string } => ({
+  label: t(state),
+  tone: STATE_TONES[state],
 });
 
-/** "22 Oct, 14:05" in the browser's zone. */
-export const receivedAt = (iso: string) => time.format(new Date(iso));
+/** "22 Oct, 14:05" (or "22. lis 14:05") in the browser's zone. */
+export const receivedAt = (iso: string) =>
+  new Date(iso).toLocaleString(localeOf(i18next.language), {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
 /** A one-line preview of the message. */
 export function preview(m: HostMessage, max = 90): string {
@@ -36,7 +38,7 @@ export function preview(m: HostMessage, max = 90): string {
 
 /** Where the reply is: with the guest, being translated, or waiting for the guest's chat. */
 export function replyDelivery(reply: NonNullable<HostMessage['reply']>): string {
-  if (reply.deliveredAt) return 'Delivered to the guest';
-  if (reply.translationState === 'pending') return 'Translating for the guest…';
-  return 'Waiting to be delivered';
+  if (reply.deliveredAt) return t('delivered');
+  if (reply.translationState === 'pending') return t('translating');
+  return t('waitingDelivery');
 }

@@ -1,17 +1,21 @@
 import { Handshake, Plus } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { type Provider, providers } from '../../api';
+import { i18next, localeOf } from '../../i18n';
 import { EmptyState } from '../../shell/EmptyState';
 import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { percentFromBp } from './money';
 
-/** "15 %", "12.5 %": a commission without trailing zeros. */
-export const percentText = (bp: number) => `${Number(percentFromBp(bp).toFixed(2))} %`;
+/** "15 %", "12.5 %" ("12,5 %" in Croatian): a commission without trailing zeros. */
+export const percentText = (bp: number) =>
+  `${percentFromBp(bp).toLocaleString(localeOf(i18next.language), { maximumFractionDigits: 2 })} %`;
 
 /** /admin/providers: every Provider with its deal and the number of its Offers. */
 export function ProvidersPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const { error, run } = useAction();
   const [list, setList] = useState<Provider[] | null>(null);
 
@@ -22,20 +26,20 @@ export function ProvidersPage() {
   const add = (
     <Link className="button primary" to="/admin/providers/new">
       <Plus aria-hidden="true" weight="bold" />
-      Add provider
+      {t('providers.add')}
     </Link>
   );
 
-  usePageTitle('Providers');
+  usePageTitle(t('providers.title'));
 
   return (
     <>
       {list && list.length > 0 ? <div className="page-head">{add}</div> : null}
       {error ? <p role="alert">{error}</p> : null}
-      {list === null && !error ? <p className="muted">Loading…</p> : null}
+      {list === null && !error ? <p className="muted">{t('common:loading')}</p> : null}
       {list?.length === 0 ? (
-        <EmptyState icon={Handshake} title="No providers yet" action={add}>
-          Add a local business you have a deal with, then the offers guests can book with it.
+        <EmptyState icon={Handshake} title={t('providers.none')} action={add}>
+          {t('providers.noneBody')}
         </EmptyState>
       ) : null}
       {list && list.length > 0 ? (
@@ -43,17 +47,17 @@ export function ProvidersPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Provider</th>
+                <th scope="col">{t('providers.provider')}</th>
                 <th scope="col" className="wide-only">
-                  Email
+                  {t('providers.email')}
                 </th>
                 <th scope="col" className="num wide-only">
-                  Commission
+                  {t('providers.commission')}
                 </th>
                 <th scope="col" className="num">
-                  Offers
+                  {t('providers.offers')}
                 </th>
-                <th scope="col">Status</th>
+                <th scope="col">{t('providers.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -69,9 +73,9 @@ export function ProvidersPage() {
                   <td className="num">{p.offerCount}</td>
                   <td>
                     {p.active ? (
-                      <span className="chip ok">Active</span>
+                      <span className="chip ok">{t('providers.active')}</span>
                     ) : (
-                      <span className="chip neutral">Paused</span>
+                      <span className="chip neutral">{t('providers.paused')}</span>
                     )}
                   </td>
                 </tr>

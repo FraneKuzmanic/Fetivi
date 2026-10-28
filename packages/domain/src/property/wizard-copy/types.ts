@@ -42,10 +42,6 @@ export interface WizardCopy {
     intro: string;
     overviewCta: string;
     review: string;
-    /** {n} */
-    pendingCount: string;
-    /** {n} */
-    stepNotice: string;
     pasteTab: string;
     uploadTab: string;
     pasteLabel: string;
@@ -108,16 +104,10 @@ export interface WizardCopy {
     sharedHint: string;
     unitOnlyHint: string;
     stepDone: string;
-    /** {n} */
-    requiredLeft: string;
-    /** {n} */
-    recommendedLeft: string;
     bold: string;
     bulletList: string;
     numberedList: string;
     link: string;
-    /** {n} */
-    charactersLeft: string;
     yes: string;
     no: string;
     notSet: string;
@@ -161,8 +151,6 @@ export interface WizardCopy {
     removeBed: string;
     releaseSameDay: string;
     releaseOneDay: string;
-    /** {n} */
-    releaseDays: string;
     amenityNote: string;
     fromProperty: string;
   };

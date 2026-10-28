@@ -1,5 +1,6 @@
 import { MapTrifold, Plus } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { catalog, type Destination } from '../../api';
 import { EmptyState } from '../../shell/EmptyState';
@@ -8,6 +9,7 @@ import { useAction } from '../../useAction';
 
 /** /admin/catalog: every destination and the size of its catalog. */
 export function DestinationsPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const { error, run } = useAction();
   const [list, setList] = useState<Destination[] | null>(null);
 
@@ -18,21 +20,20 @@ export function DestinationsPage() {
   const add = (
     <Link className="button primary" to="/admin/catalog/destinations/new">
       <Plus aria-hidden="true" weight="bold" />
-      Add destination
+      {t('catalog.addDestination')}
     </Link>
   );
 
-  usePageTitle('Catalog');
+  usePageTitle(t('catalog.title'));
 
   return (
     <>
       {list && list.length > 0 ? <div className="page-head">{add}</div> : null}
       {error ? <p role="alert">{error}</p> : null}
-      {list === null && !error ? <p className="muted">Loading…</p> : null}
+      {list === null && !error ? <p className="muted">{t('common:loading')}</p> : null}
       {list?.length === 0 ? (
-        <EmptyState icon={MapTrifold} title="No destinations yet" action={add}>
-          A destination is a town and the area around it. Add one, then find the places worth
-          recommending there.
+        <EmptyState icon={MapTrifold} title={t('catalog.noDestinations')} action={add}>
+          {t('catalog.noDestinationsBody')}
         </EmptyState>
       ) : null}
       {list && list.length > 0 ? (
@@ -40,12 +41,12 @@ export function DestinationsPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Destination</th>
+                <th scope="col">{t('catalog.destination')}</th>
                 <th scope="col" className="wide-only">
-                  Area
+                  {t('catalog.area')}
                 </th>
                 <th scope="col" className="num">
-                  Records
+                  {t('catalog.records')}
                 </th>
               </tr>
             </thead>
@@ -57,7 +58,7 @@ export function DestinationsPage() {
                       {d.name}
                     </Link>
                   </td>
-                  <td className="wide-only">Within {d.radiusKm} km</td>
+                  <td className="wide-only">{t('catalog.within', { km: d.radiusKm })}</td>
                   <td className="num">{d.recordCount}</td>
                 </tr>
               ))}

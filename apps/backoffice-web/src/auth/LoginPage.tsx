@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { ApiError, auth } from '../api';
 import { useSession } from '../session';
@@ -15,6 +16,7 @@ function returnPath(state: unknown): string {
 
 export function LoginPage() {
   const { me, setMe } = useSession();
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const from = returnPath(useLocation().state);
   const { busy, error, run } = useAction();
@@ -41,32 +43,30 @@ export function LoginPage() {
   }
 
   return (
-    <AuthPage title="Log in">
+    <AuthPage title={t('logIn')}>
       <form onSubmit={submit}>
         <EmailField value={email} onChange={setEmail} invalid={!!error} errorId="login-error" />
         <PasswordField
-          label="Password"
+          label={t('password')}
           autoComplete="current-password"
           value={password}
           onChange={setPassword}
           invalid={!!error}
           errorId="login-error"
-          aside={<Link to="/forgot-password">Forgot password?</Link>}
+          aside={<Link to="/forgot-password">{t('login.forgot')}</Link>}
         />
         {error ? (
           <p role="alert" id="login-error" className="form-error">
             {error}
           </p>
         ) : null}
-        {unverified ? (
-          <ResendConfirmation email={unverified} label="Send a new confirmation link" />
-        ) : null}
+        {unverified ? <ResendConfirmation email={unverified} label={t('login.resend')} /> : null}
         <button type="submit" className="primary" aria-disabled={busy || undefined}>
-          {busy ? 'Logging in…' : 'Log in'}
+          {busy ? t('login.loggingIn') : t('logIn')}
         </button>
       </form>
       <p className="auth-alt">
-        New host? <Link to="/sign-up">Create an account</Link>
+        <Trans t={t} i18nKey="login.newHost" components={{ anchor: <Link to="/sign-up" /> }} />
       </p>
     </AuthPage>
   );

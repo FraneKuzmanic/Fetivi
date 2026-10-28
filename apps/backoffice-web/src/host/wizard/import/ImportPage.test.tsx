@@ -63,7 +63,13 @@ const PROPERTY = {
 };
 
 const ME = {
-  account: { id: 'h1', email: 'a@example.test', role: 'host', language: 'en' },
+  account: {
+    id: 'h1',
+    email: 'a@example.test',
+    role: 'host',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: null,
 };
 

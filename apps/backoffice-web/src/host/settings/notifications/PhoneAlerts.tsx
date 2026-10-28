@@ -1,5 +1,6 @@
 import { DotsThreeVertical, Export } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { host } from '../../../api';
 import { useAction } from '../../../useAction';
 import { applicationServerKey, isInstalled, platform, pushSupported } from './install';
@@ -22,64 +23,65 @@ export function PhoneAlerts({
   acting: boolean;
   onChanged: () => void;
 }) {
-  if (!publicKey) return <p className="muted">Phone alerts are not available yet.</p>;
+  const { t } = useTranslation(['host', 'common']);
+  if (!publicKey) return <p className="muted">{t('settings.alertsUnavailable')}</p>;
   if (acting) {
-    return <p className="muted">Only the host can turn on alerts on their own phone.</p>;
+    return <p className="muted">{t('settings.hostOnly')}</p>;
   }
   return (
     <>
       <Guide publicKey={publicKey} onChanged={onChanged} />
-      {devices > 0 ? (
-        <p className="muted">
-          Alerts are on for {devices} {devices === 1 ? 'device' : 'devices'}.
-        </p>
-      ) : null}
+      {devices > 0 ? <p className="muted">{t('settings.alertsOn', { count: devices })}</p> : null}
     </>
   );
 }
 
 function Guide({ publicKey, onChanged }: { publicKey: string; onChanged: () => void }) {
+  const { t } = useTranslation(['host', 'common']);
   const os = platform();
   if (!isInstalled()) {
     if (os === 'other') {
-      return <p>Open this page on your phone to set up alerts. Emails always arrive.</p>;
+      return <p>{t('settings.openOnPhone')}</p>;
     }
     return (
       <ol className="steps-list">
         <li>
-          <strong>Add Fetivi to your Home Screen.</strong>{' '}
+          <strong>{t('settings.step1')}</strong>{' '}
           {os === 'ios' ? (
-            <>
-              In Safari, tap Share <Export aria-label="Share" />, then{' '}
-              <strong>Add to Home Screen</strong>.
-            </>
+            <Trans
+              t={t}
+              i18nKey="settings.step1Ios"
+              components={{
+                share: <Export aria-label={t('settings.share')} />,
+                strong: <strong />,
+              }}
+            />
           ) : (
-            <>
-              In Chrome, open the menu <DotsThreeVertical aria-label="menu" />, then{' '}
-              <strong>Install app</strong> or <strong>Add to Home screen</strong>.
-            </>
+            <Trans
+              t={t}
+              i18nKey="settings.step1Android"
+              components={{
+                menu: <DotsThreeVertical aria-label={t('settings.menu')} />,
+                strong: <strong />,
+              }}
+            />
           )}
         </li>
-        <li>Open Fetivi from your Home Screen and come back to this page.</li>
+        <li>{t('settings.step2')}</li>
         <li>
-          Tap <strong>Turn on alerts</strong>.
+          <Trans t={t} i18nKey="settings.step3" components={{ strong: <strong /> }} />
         </li>
       </ol>
     );
   }
   if (!pushSupported()) {
-    return (
-      <p>
-        {os === 'ios'
-          ? 'Update your phone to iOS 16.4 or later to get alerts.'
-          : 'This browser cannot show alerts. Emails always arrive.'}
-      </p>
-    );
+    return <p>{os === 'ios' ? t('settings.updateIos') : t('settings.noAlerts')}</p>;
   }
   return <Switch publicKey={publicKey} onChanged={onChanged} />;
 }
 
 function Switch({ publicKey, onChanged }: { publicKey: string; onChanged: () => void }) {
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   const [state, setState] = useState<State>('checking');
 
@@ -133,19 +135,19 @@ function Switch({ publicKey, onChanged }: { publicKey: string; onChanged: () => 
 
   return (
     <>
-      {state === 'blocked' ? <p>Alerts are blocked in this browser's settings.</p> : null}
+      {state === 'blocked' ? <p>{t('settings.blocked')}</p> : null}
       {state === 'on' ? (
         <div className="actions">
-          <p className="saved">Alerts are on for this phone.</p>
+          <p className="saved">{t('settings.onForPhone')}</p>
           <button type="button" disabled={busy} onClick={() => void turnOff()}>
-            Turn off
+            {t('settings.turnOff')}
           </button>
         </div>
       ) : null}
       {state === 'off' ? (
         <div className="actions">
           <button type="button" className="primary" disabled={busy} onClick={() => void turnOn()}>
-            Turn on alerts
+            {t('settings.turnOn')}
           </button>
         </div>
       ) : null}

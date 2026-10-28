@@ -4,33 +4,38 @@ import {
 } from '@fetivi/domain/curation-vocabulary';
 import { ClockCounterClockwise } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { catalog, curation, type Destination, type StalenessRecord } from '../../api';
 import { formatDay } from '../../forms/datetime';
-import { CATALOG_KIND_LABELS, PLACE_CATEGORY_LABELS } from '../../forms/labels';
+import { i18next } from '../../i18n';
+import { currentLabels } from '../../i18n/useLabels';
 import { EmptyState } from '../../shell/EmptyState';
 import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 
-const kindLabel = (r: StalenessRecord) =>
-  r.placeCategory ? PLACE_CATEGORY_LABELS[r.placeCategory] : CATALOG_KIND_LABELS[r.kind];
+const kindLabel = (r: StalenessRecord, labels = currentLabels()) =>
+  r.placeCategory ? labels.placeCategory[r.placeCategory] : labels.catalogKind[r.kind];
+
+const t = i18next.getFixedT(null, 'admin', 'curation');
 
 const recommended = (n: number) =>
-  n === 0
-    ? 'Not lately'
-    : `${n} ${n === 1 ? 'time' : 'times'} in ${RECOMMENDATION_WINDOW_DAYS} days`;
+  n === 0 ? t('notLately') : t('times', { count: n, days: RECOMMENDATION_WINDOW_DAYS });
 
 /** "Overdue since 12.10.2026", "Due 05.11.2026", "Never checked". */
 export function dueText(r: Pick<StalenessRecord, 'staleness'>): string {
   const { status, staleAt } = r.staleness;
-  if (status === 'never_verified') return 'Never checked';
-  if (status === 'expired') return 'Ended';
-  if (staleAt === null) return 'No re-check needed';
-  return status === 'stale' ? `Overdue since ${formatDay(staleAt)}` : `Due ${formatDay(staleAt)}`;
+  if (status === 'never_verified') return t('neverChecked');
+  if (status === 'expired') return t('ended');
+  if (staleAt === null) return t('noRecheck');
+  return status === 'stale'
+    ? t('overdue', { date: formatDay(staleAt) })
+    : t('dueOn', { date: formatDay(staleAt) });
 }
 
 /** /admin/curation/staleness: the records most likely to mislead guests, worst first. */
 export function StalenessPage() {
+  useTranslation('admin');
   const { busy, error, run } = useAction();
   const [destinationId, setDestinationId] = useState('');
   const [destinations, setDestinations] = useState<Destination[]>([]);
@@ -56,25 +61,22 @@ export function StalenessPage() {
       setNotice(null);
       await catalog.verify(record.id);
       setRecords((rows) => rows?.filter((r) => r.id !== record.id) ?? null);
-      setNotice(`${record.title} marked verified.`);
+      setNotice(t('verified', { title: record.title }));
     });
 
-  usePageTitle('Due for a re-check');
+  usePageTitle(t('due'));
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/curation">Curation</Link>
+      <nav className="crumbs" aria-label={i18next.t('common:page.breadcrumb')}>
+        <Link to="/admin/curation">{t('title')}</Link>
       </nav>
-      <p className="muted">
-        Places due for a re-check now or in the next {STALENESS_NEAR_DAYS} days. Most overdue and
-        most recommended first.
-      </p>
+      <p className="muted">{t('dueIntro', { days: STALENESS_NEAR_DAYS })}</p>
       <div className="toolbar">
         <label className="field inline-field">
-          <span className="field-label">Destination</span>
+          <span className="field-label">{t('destination')}</span>
           <select value={destinationId} onChange={(e) => setDestinationId(e.target.value)}>
-            <option value="">All destinations</option>
+            <option value="">{t('allDestinations')}</option>
             {destinations.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
@@ -89,10 +91,10 @@ export function StalenessPage() {
         </output>
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
-      {records === null && !error ? <p className="muted">Loading…</p> : null}
+      {records === null && !error ? <p className="muted">{i18next.t('common:loading')}</p> : null}
       {records?.length === 0 ? (
-        <EmptyState icon={ClockCounterClockwise} title="All caught up">
-          No place needs a re-check in the next {STALENESS_NEAR_DAYS} days.
+        <EmptyState icon={ClockCounterClockwise} title={t('caughtUp')}>
+          {t('dueNone', { days: STALENESS_NEAR_DAYS })}
         </EmptyState>
       ) : null}
       {records && records.length > 0 ? (
@@ -100,13 +102,13 @@ export function StalenessPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Place</th>
-                <th scope="col">Re-check</th>
+                <th scope="col">{t('place')}</th>
+                <th scope="col">{t('recheck')}</th>
                 <th scope="col" className="wide-only">
-                  Recommended
+                  {t('recommended')}
                 </th>
                 <th scope="col">
-                  <span className="visually-hidden">Actions</span>
+                  <span className="visually-hidden">{i18next.t('common:table.actions')}</span>
                 </th>
               </tr>
             </thead>
@@ -127,7 +129,7 @@ export function StalenessPage() {
                   <td className="wide-only">{recommended(r.recommendations)}</td>
                   <td className="cell-actions">
                     <button type="button" disabled={busy} onClick={() => void verify(r)}>
-                      Mark verified
+                      {t('markVerified')}
                     </button>
                   </td>
                 </tr>

@@ -87,6 +87,7 @@ describe('calendar helpers', () => {
 
 describe('longDay', () => {
   it('names the weekday, then the day and the month, day first', () => {
-    expect(longDay('2026-10-27')).toBe('Tuesday 27 October');
+    expect(longDay('2026-10-27', 'en')).toBe('Tuesday 27 October');
+    expect(longDay('2026-10-27', 'hr')).toBe('utorak, 27. listopada');
   });
 });

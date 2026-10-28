@@ -4,7 +4,9 @@ import { accounts } from '../db/schema/accounts';
 import { properties, units } from '../db/schema/properties';
 import { stays } from '../db/schema/stays';
 import type { Mailer } from '../mail';
+import { HOST_COPY } from '../notifications/host/copy';
 import { formatCivilDate } from '../notifications/provider/compose';
+import { backofficeLanguageOf } from '../property/vocabulary';
 import { type StayNotifyJobData, stayDatesJobKey } from './store';
 
 export interface StayNotifyDeps {
@@ -16,7 +18,7 @@ export interface StayNotifyDeps {
 }
 
 /**
- * Emails the host that a calendar moved a Stay, in English (the host UI's language). No PIN and
+ * Emails the host that a calendar moved a Stay, in the host's back-office language. No PIN and
  * no booker name. A job whose dates no longer match the Stay was superseded and is skipped.
  */
 export async function sendStayDatesChanged(
@@ -30,6 +32,7 @@ export async function sendStayDatesChanged(
       unitName: units.name,
       propertyName: properties.name,
       email: accounts.email,
+      uiLanguage: accounts.uiLanguage,
     })
     .from(stays)
     .innerJoin(units, eq(units.id, stays.unitId))
@@ -37,18 +40,20 @@ export async function sendStayDatesChanged(
     .innerJoin(accounts, eq(accounts.id, properties.hostId))
     .where(eq(stays.id, job.stayId));
   if (!row || row.checkIn !== job.checkIn || row.checkout !== job.checkout) return 'skipped';
-  const range = `${formatCivilDate(row.checkIn, 'en')} – ${formatCivilDate(row.checkout, 'en')}`;
+  const language = backofficeLanguageOf(row.uiLanguage);
+  const copy = HOST_COPY[language].stayDates;
+  const range = `${formatCivilDate(row.checkIn, language)} – ${formatCivilDate(row.checkout, language)}`;
   await deps.mailer.send({
     to: row.email,
-    subject: `Stay dates changed: ${row.unitName}, ${range}`,
+    subject: copy.subject(row.unitName, range),
     text: [
-      `The calendar moved a Stay at ${row.propertyName}, ${row.unitName}.`,
+      copy.moved(row.propertyName, row.unitName),
       '',
-      `New dates: ${range}`,
+      `${copy.newDates}: ${range}`,
       '',
-      'The PIN stays the same. If the guest already has it, there is nothing to resend.',
+      copy.pinSame,
       '',
-      `Open the Stay: ${deps.webOrigin}/stays/${job.stayId}`,
+      copy.open(`${deps.webOrigin}/stays/${job.stayId}`),
     ].join('\n'),
     idempotencyKey: stayDatesJobKey(job.stayId, job.checkIn, job.checkout),
   });

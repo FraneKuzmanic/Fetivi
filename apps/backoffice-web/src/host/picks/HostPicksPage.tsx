@@ -1,6 +1,7 @@
 import { HOST_PLACE_LIMITS } from '@fetivi/domain/host-picks-vocabulary';
 import { MapPinPlus, PencilSimple, Star, Trash } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import {
   type HostAddedView,
@@ -11,7 +12,7 @@ import {
   type PropertyDetail,
 } from '../../api';
 import { Section, TextArea } from '../../forms/fields';
-import { PLACE_CATEGORY_LABELS, TRANSLATION_ERROR_LABELS } from '../../forms/labels';
+import { useLabels } from '../../i18n/useLabels';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
@@ -33,17 +34,19 @@ function TranslationFailure({
   translation: HostPlaceTranslation;
   onChanged: Update;
 }) {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const { busy, error, run } = useAction();
   if (translation.status !== 'failed') return null;
   return (
     <span className="translation-error">
-      {translation.error ? TRANSLATION_ERROR_LABELS[translation.error] : null}{' '}
+      {translation.error ? labels.translationError[translation.error] : null}{' '}
       <button
         type="button"
         disabled={busy}
         onClick={() => void run(async () => onChanged(await host.retryHostPlaceTranslation(id)))}
       >
-        Retry translation
+        {t('blocks.retryTranslation')}
       </button>
       {error ? <span role="alert"> {error}</span> : null}
     </span>
@@ -59,6 +62,7 @@ function RemoveButton({
   id: string;
   onRemoved: () => Promise<void>;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   const confirm = useConfirm();
   return (
@@ -66,15 +70,15 @@ function RemoveButton({
       <button
         type="button"
         className="ghost icon-button remove-button"
-        aria-label={`Remove ${label}`}
-        title="Remove"
+        aria-label={t('picks.removeAria', { label })}
+        title={t('common:remove')}
         disabled={busy}
         onClick={async () => {
           if (
             await confirm({
-              title: `Remove ${label}?`,
-              body: 'Your guests will no longer see it.',
-              action: 'Remove',
+              title: t('picks.removeTitle', { label }),
+              body: t('picks.removeBody'),
+              action: t('common:remove'),
               danger: true,
             })
           ) {
@@ -101,6 +105,7 @@ function PickRow({
   onChanged: Update;
   reload: () => Promise<void>;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   const [editing, setEditing] = useState(false);
   const [note, setNote] = useState<string | null>(pick.note);
@@ -134,7 +139,8 @@ function PickRow({
             }}
           >
             <PencilSimple aria-hidden="true" />
-            Edit note<span className="visually-hidden"> ({pick.title})</span>
+            {t('picks.editNote')}
+            <span className="visually-hidden"> ({pick.title})</span>
           </button>
           <RemoveButton label={pick.title} id={pick.id} onRemoved={reload} />
         </span>
@@ -142,8 +148,8 @@ function PickRow({
       {editing ? (
         <form className="pick-note" onSubmit={submit}>
           <TextArea
-            label={`Your note on ${pick.title}`}
-            hint="Leave it empty for the badge alone."
+            label={t('picks.noteOn', { title: pick.title })}
+            hint={t('picks.noteHint')}
             value={note}
             maxLength={HOST_PLACE_LIMITS.note}
             rows={3}
@@ -152,10 +158,10 @@ function PickRow({
           {error ? <p role="alert">{error}</p> : null}
           <div className="actions">
             <button type="submit" className="primary" disabled={busy}>
-              Save note
+              {t('picks.saveNote')}
             </button>
             <button type="button" disabled={busy} onClick={() => setEditing(false)}>
-              Cancel
+              {t('common:cancel')}
             </button>
           </div>
         </form>
@@ -175,14 +181,16 @@ function AddedRow({
   onChanged: Update;
   reload: () => Promise<void>;
 }) {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const [editing, setEditing] = useState(false);
   if (editing) {
     return (
       <li>
         <AddedPlaceForm
           initial={place}
-          heading={`Edit ${place.name}`}
-          submitLabel="Save place"
+          heading={t('picks.editPlace', { name: place.name })}
+          submitLabel={t('picks.savePlace')}
           destinationName={destinationName}
           onSubmit={async (input) => {
             onChanged(await host.updateHostPlace(place.id, input));
@@ -199,22 +207,23 @@ function AddedRow({
         <span className="block-title">
           <strong>{place.name}</strong>
           {place.inCatalog ? (
-            <span className="chip ok">In Fetivi's catalog</span>
+            <span className="chip ok">{t('picks.inCatalog')}</span>
           ) : (
-            <span className="chip neutral">Only your guests</span>
+            <span className="chip neutral">{t('picks.onlyYours')}</span>
           )}
           <TranslationChip status={place.translation.status} />
         </span>
         <span className="muted entry-preview">{preview(place.note)}</span>
         <span className="entry-meta">
-          {[PLACE_CATEGORY_LABELS[place.placeCategory], place.address].filter(Boolean).join(' · ')}
+          {[labels.placeCategory[place.placeCategory], place.address].filter(Boolean).join(' · ')}
         </span>
         <TranslationFailure id={place.id} translation={place.translation} onChanged={onChanged} />
       </span>
       <span className="entry-actions">
         <button type="button" onClick={() => setEditing(true)}>
           <PencilSimple aria-hidden="true" />
-          Edit<span className="visually-hidden"> {place.name}</span>
+          {t('common:edit')}
+          <span className="visually-hidden"> {place.name}</span>
         </button>
         <RemoveButton label={place.name} id={place.id} onRemoved={reload} />
       </span>
@@ -224,6 +233,7 @@ function AddedRow({
 
 /** /properties/:id/picks: the host's picks, places they added and Neighbourhood tips (40). */
 export function HostPicksPage() {
+  const { t } = useTranslation(['host', 'common']);
   const { id = '' } = useParams();
   const { error, run } = useAction();
   const [detail, setDetail] = useState<PropertyDetail | null>(null);
@@ -245,10 +255,10 @@ export function HostPicksPage() {
   usePendingRefresh([...(picks?.picks ?? []), ...(picks?.added ?? [])], reloadPicks);
   usePendingRefresh(detail?.blocks ?? [], reloadBlocks);
 
-  usePageTitle('Host picks and tips');
+  usePageTitle(t('picks.title'));
 
   if (!detail || !picks) {
-    return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
   }
   const { destination } = picks;
   const tips = detail.blocks.filter((b) => b.category === 'host_picks');
@@ -256,8 +266,8 @@ export function HostPicksPage() {
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/properties">Properties</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/properties">{t('properties.title')}</Link>
         <span aria-hidden="true">/</span>
         <Link to={`/properties/${id}`}>{detail.name}</Link>
       </nav>
@@ -267,17 +277,17 @@ export function HostPicksPage() {
         {destination ? (
           <>
             <Section
-              title="Your picks"
-              description={`Places from Fetivi's checked catalog in ${destination.name}. Guests see them with a "Your host's pick" badge.`}
+              title={t('picks.yourPicks')}
+              description={t('picks.yourPicksHint', { destination: destination.name })}
             >
               {picks.picks.length > 0 ? (
-                <ul className="rows" aria-label="Your picks">
+                <ul className="rows" aria-label={t('picks.yourPicks')}>
                   {picks.picks.map((p) => (
                     <PickRow key={p.id} pick={p} onChanged={setPicks} reload={reloadPicks} />
                   ))}
                 </ul>
               ) : (
-                <p className="muted">No picks yet.</p>
+                <p className="muted">{t('picks.noPicks')}</p>
               )}
               {searching ? (
                 <PickSearch
@@ -292,18 +302,15 @@ export function HostPicksPage() {
                 <div>
                   <button type="button" disabled={full} onClick={() => setSearching(true)}>
                     <Star aria-hidden="true" />
-                    Add a pick
+                    {t('picks.addPick')}
                   </button>
                 </div>
               )}
             </Section>
 
-            <Section
-              title="Places you added"
-              description="A place Fetivi doesn't know yet. Your guests see it straight away, marked as added by you; Fetivi checks it before adding it to the catalog."
-            >
+            <Section title={t('picks.added')} description={t('picks.addedHint')}>
               {picks.added.length > 0 ? (
-                <ul className="rows" aria-label="Places you added">
+                <ul className="rows" aria-label={t('picks.added')}>
                   {picks.added.map((p) => (
                     <AddedRow
                       key={p.id}
@@ -317,8 +324,8 @@ export function HostPicksPage() {
               ) : null}
               {adding ? (
                 <AddedPlaceForm
-                  heading="Add a place"
-                  submitLabel="Add place"
+                  heading={t('picks.addPlace')}
+                  submitLabel={t('picks.addPlaceButton')}
                   destinationName={destination.name}
                   onSubmit={async (input) => {
                     setPicks(await host.createAddedPlace(id, input));
@@ -330,37 +337,28 @@ export function HostPicksPage() {
                 <div>
                   <button type="button" disabled={full} onClick={() => setAdding(true)}>
                     <MapPinPlus aria-hidden="true" />
-                    Add a place
+                    {t('picks.addPlace')}
                   </button>
                 </div>
               )}
               {full ? (
-                <p className="muted">
-                  You share {HOST_PLACE_LIMITS.perProperty} places, the most a property can have.
-                  Remove one to add another.
-                </p>
+                <p className="muted">{t('picks.full', { limit: HOST_PLACE_LIMITS.perProperty })}</p>
               ) : null}
             </Section>
           </>
         ) : (
           <section className="panel">
-            <p className="muted">
-              Your property isn't inside a Fetivi destination yet, so there are no catalog places to
-              pick. Neighbourhood tips still reach your guests.
-            </p>
+            <p className="muted">{t('picks.noDestination')}</p>
           </section>
         )}
 
-        <Section
-          title="Neighbourhood tips"
-          description="Shown in the guest Guide under Host's top picks, in each guest's language."
-        >
+        <Section title={t('picks.tips')} description={t('picks.tipsHint')}>
           <BlockList
             blocks={tips}
             category="host_picks"
             create={(input) => host.createPropertyBlock(id, input)}
             onChanged={reloadBlocks}
-            emptyText="No tips yet. Where do you eat, swim, buy bread?"
+            emptyText={t('picks.tipsEmpty')}
           />
         </Section>
       </div>

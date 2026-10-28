@@ -9,6 +9,7 @@ import {
   SealCheck,
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
   type AdminOrderRow,
@@ -17,6 +18,7 @@ import {
   admin,
   adminOrders,
 } from '../api';
+import { i18next } from '../i18n';
 import { EmptyState } from '../shell/EmptyState';
 import { usePageTitle } from '../shell/PageTitle';
 import { useAction } from '../useAction';
@@ -31,7 +33,7 @@ interface Attention {
   action: string;
 }
 
-const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+const t = i18next.getFixedT(null, 'admin', 'today');
 
 /** Everything that waits on the admin, money first. */
 export function adminAttention(o: AdminOverview): Attention[] {
@@ -40,45 +42,45 @@ export function adminAttention(o: AdminOverview): Attention[] {
     items.push({
       key: 'orders',
       icon: Receipt,
-      text: `${count(o.ordersNeedAction, 'order needs', 'orders need')} you`,
+      text: t('orders', { count: o.ordersNeedAction }),
       to: '/admin/orders?view=needs_action',
-      action: 'Open orders',
+      action: t('openOrders'),
     });
   }
   if (o.paymentProblems > 0) {
     items.push({
       key: 'payments',
       icon: Scales,
-      text: `${count(o.paymentProblems, 'payment check needs', 'payment checks need')} a look`,
+      text: t('payments', { count: o.paymentProblems }),
       to: '/admin/reconciliation',
-      action: 'Review',
+      action: t('review'),
     });
   }
   if (o.approvalsPending > 0) {
     items.push({
       key: 'approvals',
       icon: SealCheck,
-      text: `${count(o.approvalsPending, 'property waits', 'properties wait')} for approval`,
+      text: t('approvals', { count: o.approvalsPending }),
       to: '/admin/approvals',
-      action: 'Review',
+      action: t('review'),
     });
   }
   if (o.curationOpen > 0) {
     items.push({
       key: 'curation',
       icon: ListChecks,
-      text: `${count(o.curationOpen, 'draft', 'drafts')} to review before guests see them`,
+      text: t('drafts', { count: o.curationOpen }),
       to: '/admin/curation',
-      action: 'Review',
+      action: t('review'),
     });
   }
   if (o.recordsDue > 0) {
     items.push({
       key: 'due',
       icon: ClockCounterClockwise,
-      text: `${count(o.recordsDue, 'place is', 'places are')} due for a re-check`,
+      text: t('due', { count: o.recordsDue }),
       to: '/admin/curation/staleness',
-      action: 'Check',
+      action: t('check'),
     });
   }
   return items;
@@ -86,6 +88,8 @@ export function adminAttention(o: AdminOverview): Attention[] {
 
 /** `/` for an admin: what waits, the properties waiting for approval, then the newest orders. */
 export function AdminTodayPage() {
+  useTranslation('admin');
+  const { t: tc } = useTranslation();
   const { error, run } = useAction();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [orders, setOrders] = useState<AdminOrderRow[] | null>(null);
@@ -112,19 +116,19 @@ export function AdminTodayPage() {
 
   const attention = overview ? adminAttention(overview) : [];
 
-  usePageTitle('Today');
+  usePageTitle(t('title'));
 
   return (
     <>
       {error ? <p role="alert">{error}</p> : null}
-      {overview === null && !error ? <p className="muted">Loading…</p> : null}
+      {overview === null && !error ? <p className="muted">{tc('loading')}</p> : null}
 
       {overview ? (
         <div className="today-main">
           <section className="today-section" aria-labelledby="attention">
             <h2 id="attention" className="section-title">
               <BellSimple className="section-icon" aria-hidden="true" />
-              Needs your attention
+              {t('attention')}
             </h2>
             {attention.length > 0 ? (
               <ul className="rows">
@@ -141,7 +145,7 @@ export function AdminTodayPage() {
             ) : (
               <p className="all-clear">
                 <CheckCircle className="all-clear-icon" aria-hidden="true" weight="fill" />
-                All caught up. Nothing waits for you.
+                {t('allClear')}
               </p>
             )}
           </section>
@@ -150,15 +154,15 @@ export function AdminTodayPage() {
             <div className="section-title-row">
               <h2 id="waiting-approvals" className="section-title">
                 <SealCheck className="section-icon" aria-hidden="true" />
-                Waiting for approval
+                {t('waiting')}
               </h2>
-              <Link to="/admin/approvals">All approvals</Link>
+              <Link to="/admin/approvals">{t('allApprovals')}</Link>
             </div>
             {waiting.length > 0 ? (
               <ApprovalsTable rows={waiting} onChanged={load} />
             ) : (
-              <EmptyState icon={SealCheck} title="All caught up">
-                New properties show up here until you approve them.
+              <EmptyState icon={SealCheck} title={t('caughtUp')}>
+                {t('newProperties')}
               </EmptyState>
             )}
           </section>
@@ -167,15 +171,15 @@ export function AdminTodayPage() {
             <div className="section-title-row">
               <h2 id="recent-orders" className="section-title">
                 <Receipt className="section-icon" aria-hidden="true" />
-                Latest orders
+                {t('latestOrders')}
               </h2>
-              <Link to="/admin/orders">All orders</Link>
+              <Link to="/admin/orders">{t('allOrders')}</Link>
             </div>
             {orders && orders.length > 0 ? (
               <OrdersTable orders={orders} compact />
             ) : (
-              <EmptyState icon={Receipt} title="No open orders">
-                Orders guests place in the chat show up here until they are done.
+              <EmptyState icon={Receipt} title={t('noOrders')}>
+                {t('noOrdersBody')}
               </EmptyState>
             )}
           </section>

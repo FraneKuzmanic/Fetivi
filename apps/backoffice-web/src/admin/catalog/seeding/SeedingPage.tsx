@@ -9,6 +9,7 @@ import {
 } from '@fetivi/domain/seeding-vocabulary';
 import { Copy, MagnifyingGlass, MapPin } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import {
   ApiError,
@@ -20,11 +21,8 @@ import {
   seeding,
 } from '../../../api';
 import { formatMoment } from '../../../forms/datetime';
-import {
-  PLACE_CATEGORY_LABELS,
-  SEEDING_FAILURE_LABELS,
-  SEEDING_SOURCE_LABELS,
-} from '../../../forms/labels';
+import { i18next, localeOf } from '../../../i18n';
+import { currentLabels, useLabels } from '../../../i18n/useLabels';
 import { EmptyState } from '../../../shell/EmptyState';
 import { Pager } from '../../../shell/Pager';
 import { usePageTitle } from '../../../shell/PageTitle';
@@ -35,22 +33,23 @@ import { useAction } from '../../../useAction';
 /** The candidate lists, plus the new ones that look like another place, to settle first. */
 type View = SeedingCandidateStatus | 'duplicates';
 
-const EMPTY: Record<View, [string, string]> = {
-  new: ['Nothing to review', 'Find places to fill this list with what is nearby.'],
-  duplicates: ['No possible duplicates', 'Places that look like one another show up here.'],
-  ticked: ['Nothing sent yet', 'Places you send to drafting are listed here.'],
-  dismissed: [
-    'Nothing dismissed',
-    'Places you dismiss are kept here, in case you change your mind.',
-  ],
-};
+const t = i18next.getFixedT(null, 'admin', 'seeding');
 
-const DRAFT_LABELS: Record<CurationStatus, { label: string; tone: string }> = {
-  open: { label: 'Draft to review', tone: 'wait' },
-  needs_visit: { label: 'Needs a visit', tone: 'neutral' },
-  approved: { label: 'In the catalog', tone: 'ok' },
-  rejected: { label: 'Rejected', tone: 'fail' },
-};
+const empty = (view: View): [string, string] =>
+  ({
+    new: [t('emptyNew'), t('emptyNewBody')] as [string, string],
+    duplicates: [t('emptyDuplicates'), t('emptyDuplicatesBody')] as [string, string],
+    ticked: [t('emptyTicked'), t('emptyTickedBody')] as [string, string],
+    dismissed: [t('emptyDismissed'), t('emptyDismissedBody')] as [string, string],
+  })[view];
+
+const draftLabel = (status: CurationStatus): { label: string; tone: string } =>
+  ({
+    open: { label: t('draftOpen'), tone: 'wait' },
+    needs_visit: { label: t('draftNeedsVisit'), tone: 'neutral' },
+    approved: { label: t('draftApproved'), tone: 'ok' },
+    rejected: { label: t('draftRejected'), tone: 'fail' },
+  })[status];
 
 const POLL_MS = 3000;
 const PAGE = 50;
@@ -60,19 +59,20 @@ const SEND_MAX = SEEDING_LIMITS.draftPerRequest;
 const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 const km = (metres: number) =>
-  (metres / 1000).toLocaleString('en-GB', { maximumFractionDigits: 1 });
+  (metres / 1000).toLocaleString(localeOf(i18next.language), { maximumFractionDigits: 1 });
 
-const places = (n: number) => (n === 1 ? '1 place' : `${n.toLocaleString('en-GB')} places`);
+const places = (n: number) => t('places', { count: n });
 
 /** One line per source of the last search, for the "Where places come from" details. */
 function sourceLines(run: SeedingImport): string[] {
+  const labels = currentLabels();
   return SEEDING_SOURCES.flatMap((source) => {
     const result = run.sources[source];
     if (!result) return [];
-    const label = SEEDING_SOURCE_LABELS[source];
+    const label = labels.seedingSource[source];
     return result.outcome === 'ok'
-      ? [`${label}: ${places(result.kept)}`]
-      : [`${label}: ${SEEDING_FAILURE_LABELS[result.failure]}`];
+      ? [t('sourceLine', { source: label, result: places(result.kept) })]
+      : [t('sourceLine', { source: label, result: labels.seedingFailure[result.failure] })];
   });
 }
 
@@ -85,41 +85,37 @@ function draftingLine(status: DraftingStatus): string | null {
   const counts = status.draft?.counts;
   const parts = counts
     ? [
-        counts.drafted > 0 ? `${counts.drafted} drafted` : null,
-        counts.queued > 0 ? `${counts.queued} in progress` : null,
-        counts.no_sources > 0
-          ? `${counts.no_sources} couldn’t be drafted (no readable web page)`
-          : null,
-        counts.failed > 0 ? `${counts.failed} didn’t work` : null,
+        counts.drafted > 0 ? t('drafted', { count: counts.drafted }) : null,
+        counts.queued > 0 ? t('inProgress', { count: counts.queued }) : null,
+        counts.no_sources > 0 ? t('noSources', { count: counts.no_sources }) : null,
+        counts.failed > 0 ? t('failed', { count: counts.failed }) : null,
       ].filter(Boolean)
     : [];
-  const waiting =
-    status.waiting === 0
-      ? ''
-      : status.waiting === 1
-        ? ' 1 waits for the next run.'
-        : ` ${status.waiting} wait for the next run.`;
+  const waiting = status.waiting === 0 ? '' : ` ${t('waiting', { count: status.waiting })}`;
   if (parts.length === 0 && !waiting) return null;
-  return `Drafting: ${parts.length > 0 ? `${parts.join(', ')}.` : 'not started yet.'}${waiting}`;
+  return `${parts.length > 0 ? t('drafting', { parts: parts.join(', ') }) : t('draftingNotStarted')}${waiting}`;
 }
 
 /** What sending did: how many draft now and how many wait over the per-run limit. */
 function sentLine(drafted: number, run: { queued: number; waiting: number }): string {
-  const sent = `Sent ${places(drafted)} to drafting.`;
-  if (run.waiting === 0) return `${sent} The drafts show up in Curation when they are ready.`;
-  return `${sent} ${run.queued} are being drafted now; ${run.waiting} wait for the next run (up to ${DRAFTING_LIMITS.recordsPerRun} at a time).`;
+  const sent = t('sent', { places: places(drafted) });
+  if (run.waiting === 0) return `${sent} ${t('sentReady')}`;
+  return `${sent} ${t('sentWaiting', {
+    queued: run.queued,
+    waiting: run.waiting,
+    limit: DRAFTING_LIMITS.recordsPerRun,
+  })}`;
 }
 
 function runLine(run: SeedingImport): string {
-  if (run.status === 'running') return `Searching since ${formatMoment(run.startedAt)}…`;
+  if (run.status === 'running') return t('searchingSince', { when: formatMoment(run.startedAt) });
   const when = formatMoment(run.finishedAt ?? run.startedAt);
-  return run.status === 'failed'
-    ? `The last search didn’t finish (${when}).`
-    : `Last search ${when}.`;
+  return run.status === 'failed' ? t('unfinished', { when }) : t('lastSearch', { when });
 }
 
 /** /admin/catalog/destinations/:id/seeding: places found nearby, to pick from and draft. */
 export function SeedingPage() {
+  const labels = useLabels();
   const { id = '' } = useParams();
   const { busy, error, run } = useAction();
   const [view, setView] = useState<View>('new');
@@ -176,10 +172,14 @@ export function SeedingPage() {
       }
     });
 
-  usePageTitle('Find places');
+  usePageTitle(t('title'));
 
   if (!overview) {
-    return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+    return error ? (
+      <p role="alert">{error}</p>
+    ) : (
+      <p className="muted">{i18next.t('common:loading')}</p>
+    );
   }
 
   const { destination, lastImport, counts, candidates } = overview;
@@ -196,7 +196,7 @@ export function SeedingPage() {
   const page = shown.slice(offset, offset + PAGE);
   const selected = candidates.filter((c) => ticked.has(c.id)).map((c) => c.id);
   const listedCategories = [...new Set(candidates.map((c) => c.placeCategory))].sort((a, b) =>
-    PLACE_CATEGORY_LABELS[a].localeCompare(PLACE_CATEGORY_LABELS[b]),
+    labels.placeCategory[a].localeCompare(labels.placeCategory[b]),
   );
   const tooMany = selected.length > SEND_MAX;
   const line = status ? draftingLine(status) : null;
@@ -224,7 +224,7 @@ export function SeedingPage() {
   const startImport = () =>
     act(async () => {
       await seeding.startImport(id);
-      return 'Searching. The list refreshes when it is done.';
+      return t('searchingNow');
     });
 
   const sendToDrafting = () =>
@@ -238,41 +238,38 @@ export function SeedingPage() {
     act(async () => {
       const started = await drafting.draftWaiting(id);
       return started.waiting > 0
-        ? `${started.queued} are being drafted now; ${started.waiting} still wait.`
-        : `${started.queued} are being drafted now.`;
+        ? t('draftingNowWaiting', { queued: started.queued, waiting: started.waiting })
+        : t('draftingNow', { queued: started.queued });
     });
 
-  const [emptyTitle, emptyText] = EMPTY[view];
+  const [emptyTitle, emptyText] = empty(view);
   const filtering = query.trim() !== '' || category !== '';
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/catalog">Catalog</Link>
+      <nav className="crumbs" aria-label={i18next.t('common:page.breadcrumb')}>
+        <Link to="/admin/catalog">{i18next.t('admin:catalog.title')}</Link>
         <span aria-hidden="true">/</span>
         <Link to={`/admin/catalog/destinations/${id}`}>{destination.name}</Link>
       </nav>
       <div className="page-head">
         <button type="button" className="primary" disabled={busy || running} onClick={startImport}>
           <MagnifyingGlass aria-hidden="true" weight="bold" />
-          {lastImport ? 'Search again' : 'Find places'}
+          {lastImport ? t('searchAgain') : t('title')}
         </button>
       </div>
-      <p className="muted">
-        Places within {km(destination.radiusM)} km of {destination.name}. Pick the ones worth adding
-        and send them to drafting. Nothing reaches guests until you approve it in Curation.
-      </p>
+      <p className="muted">{t('intro', { km: km(destination.radiusM), name: destination.name })}</p>
 
-      <section className="seeding-status" aria-label="Search and drafting">
+      <section className="seeding-status" aria-label={t('statusLabel')}>
         {lastImport ? (
           <p>
             {runLine(lastImport)}
             {lastImport.status === 'done' && incomplete(lastImport)
-              ? ' Some sources didn’t answer, so places may be missing; search again later.'
+              ? ` ${t('missingSources')}`
               : ''}
           </p>
         ) : (
-          <p>Not searched yet.</p>
+          <p>{t('notSearched')}</p>
         )}
         {line ? (
           <div className="seeding-import">
@@ -280,15 +277,18 @@ export function SeedingPage() {
             {status && status.waiting > 0 ? (
               <button type="button" disabled={busy} onClick={draftWaiting}>
                 {status.waiting > DRAFTING_LIMITS.recordsPerRun
-                  ? `Draft ${DRAFTING_LIMITS.recordsPerRun} of ${status.waiting} now`
-                  : `Draft ${status.waiting} now`}
+                  ? t('draftSome', {
+                      limit: DRAFTING_LIMITS.recordsPerRun,
+                      waiting: status.waiting,
+                    })
+                  : t('draftAll', { waiting: status.waiting })}
               </button>
             ) : null}
           </div>
         ) : null}
         {lastImport && lastImport.status !== 'running' ? (
           <details className="help">
-            <summary>Where places come from</summary>
+            <summary>{t('whereFrom')}</summary>
             <ul className="seeding-sources">
               {sourceLines(lastImport).map((l) => (
                 <li key={l}>{l}</li>
@@ -300,20 +300,20 @@ export function SeedingPage() {
       </section>
 
       <Tabs
-        label="Places"
+        label={t('placesTabs')}
         items={[
-          { id: 'new', label: 'To review', count: counts.new },
+          { id: 'new', label: t('toReview'), count: counts.new },
           ...(duplicates.length > 0 || view === 'duplicates'
             ? [
                 {
                   id: 'duplicates' as const,
-                  label: 'Possible duplicates',
+                  label: t('duplicates'),
                   count: duplicates.length,
                 },
               ]
             : []),
-          { id: 'ticked', label: 'Sent to drafting', count: counts.ticked },
-          { id: 'dismissed', label: 'Dismissed', count: counts.dismissed },
+          { id: 'ticked', label: t('sentTab'), count: counts.ticked },
+          { id: 'dismissed', label: t('dismissed'), count: counts.dismissed },
         ]}
         value={view}
         onChange={setView}
@@ -322,37 +322,34 @@ export function SeedingPage() {
       {candidates.length > 0 ? (
         <div className="toolbar">
           <SearchBox
-            label="Search by name"
+            label={t('searchName')}
             value={query}
-            placeholder="Search by name"
+            placeholder={t('searchName')}
             onChange={setQuery}
           />
           <label className="field inline-field">
-            <span className="field-label visually-hidden">Category</span>
+            <span className="field-label visually-hidden">{t('category')}</span>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as PlaceCategory | '')}
             >
-              <option value="">All categories</option>
+              <option value="">{t('allCategories')}</option>
               {listedCategories.map((code) => (
                 <option key={code} value={code}>
-                  {PLACE_CATEGORY_LABELS[code]}
+                  {labels.placeCategory[code]}
                 </option>
               ))}
             </select>
           </label>
           <span className="toolbar-note">
-            {overview.matchedRecords > 0
-              ? `${places(overview.matchedRecords)} already in the catalog are left out`
-              : null}
+            {overview.matchedRecords > 0 ? t('leftOut', { count: overview.matchedRecords }) : null}
           </span>
         </div>
       ) : null}
 
       {view !== 'duplicates' && counts[tab] > candidates.length ? (
         <p className="muted">
-          Showing the first {candidates.length} of {counts[tab]}, by name. Send or dismiss some to
-          see the rest.
+          {t('showingFirst', { shown: candidates.length, total: counts[tab] })}
         </p>
       ) : null}
 
@@ -367,7 +364,7 @@ export function SeedingPage() {
         filtering && listed.length > 0 ? (
           <EmptyState
             icon={MagnifyingGlass}
-            title="No place matches"
+            title={t('noMatch')}
             action={
               <button
                 type="button"
@@ -376,7 +373,7 @@ export function SeedingPage() {
                   setCategory('');
                 }}
               >
-                Clear filters
+                {t('clearFilters')}
               </button>
             }
           />
@@ -387,7 +384,7 @@ export function SeedingPage() {
             action={
               view === 'new' && !lastImport ? (
                 <button type="button" className="primary" disabled={busy} onClick={startImport}>
-                  Find places
+                  {t('title')}
                 </button>
               ) : undefined
             }
@@ -410,19 +407,19 @@ export function SeedingPage() {
                   <th scope="col" className="check-col">
                     <input
                       type="checkbox"
-                      aria-label="Select every place on this page"
+                      aria-label={t('selectPage')}
                       checked={pageTicked}
                       disabled={busy || pageIds.length === 0}
                       onChange={togglePage}
                     />
                   </th>
                 ) : null}
-                <th scope="col">Place</th>
+                <th scope="col">{t('place')}</th>
                 <th scope="col" className="num wide-only">
-                  Distance
+                  {t('distance')}
                 </th>
                 <th scope="col">
-                  <span className="visually-hidden">Actions</span>
+                  <span className="visually-hidden">{i18next.t('common:table.actions')}</span>
                 </th>
               </tr>
             </thead>
@@ -447,14 +444,19 @@ export function SeedingPage() {
       ) : null}
 
       {view === 'new' && selected.length > 0 ? (
-        <section className="selection-bar" aria-label="Selected places">
+        <section className="selection-bar" aria-label={t('selected')}>
           <span>
-            <strong>{selected.length}</strong> selected
-            {tooMany ? <span className="muted"> · send up to {SEND_MAX} at a time</span> : null}
+            <Trans
+              t={t}
+              i18nKey="selectedCount"
+              values={{ count: selected.length }}
+              components={{ strong: <strong /> }}
+            />
+            {tooMany ? <span className="muted">{t('sendUpTo', { max: SEND_MAX })}</span> : null}
           </span>
           <div className="actions">
             <button type="button" disabled={busy} onClick={() => setTicked(new Set())}>
-              Clear
+              {t('clear')}
             </button>
             <button
               type="button"
@@ -462,7 +464,7 @@ export function SeedingPage() {
               disabled={busy || tooMany}
               onClick={sendToDrafting}
             >
-              Draft {places(selected.length)}
+              {t('draftPlaces', { count: selected.length })}
             </button>
           </div>
         </section>
@@ -481,10 +483,11 @@ function Sources({
   busy: boolean;
   act: (action: () => Promise<string>) => void;
 }) {
+  useTranslation('admin');
   if (c.sources.length < 2) return null;
   return (
     <details className="seeding-rows">
-      <summary>Found as {c.sources.length} entries</summary>
+      <summary>{t('foundAs', { count: c.sources.length })}</summary>
       <ul>
         {c.sources.map((s) => (
           <li key={s.id}>
@@ -502,11 +505,11 @@ function Sources({
                 onClick={() =>
                   act(async () => {
                     await seeding.split(s.id);
-                    return `${s.name} is now a place of its own.`;
+                    return t('splitDone', { name: s.name });
                   })
                 }
               >
-                Split off
+                {t('split')}
               </button>
             ) : null}
           </li>
@@ -531,13 +534,14 @@ function CandidateRow({
   onDuplicates: () => void;
   act: (action: () => Promise<string>) => void;
 }) {
+  const labels = useLabels();
   return (
     <tr className={ticked ? 'ticked' : undefined}>
       {c.status === 'new' ? (
         <td className="check-col">
           <input
             type="checkbox"
-            aria-label={`Select ${c.name}`}
+            aria-label={t('select', { name: c.name })}
             checked={ticked}
             disabled={busy}
             onChange={onToggle}
@@ -548,55 +552,55 @@ function CandidateRow({
         <div className="cell-main">
           <strong>{c.name}</strong>
           <span className="cell-sub with-chips">
-            {PLACE_CATEGORY_LABELS[c.placeCategory]}
+            {labels.placeCategory[c.placeCategory]}
             {c.draft ? (
               <Link
-                className={`chip ${DRAFT_LABELS[c.draft.status].tone}`}
+                className={`chip ${draftLabel(c.draft.status).tone}`}
                 to="/admin/curation?kind=draft"
               >
-                {DRAFT_LABELS[c.draft.status].label}
+                {draftLabel(c.draft.status).label}
               </Link>
             ) : null}
             <Sources candidate={c} busy={busy} act={act} />
             {c.status === 'new' && c.possibleDuplicates.length > 0 ? (
               <button type="button" className="chip wait chip-button" onClick={onDuplicates}>
-                Possible duplicate
+                {t('possibleDuplicate')}
               </button>
             ) : null}
           </span>
         </div>
       </td>
-      <td className="num wide-only">{km(c.distanceM)} km</td>
+      <td className="num wide-only">{t('km', { km: km(c.distanceM) })}</td>
       <td className="cell-actions">
         {c.status === 'new' ? (
           <button
             type="button"
             className="ghost"
             disabled={busy}
-            aria-label={`Dismiss ${c.name}`}
+            aria-label={t('dismissAria', { name: c.name })}
             onClick={() =>
               act(async () => {
                 await seeding.dismiss(c.id);
-                return `${c.name} dismissed.`;
+                return t('dismissedDone', { name: c.name });
               })
             }
           >
-            Dismiss
+            {t('dismiss')}
           </button>
         ) : null}
         {c.status === 'dismissed' ? (
           <button
             type="button"
             disabled={busy}
-            aria-label={`Restore ${c.name}`}
+            aria-label={t('restoreAria', { name: c.name })}
             onClick={() =>
               act(async () => {
                 await seeding.restore(c.id);
-                return `${c.name} is back in To review.`;
+                return t('restoredDone', { name: c.name });
               })
             }
           >
-            Restore
+            {t('restore')}
           </button>
         ) : null}
       </td>
@@ -614,20 +618,29 @@ function DuplicateRow({
   busy: boolean;
   act: (action: () => Promise<string>) => void;
 }) {
+  const labels = useLabels();
   return (
     <li className="block-row">
       <div className="block-text duplicate-text">
         <span className="block-title">
           <strong>{c.name}</strong>
           <span className="muted">
-            {PLACE_CATEGORY_LABELS[c.placeCategory]} · {km(c.distanceM)} km from the centre
+            {t('fromCentre', {
+              category: labels.placeCategory[c.placeCategory],
+              km: km(c.distanceM),
+            })}
           </span>
         </span>
         <ul className="duplicate-pairs">
           {c.possibleDuplicates.map((d) => (
             <li key={d.id} className="duplicate-pair">
               <span>
-                Looks like <strong>{d.name}</strong>, {d.distanceM} m away
+                <Trans
+                  t={t}
+                  i18nKey="looksLike"
+                  values={{ name: d.name, metres: d.distanceM }}
+                  components={{ strong: <strong /> }}
+                />
               </span>
               <span className="actions">
                 <button
@@ -636,11 +649,11 @@ function DuplicateRow({
                   onClick={() =>
                     act(async () => {
                       await seeding.merge(d.id, c.id);
-                      return `${c.name} and ${d.name} are now one place.`;
+                      return t('merged', { a: c.name, b: d.name });
                     })
                   }
                 >
-                  Merge
+                  {t('merge')}
                 </button>
                 <button
                   type="button"
@@ -649,11 +662,11 @@ function DuplicateRow({
                   onClick={() =>
                     act(async () => {
                       await seeding.keepApart(c.id, d.id);
-                      return `${c.name} and ${d.name} stay separate.`;
+                      return t('keptApart', { a: c.name, b: d.name });
                     })
                   }
                 >
-                  Keep both
+                  {t('keepBoth')}
                 </button>
               </span>
             </li>

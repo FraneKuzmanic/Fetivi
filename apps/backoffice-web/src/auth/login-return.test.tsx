@@ -7,7 +7,13 @@ import { App } from '../App';
 import type { Me } from '../api';
 
 const HOST: Me = {
-  account: { id: 'a1', email: 'host@example.test', role: 'host', language: 'en' },
+  account: {
+    id: 'a1',
+    email: 'host@example.test',
+    role: 'host',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: null,
 };
 

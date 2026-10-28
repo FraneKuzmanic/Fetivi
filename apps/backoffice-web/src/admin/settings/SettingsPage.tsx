@@ -1,5 +1,6 @@
 import { MESSAGE_CAP_LIMITS } from '@fetivi/domain/settings-vocabulary';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { admin } from '../../api';
 import { NumberField, Section } from '../../forms/fields';
 import { usePageTitle } from '../../shell/PageTitle';
@@ -11,6 +12,7 @@ import { UsageSection } from './UsageSection';
  * estimate (52 AC 5).
  */
 export function SettingsPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const { error, run } = useAction();
   const [cap, setCap] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -22,9 +24,10 @@ export function SettingsPage() {
     });
   }, [run]);
 
-  usePageTitle('Settings');
+  usePageTitle(t('settings.title'));
 
-  if (!loaded) return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+  if (!loaded)
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
 
   async function save() {
     if (cap === null) throw new Error('Enter a daily chat limit.');
@@ -33,10 +36,10 @@ export function SettingsPage() {
 
   return (
     <div className="editor">
-      <Section title="Guest chat" onSave={save}>
+      <Section title={t('settings.guestChat')} onSave={save}>
         <div className="field-narrow">
           <NumberField
-            label="Daily chat limit per guest device"
+            label={t('settings.chatLimit')}
             value={cap}
             onChange={setCap}
             min={MESSAGE_CAP_LIMITS.min}

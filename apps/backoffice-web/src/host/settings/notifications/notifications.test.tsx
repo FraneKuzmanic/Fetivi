@@ -15,11 +15,23 @@ const DESKTOP =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 
 const HOST: Me = {
-  account: { id: 'a1', email: 'host@example.test', role: 'host', language: 'en' },
+  account: {
+    id: 'a1',
+    email: 'host@example.test',
+    role: 'host',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: null,
 };
 const ACTING: Me = {
-  account: { id: 'ad', email: 'admin@example.test', role: 'admin', language: 'en' },
+  account: {
+    id: 'ad',
+    email: 'admin@example.test',
+    role: 'admin',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: { id: 'a1', email: 'host@example.test' },
 };
 

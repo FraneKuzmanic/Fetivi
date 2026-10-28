@@ -1,5 +1,6 @@
 import {
   type CSSProperties,
+  Fragment,
   type KeyboardEvent,
   type ReactNode,
   useEffect,
@@ -15,6 +16,12 @@ export interface MenuItem {
   onSelect: () => void;
   icon?: ReactNode;
   danger?: boolean;
+  /** The label's language when it differs from the page's, e.g. a language under its own name. */
+  lang?: string;
+  /** A non-interactive line above the item that names the group it starts, e.g. "Language". */
+  caption?: string;
+  /** The chosen one of a group of options, announced as checked. */
+  current?: boolean;
 }
 
 /**
@@ -54,7 +61,7 @@ export function Menu({
   const [pos, setPos] = useState<CSSProperties>({ visibility: 'hidden' });
 
   const itemsOf = () => [
-    ...(list.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []),
+    ...(list.current?.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]') ?? []),
   ];
 
   const close = (refocus: boolean) => {
@@ -95,7 +102,7 @@ export function Menu({
   const placed = pos.visibility !== 'hidden';
   useEffect(() => {
     if (open && placed)
-      list.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+      list.current?.querySelector<HTMLButtonElement>('[role^="menuitem"]')?.focus();
   }, [open, placed]);
 
   useEffect(() => {
@@ -159,20 +166,28 @@ export function Menu({
             >
               {header ? <div className="menu-header">{header}</div> : null}
               {items.map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  role="menuitem"
-                  tabIndex={-1}
-                  className={item.danger ? 'menu-item danger' : 'menu-item'}
-                  onClick={() => {
-                    close(true);
-                    item.onSelect();
-                  }}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
+                <Fragment key={item.label}>
+                  {item.caption ? (
+                    <span className="menu-caption menu-group" aria-hidden="true">
+                      {item.caption}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    {...(item.current === undefined
+                      ? { role: 'menuitem' }
+                      : { role: 'menuitemradio', 'aria-checked': item.current })}
+                    tabIndex={-1}
+                    className={item.danger ? 'menu-item danger' : 'menu-item'}
+                    onClick={() => {
+                      close(true);
+                      item.onSelect();
+                    }}
+                  >
+                    {item.icon}
+                    <span lang={item.lang}>{item.label}</span>
+                  </button>
+                </Fragment>
               ))}
             </div>,
             document.body,

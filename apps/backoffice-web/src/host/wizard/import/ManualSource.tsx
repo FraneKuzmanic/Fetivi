@@ -1,8 +1,9 @@
 import { LIMITS } from '@fetivi/domain/vocabulary';
 import { ClipboardText, FileArrowUp } from '@phosphor-icons/react';
 import { type FormEvent, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { messageFor } from '../../../messages';
-import { format, useWizardCopy } from '../copy';
+import { useWizardCopy } from '../copy';
 
 const ACCEPT = [
   '.pdf',
@@ -31,6 +32,7 @@ export function ManualSource({
   onCancel?: () => void;
 }) {
   const copy = useWizardCopy();
+  const { t } = useTranslation('wizard');
   const mi = copy.manualImport;
   const [mode, setMode] = useState<'paste' | 'file'>('paste');
   const [text, setText] = useState('');
@@ -90,7 +92,7 @@ export function ManualSource({
             maxLength={LIMITS.manualText}
             onChange={(e) => setText(e.target.value)}
           />
-          <small>{format(copy.ui.charactersLeft, { n: LIMITS.manualText - text.length })}</small>
+          <small>{t('charactersLeft', { count: LIMITS.manualText - text.length })}</small>
         </div>
       ) : (
         <div className="field">

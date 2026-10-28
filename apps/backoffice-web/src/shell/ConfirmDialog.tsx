@@ -1,3 +1,4 @@
+import '../i18n';
 import {
   createContext,
   type ReactNode,
@@ -8,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface ConfirmOptions {
   /** A question that names the thing, e.g. "Delete Trogir?". */
@@ -34,6 +36,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     options: ConfirmOptions;
     answer: (yes: boolean) => void;
   } | null>(null);
+  const { t } = useTranslation();
   const dialog = useRef<HTMLDialogElement>(null);
   const cancel = useRef<HTMLButtonElement>(null);
   const go = useRef<HTMLButtonElement>(null);
@@ -93,7 +96,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           </div>
           <div className="confirm-actions">
             <button ref={cancel} type="button" onClick={() => close(false)}>
-              Cancel
+              {t('cancel')}
             </button>
             <button
               ref={go}

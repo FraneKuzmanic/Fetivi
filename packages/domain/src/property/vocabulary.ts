@@ -172,6 +172,15 @@ export const MEDIA_CONTENT_TYPES = Object.keys(MEDIA_TYPES) as MediaContentType[
 export const GUEST_LANGUAGES = ['en', 'hr', 'de', 'it', 'pl', 'hu', 'fr'] as const;
 export type GuestLanguage = (typeof GUEST_LANGUAGES)[number];
 
+/** The languages of the back office and of emails to hosts (ticket 53). */
+export const BACKOFFICE_LANGUAGES = ['en', 'hr'] as const;
+export type BackofficeLanguage = (typeof BACKOFFICE_LANGUAGES)[number];
+
+/** An account's back-office language: legacy guest languages fall back to English. */
+export function backofficeLanguageOf(language: GuestLanguage): BackofficeLanguage {
+  return language === 'hr' ? 'hr' : 'en';
+}
+
 /** The language a block is written in: a guest language, or 'other'. */
 export const SOURCE_LANGUAGES = [...GUEST_LANGUAGES, 'other'] as const;
 export type SourceLanguage = (typeof SOURCE_LANGUAGES)[number];

@@ -1,32 +1,31 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type CatalogRecord, type CatalogTranslationsView, catalog } from '../../api';
-import {
-  LANGUAGE_LABELS,
-  TRANSLATION_ERROR_LABELS,
-  TRANSLATION_ORIGIN_LABELS,
-} from '../../forms/labels';
+import { i18next } from '../../i18n';
+import { currentLabels, useLabels } from '../../i18n/useLabels';
 import { useAction } from '../../useAction';
 
 // No corrections here, so a structure mismatch is fixed by retrying or editing the source.
 const errorText = (view: CatalogTranslationsView) =>
   view.error === 'structure-mismatch'
-    ? "Some languages did not keep the text's structure (headings, lists or links). Retry, or simplify the description."
+    ? i18next.t('admin:catalog.structure')
     : view.error
-      ? TRANSLATION_ERROR_LABELS[view.error]
+      ? currentLabels().translationError[view.error]
       : null;
 
 function sourceLine(view: CatalogTranslationsView): string {
   const { sourceLanguage } = view;
-  if (sourceLanguage === null) return 'Source language not detected yet.';
-  if (sourceLanguage === 'other') return 'Written in a language other than the seven guest ones.';
-  return `Written in ${LANGUAGE_LABELS[sourceLanguage]}.`;
+  if (sourceLanguage === null) return i18next.t('host:blocks.sourceUnknown');
+  if (sourceLanguage === 'other') return i18next.t('host:blocks.sourceOther');
+  return i18next.t('host:blocks.writtenIn', {
+    language: currentLabels().language[sourceLanguage],
+  });
 }
 
 function guestsLine(view: CatalogTranslationsView): string | null {
   if (view.publishedRevision === view.revision) return null;
-  if (view.publishedRevision === null)
-    return "Guests don't see this record until it is translated.";
-  return 'Guests see the previously published version until this one is published.';
+  if (view.publishedRevision === null) return i18next.t('admin:catalog.notYetTranslated');
+  return i18next.t('host:blocks.previousVersion');
 }
 
 /** The seven guest languages of a record, read-only; the admin corrects by editing the source. */
@@ -37,6 +36,8 @@ export function CatalogTranslations({
   record: CatalogRecord;
   onChanged: () => Promise<void>;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const { busy, error, run } = useAction();
   const [view, setView] = useState<CatalogTranslationsView | null>(null);
 
@@ -53,7 +54,8 @@ export function CatalogTranslations({
     void load();
   }, [load, record.translation.revision, record.translation.status]);
 
-  if (!view) return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+  if (!view)
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
 
   const guests = guestsLine(view);
 
@@ -76,7 +78,7 @@ export function CatalogTranslations({
               })
             }
           >
-            Retry translation
+            {t('host:blocks.retryTranslation')}
           </button>
         </div>
       ) : null}
@@ -85,9 +87,9 @@ export function CatalogTranslations({
         {view.languages.map(({ language, current }) => (
           <li key={language} className="translation-row">
             <div className="translation-head">
-              <strong>{LANGUAGE_LABELS[language]}</strong>
+              <strong>{labels.language[language]}</strong>
               <span className="muted">
-                {current ? TRANSLATION_ORIGIN_LABELS[current.origin] : 'Not translated yet'}
+                {current ? labels.translationOrigin[current.origin] : t('catalog.notTranslated')}
               </span>
             </div>
             {current ? (

@@ -8,6 +8,7 @@ import {
   loginAs,
   PASSWORD,
   post,
+  put,
   signUpVerifiedHost,
   TEST_ORIGIN,
   type TestApp,
@@ -316,5 +317,76 @@ describe('session expiry', () => {
     }
     t.clock.advance(10 * DAY + 1);
     expect((await get(t.app, '/api/auth/me', cookie)).statusCode).toBe(401);
+  });
+});
+
+describe('back-office language (ticket 53)', () => {
+  const login = (email: string, language?: string) =>
+    post(t.app, '/api/auth/login', { email, password: PASSWORD, language });
+  const accountRow = async (email: string) => {
+    const [row] = await t.db.select().from(accounts).where(eq(accounts.email, email));
+    return row;
+  };
+
+  it('starts a sign-up in the page language, not yet chosen, with a Croatian verify mail', async () => {
+    await post(t.app, '/api/auth/sign-up', {
+      email: 'hr-new@example.test',
+      password: PASSWORD,
+      language: 'hr',
+    });
+    const row = await accountRow('hr-new@example.test');
+    expect(row?.uiLanguage).toBe('hr');
+    expect(row?.uiLanguageChosenAt).toBeNull();
+    const mail = mailsTo('hr-new@example.test').at(-1);
+    expect(mail?.subject).toBe('Potvrdite svoju e-adresu za Fetivi');
+    expect(mail?.text).toContain('/verify-email?token=');
+  });
+
+  it('follows the login page language until the person chooses', async () => {
+    await signUpVerifiedHost(t, 'follow@example.test');
+    const hr = await login('follow@example.test', 'hr');
+    expect(hr.json()).toMatchObject({ account: { language: 'hr', languageChosen: false } });
+    const me = await get(t.app, '/api/auth/me', cookieFrom(hr));
+    expect(me.json()).toMatchObject({ account: { language: 'hr', languageChosen: false } });
+    expect((await accountRow('follow@example.test'))?.uiLanguage).toBe('hr');
+
+    const chosen = await put(t.app, '/api/auth/me/language', { language: 'en' }, cookieFrom(hr));
+    expect(chosen.json()).toMatchObject({ account: { language: 'en', languageChosen: true } });
+    const again = await login('follow@example.test', 'hr');
+    expect(again.json()).toMatchObject({ account: { language: 'en', languageChosen: true } });
+    expect((await accountRow('follow@example.test'))?.uiLanguage).toBe('en');
+  });
+
+  it('mails a reset in the chosen language, whatever the page shows', async () => {
+    await signUpVerifiedHost(t, 'chosen-hr@example.test');
+    const cookie = await loginAs(t, 'chosen-hr@example.test');
+    await put(t.app, '/api/auth/me/language', { language: 'hr' }, cookie);
+    await post(t.app, '/api/auth/password-reset/request', {
+      email: 'chosen-hr@example.test',
+      language: 'en',
+    });
+    const mail = mailsTo('chosen-hr@example.test').at(-1);
+    expect(mail?.subject).toBe('Nova lozinka za Fetivi');
+    expect(mail?.text).toContain('Poveznica vrijedi 1 sat.');
+  });
+
+  it('keeps English for an old client that sends no language', async () => {
+    await signUpVerifiedHost(t, 'old-client@example.test');
+    expect(mailsTo('old-client@example.test')[0]?.subject).toBe(
+      'Confirm your Fetivi email address',
+    );
+    const r = await login('old-client@example.test');
+    expect(r.json()).toMatchObject({ account: { language: 'en', languageChosen: false } });
+    await post(t.app, '/api/auth/password-reset/request', { email: 'old-client@example.test' });
+    expect(mailsTo('old-client@example.test').at(-1)?.subject).toBe('Reset your Fetivi password');
+  });
+
+  it('rejects a page language the back office does not offer', async () => {
+    const r = await post(t.app, '/api/auth/sign-up', {
+      email: 'de@example.test',
+      password: PASSWORD,
+      language: 'de',
+    });
+    expect(r.statusCode).toBe(400);
   });
 });

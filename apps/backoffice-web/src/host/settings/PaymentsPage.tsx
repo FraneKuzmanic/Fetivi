@@ -6,8 +6,10 @@ import {
   WarningCircle,
 } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { host, type PaymentsStatus } from '../../api';
+import { i18next } from '../../i18n';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { useAction } from '../../useAction';
 import { SettingsTabs } from './SettingsTabs';
@@ -25,35 +27,35 @@ export function paymentsState(status: PaymentsStatus): PaymentsState {
   return 'action_needed';
 }
 
-const COPY: Record<
+const copyOf = (): Record<
   PaymentsState,
   { chip: string; tone: string; text: string; icon: typeof CheckCircle }
-> = {
+> => ({
   not_connected: {
-    chip: 'Not connected',
+    chip: i18next.t('host:services.notConnected'),
     tone: 'neutral',
-    text: 'Connect a Stripe account so guests can pay for your services by card. Until then, guests pay you directly. If you already use Stripe, sign in with it on the next page.',
+    text: i18next.t('host:settings.notConnectedText'),
     icon: CreditCard,
   },
   action_needed: {
-    chip: 'Action needed',
+    chip: i18next.t('host:services.actionNeeded'),
     tone: 'wait',
-    text: 'Stripe needs a few more details before guests can pay by card. It takes a few minutes on Stripe.',
+    text: i18next.t('host:settings.actionNeededText'),
     icon: WarningCircle,
   },
   verifying: {
-    chip: 'Being verified',
+    chip: i18next.t('host:services.verifying'),
     tone: 'wait',
-    text: 'Stripe is checking your details. This page shows the result when you open it again.',
+    text: i18next.t('host:settings.verifyingText'),
     icon: Hourglass,
   },
   connected: {
-    chip: 'Connected',
+    chip: i18next.t('host:services.connected'),
     tone: 'ok',
-    text: 'Guests can pay for your services by card. The money goes straight to your Stripe account; Fetivi takes no commission.',
+    text: i18next.t('host:settings.connectedText'),
     icon: CheckCircle,
   },
-};
+});
 
 const DASHBOARD = 'https://dashboard.stripe.com/';
 
@@ -62,6 +64,7 @@ const DASHBOARD = 'https://dashboard.stripe.com/';
  * again on every visit and on the way back from Stripe, so there is nothing to refresh by hand.
  */
 export function PaymentsPage() {
+  const { t } = useTranslation(['host', 'common']);
   const { busy, error, run } = useAction();
   const confirm = useConfirm();
   const [status, setStatus] = useState<PaymentsStatus | null>(null);
@@ -99,9 +102,9 @@ export function PaymentsPage() {
   const disconnect = async () => {
     if (
       !(await confirm({
-        title: 'Disconnect Stripe?',
-        body: 'New card payments stop and guests pay you directly until you connect an account again. Payments and refunds you already have stay in your Stripe Dashboard, and your Stripe account is not closed.',
-        action: 'Disconnect',
+        title: t('settings.disconnectTitle'),
+        body: t('settings.disconnectBody'),
+        action: t('settings.disconnect'),
         danger: true,
       }))
     ) {
@@ -111,17 +114,17 @@ export function PaymentsPage() {
   };
 
   const state = status ? paymentsState(status) : null;
-  const copy = state ? COPY[state] : null;
+  const copy = state ? copyOf()[state] : null;
 
   return (
     <>
       <SettingsTabs />
       <section className="panel payments" aria-labelledby="payments-heading">
         <div className="payments-head">
-          <h2 id="payments-heading">Card payments for your services</h2>
+          <h2 id="payments-heading">{t('settings.cardPayments')}</h2>
           {copy ? <span className={`chip ${copy.tone}`}>{copy.chip}</span> : null}
         </div>
-        {status === null && !error ? <p className="muted">Loading…</p> : null}
+        {status === null && !error ? <p className="muted">{t('common:loading')}</p> : null}
         {copy ? (
           <p className="payments-text">
             <copy.icon aria-hidden="true" className={`payments-icon ${copy.tone}`} />
@@ -132,31 +135,29 @@ export function PaymentsPage() {
           <div className="actions">
             {state === 'not_connected' ? (
               <button type="button" className="primary" disabled={busy} onClick={openStripe}>
-                Connect Stripe
+                {t('settings.connect')}
               </button>
             ) : null}
             {state === 'action_needed' ? (
               <button type="button" className="primary" disabled={busy} onClick={openStripe}>
-                Finish setup on Stripe
+                {t('settings.finish')}
               </button>
             ) : null}
             {state === 'connected' || state === 'verifying' ? (
               <a className="button" href={DASHBOARD} target="_blank" rel="noreferrer">
                 <ArrowSquareOut aria-hidden="true" />
-                Open Stripe Dashboard
+                {t('settings.dashboard')}
               </a>
             ) : null}
             {state !== 'not_connected' ? (
               <button type="button" className="danger" disabled={busy} onClick={disconnect}>
-                Disconnect
+                {t('settings.disconnect')}
               </button>
             ) : null}
           </div>
         ) : null}
         {state && state !== 'not_connected' ? (
-          <small className="muted">
-            To use a different Stripe account, disconnect this one, then connect again.
-          </small>
+          <small className="muted">{t('settings.otherAccount')}</small>
         ) : null}
         {error ? <p role="alert">{error}</p> : null}
       </section>

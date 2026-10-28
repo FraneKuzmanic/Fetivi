@@ -1,7 +1,9 @@
 import { DotsThree, Pause, Play, Trash, UsersThree } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { admin, type HostSummary } from '../api';
 import { formatDay } from '../forms/datetime';
+import { i18next } from '../i18n';
 import { useSession } from '../session';
 import { useConfirm } from '../shell/ConfirmDialog';
 import { EmptyState } from '../shell/EmptyState';
@@ -12,15 +14,14 @@ import { useAction } from '../useAction';
 
 /** A host's state in a word: suspension wins over a missing email check. */
 export function hostStatus(h: HostSummary): [string, 'ok' | 'wait' | 'fail'] {
-  if (h.suspended) return ['Suspended', 'fail'];
-  if (!h.emailVerified) return ['Email not confirmed', 'wait'];
-  return ['Active', 'ok'];
+  if (h.suspended) return [i18next.t('admin:hosts.suspended'), 'fail'];
+  if (!h.emailVerified) return [i18next.t('admin:hosts.emailNotConfirmed'), 'wait'];
+  return [i18next.t('admin:hosts.active'), 'ok'];
 }
-
-const propertiesLabel = (n: number) => (n === 1 ? '1 property' : `${n} properties`);
 
 /** /admin/hosts: every host account, with acting as one and the rarer account actions. */
 export function HostsPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const { setMe } = useSession();
   const confirm = useConfirm();
   const { busy, error, run } = useAction();
@@ -41,9 +42,9 @@ export function HostsPage() {
 
   async function remove(host: HostSummary) {
     const yes = await confirm({
-      title: `Delete ${host.email}?`,
-      body: `Their account and all their data go, including ${propertiesLabel(host.propertyCount)}. This cannot be undone.`,
-      action: 'Delete host',
+      title: t('hosts.deleteTitle', { email: host.email }),
+      body: t('hosts.deleteBody', { count: host.propertyCount }),
+      action: t('hosts.deleteHost'),
       danger: true,
     });
     if (yes) act(() => admin.remove(host.id));
@@ -51,9 +52,9 @@ export function HostsPage() {
 
   async function suspend(host: HostSummary) {
     const yes = await confirm({
-      title: `Suspend ${host.email}?`,
-      body: 'They are logged out and cannot log in until you lift the suspension.',
-      action: 'Suspend host',
+      title: t('hosts.suspendTitle', { email: host.email }),
+      body: t('hosts.suspendBody'),
+      action: t('hosts.suspendHost'),
     });
     if (yes) act(() => admin.suspend(host.id));
   }
@@ -61,37 +62,35 @@ export function HostsPage() {
   const needle = query.trim().toLowerCase();
   const shown = hosts?.filter((h) => h.email.toLowerCase().includes(needle)) ?? [];
 
-  usePageTitle('Hosts');
+  usePageTitle(t('hosts.title'));
 
   return (
     <>
       {error ? <p role="alert">{error}</p> : null}
-      {hosts === null && !error ? <p className="muted">Loading…</p> : null}
+      {hosts === null && !error ? <p className="muted">{t('common:loading')}</p> : null}
       {hosts?.length === 0 ? (
-        <EmptyState icon={UsersThree} title="No hosts yet">
-          Hosts appear here once they sign up and confirm their email.
+        <EmptyState icon={UsersThree} title={t('hosts.none')}>
+          {t('hosts.noneBody')}
         </EmptyState>
       ) : null}
       {hosts && hosts.length > 0 ? (
         <>
           <div className="toolbar">
             <SearchBox
-              label="Search hosts"
+              label={t('hosts.search')}
               value={query}
-              placeholder="Search by email"
+              placeholder={t('hosts.searchPlaceholder')}
               onChange={setQuery}
             />
-            <span className="toolbar-note">
-              {hosts.length === 1 ? '1 host' : `${hosts.length} hosts`}
-            </span>
+            <span className="toolbar-note">{t('hosts.count', { count: hosts.length })}</span>
           </div>
           {shown.length === 0 ? (
             <EmptyState
               icon={UsersThree}
-              title={`No host matches “${query.trim()}”`}
+              title={t('hosts.noMatch', { query: query.trim() })}
               action={
                 <button type="button" onClick={() => setQuery('')}>
-                  Clear search
+                  {t('common:table.clearSearch')}
                 </button>
               }
             />
@@ -100,16 +99,16 @@ export function HostsPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th scope="col">Host</th>
-                    <th scope="col">Status</th>
+                    <th scope="col">{t('hosts.host')}</th>
+                    <th scope="col">{t('hosts.status')}</th>
                     <th scope="col" className="num wide-only">
-                      Properties
+                      {t('hosts.propertiesColumn')}
                     </th>
                     <th scope="col" className="wide-only">
-                      Joined
+                      {t('hosts.joined')}
                     </th>
                     <th scope="col">
-                      <span className="visually-hidden">Actions</span>
+                      <span className="visually-hidden">{t('common:table.actions')}</span>
                     </th>
                   </tr>
                 </thead>
@@ -135,25 +134,25 @@ export function HostsPage() {
                                 void run(async () => setMe(await admin.actAs(host.id)))
                               }
                             >
-                              Act as
+                              {t('hosts.actAs')}
                             </button>
                             <Menu
-                              label={`More for ${host.email}`}
+                              label={t('hosts.moreFor', { email: host.email })}
                               trigger={<DotsThree aria-hidden="true" weight="bold" />}
                               items={[
                                 host.suspended
                                   ? {
-                                      label: 'Lift suspension',
+                                      label: t('hosts.lift'),
                                       icon: <Play aria-hidden="true" />,
                                       onSelect: () => act(() => admin.unsuspend(host.id)),
                                     }
                                   : {
-                                      label: 'Suspend',
+                                      label: t('hosts.suspend'),
                                       icon: <Pause aria-hidden="true" />,
                                       onSelect: () => void suspend(host),
                                     },
                                 {
-                                  label: 'Delete',
+                                  label: t('common:delete'),
                                   icon: <Trash aria-hidden="true" />,
                                   danger: true,
                                   onSelect: () => void remove(host),

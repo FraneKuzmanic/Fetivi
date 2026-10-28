@@ -1,11 +1,12 @@
 import { HANDOFF_LIMITS } from '@fetivi/domain/handoff-vocabulary';
 import { ArrowLeft, PaperPlaneTilt } from '@phosphor-icons/react';
 import { type FormEvent, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type HostMessage, host } from '../../api';
-import { LANGUAGE_LABELS } from '../../forms/labels';
+import { useLabels } from '../../i18n/useLabels';
 import { useAction } from '../../useAction';
 import { dateRange } from '../stays/format';
-import { REASON_LABELS, receivedAt, replyDelivery } from './format';
+import { receivedAt, replyDelivery } from './format';
 
 /** One Host message with the host's reply: the side panel on a wide screen, the page on a phone. */
 export function InboxMessage({
@@ -20,6 +21,8 @@ export function InboxMessage({
   onBack: () => void;
   onReplied: (message: HostMessage) => void;
 }) {
+  const { t } = useTranslation(['host', 'common']);
+  const labels = useLabels();
   const id = useId();
   const { busy, error, run } = useAction();
   const [showOriginal, setShowOriginal] = useState(false);
@@ -41,7 +44,7 @@ export function InboxMessage({
     <article className="panel inbox-detail" aria-labelledby={`${id}-title`}>
       <button type="button" className="ghost inbox-back" onClick={onBack}>
         <ArrowLeft aria-hidden="true" />
-        All messages
+        {t('inbox.allMessages')}
       </button>
       <header className="inbox-detail-head">
         <h2 id={`${id}-title`}>
@@ -52,44 +55,47 @@ export function InboxMessage({
           {message.bookerName ? ` · ${message.bookerName}` : ''} · {receivedAt(message.sentAt)}
         </p>
         <p className="chips">
-          {message.urgency === 'urgent' ? <span className="chip fail">Urgent</span> : null}
-          <span className="chip neutral">{REASON_LABELS[message.reason]}</span>
+          {message.urgency === 'urgent' ? (
+            <span className="chip fail">{t('inbox.urgent')}</span>
+          ) : null}
+          <span className="chip neutral">{labels.handoffReason[message.reason]}</span>
         </p>
       </header>
 
-      <section className="inbox-text" aria-label="Guest message">
+      <section className="inbox-text" aria-label={t('inbox.guestMessage')}>
         <p className="inbox-body inbox-quote">
           {translated && !showOriginal ? message.translation : message.text}
         </p>
         {translated ? (
           <p className="muted inbox-note">
             {showOriginal
-              ? `Original in ${LANGUAGE_LABELS[message.guestLanguage]}.`
-              : `Translated from ${LANGUAGE_LABELS[message.guestLanguage]}.`}{' '}
+              ? t('inbox.originalIn', { language: labels.language[message.guestLanguage] })
+              : t('inbox.translatedFrom', {
+                  language: labels.language[message.guestLanguage],
+                })}{' '}
             <button
               type="button"
               className="link"
               aria-pressed={showOriginal}
               onClick={() => setShowOriginal((v) => !v)}
             >
-              {showOriginal ? 'Show translation' : 'Show original'}
+              {showOriginal ? t('inbox.showTranslation') : t('inbox.showOriginal')}
             </button>
           </p>
         ) : message.translationState === 'pending' ? (
           <p className="muted inbox-note">
-            Translating from {LANGUAGE_LABELS[message.guestLanguage]}…
+            {t('inbox.translatingFrom', { language: labels.language[message.guestLanguage] })}
           </p>
         ) : message.translationState === 'failed' ? (
           <p className="muted inbox-note">
-            Not translated: this is the guest's own text in {LANGUAGE_LABELS[message.guestLanguage]}
-            .
+            {t('inbox.notTranslated', { language: labels.language[message.guestLanguage] })}
           </p>
         ) : null}
       </section>
 
       {message.reply ? (
-        <section className="inbox-reply" aria-label="Your reply">
-          <h3>Your reply</h3>
+        <section className="inbox-reply" aria-label={t('inbox.yourReply')}>
+          <h3>{t('inbox.yourReply')}</h3>
           <p className="inbox-body inbox-quote host">{message.reply.text}</p>
           <p className="muted inbox-note">
             {receivedAt(message.reply.repliedAt)} · {replyDelivery(message.reply)}
@@ -98,7 +104,7 @@ export function InboxMessage({
       ) : (
         <form className="inbox-reply" onSubmit={send}>
           <label className="field-label" htmlFor={`${id}-reply`}>
-            Your reply
+            {t('inbox.yourReply')}
           </label>
           <textarea
             id={`${id}-reply`}
@@ -110,14 +116,17 @@ export function InboxMessage({
             onChange={(e) => setText(e.target.value)}
           />
           <p id={`${id}-hint`} className="muted inbox-note">
-            Fetivi translates your reply into {LANGUAGE_LABELS[message.guestLanguage]} and shows it
-            in the guest's chat. {text.length} of {max} characters.
+            {t('inbox.replyHint', {
+              language: labels.language[message.guestLanguage],
+              length: text.length,
+              max,
+            })}
           </p>
           {error ? <p role="alert">{error}</p> : null}
           <div>
             <button type="submit" className="with-icon" disabled={busy || !text.trim()}>
               <PaperPlaneTilt aria-hidden="true" />
-              Send reply
+              {t('inbox.sendReply')}
             </button>
           </div>
         </form>

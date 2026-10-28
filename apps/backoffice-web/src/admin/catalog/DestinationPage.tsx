@@ -10,6 +10,7 @@ import {
   Trash,
 } from '@phosphor-icons/react';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
   type CatalogRecordSummary,
@@ -21,15 +22,12 @@ import {
 } from '../../api';
 import { formatDate, formatMoment } from '../../forms/datetime';
 import { NumberField, Section, TextField } from '../../forms/fields';
-import {
-  CATALOG_KIND_LABELS,
-  DRAFTING_TASK_STATUS_LABELS,
-  PLACE_CATEGORY_LABELS,
-} from '../../forms/labels';
 import { MapPicker } from '../../forms/MapPicker';
 import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
+import { i18next } from '../../i18n';
+import { currentLabels, useLabels } from '../../i18n/useLabels';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { EmptyState } from '../../shell/EmptyState';
 import { Menu } from '../../shell/Menu';
@@ -73,6 +71,7 @@ function AreaFields({
   draft: AreaDraft;
   onChange: (draft: AreaDraft) => void;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const set =
     <K extends keyof AreaDraft>(key: K) =>
     (value: AreaDraft[K]) =>
@@ -81,8 +80,8 @@ function AreaFields({
   return (
     <>
       <TextField
-        label="Name"
-        hint="For example Trogir."
+        label={t('catalog.name')}
+        hint={t('catalog.nameHint')}
         value={draft.name}
         maxLength={LIMITS.name}
         required
@@ -90,7 +89,7 @@ function AreaFields({
       />
       <div className="field-row">
         <NumberField
-          label="Area radius (km)"
+          label={t('catalog.radius')}
           value={draft.radiusKm}
           min={1}
           max={100}
@@ -98,7 +97,7 @@ function AreaFields({
           onChange={set('radiusKm')}
         />
         <label className="field">
-          <span className="field-label">Time zone</span>
+          <span className="field-label">{t('catalog.timeZone')}</span>
           <select value={draft.timezone} onChange={(e) => set('timezone')(e.target.value)}>
             {zones.map((z) => (
               <option key={z} value={z}>
@@ -109,10 +108,14 @@ function AreaFields({
         </label>
       </div>
       <MapPicker
-        label="Centre of the area"
+        label={t('catalog.centre')}
         value={{ lat: draft.lat, lng: draft.lng }}
         onChange={(p) => onChange({ ...draft, ...p })}
-        search={{ label: 'Find the town', placeholder: 'For example Trogir', kind: 'settlement' }}
+        search={{
+          label: t('catalog.findTown'),
+          placeholder: t('catalog.townPlaceholder'),
+          kind: 'settlement',
+        }}
         radiusKm={draft.radiusKm}
       />
     </>
@@ -121,6 +124,7 @@ function AreaFields({
 
 /** /admin/catalog/destinations/new */
 export function NewDestinationPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const navigate = useNavigate();
   const { busy, error, run } = useAction();
   const [draft, setDraft] = useState<AreaDraft>({
@@ -139,12 +143,12 @@ export function NewDestinationPage() {
     });
   }
 
-  usePageTitle('Add destination');
+  usePageTitle(t('catalog.addDestination'));
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/catalog">Catalog</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/admin/catalog">{t('catalog.title')}</Link>
       </nav>
       <section className="panel narrow">
         <form onSubmit={submit}>
@@ -154,7 +158,7 @@ export function NewDestinationPage() {
           {error ? <p role="alert">{error}</p> : null}
           <div className="actions">
             <button type="submit" className="primary" disabled={busy}>
-              Create destination
+              {t('catalog.create')}
             </button>
           </div>
         </form>
@@ -164,18 +168,36 @@ export function NewDestinationPage() {
 }
 
 type Tab = 'all' | CatalogKind;
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'place', label: 'Places' },
-  { id: 'event', label: 'Events' },
-  { id: 'transport_note', label: 'Transport' },
-  { id: 'day_trip', label: 'Day trips' },
+const tabs = (): { id: Tab; label: string; empty: string }[] => [
+  { id: 'all', label: i18next.t('admin:catalog.all'), empty: i18next.t('admin:catalog.noRecords') },
+  {
+    id: 'place',
+    label: i18next.t('admin:catalog.places'),
+    empty: i18next.t('admin:catalog.noPlaces'),
+  },
+  {
+    id: 'event',
+    label: i18next.t('admin:catalog.events'),
+    empty: i18next.t('admin:catalog.noEvents'),
+  },
+  {
+    id: 'transport_note',
+    label: i18next.t('admin:catalog.transport'),
+    empty: i18next.t('admin:catalog.noTransport'),
+  },
+  {
+    id: 'day_trip',
+    label: i18next.t('admin:catalog.dayTrips'),
+    empty: i18next.t('admin:catalog.noDayTrips'),
+  },
 ];
 
-const recordCount = (n: number) => (n === 1 ? '1 record' : `${n} records`);
+const recordCount = (n: number) => i18next.t('admin:catalog.recordCount', { count: n });
 
 /** /admin/catalog/destinations/:id: its records, the website check and the area, a section each. */
 export function DestinationPage() {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const _labels = useLabels();
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -204,7 +226,7 @@ export function DestinationPage() {
   usePageTitle(destination?.name);
 
   if (!destination || !draft) {
-    return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
+    return error ? <p role="alert">{error}</p> : <p className="muted">{t('common:loading')}</p>;
   }
 
   const saveArea = async () => {
@@ -218,15 +240,13 @@ export function DestinationPage() {
   async function remove() {
     if (!destination) return;
     if (count > 0) {
-      setBlocked(
-        `To delete ${destination.name}, delete its ${recordCount(count)} first. Then you can delete the destination.`,
-      );
+      setBlocked(t('catalog.deleteBlocked', { name: destination.name, count }));
       return;
     }
     const yes = await confirm({
-      title: `Delete ${destination.name}?`,
-      body: 'It has no records left. This cannot be undone.',
-      action: 'Delete destination',
+      title: t('catalog.deleteTitle', { name: destination.name }),
+      body: t('catalog.deleteBody'),
+      action: t('catalog.deleteDestination'),
       danger: true,
     });
     if (!yes) return;
@@ -237,20 +257,16 @@ export function DestinationPage() {
   }
 
   const sections: PageSection[] = [
-    { id: 'records', label: 'Records', icon: ListBullets, count },
-    { id: 'refresh', label: 'Website check', icon: ArrowsClockwise },
-    { id: 'area', label: 'Area', icon: MapPin },
+    { id: 'records', label: t('catalog.records'), icon: ListBullets, count },
+    { id: 'refresh', label: t('catalog.websiteCheck'), icon: ArrowsClockwise },
+    { id: 'area', label: t('catalog.area'), icon: MapPin },
   ];
 
   const renderSection = (section: string) => {
     if (section === 'refresh') return <RefreshPanel destinationId={id} />;
     if (section === 'area') {
       return (
-        <Section
-          title="Area"
-          description="Properties within this distance of the centre get this catalog. Event times are entered in its time zone."
-          onSave={saveArea}
-        >
+        <Section title={t('catalog.area')} description={t('catalog.areaHint')} onSave={saveArea}>
           <AreaFields draft={draft} onChange={setDraft} />
         </Section>
       );
@@ -260,25 +276,25 @@ export function DestinationPage() {
 
   return (
     <>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/catalog">Catalog</Link>
+      <nav className="crumbs" aria-label={t('common:page.breadcrumb')}>
+        <Link to="/admin/catalog">{t('catalog.title')}</Link>
       </nav>
       <div className="page-head">
         <div className="page-title">
           <p className="muted">
-            Within {destination.radiusKm} km · {recordCount(count)}
+            {t('catalog.within', { km: destination.radiusKm })} · {recordCount(count)}
           </p>
         </div>
         <div className="actions">
           <Link className="button" to={`/admin/catalog/destinations/${id}/seeding`}>
             <MagnifyingGlass aria-hidden="true" />
-            Find places
+            {t('catalog.findPlaces')}
           </Link>
           <MoreActions
-            label={`More actions for ${destination.name}`}
+            label={t('catalog.moreActions', { name: destination.name })}
             items={[
               {
-                label: 'Delete destination',
+                label: t('catalog.deleteDestination'),
                 icon: <Trash aria-hidden="true" />,
                 danger: true,
                 onSelect: () => void remove(),
@@ -290,17 +306,20 @@ export function DestinationPage() {
       {error ? <p role="alert">{error}</p> : null}
       {blocked ? <p role="alert">{blocked}</p> : null}
 
-      <SectionLayout sections={sections} label="Destination sections" render={renderSection} />
+      <SectionLayout sections={sections} label={t('catalog.sections')} render={renderSection} />
     </>
   );
 }
 
 function recordLine(r: CatalogRecordSummary): string {
-  const kind = r.placeCategory
-    ? PLACE_CATEGORY_LABELS[r.placeCategory]
-    : CATALOG_KIND_LABELS[r.kind];
+  const labels = currentLabels();
+  const kind = r.placeCategory ? labels.placeCategory[r.placeCategory] : labels.catalogKind[r.kind];
   if (r.kind !== 'event' || !r.startsAt || !r.endsAt) return kind;
-  return `${kind} · ${eventTime(r.startsAt)} to ${eventTime(r.endsAt)}`;
+  return i18next.t('admin:catalog.eventSpan', {
+    kind,
+    from: eventTime(r.startsAt),
+    to: eventTime(r.endsAt),
+  });
 }
 
 /** "2027-07-01T20:00" as "01.07.2027 20:00". */
@@ -316,6 +335,8 @@ function RecordsPanel({
   destinationId: string;
   records: CatalogRecordSummary[] | null;
 }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('all');
   const shown = records?.filter((r) => tab === 'all' || r.kind === tab) ?? null;
@@ -326,44 +347,35 @@ function RecordsPanel({
   return (
     <section className="panel" aria-labelledby="records-heading">
       <div className="panel-head">
-        <h2 id="records-heading">Records</h2>
+        <h2 id="records-heading">{t('catalog.records')}</h2>
         {addable.length === 1 && addable[0] ? (
           <button type="button" className="primary" onClick={() => add(addable[0] as CatalogKind)}>
             <Plus aria-hidden="true" weight="bold" />
-            Add {CATALOG_KIND_LABELS[addable[0]].toLowerCase()}
+            Add {labels.catalogKind[addable[0]].toLowerCase()}
           </button>
         ) : (
           <Menu
-            label="Add a record"
+            label={t('catalog.addRecord')}
             className="primary"
             trigger={
               <>
                 <Plus aria-hidden="true" weight="bold" />
-                Add record
+                {t('catalog.addRecordButton')}
                 <CaretDown aria-hidden="true" />
               </>
             }
             items={addable.map((k) => ({
-              label: CATALOG_KIND_LABELS[k],
+              label: labels.catalogKind[k],
               onSelect: () => add(k),
             }))}
           />
         )}
       </div>
-      <Tabs label="Kind" items={TABS} value={tab} onChange={setTab} />
-      {shown === null ? <p className="muted">Loading…</p> : null}
+      <Tabs label={t('catalog.kind')} items={tabs()} value={tab} onChange={setTab} />
+      {shown === null ? <p className="muted">{t('common:loading')}</p> : null}
       {shown?.length === 0 ? (
-        <EmptyState
-          icon={ListBullets}
-          title={
-            tab === 'all'
-              ? 'No records yet'
-              : `No ${TABS.find((t) => t.id === tab)?.label.toLowerCase()} yet`
-          }
-        >
-          {tab === 'all' || tab === 'place'
-            ? 'Add one here, or use Find places to pick from what is nearby.'
-            : 'Add one here.'}
+        <EmptyState icon={ListBullets} title={tabs().find((x) => x.id === tab)?.empty ?? ''}>
+          {tab === 'all' || tab === 'place' ? t('catalog.addHereOrFind') : t('catalog.addHere')}
         </EmptyState>
       ) : null}
       {shown && shown.length > 0 ? (
@@ -371,11 +383,11 @@ function RecordsPanel({
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Name</th>
+                <th scope="col">{t('catalog.name')}</th>
                 <th scope="col" className="wide-only">
-                  Kind
+                  {t('catalog.kind')}
                 </th>
-                <th scope="col">Status</th>
+                <th scope="col">{t('catalog.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -389,7 +401,7 @@ function RecordsPanel({
                   <td className="wide-only">{recordLine(r)}</td>
                   <td>
                     {r.staleness.status === 'fresh' && r.translation.status !== 'failed' ? (
-                      <span className="muted">Up to date</span>
+                      <span className="muted">{t('catalog.upToDate')}</span>
                     ) : (
                       <span className="chip-stack">
                         {r.staleness.status === 'fresh' ? null : (
@@ -415,15 +427,23 @@ const dateTime = formatMoment;
 function refreshLine(run: NonNullable<DraftingStatus['refresh']>): string {
   const counts = Object.entries(run.counts)
     .filter(([, n]) => n > 0)
-    .map(
-      ([status, n]) =>
-        `${n} ${DRAFTING_TASK_STATUS_LABELS[status as keyof typeof run.counts].toLowerCase()}`,
+    .map(([status, n]) =>
+      i18next.t('admin:catalog.refreshCount', {
+        status: currentLabels().draftingTaskStatus[status as keyof typeof run.counts],
+        count: n,
+      }),
     );
-  return `Last check ${dateTime(run.startedAt)}: ${counts.length > 0 ? counts.join(', ') : 'nothing to do'}.`;
+  return counts.length > 0
+    ? i18next.t('admin:catalog.lastCheck', {
+        when: dateTime(run.startedAt),
+        counts: counts.join(', '),
+      })
+    : i18next.t('admin:catalog.lastCheckNothing', { when: dateTime(run.startedAt) });
 }
 
 /** The pre-season website check (42): re-drafts verified places and queues only what changed. */
 function RefreshPanel({ destinationId }: { destinationId: string }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
   const { busy, error, run } = useAction();
   const [status, setStatus] = useState<DraftingStatus | null>(null);
   const [notice, setNotice] = useState<{ text: string; started: boolean } | null>(null);
@@ -446,11 +466,15 @@ function RefreshPanel({ destinationId }: { destinationId: string }) {
         const started = await drafting.refresh(destinationId);
         setNotice(
           started.runId === null
-            ? { text: 'No verified place is due for a check.', started: false }
+            ? { text: t('catalog.noneDue'), started: false }
             : {
-                text: `Checking ${started.queued} ${started.queued === 1 ? 'place' : 'places'}${
-                  started.waiting > 0 ? `; ${started.waiting} wait for the next run` : ''
-                }. Any changes come to you in Curation.`,
+                text:
+                  started.waiting > 0
+                    ? t('catalog.checkingWaiting', {
+                        count: started.queued,
+                        waiting: started.waiting,
+                      })
+                    : t('catalog.checking', { count: started.queued }),
                 started: true,
               },
         );
@@ -461,7 +485,7 @@ function RefreshPanel({ destinationId }: { destinationId: string }) {
 
   return (
     <section className="panel refresh-panel" aria-labelledby="refresh-heading">
-      <h2 id="refresh-heading">Website check</h2>
+      <h2 id="refresh-heading">{t('catalog.websiteCheck')}</h2>
       {status?.refresh ? <p>{refreshLine(status.refresh)}</p> : null}
       <div className="seeding-import">
         <button
@@ -470,15 +494,15 @@ function RefreshPanel({ destinationId }: { destinationId: string }) {
           disabled={busy || status === null || queued > 0 || status.refreshDue === 0}
           onClick={start}
         >
-          Check websites
+          {t('catalog.checkWebsites')}
         </button>
         {status ? (
           <span className="muted">
             {queued > 0
-              ? `A check is running (${queued} in progress).`
+              ? t('catalog.running', { count: queued })
               : status.refreshDue === 0
-                ? 'No verified place is due.'
-                : `${status.refreshDue} ${status.refreshDue === 1 ? 'place is' : 'places are'} due.`}
+                ? t('catalog.noneDueShort')
+                : t('catalog.due', { count: status.refreshDue })}
           </span>
         ) : null}
       </div>
@@ -486,7 +510,7 @@ function RefreshPanel({ destinationId }: { destinationId: string }) {
         <output className="saved" aria-live="polite">
           {notice.text}{' '}
           {notice.started ? (
-            <Link to="/admin/curation?kind=refresh_diff">Open website changes</Link>
+            <Link to="/admin/curation?kind=refresh_diff">{t('catalog.openChanges')}</Link>
           ) : null}
         </output>
       ) : null}

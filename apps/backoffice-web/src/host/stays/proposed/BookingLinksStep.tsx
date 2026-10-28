@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { host } from '../../../api';
 import { useAction } from '../../../useAction';
 import { CopyButton } from '../StayPage';
@@ -19,27 +20,29 @@ export function BookingLinksStep({
   propertyName?: string;
   onDone: () => void;
 }) {
+  const { t } = useTranslation(['host', 'common']);
   const headingId = useId();
   const { busy, error, run } = useAction();
   return (
     <section className="panel booking-step" aria-labelledby={headingId}>
       <h2 id={headingId}>
-        Approve Fetivi's link on Booking.com{propertyName ? ` · ${propertyName}` : ''}
+        {propertyName
+          ? t('stays.approveLinkFor', { property: propertyName })
+          : t('stays.approveLink')}
       </h2>
-      <p className="muted">
-        Booking.com removes links to sites it does not know. Approve Fetivi's guest link once, so
-        the message with the link reaches your guests.
-      </p>
+      <p className="muted">{t('stays.approveWhy')}</p>
       <ol className="steps-list">
+        <li>{t('stays.approveStep1')}</li>
         <li>
-          In the Booking.com extranet, open your property's messaging or security settings and find
-          "Your approved links".
+          <Trans
+            t={t}
+            i18nKey="stays.approveStep2"
+            values={{ domain }}
+            components={{ strong: <strong className="mono-text" /> }}
+          />
+          <CopyButton text={domain} label={t('stays.copyDomain')} />
         </li>
-        <li>
-          Add <strong className="mono-text">{domain}</strong>
-          <CopyButton text={domain} label="Copy domain" />
-        </li>
-        <li>Come back here and choose Done.</li>
+        <li>{t('stays.approveStep3')}</li>
       </ol>
       {error ? <p role="alert">{error}</p> : null}
       <div className="actions">
@@ -54,7 +57,7 @@ export function BookingLinksStep({
             })
           }
         >
-          Done
+          {t('stays.done')}
         </button>
       </div>
     </section>

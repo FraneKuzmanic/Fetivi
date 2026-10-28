@@ -9,11 +9,23 @@ import { longDay, todayIso } from '../forms/datetime';
 import { MoreActions } from './MoreActions';
 
 const HOST_ME: Me = {
-  account: { id: 'h1', email: 'host@example.test', role: 'host', language: 'en' },
+  account: {
+    id: 'h1',
+    email: 'host@example.test',
+    role: 'host',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: null,
 };
 const ADMIN_ME: Me = {
-  account: { id: 'a1', email: 'admin@example.test', role: 'admin', language: 'en' },
+  account: {
+    id: 'a1',
+    email: 'admin@example.test',
+    role: 'admin',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: null,
 };
 
@@ -91,7 +103,7 @@ describe('Shell header', () => {
   it('shows the page title as the only h1, today’s date and the tab title', async () => {
     await mount('/', HOST_ME);
     await vi.waitFor(() => expect(header()?.querySelector('h1')?.textContent).toBe('Today'));
-    expect(header()?.querySelector('.topbar-date')?.textContent).toBe(longDay(todayIso()));
+    expect(header()?.querySelector('.topbar-date')?.textContent).toBe(longDay(todayIso(), 'en'));
     expect(document.querySelectorAll('h1')).toHaveLength(1);
     expect(header()?.closest('main')).toBeNull();
     expect(document.title).toBe('Today · Fetivi');

@@ -155,6 +155,22 @@ describe('the Provider email', () => {
     expect(order?.providerLinkTokenHash).toBeNull();
   });
 
+  it("writes to a Croatian host in the host's language (53)", async () => {
+    const { job } = await confirmedOrder({ host: true });
+    const setLanguage = (uiLanguage: 'hr' | 'en') =>
+      testDb.db.update(accounts).set({ uiLanguage }).where(eq(accounts.id, unit.hostId));
+    await setLanguage('hr');
+    try {
+      const mailer = createMemoryMailer();
+      expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('sent');
+      expect(mailer.sent[0]?.subject).toBe('Nova narudžba: Kayak tour');
+      expect(mailer.sent[0]?.text).toContain('Datum: 4.5.2027.');
+      expect(mailer.sent[0]?.text).toContain('Gost: Ana Horvat');
+    } finally {
+      await setLanguage('en');
+    }
+  });
+
   it('asks the host about an own on-request Order, and skips a stale proposal (38)', async () => {
     const { offerId } = await seedOrderableOffer(testDb.db, {
       hostId: unit.hostId,

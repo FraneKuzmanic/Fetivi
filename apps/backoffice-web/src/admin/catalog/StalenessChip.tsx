@@ -1,7 +1,8 @@
 import type { StalenessStatus } from '@fetivi/domain/catalog-vocabulary';
+import { useTranslation } from 'react-i18next';
 import type { Staleness } from '../../api';
 import { formatDay } from '../../forms/datetime';
-import { STALENESS_LABELS } from '../../forms/labels';
+import { useLabels } from '../../i18n/useLabels';
 
 const TONE: Record<StalenessStatus, string> = {
   fresh: 'ok',
@@ -15,16 +16,18 @@ export const day = (iso: string) => formatDay(iso);
 
 /** Whether a record was checked recently enough, or is due for a re-check. */
 export function StalenessChip({ staleness }: { staleness: Staleness }) {
+  const { t } = useTranslation(['admin', 'common', 'host']);
+  const labels = useLabels();
   const { status, staleAt } = staleness;
   const title =
     staleAt === null
       ? undefined
       : status === 'stale'
-        ? `Re-check due since ${day(staleAt)}`
-        : `Next re-check due ${day(staleAt)}`;
+        ? t('catalog.dueSince', { day: day(staleAt) })
+        : t('catalog.nextDue', { day: day(staleAt) });
   return (
     <span className={`chip ${TONE[status]}`} title={title}>
-      {STALENESS_LABELS[status]}
+      {labels.staleness[status]}
     </span>
   );
 }

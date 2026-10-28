@@ -3,12 +3,24 @@ import { type Access, type AccessDecision, decideAccess, type Principal } from '
 
 const host: Principal = {
   sessionId: 's1',
-  account: { id: 'host-1', email: 'h@example.test', role: 'host', language: 'en' },
+  account: {
+    id: 'host-1',
+    email: 'h@example.test',
+    role: 'host',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: null,
 };
 const admin: Principal = {
   sessionId: 's2',
-  account: { id: 'admin-1', email: 'a@example.test', role: 'admin', language: 'en' },
+  account: {
+    id: 'admin-1',
+    email: 'a@example.test',
+    role: 'admin',
+    language: 'en',
+    languageChosen: false,
+  },
   actingAs: null,
 };
 const acting: Principal = { ...admin, actingAs: { id: 'host-2', email: 'h2@example.test' } };
