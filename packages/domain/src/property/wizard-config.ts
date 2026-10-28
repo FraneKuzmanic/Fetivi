@@ -4,7 +4,6 @@ import {
   type Bed,
   BLOCK_CATEGORIES,
   type BlockCategory,
-  type BlockVisibility,
   type CheckInMethod,
   type HostBlockCategory,
   type ParkingType,
@@ -68,10 +67,8 @@ export interface WizardFieldDef<Id extends string = string> {
   level: WizardLevelOrHidden;
   byType?: Partial<Record<PropertyType, WizardLevelOrHidden>>;
   byCheckInMethod?: Partial<Record<CheckInMethod, WizardLevelOrHidden>>;
-  prompt?: { category: HostBlockCategory; visibility: BlockVisibility };
+  prompt?: { category: HostBlockCategory };
 }
-
-const always = (category: HostBlockCategory) => ({ category, visibility: 'always' }) as const;
 
 const FIELDS = [
   // Arrival & access
@@ -147,7 +144,7 @@ const FIELDS = [
     kind: 'prompt',
     columns: [],
     level: 'recommended',
-    prompt: { category: 'arrival_access', visibility: 'after_release' },
+    prompt: { category: 'arrival_access' },
   },
   // Wi-Fi & essentials
   {
@@ -191,7 +188,7 @@ const FIELDS = [
     kind: 'prompt',
     columns: [],
     level: 'optional',
-    prompt: always('wifi_essentials'),
+    prompt: { category: 'wifi_essentials' },
   },
   // House rules & checkout
   {
@@ -241,7 +238,7 @@ const FIELDS = [
     kind: 'prompt',
     columns: [],
     level: 'recommended',
-    prompt: always('house_rules_checkout'),
+    prompt: { category: 'house_rules_checkout' },
   },
   {
     id: 'shared_spaces',
@@ -250,7 +247,7 @@ const FIELDS = [
     columns: [],
     level: 'hidden',
     byType: { room: 'recommended', guesthouse: 'recommended' },
-    prompt: always('house_rules_checkout'),
+    prompt: { category: 'house_rules_checkout' },
   },
   {
     id: 'rubbish_recycling',
@@ -259,7 +256,7 @@ const FIELDS = [
     columns: [],
     level: 'optional',
     byType: { house: 'recommended', villa: 'recommended' },
-    prompt: always('house_rules_checkout'),
+    prompt: { category: 'house_rules_checkout' },
   },
   // How-tos
   {
@@ -268,7 +265,7 @@ const FIELDS = [
     kind: 'prompt',
     columns: [],
     level: 'recommended',
-    prompt: always('how_tos'),
+    prompt: { category: 'how_tos' },
   },
   {
     id: 'kitchen_appliances',
@@ -276,7 +273,7 @@ const FIELDS = [
     kind: 'prompt',
     columns: [],
     level: 'optional',
-    prompt: always('how_tos'),
+    prompt: { category: 'how_tos' },
   },
   {
     id: 'laundry',
@@ -284,7 +281,7 @@ const FIELDS = [
     kind: 'prompt',
     columns: [],
     level: 'optional',
-    prompt: always('how_tos'),
+    prompt: { category: 'how_tos' },
   },
   {
     id: 'pool_outdoor',
@@ -293,7 +290,7 @@ const FIELDS = [
     columns: [],
     level: 'hidden',
     byType: { villa: 'recommended', house: 'optional', guesthouse: 'optional' },
-    prompt: always('how_tos'),
+    prompt: { category: 'how_tos' },
   },
   {
     id: 'hot_water',
@@ -302,7 +299,7 @@ const FIELDS = [
     columns: [],
     level: 'optional',
     byType: { room: 'hidden' },
-    prompt: always('how_tos'),
+    prompt: { category: 'how_tos' },
   },
   // Saved places: info only, no fields.
   // Host picks
@@ -312,7 +309,7 @@ const FIELDS = [
     kind: 'prompt',
     columns: [],
     level: 'recommended',
-    prompt: always('host_picks'),
+    prompt: { category: 'host_picks' },
   },
   // Contacts & emergency
   {
@@ -335,7 +332,7 @@ const FIELDS = [
     kind: 'prompt',
     columns: [],
     level: 'optional',
-    prompt: always('contacts_emergency'),
+    prompt: { category: 'contacts_emergency' },
   },
 ] as const satisfies readonly WizardFieldDef[];
 

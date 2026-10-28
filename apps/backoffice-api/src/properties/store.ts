@@ -3,6 +3,7 @@ import {
   type BlockMediaRow,
   type BlockRow,
   blockMedia,
+  blockVisibilityOf,
   type Db,
   type EffectiveUnit,
   type Executor,
@@ -100,10 +101,9 @@ export function ownedBlockCondition(db: Executor, hostId: string) {
 
 // --- Blocks -----------------------------------------------------------------------------------
 
-type NewBlock = typeof infoBlocks.$inferInsert;
-type BlockChanges = Partial<
-  Pick<NewBlock, 'category' | 'title' | 'body' | 'visibility' | 'position'>
->;
+/** Visibility is never written by a caller: it follows the category (ADR 0025). */
+type NewBlock = Omit<typeof infoBlocks.$inferInsert, 'visibility'>;
+type BlockChanges = Partial<Pick<NewBlock, 'category' | 'title' | 'body' | 'position'>>;
 
 export async function countBlocks(
   db: Executor,
@@ -121,6 +121,7 @@ export async function countBlocks(
  * The one write path for block content. An insert starts at revision 1; an update adds one only
  * when the title or body changes. Each new revision enqueues its translation job in the same
  * transaction, keyed by (block id, revision). Inside a transaction it runs as a savepoint.
+ * Visibility is derived from the category here, on insert and on every category change.
  */
 export async function saveBlock(
   db: Executor,
@@ -131,7 +132,10 @@ export async function saveBlock(
 ): Promise<BlockRow> {
   return db.transaction(async (tx) => {
     if ('insert' in write) {
-      const [block] = await tx.insert(infoBlocks).values(write.insert).returning();
+      const [block] = await tx
+        .insert(infoBlocks)
+        .values({ ...write.insert, visibility: blockVisibilityOf(write.insert.category) })
+        .returning();
       if (!block) throw new Error('block insert returned nothing');
       await enqueueTranslation(tx, queue, block);
       return block;
@@ -152,6 +156,7 @@ export async function saveBlock(
       .update(infoBlocks)
       .set({
         ...changes,
+        ...(changes.category ? { visibility: blockVisibilityOf(changes.category) } : {}),
         updatedAt: now,
         ...(textChanged
           ? {

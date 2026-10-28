@@ -7,6 +7,7 @@ import {
   createPhotonGeocoder,
   createStripeGateway,
   ensureQueues,
+  usageRecorder,
 } from '@fetivi/domain';
 import { W3CTraceContextPropagator } from '@fetivi/telemetry';
 import { PgBoss } from 'pg-boss';
@@ -49,6 +50,7 @@ const app = buildApp({
   manualImportModel: createAnthropicManualImportModel({
     apiKey: config.ANTHROPIC_API_KEY,
     fetch: egress.fetch,
+    onUsage: usageRecorder(db, 'manual_import'),
   }),
   resendWebhookSecret: config.RESEND_WEBHOOK_SECRET,
   vapidPublicKey: config.VAPID_PUBLIC_KEY,

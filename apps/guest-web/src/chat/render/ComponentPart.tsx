@@ -2,6 +2,7 @@ import {
   AvailabilityPicker,
   ChoiceCard,
   DayPlan,
+  EventList,
   FollowUpChips,
   HostMessageSent,
   PlaceCarousel,
@@ -21,6 +22,7 @@ import { usePay } from '../../my-trip/orders/orders-api';
 import { AlertOffer } from '../../push/AlertOffer';
 import {
   choiceLabels,
+  eventLabels,
   hostSentLabels,
   pickedText,
   pickerLabels,
@@ -101,6 +103,14 @@ export function ComponentPart({
           canSave={savedPlaces.canSave}
           onToggleSave={savedPlaces.toggle}
           labels={placeLabels(t, i18n.language)}
+        />
+      );
+    case 'event-list':
+      return (
+        <EventList
+          events={part.payload.events}
+          labels={eventLabels(t, i18n.language)}
+          locale={i18n.language}
         />
       );
     case 'availability-picker': {

@@ -17,7 +17,7 @@ One rentable space of a Property. It inherits the Property's content and may ove
 _Avoid_: Apartment (as the generic term), room, listing
 
 **Info block**:
-A titled piece of Markdown guest information in one Guide section, owned by a Property or a Unit, with a revision number that grows with every edit of its title or text, every added Block media item and every caption change.
+A titled piece of Markdown guest information in one Guide section, owned by a Property or a Unit, with a revision number that grows with every edit of its title or text, every added Block media item and every caption change. Its section decides when guests see it: Arrival and access blocks wait for the arrival release, all others are always visible (ADR 0025).
 _Avoid_: Article, note, card
 
 **Block media**:

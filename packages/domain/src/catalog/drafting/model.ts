@@ -1,6 +1,7 @@
 import Anthropic, { type ClientOptions } from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import type { Egress } from '@fetivi/egress';
+import { type ModelUsage, usageOf } from '../../metrics/usage';
 import { buildDraftingMessage, DRAFTING_SYSTEM_PROMPT, type DraftingInput } from './prompt';
 import { DraftExtraction, type DraftExtractionData } from './schema';
 import { DRAFTING_LIMITS, DRAFTING_MODEL_ID } from './vocabulary';
@@ -22,6 +23,8 @@ export interface DraftingModel {
 export function createAnthropicDraftingModel(opts: {
   apiKey: string | undefined;
   fetch: Egress['fetch'];
+  /** Gets each successful response's tokens (a failed call has none and reports nothing). */
+  onUsage?: (usage: ModelUsage) => void;
 }): DraftingModel {
   const { apiKey } = opts;
   if (!apiKey) {
@@ -52,6 +55,7 @@ export function createAnthropicDraftingModel(opts: {
             output_config: { effort: 'low', format: zodOutputFormat(DraftExtraction) },
           })
           .finalMessage();
+        opts.onUsage?.(usageOf(DRAFTING_MODEL_ID, message.usage));
         if (message.stop_reason !== 'end_turn') {
           return { ok: false, error: 'model-error', detail: `stop_reason ${message.stop_reason}` };
         }

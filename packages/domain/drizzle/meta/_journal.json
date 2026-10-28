@@ -379,6 +379,20 @@
       "when": 1793060573485,
       "tag": "0053_more_price_units",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1793152987143,
+      "tag": "0054_block_visibility_from_section",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1793155026911,
+      "tag": "0055_model_usage",
+      "breakpoints": true
     }
   ]
 }

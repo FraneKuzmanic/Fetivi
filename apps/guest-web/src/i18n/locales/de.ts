@@ -156,6 +156,7 @@ export const de: Messages = {
     somethingElse: 'Etwas anderes',
     send: 'Senden',
     places: 'Orte',
+    events: 'Veranstaltungen',
     placesShown: 'Angezeigte Ortskarten: {{count}}',
     viewCards: 'Karten',
     viewMap: 'Landkarte',

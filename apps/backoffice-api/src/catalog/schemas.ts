@@ -91,6 +91,7 @@ const eventFields = {
   startsAt: localDateTime,
   endsAt: localDateTime,
   location: latLng.optional(),
+  address: optionalLine(LIMITS.shortText).optional(),
   venueName: optionalLine(LIMITS.shortText).optional(),
   websiteUrl: optionalUrl.optional(),
   interests: interests.optional(),

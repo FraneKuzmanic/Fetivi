@@ -1,6 +1,7 @@
 import Anthropic, { type ClientOptions } from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import type { Egress } from '@fetivi/egress';
+import { type ModelUsage, usageOf } from '../metrics/usage';
 import {
   buildUserMessage,
   TRANSLATION_MODEL_ID,
@@ -26,6 +27,8 @@ export interface TranslationModel {
 export function createAnthropicTranslationModel(opts: {
   apiKey: string | undefined;
   fetch: Egress['fetch'];
+  /** Gets each successful response's tokens (a failed call has none and reports nothing). */
+  onUsage?: (usage: ModelUsage) => void;
 }): TranslationModel {
   const { apiKey } = opts;
   if (!apiKey) {
@@ -56,6 +59,7 @@ export function createAnthropicTranslationModel(opts: {
             output_config: { effort: 'high', format: zodOutputFormat(TranslationOutput) },
           })
           .finalMessage();
+        opts.onUsage?.(usageOf(TRANSLATION_MODEL_ID, message.usage));
         if (message.stop_reason !== 'end_turn') {
           return { ok: false, error: 'model-error', detail: `stop_reason ${message.stop_reason}` };
         }

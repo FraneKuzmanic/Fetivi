@@ -7,7 +7,12 @@ import {
   type UnitRow,
 } from '../property/effective';
 import type { LocalizableText } from '../property/field-texts';
-import { GUEST_LANGUAGES, type GuestLanguage, SHARED_CORE_FIELDS } from '../property/vocabulary';
+import {
+  blockVisibilityOf,
+  GUEST_LANGUAGES,
+  type GuestLanguage,
+  SHARED_CORE_FIELDS,
+} from '../property/vocabulary';
 import { guestProjection, type ProjectionInput } from './projection';
 
 const at = new Date('2026-10-01T10:00:00Z');
@@ -304,6 +309,34 @@ describe('guestProjection arrivalDetailsHeldBack', () => {
       ],
     });
     expect(p.stay.arrivalDetailsHeldBack).toBe(false);
+  });
+
+  it('holds back arrival and access but shows contacts before the release (ADR 0025)', () => {
+    const bySection = (id: string, category: BlockRow['category']) =>
+      block(id, { category, visibility: blockVisibilityOf(category) });
+    const p = project({
+      blocks: [
+        bySection(BLOCK_ALWAYS, 'contacts_emergency'),
+        bySection(BLOCK_AFTER, 'arrival_access'),
+      ],
+      property: {
+        hostPhone: SECRETS.hostPhone,
+        emergencyContactPhone: SECRETS.emergencyContactPhone,
+      },
+      unit: { wifiPassword: SECRETS.wifiPassword, doorCode: SECRETS.doorCode },
+    });
+    expect(p.stay.arrivalDetailsHeldBack).toBe(true);
+    const json = JSON.stringify(p);
+    expect(json).toContain(title(BLOCK_ALWAYS, 1, 'en'));
+    expect(json).not.toContain(title(BLOCK_AFTER, 1, 'en'));
+    // Typed secrets stay gated by their fields, whatever section they belong to.
+    expect(p.contacts).toEqual({
+      hostPhone: null,
+      emergencyContactName: 'Ana',
+      emergencyContactPhone: null,
+    });
+    expect(p.wifi?.password).toBeNull();
+    expect(p.arrival).toBeNull();
   });
 
   it('is false from the release instant on, even with values', () => {

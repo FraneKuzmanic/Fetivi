@@ -30,7 +30,7 @@ import type {
   ProviderLanguage,
 } from '../offers/vocabulary';
 import {
-  type BlockVisibility,
+  blockVisibilityOf,
   GUEST_LANGUAGES,
   type GuestLanguage,
   type HostBlockCategory,
@@ -135,7 +135,6 @@ export interface SeedBlock {
   category: HostBlockCategory;
   title: string;
   body: string;
-  visibility?: BlockVisibility;
   /** Each item's captions are `<lang>:<caption>`; the files themselves are not written. */
   media?: { caption: string; contentType: MediaContentType }[];
 }
@@ -292,7 +291,7 @@ export async function seedGuestUnit(
         category: b.category,
         title: b.title,
         body: b.body,
-        visibility: b.visibility ?? 'always',
+        visibility: blockVisibilityOf(b.category),
         position: position + 1,
         publishedRevision: 1,
         translationStatus: 'published',

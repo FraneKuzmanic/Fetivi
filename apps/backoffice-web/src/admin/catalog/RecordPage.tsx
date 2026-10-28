@@ -46,6 +46,7 @@ import {
   PLACE_CATEGORY_LABELS,
   TRANSPORT_MODE_LABELS,
 } from '../../forms/labels';
+import { MapPicker } from '../../forms/MapPicker';
 import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
@@ -75,28 +76,34 @@ const coordsOf = (p: LatLng | null): Coords => ({ lat: p?.lat ?? null, lng: p?.l
 const locationOf = (c: Coords): LatLng | null =>
   c.lat === null && c.lng === null ? null : ({ lat: c.lat, lng: c.lng } as LatLng);
 
-function CoordsFields({ value, onChange }: { value: Coords; onChange: (c: Coords) => void }) {
+const NO_LOCATION = 'Place the pin on the map or enter the coordinates.';
+
+/** The record's point on the map; a picked search result also fills an empty address. */
+function LocationPicker({
+  value,
+  onChange,
+  onAddress,
+  required,
+}: {
+  value: Coords;
+  onChange: (c: Coords) => void;
+  /** Where the record has an address field: called with the picked place's address. */
+  onAddress?: (address: string) => void;
+  required?: boolean;
+}) {
   return (
-    <div className="field-row">
-      <NumberField
-        label="Latitude"
-        value={value.lat}
-        min={-90}
-        max={90}
-        step="any"
-        placeholder="43.5161"
-        onChange={(lat) => onChange({ ...value, lat })}
-      />
-      <NumberField
-        label="Longitude"
-        value={value.lng}
-        min={-180}
-        max={180}
-        step="any"
-        placeholder="16.2475"
-        onChange={(lng) => onChange({ ...value, lng })}
-      />
-    </div>
+    <MapPicker
+      label="Location on the map"
+      value={value}
+      onChange={onChange}
+      required={required}
+      search={{
+        label: 'Find the place',
+        placeholder: 'Name or address',
+        kind: 'address',
+        onPick: onAddress ? (place) => onAddress(place.addressLine ?? place.label) : undefined,
+      }}
+    />
   );
 }
 
@@ -189,6 +196,7 @@ export function NewRecordPage() {
   const [placeCategory, setPlaceCategory] = useState<PlaceCategory>('restaurant');
   const [transportMode, setTransportMode] = useState<TransportMode>('bus');
   const [coords, setCoords] = useState<Coords>({ lat: null, lng: null });
+  const [address, setAddress] = useState<string | null>(null);
   const [startsAt, setStartsAt] = useState<string | null>(null);
   const [endsAt, setEndsAt] = useState<string | null>(null);
   const [travelMinutes, setTravelMinutes] = useState<number | null>(null);
@@ -228,6 +236,7 @@ export function NewRecordPage() {
           startsAt: startsAt ?? '',
           endsAt: endsAt ?? '',
           location,
+          address,
           interests,
         };
       case 'transport_note':
@@ -247,6 +256,7 @@ export function NewRecordPage() {
   function submit(event: FormEvent) {
     event.preventDefault();
     void run(async () => {
+      if (kind === 'place' && locationOf(coords) === null) throw new Error(NO_LOCATION);
       const created = await catalog.createRecord(id, body());
       navigate(`/admin/catalog/records/${created.id}`, { replace: true });
     });
@@ -288,7 +298,7 @@ export function NewRecordPage() {
                   labels={PLACE_CATEGORY_LABELS}
                   onChange={(c) => c && setPlaceCategory(c)}
                 />
-                <CoordsFields value={coords} onChange={setCoords} />
+                <LocationPicker value={coords} onChange={setCoords} required />
               </>
             ) : null}
             {kind === 'event' ? (
@@ -309,7 +319,23 @@ export function NewRecordPage() {
                 />
               </div>
             ) : null}
-            {kind === 'event' ? <small>{EVENT_TIME_HINT}</small> : null}
+            {kind === 'event' ? (
+              <>
+                <small>{EVENT_TIME_HINT}</small>
+                <TextField
+                  label="Address"
+                  hint="Optional."
+                  value={address}
+                  maxLength={LIMITS.shortText}
+                  onChange={setAddress}
+                />
+                <LocationPicker
+                  value={coords}
+                  onChange={setCoords}
+                  onAddress={(a) => setAddress((now) => now ?? a)}
+                />
+              </>
+            ) : null}
             {kind === 'transport_note' ? (
               <SelectField
                 label="Mode"
@@ -329,7 +355,7 @@ export function NewRecordPage() {
                   max={CATALOG_LIMITS.travelMinutesMax}
                   onChange={setTravelMinutes}
                 />
-                <CoordsFields value={coords} onChange={setCoords} />
+                <LocationPicker value={coords} onChange={setCoords} />
               </>
             ) : null}
             {kind === 'day_trip' || kind === 'transport_note' ? (
@@ -414,6 +440,7 @@ function detailsBody(kind: CatalogKind, d: Draft, location: LatLng | null): Cata
         startsAt: d.startsAt ?? '',
         endsAt: d.endsAt ?? '',
         location,
+        address: d.address,
         venueName: d.venueName,
         websiteUrl: d.websiteUrl,
         interests: d.interests,
@@ -680,6 +707,13 @@ export function RecordPage() {
                   maxLength={LIMITS.shortText}
                   onChange={set('venueName')}
                 />
+                <TextField
+                  label="Address"
+                  hint="Optional."
+                  value={draft.address}
+                  maxLength={LIMITS.shortText}
+                  onChange={set('address')}
+                />
               </>
             ) : null}
             {kind === 'transport_note' ? (
@@ -706,7 +740,15 @@ export function RecordPage() {
             ) : null}
             {kind !== 'transport_note' ? (
               <>
-                <CoordsFields value={coords} onChange={setCoords} />
+                <LocationPicker
+                  value={coords}
+                  onChange={setCoords}
+                  onAddress={
+                    kind === 'day_trip'
+                      ? undefined
+                      : (a) => setDraft((d) => (d && d.address === null ? { ...d, address: a } : d))
+                  }
+                />
                 <InputField
                   label="Website"
                   type="url"

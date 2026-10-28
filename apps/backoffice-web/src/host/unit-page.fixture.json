@@ -1,0 +1,374 @@
+{
+  "unit": {
+    "id": "u1",
+    "propertyId": "p1",
+    "propertyName": "Villa 52",
+    "name": "A1",
+    "qrSlug": null,
+    "qrLink": null,
+    "live": false,
+    "approved": false,
+    "timezone": "Europe/Zagreb",
+    "checkInTime": null,
+    "checkoutTime": null,
+    "checkInMethod": null,
+    "accessInstructions": null,
+    "parkingType": null,
+    "parkingNotes": null,
+    "petsAllowed": null,
+    "smokingAllowed": null,
+    "partiesAllowed": null,
+    "quietHoursFrom": null,
+    "quietHoursTo": null,
+    "houseRulesNotes": null,
+    "hostPhone": null,
+    "emergencyContactName": null,
+    "emergencyContactPhone": null,
+    "licenceNumber": null,
+    "noWifi": false,
+    "wifiNetwork": null,
+    "wifiPassword": null,
+    "doorCode": null,
+    "lockboxCode": null,
+    "maxOccupancy": null,
+    "bedrooms": null,
+    "beds": [],
+    "bathrooms": null,
+    "arrivalReleaseDaysBefore": 1,
+    "createdAt": "2026-10-28T01:51:37.404Z",
+    "updatedAt": "2026-10-28T01:51:37.404Z",
+    "propertyValues": {
+      "checkInTime": null,
+      "checkoutTime": null,
+      "checkInMethod": null,
+      "accessInstructions": null,
+      "parkingType": null,
+      "parkingNotes": null,
+      "petsAllowed": null,
+      "smokingAllowed": null,
+      "partiesAllowed": null,
+      "quietHoursFrom": null,
+      "quietHoursTo": null,
+      "houseRulesNotes": null,
+      "hostPhone": null,
+      "emergencyContactName": null,
+      "emergencyContactPhone": null,
+      "licenceNumber": null
+    },
+    "propertyAmenities": [],
+    "amenities": [],
+    "blocks": [],
+    "propertyBlocks": [],
+    "hiddenBlockIds": [],
+    "effective": {
+      "checkInTime": null,
+      "checkoutTime": null,
+      "checkInMethod": null,
+      "accessInstructions": null,
+      "parkingType": null,
+      "parkingNotes": null,
+      "petsAllowed": null,
+      "smokingAllowed": null,
+      "partiesAllowed": null,
+      "quietHoursFrom": null,
+      "quietHoursTo": null,
+      "houseRulesNotes": null,
+      "hostPhone": null,
+      "emergencyContactName": null,
+      "emergencyContactPhone": null,
+      "licenceNumber": null,
+      "unitId": "u1",
+      "unitName": "A1",
+      "propertyId": "p1",
+      "propertyName": "Villa 52",
+      "addressLine": "Gospe kraj mora 13",
+      "city": "Trogir",
+      "postalCode": "21220",
+      "country": "HR",
+      "location": {
+        "lat": 43.515056,
+        "lng": 16.2577232
+      },
+      "timezone": "Europe/Zagreb",
+      "buildingDoorCode": null,
+      "approvedAt": null,
+      "propertyType": null,
+      "qrSlug": null,
+      "noWifi": false,
+      "wifiNetwork": null,
+      "wifiPassword": null,
+      "doorCode": null,
+      "lockboxCode": null,
+      "maxOccupancy": null,
+      "bedrooms": null,
+      "beds": [],
+      "bathrooms": null,
+      "arrivalReleaseDaysBefore": 1,
+      "inherited": {
+        "checkInTime": true,
+        "checkoutTime": true,
+        "checkInMethod": true,
+        "accessInstructions": true,
+        "parkingType": true,
+        "parkingNotes": true,
+        "petsAllowed": true,
+        "smokingAllowed": true,
+        "partiesAllowed": true,
+        "quietHoursFrom": true,
+        "quietHoursTo": true,
+        "houseRulesNotes": true,
+        "hostPhone": true,
+        "emergencyContactName": true,
+        "emergencyContactPhone": true,
+        "licenceNumber": true
+      },
+      "blocks": [
+        {
+          "id": "0410d73d-f9ad-403e-aa78-b8dabf8e3f8a",
+          "propertyId": null,
+          "unitId": "u1",
+          "category": "contacts_emergency",
+          "title": "Medical help",
+          "body": "Hitna pomoc: 194. Ljekarna: https://ljekarna.hr.\n- [Nazovite nas](tel:+385 91 390 6362)\n- [Pisite nam](mailto:host@example.hr)\n- <https://vila.example.hr>",
+          "visibility": "always",
+          "revision": 2,
+          "translation": {
+            "status": "published",
+            "error": null,
+            "publishedRevision": 2,
+            "sourceLanguage": "hr"
+          },
+          "replacesBlockId": null,
+          "wizardKey": "medical_help",
+          "position": 0,
+          "createdAt": "2026-10-28T01:52:09.881Z",
+          "updatedAt": "2026-10-28T01:52:39.671Z",
+          "media": [],
+          "source": "unit"
+        },
+        {
+          "id": "ab93d0db-8703-494e-be92-fb19cbb93d8b",
+          "propertyId": null,
+          "unitId": "u1",
+          "category": "contacts_emergency",
+          "title": "Kontakti",
+          "body": "Hitna: [194](tel:194). Ljekarna: https://ljekarna.hr. Mail: [pisite](mailto:a@b.hr)",
+          "visibility": "always",
+          "revision": 1,
+          "translation": {
+            "status": "published",
+            "error": null,
+            "publishedRevision": 1,
+            "sourceLanguage": "hr"
+          },
+          "replacesBlockId": null,
+          "wizardKey": null,
+          "position": 0,
+          "createdAt": "2026-10-28T01:53:30.449Z",
+          "updatedAt": "2026-10-28T01:53:40.298Z",
+          "media": [],
+          "source": "unit"
+        }
+      ],
+      "amenities": []
+    },
+    "fieldTranslations": []
+  },
+  "wizard": {
+    "unitId": "u1",
+    "propertyId": "p1",
+    "unitName": "A1",
+    "propertyName": "Villa 52",
+    "propertyType": null,
+    "approved": false,
+    "live": false,
+    "fields": {
+      "address": {
+        "level": "required",
+        "filled": true
+      },
+      "location": {
+        "level": "recommended",
+        "filled": true
+      },
+      "check_in_time": {
+        "level": "required",
+        "filled": false
+      },
+      "check_in_method": {
+        "level": "required",
+        "filled": false
+      },
+      "access_instructions": {
+        "level": "required",
+        "filled": false
+      },
+      "building_door_code": {
+        "level": "optional",
+        "filled": false
+      },
+      "door_code": {
+        "level": "optional",
+        "filled": false
+      },
+      "lockbox_code": {
+        "level": "optional",
+        "filled": false
+      },
+      "arrival_release": {
+        "level": "optional",
+        "filled": true
+      },
+      "arrival_directions": {
+        "level": "recommended",
+        "filled": false
+      },
+      "wifi": {
+        "level": "required",
+        "filled": false
+      },
+      "amenities": {
+        "level": "recommended",
+        "filled": false
+      },
+      "parking": {
+        "level": "recommended",
+        "filled": false
+      },
+      "occupancy": {
+        "level": "recommended",
+        "filled": false
+      },
+      "rooms_beds": {
+        "level": "recommended",
+        "filled": false
+      },
+      "supplies": {
+        "level": "optional",
+        "filled": false
+      },
+      "checkout_time": {
+        "level": "required",
+        "filled": false
+      },
+      "house_rules": {
+        "level": "recommended",
+        "filled": false
+      },
+      "quiet_hours": {
+        "level": "optional",
+        "filled": false
+      },
+      "house_rules_notes": {
+        "level": "optional",
+        "filled": false
+      },
+      "licence_number": {
+        "level": "recommended",
+        "filled": false
+      },
+      "checkout_steps": {
+        "level": "recommended",
+        "filled": false
+      },
+      "rubbish_recycling": {
+        "level": "optional",
+        "filled": false
+      },
+      "heating_cooling": {
+        "level": "recommended",
+        "filled": false
+      },
+      "kitchen_appliances": {
+        "level": "optional",
+        "filled": false
+      },
+      "laundry": {
+        "level": "optional",
+        "filled": false
+      },
+      "hot_water": {
+        "level": "optional",
+        "filled": false
+      },
+      "neighbourhood_tips": {
+        "level": "recommended",
+        "filled": false
+      },
+      "host_phone": {
+        "level": "required",
+        "filled": false
+      },
+      "emergency_contact": {
+        "level": "recommended",
+        "filled": false
+      },
+      "medical_help": {
+        "level": "optional",
+        "filled": true
+      }
+    },
+    "progress": {
+      "percent": 11,
+      "filled": 2,
+      "total": 19,
+      "steps": {
+        "arrival_access": {
+          "filled": 2,
+          "total": 6,
+          "missingRequired": ["check_in_time", "check_in_method", "access_instructions"],
+          "missingRecommended": ["arrival_directions"]
+        },
+        "wifi_essentials": {
+          "filled": 0,
+          "total": 5,
+          "missingRequired": ["wifi"],
+          "missingRecommended": ["amenities", "parking", "occupancy", "rooms_beds"]
+        },
+        "house_rules_checkout": {
+          "filled": 0,
+          "total": 4,
+          "missingRequired": ["checkout_time"],
+          "missingRecommended": ["house_rules", "licence_number", "checkout_steps"]
+        },
+        "how_tos": {
+          "filled": 0,
+          "total": 1,
+          "missingRequired": [],
+          "missingRecommended": ["heating_cooling"]
+        },
+        "saved_places": {
+          "filled": 0,
+          "total": 0,
+          "missingRequired": [],
+          "missingRecommended": []
+        },
+        "host_picks": {
+          "filled": 0,
+          "total": 1,
+          "missingRequired": [],
+          "missingRecommended": ["neighbourhood_tips"]
+        },
+        "contacts_emergency": {
+          "filled": 0,
+          "total": 2,
+          "missingRequired": ["host_phone"],
+          "missingRecommended": ["emergency_contact"]
+        }
+      }
+    },
+    "resumeStep": "arrival_access",
+    "goLive": {
+      "ready": false,
+      "missing": [
+        "approval",
+        "check_in_time",
+        "check_in_method",
+        "access_instructions",
+        "checkout_time",
+        "wifi",
+        "host_phone"
+      ]
+    }
+  }
+}

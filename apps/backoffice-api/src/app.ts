@@ -18,6 +18,7 @@ import { reconciliationRoutes } from './admin/reconciliation';
 import { adminRoutes } from './admin/routes';
 import { seedingRoutes } from './admin/seeding';
 import { platformSettingsRoutes } from './admin/settings';
+import { usageRoutes } from './admin/usage';
 import { registerAuth } from './auth/plugin';
 import { authRoutes } from './auth/routes';
 import { calendarRoutes } from './calendars/routes';
@@ -95,6 +96,7 @@ export function buildApp(deps: AppDeps) {
   app.register(curationRoutes, { db, queue, now });
   app.register(feedbackStatsRoutes, { db });
   app.register(platformSettingsRoutes, { db, now });
+  app.register(usageRoutes, { db, now });
   app.register(seedingRoutes, { db, queue, now });
   app.register(draftingRoutes, { db, queue, now });
   app.register(adminOrderRoutes, { db, queue, now });

@@ -78,6 +78,33 @@ describe('component parts in the chat', () => {
     expect(html).toContain('>Save</button>');
   });
 
+  it('renders found events as a numbered list with its map', () => {
+    const event = {
+      id: 'e1',
+      title: 'Klapa night',
+      startsAt: '2027-07-10T21:00',
+      endsAt: '2027-07-10T23:00',
+      venueName: 'Kamerlengo Fortress',
+      address: null,
+      location: { lat: 43.5161, lng: 16.2475 },
+      distanceKm: 0.4,
+    };
+    const html = render([
+      question,
+      answer([
+        {
+          type: 'data-component',
+          id: 'c3',
+          data: { name: 'event-list', payload: { events: [event] } },
+        },
+      ]),
+    ]);
+    expect(html).toContain('aria-label="Events"');
+    expect(html).toContain('Klapa night');
+    expect(html).toContain('Kamerlengo Fortress · 0.4 km');
+    expect(html).toContain('class="fv-map" aria-hidden="true"');
+  });
+
   it('puts the words before cards the model showed first', () => {
     const html = render([
       question,

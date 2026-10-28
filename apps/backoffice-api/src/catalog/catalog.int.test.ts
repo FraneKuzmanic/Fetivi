@@ -282,6 +282,32 @@ describe('records', () => {
     expect(wrongKind.statusCode).toBe(400);
   });
 
+  it('stores an optional address and location on an event, and clears them', async () => {
+    const located = await post(
+      t.app,
+      records(),
+      { ...eventBody, location: LOC, address: 'Obala bana Berislavića 2, Trogir' },
+      adminCookie,
+    );
+    expect(located.statusCode).toBe(201);
+    expect(located.json()).toMatchObject({
+      location: LOC,
+      address: 'Obala bana Berislavića 2, Trogir',
+    });
+    const cleared = await patch(
+      t.app,
+      recordUrl(located.json().id),
+      { location: null, address: null },
+      adminCookie,
+    );
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json()).toMatchObject({ location: null, address: null });
+
+    const bare = await post(t.app, records(), eventBody, adminCookie);
+    expect(bare.statusCode).toBe(201);
+    expect(bare.json()).toMatchObject({ location: null, address: null });
+  });
+
   it('strips markup from the description', async () => {
     const place = await createPlace({ description: 'Good fish.<script>alert(1)</script>' });
     expect(place.description).not.toContain('<script>');

@@ -105,11 +105,6 @@ async function writeBlock(
     .select({ max: sql<number | null>`max(${infoBlocks.position})` })
     .from(infoBlocks)
     .where(eq(infoBlocks.propertyId, propertyId));
-  const visibility = block.wizardKey
-    ? (wizardField(block.wizardKey).prompt?.visibility ?? 'always')
-    : block.category === 'arrival_access'
-      ? 'after_release'
-      : 'always';
   return saveBlock(tx, queue, {
     insert: {
       propertyId,
@@ -117,7 +112,6 @@ async function writeBlock(
       wizardKey: block.wizardKey,
       title: block.title,
       body: block.body,
-      visibility,
       position: (last?.max ?? -1) + 1,
     },
   });

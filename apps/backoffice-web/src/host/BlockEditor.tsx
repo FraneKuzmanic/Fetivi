@@ -1,13 +1,8 @@
-import {
-  BLOCK_VISIBILITY,
-  HOST_BLOCK_CATEGORIES,
-  type HostBlockCategory,
-  LIMITS,
-} from '@fetivi/domain/vocabulary';
+import { HOST_BLOCK_CATEGORIES, type HostBlockCategory, LIMITS } from '@fetivi/domain/vocabulary';
 import { type FormEvent, useState } from 'react';
 import { type Block, type BlockInput, type BlockResult, host, type SecretWarning } from '../api';
 import { SelectField, TextField } from '../forms/fields';
-import { CATEGORY_LABELS, VISIBILITY_LABELS } from '../forms/labels';
+import { CATEGORY_LABELS } from '../forms/labels';
 import { useAction } from '../useAction';
 import { type PendingFile, PendingMedia } from './media/PendingMedia';
 import { MarkdownField } from './wizard/MarkdownField';
@@ -56,7 +51,7 @@ export function BlockEditor({
   categoryFixed = false,
   withMedia = false,
 }: {
-  initial?: Partial<Pick<Block, 'title' | 'body' | 'visibility' | 'revision'>> & {
+  initial?: Partial<Pick<Block, 'title' | 'body' | 'revision'>> & {
     category?: HostBlockCategory;
   };
   /** Hides the Guide section field: the block stays in `initial.category`. */
@@ -75,13 +70,12 @@ export function BlockEditor({
   );
   const [title, setTitle] = useState<string | null>(initial?.title ?? null);
   const [body, setBody] = useState<string | null>(initial?.body ?? null);
-  const [visibility, setVisibility] = useState(initial?.visibility ?? 'always');
   const [media, setMedia] = useState<PendingFile[]>([]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
     void run(async () => {
-      const result = await onSubmit({ category, title: title ?? '', body: body ?? '', visibility });
+      const result = await onSubmit({ category, title: title ?? '', body: body ?? '' });
       // The entry is saved; a failed upload is reported, never a reason to save it twice.
       let failed = 0;
       for (const item of media) {
@@ -113,14 +107,6 @@ export function BlockEditor({
             onChange={(v) => v && setCategory(v)}
           />
         )}
-        <SelectField
-          label="Visibility"
-          hint="Arrival details can wait until the arrival release before check-in."
-          value={visibility}
-          options={BLOCK_VISIBILITY}
-          labels={VISIBILITY_LABELS}
-          onChange={(v) => v && setVisibility(v)}
-        />
         <TextField
           label="Title"
           value={title}

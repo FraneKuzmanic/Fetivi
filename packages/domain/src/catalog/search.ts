@@ -156,6 +156,8 @@ export interface EventSummary {
   startsAt: string;
   endsAt: string;
   venueName: string | null;
+  /** Street address, when the admin gave one; the venue name often says enough. */
+  address: string | null;
   location: LatLng | null;
   distanceKm: number | null;
   websiteUrl: string | null;
@@ -569,6 +571,7 @@ export async function searchEvents(
       startsAt: catalogRecords.startsAt,
       endsAt: catalogRecords.endsAt,
       venueName: catalogRecords.venueName,
+      address: catalogRecords.address,
       location: catalogRecords.location,
       distanceM: distanceOf(origin),
       websiteUrl: catalogRecords.websiteUrl,
@@ -606,6 +609,7 @@ export async function searchEvents(
         startsAt: toLocalDateTime(startsAt, origin.zone),
         endsAt: toLocalDateTime(endsAt, origin.zone),
         venueName: r.venueName,
+        address: r.address,
         location: latLngOf(r.location),
         distanceKm: kmOf(r.distanceM),
         websiteUrl: r.websiteUrl,

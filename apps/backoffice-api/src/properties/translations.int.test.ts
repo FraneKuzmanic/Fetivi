@@ -77,7 +77,6 @@ describe('translation on save', () => {
     const { block } = await newBlock();
     const url = `/api/host/blocks/${block.id}`;
     for (const changes of [
-      { visibility: 'after_release' },
       { category: 'arrival_access' },
       { position: 3 },
       { title: 'Rubbish', body: 'Bins are by the gate.' },

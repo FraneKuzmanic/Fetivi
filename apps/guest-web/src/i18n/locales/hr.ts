@@ -153,6 +153,7 @@ export const hr: Messages = {
     somethingElse: 'Nešto drugo',
     send: 'Pošalji',
     places: 'Mjesta',
+    events: 'Događanja',
     placesShown: 'Prikazane kartice mjesta: {{count}}',
     viewCards: 'Kartice',
     viewMap: 'Karta',

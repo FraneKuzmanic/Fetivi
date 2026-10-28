@@ -13,6 +13,7 @@ import type {
 } from '@fetivi/domain/curation-vocabulary';
 import type { DraftingTaskStatus } from '@fetivi/domain/drafting-vocabulary';
 import type { AnswerTopic, FeedbackReason } from '@fetivi/domain/feedback-vocabulary';
+import type { UsageEstimateUse } from '@fetivi/domain/metrics-vocabulary';
 import type {
   AdapterKind,
   AvailabilityMode,
@@ -385,4 +386,13 @@ export const DRAFTING_TASK_STATUS_LABELS: Record<DraftingTaskStatus, string> = {
   unchanged: 'No changes',
   no_sources: 'No usable source',
   failed: 'Failed',
+};
+
+/** The uses in the admin's Anthropic usage estimate. */
+export const MODEL_USE_LABELS: Record<UsageEstimateUse, string> = {
+  chat: 'Guest chat',
+  translation: 'Guide and catalog translation',
+  handoff_translation: 'Host message translation',
+  drafting: 'Catalog drafting (seeding)',
+  manual_import: 'House manual import',
 };

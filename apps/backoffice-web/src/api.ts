@@ -23,6 +23,7 @@ import type {
   HandoffUrgency,
 } from '@fetivi/domain/handoff-vocabulary';
 import type { HostDeliveryMode } from '@fetivi/domain/host-notification-vocabulary';
+import type { UsageEstimateUse } from '@fetivi/domain/metrics-vocabulary';
 import type {
   AdapterKind,
   AvailabilityMode,
@@ -237,7 +238,6 @@ export interface BlockInput {
   category: HostBlockCategory;
   title: string;
   body: string;
-  visibility?: BlockVisibility;
   position?: number;
   replacesBlockId?: string | null;
   /** Create only. */
@@ -815,7 +815,29 @@ export const admin = {
   settings: () => api<PlatformSettings>('/api/admin/settings'),
   saveSettings: (settings: PlatformSettings) =>
     put<PlatformSettings>('/api/admin/settings', settings),
+  usage: () => api<UsageEstimate>('/api/admin/usage'),
 };
+
+/** One use's recorded tokens and estimated cost over a period. */
+export interface UseEstimate {
+  use: UsageEstimateUse;
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  costUsd: number;
+}
+
+/** The estimated Anthropic spend: recorded tokens × list prices, today and this month (UTC). */
+export interface UsageEstimate {
+  /** The date the price table was checked, YYYY-MM-DD. */
+  pricesCheckedOn: string;
+  today: { totalUsd: number; byUse: UseEstimate[] };
+  month: { totalUsd: number; byUse: UseEstimate[] };
+  /** Calls on a model without a price, left out of the costs. */
+  unpricedCalls: number;
+}
 
 /** The admin's platform-wide settings. */
 export interface PlatformSettings {
@@ -1086,6 +1108,23 @@ export const drafting = {
     post<DraftingRunStart>(`/api/admin/catalog/destinations/${destinationId}/refresh`),
 };
 
+/** Address and place search for the map picker; any signed-in back-office user. */
+export const geo = {
+  search: (
+    q: string,
+    options: { near?: { lat: number; lng: number }; kind?: GeocodeKind } = {},
+  ) => {
+    const query = new URLSearchParams({ q, kind: options.kind ?? 'address' });
+    if (options.near) {
+      query.set('lat', String(options.near.lat));
+      query.set('lng', String(options.near.lng));
+    }
+    return api<{ places: GeoPlace[] }>(`/api/geocode?${query}`);
+  },
+  reverse: (lat: number, lng: number) =>
+    api<{ place: GeoPlace | null }>(`/api/geocode/reverse?lat=${lat}&lng=${lng}`),
+};
+
 export const host = {
   properties: () => api<{ properties: PropertySummary[] }>('/api/host/properties'),
   createProperty: (body: { name: string } & PropertyPatch) =>
@@ -1240,19 +1279,6 @@ export const host = {
     post<{ url: string; expiresAt: string }>('/api/host/payments/stripe/onboarding-link'),
   paymentsRefresh: () => post<PaymentsStatus>('/api/host/payments/stripe/refresh'),
   paymentsDisconnect: () => post<PaymentsStatus>('/api/host/payments/stripe/disconnect'),
-  geocode: (
-    q: string,
-    options: { near?: { lat: number; lng: number }; kind?: GeocodeKind } = {},
-  ) => {
-    const query = new URLSearchParams({ q, kind: options.kind ?? 'address' });
-    if (options.near) {
-      query.set('lat', String(options.near.lat));
-      query.set('lng', String(options.near.lng));
-    }
-    return api<{ places: GeoPlace[] }>(`/api/host/geocode?${query}`);
-  },
-  reverseGeocode: (lat: number, lng: number) =>
-    api<{ place: GeoPlace | null }>(`/api/host/geocode/reverse?lat=${lat}&lng=${lng}`),
   readMessage: (id: string) => post(`/api/host/inbox/${id}/read`),
   replyMessage: (id: string, text: string) =>
     post<{ message: HostMessage }>(`/api/host/inbox/${id}/reply`, { text }),
@@ -1392,6 +1418,7 @@ export type CatalogRecordInput =
       startsAt: string;
       endsAt: string;
       location?: LatLng | null;
+      address?: string | null;
       venueName?: string | null;
       websiteUrl?: string | null;
       interests?: string[];

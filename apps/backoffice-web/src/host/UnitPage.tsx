@@ -324,7 +324,6 @@ export function UnitPage() {
               <span className="chip neutral">Setting up</span>
             )}
           </div>
-          <p className="muted">{detail.propertyName}</p>
         </div>
         <div className="actions">
           {live ? (

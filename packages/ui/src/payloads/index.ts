@@ -91,6 +91,24 @@ export const placeCarousel = z.object({
   places: z.array(placeCard).min(1).max(10),
 });
 
+/** One event as the event list shows it; not strict, like `placeCard`. */
+export const eventCard = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  /** 'YYYY-MM-DDTHH:mm' in the destination's zone. */
+  startsAt: z.string().min(1),
+  endsAt: z.string().min(1),
+  venueName: z.string().nullable(),
+  address: z.string().nullable().optional(),
+  location: z.object({ lat: z.number(), lng: z.number() }).nullable(),
+  distanceKm: z.number().nullable(),
+});
+
+/** Events from one search, soonest first, with a map when any has a location. */
+export const eventList = z.object({
+  events: z.array(eventCard).min(1).max(10),
+});
+
 /** The starts of one day from check_availability; tapping one tells Fetivi the guest's pick. */
 export const availabilityPicker = z.object({
   offerId: z.string().min(1),
@@ -240,6 +258,7 @@ export const componentPart = z.discriminatedUnion('name', [
   z.object({ name: z.literal('follow-up-chips'), payload: followUpChips }),
   z.object({ name: z.literal('choice-card'), payload: choiceCard }),
   z.object({ name: z.literal('place-carousel'), payload: placeCarousel }),
+  z.object({ name: z.literal('event-list'), payload: eventList }),
   z.object({ name: z.literal('availability-picker'), payload: availabilityPicker }),
   z.object({ name: z.literal('receipt-card'), payload: receiptCard }),
   z.object({ name: z.literal('property-info'), payload: propertyInfoCard }),
@@ -477,6 +496,7 @@ export const inboxItem = z.discriminatedUnion('kind', [
 ]);
 
 export type PlaceCardPayload = z.infer<typeof placeCard>;
+export type EventCardPayload = z.infer<typeof eventCard>;
 export type ComponentPart = z.infer<typeof componentPart>;
 export type AvailabilityPickerPayload = z.infer<typeof availabilityPicker>;
 export type OrderSummaryPayload = z.infer<typeof orderSummary>;

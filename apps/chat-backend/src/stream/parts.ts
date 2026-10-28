@@ -23,6 +23,12 @@ const candidate = (toolName: string, value: unknown): unknown => {
         payload: { places: results },
       };
     }
+    case 'search_events': {
+      const results = isRecord(value) ? value.results : null;
+      if (!Array.isArray(results) || results.length === 0) return null;
+      // A numbered list with a map when any event has a location; the search returns at most 10.
+      return { name: 'event-list', payload: { events: results.slice(0, 10) } };
+    }
     case 'list_host_picks': {
       const results = isRecord(value) ? value.results : null;
       if (!Array.isArray(results) || results.length === 0) return null;

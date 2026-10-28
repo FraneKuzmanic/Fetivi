@@ -1,11 +1,18 @@
 import type { PlaceCardPayload } from '../../payloads';
 
-/** How far a place is: travel time for a day trip, otherwise km (one decimal under 10 km, at least 0.1). */
+/**
+ * How far a place (or an event) is: travel time for a day trip, otherwise km (one decimal under
+ * 10 km, at least 0.1).
+ */
 export function distanceText(
-  place: Pick<PlaceCardPayload, 'kind' | 'distanceKm' | 'travelMinutes'>,
+  place: {
+    kind?: PlaceCardPayload['kind'];
+    distanceKm: number | null;
+    travelMinutes?: number | null;
+  },
   labels: { km: (distance: number) => string; minutes: (minutes: number) => string },
 ): string | null {
-  if (place.kind === 'day_trip' && place.travelMinutes !== null) {
+  if (place.kind === 'day_trip' && place.travelMinutes != null) {
     return labels.minutes(Math.round(place.travelMinutes));
   }
   if (place.distanceKm === null) return null;

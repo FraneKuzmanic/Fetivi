@@ -112,6 +112,23 @@ describe('per-kind checks', () => {
   ])('rejects %s', async (_name, values) => {
     await expect(create({ ...values, destinationId })).rejects.toEqual(invalid);
   });
+
+  it('accepts an event with an address and a location, which no migration had to add', async () => {
+    const event = await create({
+      destinationId,
+      kind: 'event',
+      ...text,
+      startsAt: start,
+      endsAt: new Date(start.getTime() + 3_600_000),
+      location: LOC,
+      address: 'Obala bana Berislavića 2',
+    });
+    const [row] = await testDb.db
+      .select()
+      .from(catalogRecords)
+      .where(eq(catalogRecords.id, event.id));
+    expect(row).toMatchObject({ location: LOC, address: 'Obala bana Berislavića 2' });
+  });
 });
 
 describe('deletion', () => {

@@ -153,6 +153,7 @@ export const hu: Messages = {
     somethingElse: 'Valami mást',
     send: 'Küldés',
     places: 'Helyek',
+    events: 'Események',
     placesShown: 'Megjelenített helykártyák: {{count}}',
     viewCards: 'Kártyák',
     viewMap: 'Térkép',

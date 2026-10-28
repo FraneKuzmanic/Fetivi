@@ -22,12 +22,48 @@ afterEach(() => {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
-async function mount() {
+const use = (name: string, costUsd: number) => ({
+  use: name,
+  calls: costUsd > 0 ? 1 : 0,
+  inputTokens: 0,
+  outputTokens: 0,
+  cacheReadTokens: 0,
+  cacheWriteTokens: 0,
+  costUsd,
+});
+
+const USAGE = {
+  pricesCheckedOn: '2026-10-28',
+  today: {
+    totalUsd: 0.504,
+    byUse: [
+      use('chat', 0.5),
+      use('translation', 0.004),
+      use('handoff_translation', 0),
+      use('drafting', 0),
+      use('manual_import', 0),
+    ],
+  },
+  month: {
+    totalUsd: 12.36,
+    byUse: [
+      use('chat', 8),
+      use('translation', 4),
+      use('handoff_translation', 0.2),
+      use('drafting', 0.1),
+      use('manual_import', 0.06),
+    ],
+  },
+  unpricedCalls: 0,
+};
+
+async function mount(usage: unknown = USAGE, usageStatus = 200) {
   calls = [];
   let cap = 60;
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
     const method = init?.method ?? 'GET';
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+    if (String(input) === '/api/admin/usage') return json(usage, usageStatus);
     calls.push({ url: String(input), method, body });
     if (method === 'PUT') cap = (body as { dailyMessageCap: number }).dailyMessageCap;
     return json({ dailyMessageCap: cap });
@@ -84,5 +120,35 @@ describe('SettingsPage', () => {
     // The required field normally stops the submit; past it, save() refuses.
     expect(el.querySelector('[role="alert"]')).not.toBeNull();
     expect(calls.map((c) => c.method)).toEqual(['GET']);
+  });
+
+  it('shows the Anthropic usage estimate by use, today and this month', async () => {
+    await mount();
+    const rows = [...el.querySelectorAll('table tr')].map((tr) =>
+      [...tr.querySelectorAll('th, td')].map((c) => c.textContent),
+    );
+    expect(rows).toEqual([
+      ['Use', 'Today', 'This month'],
+      ['Guest chat', '$0.50', '$8.00'],
+      ['Guide and catalog translation', '< $0.01', '$4.00'],
+      ['Host message translation', '$0.00', '$0.20'],
+      ['Catalog drafting (seeding)', '$0.00', '$0.10'],
+      ['House manual import', '$0.00', '$0.06'],
+      ['Total', '$0.50', '$12.36'],
+    ]);
+    expect(el.textContent).toContain('An estimate');
+    expect(el.textContent).toContain('checked 28 Oct 2026');
+    expect(el.textContent).not.toMatch(/budget|remaining|credits/i);
+  });
+
+  it('says how many calls had no price', async () => {
+    await mount({ ...USAGE, unpricedCalls: 3 });
+    expect(el.textContent).toContain('3 calls used a model without a price in the table');
+  });
+
+  it('keeps the chat limit working when the usage fails to load', async () => {
+    await mount({ error: 'internal' }, 500);
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    expect(el.querySelector<HTMLInputElement>('input[type="number"]')?.value).toBe('60');
   });
 });

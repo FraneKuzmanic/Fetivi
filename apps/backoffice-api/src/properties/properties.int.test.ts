@@ -323,10 +323,8 @@ describe('blocks', () => {
     const url = `/api/host/properties/${property.id}/blocks`;
     const created = await createBlock(hostA.cookie, url, {
       body: '**Bins** by the gate<script>alert(1)</script>\n\n- Glass\n- Paper',
-      visibility: 'after_release',
     });
     expect(created.block.body).toBe('**Bins** by the gate\n\n- Glass\n- Paper');
-    expect(created.block.visibility).toBe('after_release');
     const bad = [
       { category: 'saved_places', title: 'x', body: 'y' },
       { category: 'how_tos', title: 'x'.repeat(121), body: 'y' },
@@ -335,6 +333,49 @@ describe('blocks', () => {
     for (const body of bad) {
       expect((await post(t.app, url, body, hostA.cookie)).statusCode).toBe(400);
     }
+  });
+
+  it('derives visibility from the Guide section and refuses it in a body', async () => {
+    const property = await createProperty(hostA.cookie);
+    const url = `/api/host/properties/${property.id}/blocks`;
+    const howTo = await createBlock(hostA.cookie, url);
+    expect(howTo.block.visibility).toBe('always');
+    const arrival = await createBlock(hostA.cookie, url, { category: 'arrival_access' });
+    expect(arrival.block.visibility).toBe('after_release');
+
+    const blockUrl = `/api/host/blocks/${howTo.block.id}`;
+    const moved = await patch(t.app, blockUrl, { category: 'arrival_access' }, hostA.cookie);
+    expect(moved.json().block.visibility).toBe('after_release');
+    const back = await patch(t.app, blockUrl, { category: 'contacts_emergency' }, hostA.cookie);
+    expect(back.json().block.visibility).toBe('always');
+
+    const body = { category: 'how_tos', title: 'x', body: 'y', visibility: 'after_release' };
+    expect((await post(t.app, url, body, hostA.cookie)).statusCode).toBe(400);
+    expect((await patch(t.app, blockUrl, { visibility: 'always' }, hostA.cookie)).statusCode).toBe(
+      400,
+    );
+  });
+
+  it('gives a replacing unit block the visibility of its own section', async () => {
+    const property = await createProperty(hostA.cookie);
+    const shared = await createBlock(hostA.cookie, `/api/host/properties/${property.id}/blocks`, {
+      category: 'arrival_access',
+    });
+    const unit = await post(
+      t.app,
+      `/api/host/properties/${property.id}/units`,
+      { name: 'A2' },
+      hostA.cookie,
+    );
+    const replacement = await createBlock(
+      hostA.cookie,
+      `/api/host/units/${unit.json().id}/blocks`,
+      {
+        category: 'how_tos',
+        replacesBlockId: shared.block.id,
+      },
+    );
+    expect(replacement.block.visibility).toBe('always');
   });
 
   it('deletes a block', async () => {

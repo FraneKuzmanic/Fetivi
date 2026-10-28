@@ -153,6 +153,7 @@ export const it: Messages = {
     somethingElse: "Qualcos'altro",
     send: 'Invia',
     places: 'Luoghi',
+    events: 'Eventi',
     placesShown: 'Schede luoghi mostrate: {{count}}',
     viewCards: 'Schede',
     viewMap: 'Mappa',

@@ -57,7 +57,6 @@ export function BlockPrompt({
       const own = {
         ...input,
         category: config.category,
-        visibility: existing?.visibility ?? config.visibility,
         wizardKey: promptKey,
       };
       const result =

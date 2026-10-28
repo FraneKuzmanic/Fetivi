@@ -35,6 +35,7 @@ const event = (id: string, startsAt: string, endsAt: string): EventSummary => ({
   startsAt,
   endsAt,
   venueName: 'Kamerlengo Fortress',
+  address: null,
   location: null,
   distanceKm: 0.4,
   websiteUrl: null,

@@ -21,11 +21,12 @@ const ReverseQuery = z.object({
 });
 
 /**
- * Address search for the host's property form, proxied so the provider sees Fetivi, not the
- * host's browser. Only hosts may call it: it costs the shared public geocoder.
+ * Address and place search for the back office's map picker (hosts and admins), proxied so the
+ * provider sees Fetivi, not the user's browser. Only signed-in back-office users may call it:
+ * it costs the shared public geocoder.
  */
 export async function geocodeRoutes(app: FastifyInstance, deps: GeocodeDeps) {
-  const host = { config: { access: 'host' as const } };
+  const signedIn = { config: { access: 'authenticated' as const } };
   const geocoderOf = () => {
     if (!deps.geocoder) throw new HttpError(503, 'geocoder-unavailable');
     return deps.geocoder;
@@ -39,14 +40,14 @@ export async function geocodeRoutes(app: FastifyInstance, deps: GeocodeDeps) {
     }
   };
 
-  app.get('/api/host/geocode', host, async (request) => {
+  app.get('/api/geocode', signedIn, async (request) => {
     const { q, lat, lng, kind } = SearchQuery.parse(request.query);
     const near = lat !== undefined && lng !== undefined ? { lat, lng } : undefined;
     const geocoder = geocoderOf();
     return { places: await unavailable(() => geocoder.search(q, { near, kind })) };
   });
 
-  app.get('/api/host/geocode/reverse', host, async (request) => {
+  app.get('/api/geocode/reverse', signedIn, async (request) => {
     const { lat, lng } = ReverseQuery.parse(request.query);
     const geocoder = geocoderOf();
     return { place: await unavailable(() => geocoder.reverse(lat, lng)) };

@@ -78,3 +78,12 @@ Jaeger keeps traces in memory only: they are gone when the container restarts.
 ## Why one container
 
 Architecture §5 asks for "an OpenTelemetry collector and Jaeger in the Compose stack". Jaeger v2 (`jaegertracing/jaeger:2.22.0`) is an OpenTelemetry Collector distribution: it receives OTLP over HTTP on 4318 and serves the UI on 16686. A separate collector container would add configuration and nothing a local setup needs (ADR 0022).
+
+## Model usage (ticket 52)
+
+Every Anthropic call is recorded as token counts, never text:
+
+- Guest chat: one `turn_metrics` row per turn (all steps summed).
+- Everything else: one `model_usage` row per successful call, with `use` (`translation`, `handoff_translation`, `drafting`, `manual_import`), `model` and the four token counts. Each adapter takes an `onUsage` callback, wired to `usageRecorder(db, use)` in `apps/jobs` and `apps/backoffice-api`. A failed write is logged and never fails the call. A failed call has no usage and records nothing.
+
+Admin Settings → "Anthropic usage" (`GET /api/admin/usage`) prices both tables with the one price table in `packages/domain/src/metrics/prices.ts` (model ids, list prices, and the date they were checked), for today and this month in UTC. It is an estimate: there is no budget or balance figure, since the plan's credit balance has no API. When a model id changes, add its price there; `prices.test.ts` fails when a domain model id (translation, drafting, manual import) has no price; the chat model id is checked as a literal there.

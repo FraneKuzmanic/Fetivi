@@ -153,6 +153,7 @@ export const pl: Messages = {
     somethingElse: 'Coś innego',
     send: 'Wyślij',
     places: 'Miejsca',
+    events: 'Wydarzenia',
     placesShown: 'Pokazane karty miejsc: {{count}}',
     viewCards: 'Karty',
     viewMap: 'Mapa',

@@ -132,6 +132,7 @@ const eventSummary = z.object({
   startsAt: z.string(),
   endsAt: z.string(),
   venueName: z.string().nullable(),
+  address: z.string().nullable(),
   location: latLng.nullable(),
   distanceKm: z.number().nullable(),
   websiteUrl: z.string().nullable(),

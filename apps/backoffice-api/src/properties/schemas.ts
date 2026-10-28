@@ -2,7 +2,6 @@ import {
   AMENITIES,
   assertValidZone,
   BED_TYPES,
-  BLOCK_VISIBILITY,
   CHECK_IN_METHODS,
   HOST_BLOCK_CATEGORIES,
   type HostBlockCategory,
@@ -146,7 +145,6 @@ const blockFields = {
   category: z.enum(HOST_BLOCK_CATEGORIES as [HostBlockCategory, ...HostBlockCategory[]]),
   title: line(LIMITS.title),
   body: z.string().transform(stripMarkdownHtml).pipe(z.string().min(1).max(LIMITS.blockBody)),
-  visibility: z.enum(BLOCK_VISIBILITY),
   position: z.number().int().min(0).max(10_000),
 };
 
@@ -156,7 +154,7 @@ export const BlockCreate = z
     /** Set on create only: the wizard prompt the block answers. */
     wizardKey: z.enum(WIZARD_PROMPT_KEYS).nullable(),
   })
-  .partial({ visibility: true, position: true, wizardKey: true });
+  .partial({ position: true, wizardKey: true });
 export const UnitBlockCreate = BlockCreate.extend({
   replacesBlockId: z.uuid().nullable().optional(),
 });

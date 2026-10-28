@@ -35,7 +35,6 @@ async function seedWithMedia() {
         category: 'arrival_access',
         title: 'Lockbox',
         body: 'By the door.',
-        visibility: 'after_release',
         media: [{ caption: 'Lockbox', contentType: 'image/png' }],
       },
     ],

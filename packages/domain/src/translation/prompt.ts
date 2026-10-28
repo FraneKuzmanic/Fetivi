@@ -13,7 +13,7 @@ First decide which of the seven languages the source is written in and return it
 Keep the structure identical in every language:
 - the same headings at the same levels, in the same order;
 - the same number of list items, and numbered steps with the same numbers in the same order;
-- every link URL exactly as written, in the same order; translate only the link text;
+- every link exactly as written, in the same order: the same URL, tel: and mailto: targets; translate only the link text; leave a plain URL plain and never turn text into a link;
 - every {{placeholder}} exactly as written, including the braces; never translate, rename, add or remove one;
 - the same line breaks between blocks; no added notes, greetings or explanations.
 

@@ -151,6 +151,7 @@ export const en = {
     somethingElse: 'Something else',
     send: 'Send',
     places: 'Places',
+    events: 'Events',
     placesShown: 'Place cards shown: {{count}}',
     viewCards: 'Cards',
     viewMap: 'Map',

@@ -4802,6 +4802,27 @@ button.danger-solid:hover {
   overflow-wrap: anywhere;
 }
 
+/* A row header reads like a cell; the total row closes the table. */
+.data-table tbody th,
+.data-table tfoot th {
+  padding: 12px 16px;
+  border-top: 1px solid var(--gray-200);
+  border-bottom: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  white-space: normal;
+}
+
+.data-table tbody tr:first-child th {
+  border-top: 0;
+}
+
+.data-table tfoot {
+  font-weight: 600;
+}
+
 .data-table tbody tr:first-child td {
   border-top: 0;
 }
@@ -5079,4 +5100,53 @@ button.bottom-more.current {
     margin-left: auto;
     padding: 0;
   }
+}
+
+/* A short table of numbers keeps its columns on a phone: the headers name the numbers. */
+@media (max-width: 699px) {
+  .data-table.keep-columns {
+    display: table;
+  }
+
+  .data-table.keep-columns tbody {
+    display: table-row-group;
+  }
+
+  .data-table.keep-columns thead {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .data-table.keep-columns tr {
+    display: table-row;
+    padding: 0;
+  }
+
+  .data-table.keep-columns th,
+  .data-table.keep-columns td {
+    padding: 10px 12px;
+  }
+
+  .data-table.keep-columns tbody td,
+  .data-table.keep-columns tfoot td {
+    border-top: 1px solid var(--gray-200);
+  }
+
+  .data-table.keep-columns tbody tr:first-child td {
+    border-top: 0;
+  }
+}
+
+/* The shared map picker: search, map, and the coordinates toggle stacked. */
+.map-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.map-picker .link-button {
+  align-self: flex-start;
 }

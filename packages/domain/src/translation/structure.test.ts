@@ -101,3 +101,53 @@ describe('checkStructure', () => {
     expect(checkStructure(plain, { title: 'Wi-Fi', body: 'y' })).toEqual([]);
   });
 });
+
+describe('checkStructure links', () => {
+  const block = (body: string) => ({ title: 'Kontakti', body });
+  const check = (source: string, output: string) =>
+    checkStructure(block(source), { title: 'Contacts', body: output });
+
+  it.each([
+    ['a plain URL ending a sentence', 'Book at https://x.hr.', 'Rezervirajte na https://x.hr.'],
+    [
+      'a plain URL moved away from the full stop',
+      'Rezervirajte na https://x.hr.',
+      'Foglaljon a https://x.hr oldalon.',
+    ],
+    ['a plain URL in brackets', 'Pharmacy (https://x.hr/a).', 'Ljekarna (https://x.hr/a).'],
+    ['a Markdown link', 'See the [map](https://m.hr/p?q=1).', 'Vidi [kartu](https://m.hr/p?q=1).'],
+    ['a tel: link', '[Call](tel:+385911234567)', '[Nazovite](tel:+385911234567)'],
+    ['a mailto: link', '[Email](mailto:a@b.hr)', '[E-pošta](mailto:a@b.hr)'],
+    ['an angle-bracket autolink', 'Web: <https://x.hr>', 'Web: <https://x.hr>'],
+    ['an unfinished toolbar link', '[KBC Split](https://)', '[KBC Split](https://)'],
+    [
+      'several links',
+      '- [194](tel:194)\n- https://x.hr, 0-24\n- [mail](mailto:a@b.hr) or [chat](https://wa.me/1)',
+      '- [194](tel:194)\n- https://x.hr, 0-24\n- [e-mail](mailto:a@b.hr) ili [chat](https://wa.me/1)',
+    ],
+    [
+      'a plain URL the model wrapped as a link',
+      'Pharmacy: https://x.hr',
+      'Ljekarna: [https://x.hr](https://x.hr)',
+    ],
+  ])('passes %s', (_name, source, output) => {
+    expect(check(source, output)).toEqual([]);
+  });
+
+  it.each([
+    ['a changed URL', 'See https://x.hr/a', 'Vidi https://x.hr/b'],
+    ['a dropped link', '[map](https://m.hr) and https://x.hr', 'karta i https://x.hr'],
+    ['a changed tel: number', '[Call](tel:+385911234567)', '[Nazovite](tel:+385911234568)'],
+    ['a changed mailto: address', '[Email](mailto:a@b.hr)', '[E-pošta](mailto:b@b.hr)'],
+    ['an added link', 'Call the host.', 'Nazovite [domaćina](tel:+385911234567).'],
+    [
+      'links in another order',
+      '[a](https://a.hr) [b](https://b.hr)',
+      '[b](https://b.hr) [a](https://a.hr)',
+    ],
+  ])('fails %s', (_name, source, output) => {
+    const problems = check(source, output);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/^body: links/);
+  });
+});

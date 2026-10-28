@@ -8,9 +8,10 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { TOOL_TRANSPORTS } from '../../metrics/vocabulary';
+import { MODEL_USES, TOOL_TRANSPORTS } from '../../metrics/vocabulary';
 
 export const toolTransport = pgEnum('tool_transport', TOOL_TRANSPORTS);
+export const modelUse = pgEnum('model_use', MODEL_USES);
 
 /** One row per completed guest turn, for the thesis tables. Counts and names only, never text. */
 export const turnMetrics = pgTable(
@@ -47,3 +48,22 @@ export const turnMetrics = pgTable(
 );
 
 export type TurnMetricsRow = typeof turnMetrics.$inferSelect;
+
+/**
+ * One row per successful Anthropic call made outside guest chat (translation, drafting, …), for
+ * the admin usage estimate. Counts and names only, never text; no FK, so rows survive retention.
+ */
+export const modelUsage = pgTable(
+  'model_usage',
+  {
+    id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+    at: timestamp('at', { withTimezone: true }).notNull(),
+    use: modelUse('use').notNull(),
+    model: text('model').notNull(),
+    inputTokens: integer('input_tokens').notNull(),
+    outputTokens: integer('output_tokens').notNull(),
+    cacheReadTokens: integer('cache_read_tokens').notNull(),
+    cacheWriteTokens: integer('cache_write_tokens').notNull(),
+  },
+  (t) => [index('model_usage_at_idx').on(t.at)],
+);

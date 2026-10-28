@@ -19,9 +19,16 @@ export const HOST_BLOCK_CATEGORIES = BLOCK_CATEGORIES.filter(
   (c): c is HostBlockCategory => c !== 'saved_places',
 );
 
-/** after_release: time-gated arrival content, shown from the unit's arrival release time. */
+/**
+ * after_release: time-gated arrival content, shown from the unit's arrival release time. Derived
+ * from the block's Guide section by `blockVisibilityOf`, never chosen by the host (ADR 0025).
+ */
 export const BLOCK_VISIBILITY = ['always', 'after_release'] as const;
 export type BlockVisibility = (typeof BLOCK_VISIBILITY)[number];
+
+/** The one release-gating rule for Info blocks: arrival details wait for the arrival release. */
+export const blockVisibilityOf = (category: BlockCategory): BlockVisibility =>
+  category === 'arrival_access' ? 'after_release' : 'always';
 
 /** Airbnb's check-in methods. */
 export const CHECK_IN_METHODS = [

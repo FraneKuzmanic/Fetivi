@@ -68,6 +68,38 @@ describe('componentFor', () => {
     expect(componentFor('list_host_picks', { results: [] })).toBeNull();
   });
 
+  it('turns found events into an event list, in order, with only the list fields', () => {
+    const event = (id: string, title: string, location: { lat: number; lng: number } | null) => ({
+      id,
+      title,
+      summary: 'Concerts.',
+      startsAt: '2027-07-10T21:00',
+      endsAt: '2027-07-10T23:00',
+      venueName: 'Kamerlengo Fortress',
+      address: null,
+      location,
+      distanceKm: location ? 0.4 : null,
+      websiteUrl: null,
+      verifiedAt: null,
+      staleness: { status: 'fresh', staleAt: null },
+      sources: [],
+    });
+    const part = componentFor('search_events', {
+      window: { from: '2027-07-07', to: '2027-07-18' },
+      results: [
+        event('1', 'Klapa night', { lat: 43.5, lng: 16.2 }),
+        event('2', 'Fish night', null),
+      ],
+    });
+    expect(part?.name).toBe('event-list');
+    if (part?.name !== 'event-list') return;
+    expect(part.payload.events.map((e) => e.title)).toEqual(['Klapa night', 'Fish night']);
+    const first = part.payload.events[0] as Record<string, unknown>;
+    expect(first.location).toEqual({ lat: 43.5, lng: 16.2 });
+    expect(first.sources).toBeUndefined();
+    expect(componentFor('search_events', { window: {}, results: [] })).toBeNull();
+  });
+
   it('shows nothing for an empty, invalid or unknown result', () => {
     expect(componentFor('search_places', { results: [] })).toBeNull();
     expect(componentFor('search_places', 'text only')).toBeNull();

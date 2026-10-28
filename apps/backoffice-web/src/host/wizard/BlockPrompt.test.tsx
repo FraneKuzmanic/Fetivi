@@ -103,6 +103,8 @@ describe('BlockPrompt', () => {
       method: 'POST',
       body: { wizardKey: 'rubbish_recycling', body: 'Bins are behind the building.' },
     });
+    // The Guide section decides visibility (ADR 0025); the wizard never sends it.
+    expect(calls[0]?.body).not.toHaveProperty('visibility');
   });
 
   it("counts the property's tips as answered and offers both ways to change them", async () => {

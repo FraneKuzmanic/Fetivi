@@ -8,6 +8,7 @@ import type {
   ChoiceCardLabels,
   ConfirmationCardLabels,
   DayPlanLabels,
+  EventListLabels,
   HostDraftLabels,
   HostSentLabels,
   PlaceLabels,
@@ -42,6 +43,12 @@ export function placeLabels(t: TFunction, language: string): PlaceLabels {
     save: t('components.save'),
     saved: t('components.saved'),
   };
+}
+
+/** The event list's strings: the place map's wording, named for events. */
+export function eventLabels(t: TFunction, language: string): EventListLabels {
+  const { expandMap, closeMap, mapUnavailable, km, minutes } = placeLabels(t, language);
+  return { places: t('components.events'), expandMap, closeMap, mapUnavailable, km, minutes };
 }
 
 export const choiceLabels = (t: TFunction): ChoiceCardLabels => ({

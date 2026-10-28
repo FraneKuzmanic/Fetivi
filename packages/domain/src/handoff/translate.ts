@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { Db } from '../db/client';
 import { handoffMessages } from '../db/schema/handoff';
 import type { JobQueue } from '../jobs/queue';
+import { type ModelUsage, usageOf } from '../metrics/usage';
 import type { GuestLanguage } from '../property/vocabulary';
 import { TRANSLATION_MODEL_ID } from '../translation/prompt';
 import { deliverReply } from './inbox';
@@ -49,6 +50,8 @@ export interface HandoffTranslator {
 export function createAnthropicHandoffTranslator(opts: {
   apiKey: string | undefined;
   fetch: Egress['fetch'];
+  /** Gets each successful response's tokens (a failed call has none and reports nothing). */
+  onUsage?: (usage: ModelUsage) => void;
 }): HandoffTranslator {
   const { apiKey } = opts;
   if (!apiKey) {
@@ -76,6 +79,7 @@ export function createAnthropicHandoffTranslator(opts: {
           messages: [{ role: 'user', content: buildHandoffUserMessage(input) }],
           output_config: { effort: 'low', format: zodOutputFormat(HandoffTranslationOutput) },
         });
+        opts.onUsage?.(usageOf(TRANSLATION_MODEL_ID, message.usage));
         if (message.stop_reason !== 'end_turn') {
           return { ok: false, error: 'model-error', detail: `stop_reason ${message.stop_reason}` };
         }

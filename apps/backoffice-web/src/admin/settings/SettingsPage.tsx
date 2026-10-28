@@ -4,8 +4,12 @@ import { admin } from '../../api';
 import { NumberField, Section } from '../../forms/fields';
 import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
+import { UsageSection } from './UsageSection';
 
-/** Platform-wide settings: the soft daily message cap per Space (45 AC 5). */
+/**
+ * Platform-wide settings: the soft daily message cap per Space (45 AC 5) and the Anthropic usage
+ * estimate (52 AC 5).
+ */
 export function SettingsPage() {
   const { error, run } = useAction();
   const [cap, setCap] = useState<number | null>(null);
@@ -41,6 +45,7 @@ export function SettingsPage() {
           />
         </div>
       </Section>
+      <UsageSection />
     </div>
   );
 }

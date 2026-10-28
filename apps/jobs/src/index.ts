@@ -9,6 +9,7 @@ import {
   createStripeGateway,
   createWeatherSource,
   createWebPushSender,
+  usageRecorder,
 } from '@fetivi/domain';
 import { createEgress } from '@fetivi/egress';
 import { loadConfig } from './config';
@@ -22,14 +23,17 @@ const { db, pool } = createDb(config.DATABASE_URL);
 const model = createAnthropicTranslationModel({
   apiKey: config.ANTHROPIC_API_KEY,
   fetch: egress.fetch,
+  onUsage: usageRecorder(db, 'translation'),
 });
 const handoffTranslator = createAnthropicHandoffTranslator({
   apiKey: config.ANTHROPIC_API_KEY,
   fetch: egress.fetch,
+  onUsage: usageRecorder(db, 'handoff_translation'),
 });
 const draftingModel = createAnthropicDraftingModel({
   apiKey: config.ANTHROPIC_API_KEY,
   fetch: egress.fetch,
+  onUsage: usageRecorder(db, 'drafting'),
 });
 if (!config.ANTHROPIC_API_KEY) {
   console.warn(

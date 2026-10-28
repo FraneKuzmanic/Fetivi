@@ -7,6 +7,12 @@ import type { Block, HostPicks, PropertyDetail } from '../../api';
 import { WithPageTitle } from '../../shell/testing';
 import { HostPicksPage } from './HostPicksPage';
 
+// No WebGL here: the map fails, so the picker opens its coordinate fields (the keyboard path).
+vi.mock('@fetivi/ui', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@fetivi/ui')>()),
+  loadMapLibre: () => Promise.reject(new Error('no WebGL')),
+}));
+
 const PUBLISHED = { status: 'published' as const, error: null };
 
 const TIPS: Block = {
@@ -243,6 +249,7 @@ describe('host picks page', () => {
     await click('Add a place');
     await setValue(field('Name'), 'Pekara Ana');
     await setValue(field('Category'), 'shop');
+    await vi.waitFor(() => field('Latitude'));
     await setValue(field('Latitude'), '42.64');
     await setValue(field('Longitude'), '18.11');
     await setValue(field('Address'), 'Obala 2');

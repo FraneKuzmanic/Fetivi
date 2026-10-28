@@ -1432,3 +1432,9 @@
 .fv-source-chip-host {
   font-weight: 600;
 }
+
+/* Events: the numbered list with its map */
+
+.fv-events {
+  min-width: 0;
+}

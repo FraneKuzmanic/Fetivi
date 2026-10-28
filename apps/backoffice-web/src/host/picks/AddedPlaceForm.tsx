@@ -2,8 +2,9 @@ import { PLACE_CATEGORIES, type PlaceCategory } from '@fetivi/domain/catalog-voc
 import { HOST_PLACE_LIMITS } from '@fetivi/domain/host-picks-vocabulary';
 import { type FormEvent, useState } from 'react';
 import { ApiError, type HostAddedPlaceInput, type HostAddedView } from '../../api';
-import { NumberField, SelectField, TextArea, TextField } from '../../forms/fields';
+import { SelectField, TextArea, TextField } from '../../forms/fields';
 import { PLACE_CATEGORY_LABELS } from '../../forms/labels';
+import { MapPicker } from '../../forms/MapPicker';
 import { useAction } from '../../useAction';
 
 /** Adds a place that is not in the catalog, or edits one the host added. */
@@ -36,12 +37,15 @@ export function AddedPlaceForm({
     event.preventDefault();
     void run(async () => {
       setOutside(false);
+      if (lat === null || lng === null) {
+        throw new Error('Place the pin on the map or enter the coordinates.');
+      }
       try {
         await onSubmit({
           name: name ?? '',
-          // The browser refuses to submit an empty required field, so these are set.
+          // The browser refuses to submit an empty required field, so this is set.
           placeCategory: category as PlaceCategory,
-          location: { lat: lat as number, lng: lng as number },
+          location: { lat, lng },
           address,
           note: note ?? '',
         });
@@ -77,28 +81,21 @@ export function AddedPlaceForm({
           required
           onChange={setCategory}
         />
-        <div className="field-row">
-          <NumberField
-            label="Latitude"
-            value={lat}
-            min={-90}
-            max={90}
-            step="any"
-            placeholder="43.5170"
-            required
-            onChange={setLat}
-          />
-          <NumberField
-            label="Longitude"
-            value={lng}
-            min={-180}
-            max={180}
-            step="any"
-            placeholder="16.2514"
-            required
-            onChange={setLng}
-          />
-        </div>
+        <MapPicker
+          label="Location on the map"
+          value={{ lat, lng }}
+          onChange={(p) => {
+            setLat(p.lat);
+            setLng(p.lng);
+          }}
+          search={{
+            label: 'Find the place',
+            placeholder: 'Name or address',
+            kind: 'address',
+            onPick: (place) => setAddress((now) => now ?? place.addressLine ?? place.label),
+          }}
+          required
+        />
         <TextField
           label="Address"
           value={address}

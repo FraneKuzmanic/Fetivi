@@ -26,6 +26,7 @@ import {
   DRAFTING_TASK_STATUS_LABELS,
   PLACE_CATEGORY_LABELS,
 } from '../../forms/labels';
+import { MapPicker } from '../../forms/MapPicker';
 import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
@@ -89,25 +90,6 @@ function AreaFields({
       />
       <div className="field-row">
         <NumberField
-          label="Centre latitude"
-          hint="Copy the centre point from any map app."
-          value={draft.lat}
-          min={-90}
-          max={90}
-          step="any"
-          onChange={set('lat')}
-        />
-        <NumberField
-          label="Centre longitude"
-          value={draft.lng}
-          min={-180}
-          max={180}
-          step="any"
-          onChange={set('lng')}
-        />
-      </div>
-      <div className="field-row">
-        <NumberField
           label="Area radius (km)"
           value={draft.radiusKm}
           min={1}
@@ -126,6 +108,13 @@ function AreaFields({
           </select>
         </label>
       </div>
+      <MapPicker
+        label="Centre of the area"
+        value={{ lat: draft.lat, lng: draft.lng }}
+        onChange={(p) => onChange({ ...draft, ...p })}
+        search={{ label: 'Find the town', placeholder: 'For example Trogir', kind: 'settlement' }}
+        radiusKm={draft.radiusKm}
+      />
     </>
   );
 }

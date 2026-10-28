@@ -9,7 +9,15 @@ export interface BlockText {
 const HEADING = /^(#{1,6})\s+\S/;
 export const BULLET = /^\s*[-*+]\s+\S/;
 const STEP = /^\s*(\d+)[.)]\s+\S/;
-const LINK = /https?:\/\/[^\s)<>\]"']+/g;
+/**
+ * One link, scanned left to right: a Markdown link `[text](target "title")`, an autolink
+ * `<scheme:…>`, or a bare http(s), mailto: or tel: URL. Only the target is compared, so a model
+ * that wraps a bare URL as `[url](url)` keeps the link.
+ */
+const LINK =
+  /\[[^\]]*\]\(\s*<?([^)\s>]*)>?(?:\s+"[^"]*")?\s*\)|<((?:https?|mailto|tel):[^>\s]+)>|\b((?:https?:\/\/|mailto:|tel:)[^\s<>"'()[\]]+)/g;
+/** Sentence punctuation after a bare URL belongs to the sentence, which a translation may move. */
+const TRAILING_PUNCTUATION = /[.,;:!?]+$/;
 const PLACEHOLDER = /\{\{\s*[A-Za-z0-9_.-]+\s*\}\}/g;
 
 const lines = (text: string) => text.split('\n').map((line) => line.trimEnd());
@@ -31,6 +39,14 @@ function steps(text: string): number[] {
 }
 
 const all = (text: string, pattern: RegExp) => text.match(pattern) ?? [];
+
+/** The targets of every link in `text`, in order. */
+function linkTargets(text: string): string[] {
+  return [...text.matchAll(LINK)].map(
+    ([, markdown, autolink, bare]) =>
+      markdown ?? autolink ?? (bare ?? '').replace(TRAILING_PUNCTUATION, ''),
+  );
+}
 const countOf = (text: string, char: string) => text.split(char).length - 1;
 
 const show = (values: readonly unknown[]) => `[${values.join(',')}]`;
@@ -39,7 +55,7 @@ const same = (a: readonly unknown[], b: readonly unknown[]) =>
 
 /** Links and placeholders: the rules that apply to plain text as well as Markdown. */
 function checkInline(field: string, source: string, output: string, problems: string[]) {
-  const links = [all(source, LINK), all(output, LINK)] as const;
+  const links = [linkTargets(source), linkTargets(output)] as const;
   if (!same(...links)) problems.push(`${field}: links ${show(links[0])} vs ${show(links[1])}`);
   const placeholders = [all(source, PLACEHOLDER), all(output, PLACEHOLDER)] as const;
   if (!same(...placeholders)) {

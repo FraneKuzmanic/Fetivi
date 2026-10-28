@@ -1,6 +1,7 @@
 import Anthropic, { type ClientOptions } from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import type { Egress } from '@fetivi/egress';
+import { type ModelUsage, usageOf } from '../../metrics/usage';
 import { buildManualMessage, MANUAL_IMPORT_MODEL_ID, MANUAL_IMPORT_SYSTEM_PROMPT } from './prompt';
 import { ManualExtraction, type ManualExtractionData } from './schema';
 
@@ -20,6 +21,8 @@ export interface ManualImportModel {
 export function createAnthropicManualImportModel(opts: {
   apiKey: string | undefined;
   fetch: Egress['fetch'];
+  /** Gets each successful response's tokens (a failed call has none and reports nothing). */
+  onUsage?: (usage: ModelUsage) => void;
 }): ManualImportModel {
   const { apiKey } = opts;
   if (!apiKey) {
@@ -50,6 +53,7 @@ export function createAnthropicManualImportModel(opts: {
             output_config: { effort: 'medium', format: zodOutputFormat(ManualExtraction) },
           })
           .finalMessage();
+        opts.onUsage?.(usageOf(MANUAL_IMPORT_MODEL_ID, message.usage));
         if (message.stop_reason !== 'end_turn') {
           return { ok: false, error: 'model-error', detail: `stop_reason ${message.stop_reason}` };
         }

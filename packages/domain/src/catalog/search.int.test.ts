@@ -300,6 +300,26 @@ describe('searchEvents', () => {
     expect(after?.results.map((e) => e.title)).not.toContain('[de] Morning klapa concert');
   });
 
+  it('gives an event its address, location and distance when it has them, nulls when not', async () => {
+    const festival = idOf['Trogir Summer of Culture'] as string;
+    await testDb.db
+      .update(catalogRecords)
+      .set({ address: 'Obala bana Berislavića bb' })
+      .where(eq(catalogRecords.id, festival));
+    const early = new Date('2027-07-09T06:00:00Z');
+    const [located, bare] = (await searchEvents(testDb.db, summer(), {}, early))?.results ?? [];
+    expect(located).toMatchObject({
+      address: 'Obala bana Berislavića bb',
+      location: { lat: 43.5161, lng: 16.2475 },
+    });
+    expect(located?.distanceKm).toEqual(expect.any(Number));
+    expect(bare).toMatchObject({ address: null, location: null, distanceKm: null });
+    await testDb.db
+      .update(catalogRecords)
+      .set({ address: null })
+      .where(eq(catalogRecords.id, festival));
+  });
+
   it('never widens the window with from and to', async () => {
     const wide = await searchEvents(
       testDb.db,

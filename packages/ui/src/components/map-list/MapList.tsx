@@ -1,6 +1,5 @@
 import { CornersOut, X } from '@phosphor-icons/react';
 import { type RefObject, useEffect, useId, useRef, useState } from 'react';
-import type { PlaceCardPayload } from '../../payloads';
 import { distanceText } from '../place-carousel/format';
 import type { PlaceLabels } from '../place-carousel/PlaceCard';
 import { boundsOf, loadMapLibre, MAP_STYLE_URL } from './map';
@@ -10,13 +9,23 @@ export type MapListLabels = Pick<
   'places' | 'expandMap' | 'closeMap' | 'mapUnavailable' | 'km' | 'minutes'
 >;
 
+/** What the map and the list need of a place or an event. */
+export interface MapListItem {
+  id: string;
+  title: string;
+  location: { lat: number; lng: number } | null;
+  distanceKm: number | null;
+  kind?: 'place' | 'day_trip';
+  travelMinutes?: number | null;
+}
+
 /**
  * Draws the places on a MapLibre map in `container` while `active`; markers carry the list's
  * numbers. Calls `onFail` when MapLibre cannot load (no WebGL, offline).
  */
 function useMap(
   container: RefObject<HTMLDivElement | null>,
-  places: readonly PlaceCardPayload[],
+  places: readonly MapListItem[],
   opts: { active: boolean; controls: boolean; onFail: () => void },
 ) {
   const { active, controls, onFail } = opts;
@@ -66,16 +75,19 @@ function useMap(
 }
 
 /**
- * Places on a map, always with the numbered list. The list comes first in the DOM and is the
- * accessible content; the map is a visual extra (hidden from screen readers) that can expand to
- * full screen. Without a map (no WebGL, offline) the list stays.
+ * Places (or events) on a map, always with the numbered list. The list comes first in the DOM and
+ * is the accessible content; the map is a visual extra (hidden from screen readers) that can
+ * expand to full screen. Without a map (no WebGL, offline) the list stays.
  */
-export function MapList({
+export function MapList<T extends MapListItem>({
   places,
   labels,
+  metaOf,
 }: {
-  places: readonly PlaceCardPayload[];
+  places: readonly T[];
   labels: MapListLabels;
+  /** The line under each title; the distance when not given. */
+  metaOf?: (item: T) => string | null;
 }) {
   const titleId = useId();
   const inline = useRef<HTMLDivElement>(null);
@@ -100,7 +112,7 @@ export function MapList({
   const list = (
     <ol className="fv-maplist-list">
       {places.map((place, index) => {
-        const distance = distanceText(place, labels);
+        const meta = metaOf ? metaOf(place) : distanceText(place, labels);
         return (
           <li key={place.id}>
             <span className="fv-marker" aria-hidden="true">
@@ -108,7 +120,7 @@ export function MapList({
             </span>
             <span className="fv-maplist-text">
               <span className="fv-maplist-title">{place.title}</span>
-              {distance && <span className="fv-maplist-meta">{distance}</span>}
+              {meta && <span className="fv-maplist-meta">{meta}</span>}
             </span>
           </li>
         );

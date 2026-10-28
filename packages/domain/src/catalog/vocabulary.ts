@@ -83,7 +83,16 @@ export const SOURCE_FIELDS = {
     'seasons',
     'openingHours',
   ],
-  event: ['title', 'description', 'startsAt', 'endsAt', 'location', 'venueName', 'websiteUrl'],
+  event: [
+    'title',
+    'description',
+    'startsAt',
+    'endsAt',
+    'location',
+    'address',
+    'venueName',
+    'websiteUrl',
+  ],
   transport_note: ['title', 'description', 'transportMode', 'links', 'seasons'],
   day_trip: [
     'title',
