@@ -21,7 +21,6 @@ import {
   CalendarCheck,
   Clock,
   CurrencyEur,
-  DotsThree,
   IdentificationCard,
   Pause,
   Play,
@@ -55,7 +54,8 @@ import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
 import { useConfirm } from '../../shell/ConfirmDialog';
-import { Menu } from '../../shell/Menu';
+import { MoreActions } from '../../shell/MoreActions';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { centsFromEuros, eurosFromCents } from './money';
 import { OfferTranslations } from './OfferTranslations';
@@ -169,6 +169,8 @@ export function NewOfferPage() {
   const destinationIds = destinations?.map((d) => d.id) ?? [];
   const destinationLabels = Object.fromEntries(destinations?.map((d) => [d.id, d.name]) ?? []);
 
+  usePageTitle('Add offer');
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
@@ -176,9 +178,6 @@ export function NewOfferPage() {
         <span aria-hidden="true">/</span>
         <Link to={`/admin/providers/${id}`}>{providerName ?? 'Provider'}</Link>
       </nav>
-      <div className="page-head">
-        <h1>Add offer</h1>
-      </div>
       {destinations?.length === 0 ? (
         <p className="muted">
           Add a destination in the <Link to="/admin/catalog">Catalog</Link> first.
@@ -387,6 +386,8 @@ export function OfferPage() {
 
   // The chips and the translations panel follow the job; drafts are left alone.
   usePendingRefresh(offer ? [offer] : [], async () => setOffer(await providers.offer(id)));
+
+  usePageTitle(offer?.title);
 
   if (!offer || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
@@ -732,7 +733,6 @@ export function OfferPage() {
       <div className="page-head">
         <div className="page-title">
           <div className="title-line">
-            <h1>{offer.title}</h1>
             {offer.active ? (
               <span className="chip ok">Active</span>
             ) : (
@@ -751,9 +751,8 @@ export function OfferPage() {
               .join(' · ')}
           </p>
         </div>
-        <Menu
+        <MoreActions
           label={`More actions for ${offer.title}`}
-          trigger={<DotsThree aria-hidden="true" weight="bold" />}
           items={[
             offer.active
               ? {

@@ -1,4 +1,4 @@
-// Fetivi Host service worker: web push only, no offline caching.
+// Fetivi service worker: web push only, no offline caching.
 // A push shows one notification and tells open windows to refresh the inbox; a tap opens it.
 
 /** Same-origin paths only (as LoginPage's return path); anything else opens the Inbox. */
@@ -14,7 +14,7 @@ self.addEventListener('push', (event) => {
   const url = safePath(message.url);
   event.waitUntil(
     (async () => {
-      await self.registration.showNotification(message.title || 'Fetivi Host', {
+      await self.registration.showNotification(message.title || 'Fetivi', {
         body: message.body || '',
         icon: '/icon.svg',
         data: { url },

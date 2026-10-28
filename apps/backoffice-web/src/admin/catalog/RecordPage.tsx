@@ -16,7 +16,6 @@ import {
   BookOpen,
   CalendarBlank,
   Clock,
-  DotsThree,
   ImageSquare,
   Info,
   LinkSimple,
@@ -51,7 +50,8 @@ import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
 import { useConfirm } from '../../shell/ConfirmDialog';
-import { Menu } from '../../shell/Menu';
+import { MoreActions } from '../../shell/MoreActions';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { CatalogTranslations } from './CatalogTranslations';
 import {
@@ -204,6 +204,12 @@ export function NewRecordPage() {
       .catch(() => {});
   }, [id]);
 
+  usePageTitle(
+    (CATALOG_KINDS as readonly string[]).includes(kindParam)
+      ? `Add ${CATALOG_KIND_LABELS[kindParam as CatalogKind].toLowerCase()}`
+      : undefined,
+  );
+
   if (!(CATALOG_KINDS as readonly string[]).includes(kindParam)) {
     return <Navigate to={`/admin/catalog/destinations/${id}`} replace />;
   }
@@ -253,9 +259,6 @@ export function NewRecordPage() {
         <span aria-hidden="true">/</span>
         <Link to={`/admin/catalog/destinations/${id}`}>{destinationName ?? 'Destination'}</Link>
       </nav>
-      <div className="page-head">
-        <h1>Add {CATALOG_KIND_LABELS[kind].toLowerCase()}</h1>
-      </div>
       <section className="panel narrow">
         <form onSubmit={submit}>
           <div className="fields">
@@ -462,6 +465,8 @@ export function RecordPage() {
   // The chips and the translations panel follow the job; drafts are left alone.
   usePendingRefresh(record ? [record] : [], async () => setRecord(await catalog.record(id)));
 
+  usePageTitle(record?.title);
+
   if (!record || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
   }
@@ -544,7 +549,6 @@ export function RecordPage() {
         return (
           <Section
             title="Description"
-            description="Saving a change to the title or description translates it again into the seven guest languages."
             onSave={savePatch(['title', 'description'], {
               title: draft.title,
               description: draft.description,
@@ -559,7 +563,6 @@ export function RecordPage() {
             />
             <TextArea
               label="Description"
-              hint="Markdown: **bold**, lists with -, links as [text](https://…)."
               value={draft.description}
               maxLength={LIMITS.blockBody}
               rows={8}
@@ -748,7 +751,6 @@ export function RecordPage() {
       <div className="page-head">
         <div className="page-title">
           <div className="title-line">
-            <h1>{record.title}</h1>
             {record.staleness.status === 'fresh' ? null : (
               <StalenessChip staleness={record.staleness} />
             )}
@@ -763,9 +765,8 @@ export function RecordPage() {
             <SealCheck aria-hidden="true" />
             Mark verified
           </button>
-          <Menu
+          <MoreActions
             label={`More actions for ${record.title}`}
-            trigger={<DotsThree aria-hidden="true" weight="bold" />}
             items={[
               {
                 label: 'Delete record',

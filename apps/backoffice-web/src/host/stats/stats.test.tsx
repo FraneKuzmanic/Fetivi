@@ -156,16 +156,13 @@ describe('UnitStatsPage', () => {
 });
 
 describe('FeedbackStatsPage', () => {
-  it('shows the totals, reasons, target note and a row per unit linked to the flags', async () => {
+  it('shows the totals, reasons and a row per unit linked to the flags, without the flags button or target note', async () => {
     await mount('/admin/feedback', ADMIN_ME);
     await vi.waitFor(() => expect(el.querySelector('h1')?.textContent).toBe('Feedback'));
     expect(navLabels()).toContain('Feedback');
-    expect(
-      el.querySelector('.page-head a[href="/admin/curation?kind=guest_flagged"]')?.textContent,
-    ).toBe('Review flagged places');
-    expect(text()).toContain(
-      'How guests rate Fetivi’s answers. Proposed target: over 80% helpful, and under 5% wrong or outdated.',
-    );
+    expect(el.querySelector('.page-head a[href="/admin/curation?kind=guest_flagged"]')).toBeNull();
+    expect(text()).not.toContain('Review flagged places');
+    expect(text()).not.toContain('How guests rate Fetivi’s answers.');
     expect(el.querySelector('.reasons-line')?.textContent).toContain(
       'Wrong 1 · Outdated 1 · Not helpful 0',
     );

@@ -7,7 +7,7 @@ import { applicationServerKey, isInstalled, platform, pushSupported } from './in
 type State = 'checking' | 'off' | 'on' | 'blocked';
 
 /**
- * The guided step for phone alerts (PRD §6.6): add Fetivi Host to the Home Screen, open it from
+ * The guided step for phone alerts (PRD §6.6): add Fetivi to the Home Screen, open it from
  * there, then turn alerts on. Permission is asked only on the tap (iOS requires a gesture).
  */
 export function PhoneAlerts({
@@ -47,7 +47,7 @@ function Guide({ publicKey, onChanged }: { publicKey: string; onChanged: () => v
     return (
       <ol className="steps-list">
         <li>
-          <strong>Add Fetivi Host to your Home Screen.</strong>{' '}
+          <strong>Add Fetivi to your Home Screen.</strong>{' '}
           {os === 'ios' ? (
             <>
               In Safari, tap Share <Export aria-label="Share" />, then{' '}
@@ -60,7 +60,7 @@ function Guide({ publicKey, onChanged }: { publicKey: string; onChanged: () => v
             </>
           )}
         </li>
-        <li>Open Fetivi Host from your Home Screen and come back to this page.</li>
+        <li>Open Fetivi from your Home Screen and come back to this page.</li>
         <li>
           Tap <strong>Turn on alerts</strong>.
         </li>

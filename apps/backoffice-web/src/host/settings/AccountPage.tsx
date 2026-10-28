@@ -1,5 +1,4 @@
 import type { GuestLanguage } from '@fetivi/domain/vocabulary';
-import { SignOut } from '@phosphor-icons/react';
 import { auth } from '../../api';
 import { LANGUAGE_LABELS } from '../../forms/labels';
 import { useSession } from '../../session';
@@ -9,9 +8,9 @@ import { SettingsTabs } from './SettingsTabs';
 /** The back office speaks English and Croatian. */
 const LANGUAGES: GuestLanguage[] = ['en', 'hr'];
 
-/** Settings → Account: who is signed in, the back-office language, and Log out. */
+/** Settings → Account: who is signed in and the back-office language. */
 export function AccountPage() {
-  const { me, setMe, logout } = useSession();
+  const { me, setMe } = useSession();
   const { busy, error, run } = useAction();
   if (!me || me === 'loading') return null;
   const current = me.account.language;
@@ -48,12 +47,6 @@ export function AccountPage() {
             </select>
             <small>Guest messages and suggestions reach you translated into this language.</small>
           </label>
-        </div>
-        <div className="actions">
-          <button type="button" disabled={busy} onClick={() => void run(logout)}>
-            <SignOut aria-hidden="true" />
-            Log out
-          </button>
         </div>
       </section>
     </>

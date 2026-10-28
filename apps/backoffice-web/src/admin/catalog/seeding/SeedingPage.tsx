@@ -27,6 +27,7 @@ import {
 } from '../../../forms/labels';
 import { EmptyState } from '../../../shell/EmptyState';
 import { Pager } from '../../../shell/Pager';
+import { usePageTitle } from '../../../shell/PageTitle';
 import { SearchBox } from '../../../shell/SearchBox';
 import { Tabs } from '../../../shell/Tabs';
 import { useAction } from '../../../useAction';
@@ -175,6 +176,8 @@ export function SeedingPage() {
       }
     });
 
+  usePageTitle('Find places');
+
   if (!overview) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
   }
@@ -250,7 +253,6 @@ export function SeedingPage() {
         <Link to={`/admin/catalog/destinations/${id}`}>{destination.name}</Link>
       </nav>
       <div className="page-head">
-        <h1>Find places</h1>
         <button type="button" className="primary" disabled={busy || running} onClick={startImport}>
           <MagnifyingGlass aria-hidden="true" weight="bold" />
           {lastImport ? 'Search again' : 'Find places'}

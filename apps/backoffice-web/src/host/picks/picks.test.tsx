@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Block, HostPicks, PropertyDetail } from '../../api';
+import { WithPageTitle } from '../../shell/testing';
 import { HostPicksPage } from './HostPicksPage';
 
 const PUBLISHED = { status: 'published' as const, error: null };
@@ -128,11 +129,13 @@ async function mount() {
   root = createRoot(el);
   await act(async () =>
     root?.render(
-      <MemoryRouter initialEntries={['/properties/pr1/picks']}>
-        <Routes>
-          <Route path="/properties/:id/picks" element={<HostPicksPage />} />
-        </Routes>
-      </MemoryRouter>,
+      <WithPageTitle>
+        <MemoryRouter initialEntries={['/properties/pr1/picks']}>
+          <Routes>
+            <Route path="/properties/:id/picks" element={<HostPicksPage />} />
+          </Routes>
+        </MemoryRouter>
+      </WithPageTitle>,
     ),
   );
   await vi.waitFor(() => expect(el.querySelector('h1')?.textContent).toBe('Host picks and tips'));

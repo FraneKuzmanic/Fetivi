@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { ReconciliationFinding, ReconciliationRun } from '../../api';
-import { formatMoment } from '../../forms/datetime';
+import { WithPageTitle } from '../../shell/testing';
 import { ReconciliationPage } from './ReconciliationPage';
 
 const RUN: ReconciliationRun = {
@@ -113,9 +113,11 @@ async function mount() {
   root = createRoot(el);
   await act(async () => {
     root?.render(
-      <MemoryRouter>
-        <ReconciliationPage />
-      </MemoryRouter>,
+      <WithPageTitle>
+        <MemoryRouter>
+          <ReconciliationPage />
+        </MemoryRouter>
+      </WithPageTitle>,
     );
   });
 }
@@ -137,13 +139,12 @@ describe('ReconciliationPage', () => {
       url: '/api/admin/reconciliation?status=needs_attention',
       method: 'GET',
     });
-    expect(el.textContent).toContain(
-      `Last check ${formatMoment(RUN.startedAt)} · 12 checked · 1 fixed · 1 need you`,
-    );
-    expect(el.querySelector('details.help summary')?.textContent).toBe('Earlier checks');
-    expect(el.querySelector('details.help')?.textContent).toContain(
-      'Stripe was unavailable, so only holds were checked',
-    );
+    expect(el.textContent).not.toContain('Every 5 minutes Fetivi compares');
+    expect(el.textContent).not.toContain('Last check');
+    expect(el.querySelector('details.help')).toBeNull();
+    const tabsRow = el.querySelector('.tabs-row');
+    expect(tabsRow?.querySelector('[role="tablist"]')).not.toBeNull();
+    expect(tabsRow?.querySelector('button.primary')?.textContent).toContain('Check now');
     const open = el.querySelector('.data-table tbody tr');
     expect(open?.textContent).toContain('Stripe payment with no order');
     expect(open?.textContent).toContain('Nothing yet');

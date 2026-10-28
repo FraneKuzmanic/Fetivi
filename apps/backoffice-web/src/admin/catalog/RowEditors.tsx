@@ -254,7 +254,6 @@ export function OpeningHoursEditor({
           />
         ) : null}
       </div>
-      <small>A closing time earlier than the opening means past midnight.</small>
     </fieldset>
   );
 }
@@ -294,9 +293,6 @@ export function ImagesEditor({
   return (
     <fieldset className="row-editor">
       <legend className="visually-hidden">Photos</legend>
-      {images.length === 0 ? (
-        <p className="muted">No photo: guests see the category illustration.</p>
-      ) : null}
       {images.map((image, i) => {
         const set = (patch: Partial<PlaceImage>) =>
           onChange(replaceAt(images, i, { ...image, ...patch }));
@@ -377,10 +373,6 @@ export function ImagesEditor({
           }
         />
       ) : null}
-      <small>
-        Only your own photos, venue photos used with permission, or Wikimedia Commons with
-        attribution.
-      </small>
     </fieldset>
   );
 }

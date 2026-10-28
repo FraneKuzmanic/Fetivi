@@ -6,7 +6,7 @@ import type { AdminOverview, AdminPropertyRow, HostSummary } from '../api';
 import { formatDay } from '../forms/datetime';
 import { Tabs } from '../shell/Tabs';
 import { adminAttention } from './AdminTodayPage';
-import { approvalOrder, unitsLine } from './ApprovalsPage';
+import { approvalOrder, unitsLine } from './ApprovalsTable';
 import { auditAction } from './AuditPage';
 import { dueText } from './curation/StalenessPage';
 import { hostStatus } from './HostsPage';

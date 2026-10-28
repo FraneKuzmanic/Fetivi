@@ -90,6 +90,16 @@ export function todayIso(now = new Date()): string {
   return isoDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
 
+/** Today's date in the header, day first: "Tuesday 27 October". Ticket 53 switches the locale here. */
+export function longDay(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+}
+
 /** A moment as the admin reads it, in the browser's zone: "27.10.2026". */
 export function formatDay(at: string | Date): string {
   const d = typeof at === 'string' ? new Date(at) : at;

@@ -35,6 +35,7 @@ import {
   PRICE_UNIT_LABELS,
 } from '../../forms/labels';
 import { useConfirm } from '../../shell/ConfirmDialog';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { TranslationChip } from '../translations/TranslationChip';
 import { usePendingRefresh } from '../translations/usePendingRefresh';
@@ -131,12 +132,11 @@ export function NewServicePage() {
     });
   }
 
+  usePageTitle('Add a service');
+
   return (
     <>
       <Crumbs />
-      <div className="page-head">
-        <h1>Add a service</h1>
-      </div>
       <section className="panel narrow">
         <form onSubmit={submit}>
           <div className="fields">
@@ -312,6 +312,8 @@ export function ServicePage() {
   // The chips and the translations panel follow the job; drafts are left alone.
   usePendingRefresh(offer ? [offer] : [], async () => setOffer(await host.offer(id)));
 
+  usePageTitle(offer?.title);
+
   if (!offer || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
   }
@@ -345,7 +347,6 @@ export function ServicePage() {
     <>
       <Crumbs />
       <div className="page-head">
-        <h1>{offer.title}</h1>
         <div className="record-chips">
           <span className="chip neutral">{OFFER_CATEGORY_LABELS[offer.category]}</span>
           <span className="chip neutral">

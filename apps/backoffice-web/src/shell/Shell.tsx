@@ -25,10 +25,12 @@ import {
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { admin, host, type Me } from '../api';
+import { longDay, todayIso } from '../forms/datetime';
 import { onInboxChanged, onPushMessage } from '../host/inbox/inbox-events';
 import { useSession } from '../session';
 import { useAction } from '../useAction';
 import { Menu } from './Menu';
+import { PageTitleContext } from './PageTitle';
 
 interface NavItem {
   to: string;
@@ -206,6 +208,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(storedCollapsed);
   const wide = useWide();
   const [folding, setFolding] = useState(false);
+  const [title, setTitle] = useState<string | null>(null);
   const foldTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(foldTimer.current), []);
   const hostView = isHostView(me);
@@ -266,6 +269,17 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
       ? pathname === '/'
       : pathname === item.to || item.prefixes.some((p) => pathname.startsWith(p));
 
+  // The page reports its own title; until it does, the current nav item names it.
+  const shown = title ?? items.find(isCurrent)?.label ?? 'Fetivi';
+
+  useEffect(() => {
+    const previous = document.title;
+    document.title = `${shown} · Fetivi`;
+    return () => {
+      document.title = previous;
+    };
+  }, [shown]);
+
   const links = (list: NavItem[], className: string, short = false) =>
     // On a phone a host reaches Settings from the profile menu, leaving room for six items.
     list
@@ -308,6 +322,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
     }
   };
 
+  // The language switch (ticket 53) goes here.
   const menuItems = [
     // The sidebar has Settings at its foot; a host's phone has it only here.
     ...(hostView && !wide
@@ -320,7 +335,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         ]
       : []),
     {
-      label: 'Log out',
+      label: 'Sign out',
       icon: <SignOut aria-hidden="true" />,
       onSelect: () => void run(logout),
     },
@@ -392,6 +407,14 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
       </aside>
 
       <div className="main-col">
+        <header className="topbar">
+          <div className="topbar-title">
+            <h1>{shown}</h1>
+            <p className="topbar-date">{longDay(todayIso())}</p>
+          </div>
+          {profile}
+        </header>
+
         {me.actingAs ? (
           <div className="acting">
             <div className="banner" role="status">
@@ -409,15 +432,10 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
           </div>
         ) : null}
 
-        <header className="topbar">
-          <Brand />
-          {profile}
-        </header>
-
         <div className="content">
           {error ? <p role="alert">{error}</p> : null}
           <main id="main" tabIndex={-1}>
-            {children}
+            <PageTitleContext.Provider value={setTitle}>{children}</PageTitleContext.Provider>
           </main>
         </div>
       </div>

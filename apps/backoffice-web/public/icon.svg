@@ -1,9 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-  <title>Fetivi Host</title>
+  <title>Fetivi</title>
   <rect width="120" height="120" fill="#0047ab"/>
-  <g fill="#ffffff">
-    <rect x="40" y="30" width="15" height="60" rx="3"/>
-    <rect x="40" y="30" width="44" height="14" rx="3"/>
-    <rect x="40" y="54" width="36" height="13" rx="3"/>
+  <g transform="translate(24 22) scale(0.6)" stroke="#1a2c5b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M16 118 V94 Q16 72 42 70 H78 Q104 72 104 94 V118 Z" fill="#ffffff"/>
+    <path d="M17 76 H103 M16 88 H104 M16 100 H104 M16 112 H104" stroke="#2f9fdc" stroke-width="6" stroke-linecap="butt"/>
+    <ellipse cx="38" cy="52" rx="5.5" ry="7.5" fill="#f0dcc8"/>
+    <ellipse cx="82" cy="52" rx="5.5" ry="7.5" fill="#f0dcc8"/>
+    <path d="M60 12 C45 12 39 30 39 52 C39 66 47 74 60 74 C73 74 81 66 81 52 C81 30 75 12 60 12 Z" fill="#f0dcc8"/>
+    <circle cx="53" cy="38" r="2" fill="#1a2c5b" stroke="none"/>
+    <circle cx="67" cy="38" r="2" fill="#1a2c5b" stroke="none"/>
+    <path d="M60 36 C55 44 53 50 57 53 C59 55 63 54 63 51" fill="none"/>
+    <path d="M44 62 C43 84 51 90 60 90 C69 90 77 84 76 62 Z" fill="#f7931e"/>
+    <path d="M60 57 C52 53 40 57 33 68 C44 67 52 66 60 61 C68 66 76 67 87 68 C80 57 68 53 60 57 Z" fill="#f7931e"/>
   </g>
 </svg>

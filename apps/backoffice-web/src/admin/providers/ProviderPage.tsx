@@ -8,7 +8,6 @@ import { LIMITS } from '@fetivi/domain/vocabulary';
 import {
   AddressBook,
   CreditCard,
-  DotsThree,
   Handshake,
   Pause,
   Play,
@@ -30,13 +29,13 @@ import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { EmptyState } from '../../shell/EmptyState';
-import { Menu } from '../../shell/Menu';
+import { MoreActions } from '../../shell/MoreActions';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { bpFromPercent, formatPrice, percentFromBp } from './money';
 import { OnlinePaymentsPanel } from './OnlinePaymentsPanel';
 import { percentText } from './ProvidersPage';
 
-const WHATSAPP_HINT = 'Stored for order links by WhatsApp later; email is used for now.';
 const LANGUAGE_LABEL = 'Language for order emails';
 const LANGUAGE_HINT = 'Also the language of the order page the email links to.';
 
@@ -106,14 +105,13 @@ export function NewProviderPage() {
     });
   }
 
+  usePageTitle('Add provider');
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/admin/providers">Providers</Link>
       </nav>
-      <div className="page-head">
-        <h1>Add provider</h1>
-      </div>
       <section className="panel narrow">
         <form onSubmit={submit}>
           <div className="fields">
@@ -135,7 +133,6 @@ export function NewProviderPage() {
             />
             <TextField
               label="WhatsApp number"
-              hint={WHATSAPP_HINT}
               type="tel"
               value={whatsappPhone}
               maxLength={LIMITS.phone}
@@ -203,6 +200,8 @@ export function ProviderPage() {
   }, [id, run, accept, reloadOffers]);
 
   usePendingRefresh(offers ?? [], reloadOffers);
+
+  usePageTitle(provider?.name);
 
   if (!provider || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
@@ -291,7 +290,6 @@ export function ProviderPage() {
             />
             <TextField
               label="WhatsApp number"
-              hint={WHATSAPP_HINT}
               type="tel"
               value={draft.whatsappPhone}
               maxLength={LIMITS.phone}
@@ -355,7 +353,6 @@ export function ProviderPage() {
       <div className="page-head">
         <div className="page-title">
           <div className="title-line">
-            <h1>{provider.name}</h1>
             {provider.active ? (
               <span className="chip ok">Active</span>
             ) : (
@@ -366,9 +363,8 @@ export function ProviderPage() {
             {provider.email} · {percentText(provider.commissionBp)} commission
           </p>
         </div>
-        <Menu
+        <MoreActions
           label={`More actions for ${provider.name}`}
-          trigger={<DotsThree aria-hidden="true" weight="bold" />}
           items={[
             provider.active
               ? {

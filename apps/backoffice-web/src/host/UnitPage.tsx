@@ -31,6 +31,8 @@ import { BED_LABELS, CATEGORY_LABELS } from '../forms/labels';
 import { sectionBody } from '../forms/patch';
 import { useConfirm } from '../shell/ConfirmDialog';
 import { Menu } from '../shell/Menu';
+import { MoreActions } from '../shell/MoreActions';
+import { usePageTitle } from '../shell/PageTitle';
 import { useAction } from '../useAction';
 import { AmenitiesEditor } from './AmenitiesEditor';
 import { BlockEditor, SecretWarnings } from './BlockEditor';
@@ -86,6 +88,8 @@ export function UnitPage() {
     ],
     async () => setDetail(await host.unit(id)),
   );
+
+  usePageTitle(detail?.name);
 
   if (!detail || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
@@ -314,7 +318,6 @@ export function UnitPage() {
       <div className="page-head">
         <div className="page-title">
           <div className="title-line">
-            <h1>{detail.name}</h1>
             {live ? (
               <span className="chip ok">Live</span>
             ) : (
@@ -330,9 +333,8 @@ export function UnitPage() {
               Register a Stay
             </Link>
           ) : null}
-          <Menu
+          <MoreActions
             label={`More actions for ${detail.name}`}
-            trigger={<DotsThree aria-hidden="true" weight="bold" />}
             items={[
               ...(live
                 ? [

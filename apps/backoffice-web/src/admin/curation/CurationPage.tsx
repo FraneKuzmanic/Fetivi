@@ -26,6 +26,7 @@ import {
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { EmptyState } from '../../shell/EmptyState';
 import { Menu } from '../../shell/Menu';
+import { usePageTitle } from '../../shell/PageTitle';
 import { Tabs } from '../../shell/Tabs';
 import { useAction } from '../../useAction';
 
@@ -334,15 +335,10 @@ export function CurationPage() {
   const [emptyTitle, emptyText] = TABS.find((t) => t.id === tab)?.empty ?? ['', ''];
   const filtered = kind !== null || destinationId !== '';
 
+  usePageTitle('Curation');
+
   return (
     <>
-      <div className="page-head">
-        <h1>Curation</h1>
-        <Link className="button" to="/admin/curation/staleness">
-          <ClockCounterClockwise aria-hidden="true" />
-          Due for a re-check
-        </Link>
-      </div>
       <Tabs label="Status" items={TABS} value={tab} onChange={setTab} />
       <div className="toolbar">
         <label className="field inline-field">
@@ -371,6 +367,10 @@ export function CurationPage() {
             ))}
           </select>
         </label>
+        <Link className="button toolbar-end" to="/admin/curation/staleness">
+          <ClockCounterClockwise aria-hidden="true" />
+          Due for a re-check
+        </Link>
       </div>
       {notice && !error ? (
         <output className="saved" aria-live="polite">

@@ -2,6 +2,7 @@ import { Plus } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { host, type PropertySummary } from '../api';
+import { usePageTitle } from '../shell/PageTitle';
 import { useAction } from '../useAction';
 
 export function StatusChip({ approved }: { approved: boolean }) {
@@ -20,10 +21,11 @@ export function PropertiesPage() {
     void run(async () => setList((await host.properties()).properties));
   }, [run]);
 
+  usePageTitle('Properties');
+
   return (
     <>
       <div className="page-head">
-        <h1>Properties</h1>
         <Link className="button primary" to="/properties/new">
           <Plus aria-hidden="true" weight="bold" />
           Add property

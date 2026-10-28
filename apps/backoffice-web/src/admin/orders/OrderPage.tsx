@@ -6,6 +6,7 @@ import { type AdminOrder, adminOrders } from '../../api';
 import { formatDate, formatMoment } from '../../forms/datetime';
 import { DateField, NumberField, TextArea, TimeField } from '../../forms/fields';
 import { useConfirm } from '../../shell/ConfirmDialog';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { centsFromEuros } from '../providers/money';
 import { Chip, money, ORDER_STATUS, PAYMENT_STATUS } from './labels';
@@ -151,6 +152,8 @@ export function OrderPage() {
     });
   }
 
+  usePageTitle(order?.offerTitle);
+
   if (!order) {
     return (
       <>
@@ -201,7 +204,6 @@ export function OrderPage() {
         <Link to="/admin/orders">Orders</Link>
       </nav>
       <div className="page-head">
-        <h1>{order.offerTitle}</h1>
         <div className="record-chips">
           <Chip text={statusText} tone={statusTone} />
           <Chip text={paymentText} tone={paymentTone} />

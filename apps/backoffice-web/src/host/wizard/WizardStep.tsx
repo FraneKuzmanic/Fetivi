@@ -28,6 +28,7 @@ import {
   TimeField,
   TriStateField,
 } from '../../forms/fields';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { AddressFields } from '../address/AddressFields';
 import { BlockPrompt } from './BlockPrompt';
@@ -429,6 +430,8 @@ export function WizardStep({
     }
   }
 
+  usePageTitle(copy.steps[stepId].title);
+
   return (
     <div className="wizard-layout">
       <Stepper status={status} current={stepId} />
@@ -444,7 +447,6 @@ export function WizardStep({
           <span className="eyebrow">
             {format(ui.stepOf, { n: index + 1, total: WIZARD_STEP_IDS.length })}
           </span>
-          <h1>{copy.steps[stepId].title}</h1>
           <p className="muted">{copy.steps[stepId].intro}</p>
           {progress.total > 0 ? (
             <div

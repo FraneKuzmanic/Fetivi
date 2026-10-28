@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes, useParams } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { CurationItem, StalenessRecord } from '../../api';
 import { ConfirmProvider } from '../../shell/ConfirmDialog';
+import { WithPageTitle } from '../../shell/testing';
 import { CurationPage } from './CurationPage';
 import { StalenessPage } from './StalenessPage';
 
@@ -249,13 +250,15 @@ async function mount(path: string) {
   await act(async () => {
     root?.render(
       <ConfirmProvider>
-        <MemoryRouter initialEntries={[path]}>
-          <Routes>
-            <Route path="/admin/curation" element={<CurationPage />} />
-            <Route path="/admin/curation/staleness" element={<StalenessPage />} />
-            <Route path="/admin/catalog/records/:id" element={<RecordStub />} />
-          </Routes>
-        </MemoryRouter>
+        <WithPageTitle>
+          <MemoryRouter initialEntries={[path]}>
+            <Routes>
+              <Route path="/admin/curation" element={<CurationPage />} />
+              <Route path="/admin/curation/staleness" element={<StalenessPage />} />
+              <Route path="/admin/catalog/records/:id" element={<RecordStub />} />
+            </Routes>
+          </MemoryRouter>
+        </WithPageTitle>
       </ConfirmProvider>,
     );
   });
@@ -276,13 +279,13 @@ async function click(button: Element | undefined | null) {
   });
 }
 
-/** Every action of a row: its one visible button, then what its "⋯" menu holds. */
+/** Every action of a row: its one visible button, then what its "⋯" menu holds (in the body). */
 async function actionsOf(row: Element | undefined, subject: string) {
   const visible = row?.querySelector('.queue-actions > button')?.textContent;
   const more = row?.querySelector(`button[aria-label="More for ${subject}"]`);
   if (!more) return [visible];
   await click(more);
-  const items = [...(row?.querySelectorAll('[role="menuitem"]') ?? [])].map((i) => i.textContent);
+  const items = [...document.querySelectorAll('[role="menuitem"]')].map((i) => i.textContent);
   await click(more);
   return [visible, ...items];
 }
@@ -291,7 +294,7 @@ async function actionsOf(row: Element | undefined, subject: string) {
 async function pick(row: Element | undefined, subject: string, item: string) {
   await click(row?.querySelector(`button[aria-label="More for ${subject}"]`));
   await click(
-    [...(row?.querySelectorAll('[role="menuitem"]') ?? [])].find((i) => i.textContent === item),
+    [...document.querySelectorAll('[role="menuitem"]')].find((i) => i.textContent === item),
   );
 }
 

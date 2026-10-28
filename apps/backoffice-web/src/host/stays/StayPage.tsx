@@ -8,6 +8,7 @@ import { host, type Stay } from '../../api';
 import { CheckboxField, Section, SelectField } from '../../forms/fields';
 import { LANGUAGE_LABELS } from '../../forms/labels';
 import { useConfirm } from '../../shell/ConfirmDialog';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { dateRange, guestsLabel, nightsLabel, releaseText } from './format';
 import { type StayDraft, StayFields, stayBody } from './StayFields';
@@ -44,6 +45,8 @@ export function StayPage() {
     void load();
   }, [load]);
 
+  usePageTitle(stay ? dateRange(stay.checkIn, stay.checkout) : undefined);
+
   if (!stay || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
   }
@@ -61,7 +64,6 @@ export function StayPage() {
         <Link to={`/units/${stay.unitId}`}>{stay.unitName}</Link>
       </nav>
       <div className="page-head">
-        <h1>{dateRange(stay.checkIn, stay.checkout)}</h1>
         <StayChips stay={stay} />
       </div>
       <p className="muted">

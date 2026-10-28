@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { host, type UnitDetail, type UnitStats } from '../../api';
+import { usePageTitle } from '../../shell/PageTitle';
 import { Figures, TopTopics, thumbsRatio } from '../../stats/StatsWidgets';
 import { useAction } from '../../useAction';
 import { dateRange } from '../stays/format';
@@ -21,6 +22,8 @@ export function UnitStatsPage() {
     });
   }, [id, run]);
 
+  usePageTitle('Guest stats');
+
   if (!unit || !stats) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
   }
@@ -34,9 +37,6 @@ export function UnitStatsPage() {
         <span aria-hidden="true">/</span>
         <Link to={`/units/${unit.id}`}>{unit.name}</Link>
       </nav>
-      <div className="page-head">
-        <h1>Guest stats</h1>
-      </div>
       <p className="muted">Counts only. You never see what guests wrote to Fetivi.</p>
 
       <div className="editor">

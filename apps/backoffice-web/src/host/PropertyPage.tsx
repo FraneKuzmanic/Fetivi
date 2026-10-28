@@ -5,7 +5,6 @@ import {
   ClipboardText,
   Couch,
   DoorOpen,
-  DotsThree,
   MapPin,
   Plus,
   Star,
@@ -18,7 +17,8 @@ import { Section, SelectField, TextField } from '../forms/fields';
 import { PROPERTY_TYPE_LABELS } from '../forms/labels';
 import { sectionBody } from '../forms/patch';
 import { useConfirm } from '../shell/ConfirmDialog';
-import { Menu } from '../shell/Menu';
+import { MoreActions } from '../shell/MoreActions';
+import { usePageTitle } from '../shell/PageTitle';
 import { useAction } from '../useAction';
 import { AmenitiesEditor } from './AmenitiesEditor';
 import { AddressFields } from './address/AddressFields';
@@ -46,14 +46,13 @@ export function NewPropertyPage() {
     });
   }
 
+  usePageTitle('Add property');
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/properties">Properties</Link>
       </nav>
-      <div className="page-head">
-        <h1>Add property</h1>
-      </div>
       <section className="panel narrow">
         <form onSubmit={submit}>
           <div className="fields">
@@ -123,6 +122,8 @@ export function PropertyPage() {
       );
     },
   );
+
+  usePageTitle(detail?.name);
 
   if (!detail || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
@@ -323,14 +324,12 @@ export function PropertyPage() {
       <div className="page-head">
         <div className="page-title">
           <div className="title-line">
-            <h1>{detail.name}</h1>
             <StatusChip approved={detail.approved} />
           </div>
           {meta.length > 0 ? <p className="muted">{meta.join(' · ')}</p> : null}
         </div>
-        <Menu
+        <MoreActions
           label={`More actions for ${detail.name}`}
-          trigger={<DotsThree aria-hidden="true" weight="bold" />}
           items={[
             {
               label: 'Delete property',

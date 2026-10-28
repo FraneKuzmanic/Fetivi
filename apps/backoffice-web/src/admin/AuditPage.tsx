@@ -4,6 +4,7 @@ import { type AuditEntry, admin } from '../api';
 import { formatMoment } from '../forms/datetime';
 import { EmptyState } from '../shell/EmptyState';
 import { Pager } from '../shell/Pager';
+import { usePageTitle } from '../shell/PageTitle';
 import { SearchBox } from '../shell/SearchBox';
 import { useAction } from '../useAction';
 
@@ -84,11 +85,10 @@ export function AuditPage() {
     ) ?? [];
   const page = shown.slice(offset, offset + PAGE);
 
+  usePageTitle('Audit log');
+
   return (
     <>
-      <div className="page-head">
-        <h1>Audit log</h1>
-      </div>
       <p className="muted">Everything done while acting as a host, newest first.</p>
       {error ? <p role="alert">{error}</p> : null}
       {entries === null && !error ? <p className="muted">Loading…</p> : null}

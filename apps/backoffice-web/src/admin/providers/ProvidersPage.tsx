@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { type Provider, providers } from '../../api';
 import { EmptyState } from '../../shell/EmptyState';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { percentFromBp } from './money';
 
@@ -25,15 +26,11 @@ export function ProvidersPage() {
     </Link>
   );
 
+  usePageTitle('Providers');
+
   return (
     <>
-      <div className="page-head">
-        <h1>Providers</h1>
-        {list && list.length > 0 ? add : null}
-      </div>
-      <p className="muted">
-        Local businesses you have a deal with. They get each Order by email; they have no login.
-      </p>
+      {list && list.length > 0 ? <div className="page-head">{add}</div> : null}
       {error ? <p role="alert">{error}</p> : null}
       {list === null && !error ? <p className="muted">Loading…</p> : null}
       {list?.length === 0 ? (

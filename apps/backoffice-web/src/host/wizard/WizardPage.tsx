@@ -9,6 +9,7 @@ import {
   type UnitDetail,
   type WizardStatus,
 } from '../../api';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { format, useWizardCopy } from './copy';
 import { GoLivePanel } from './GoLivePanel';
@@ -44,6 +45,8 @@ export function WizardPage() {
   useEffect(() => {
     void run(reload);
   }, [run, reload]);
+
+  usePageTitle(data && !stepId ? format(ui.overviewTitle, { unit: data.detail.name }) : undefined);
 
   if (stepId !== undefined && !isWizardStepId(stepId)) {
     return <Navigate to={`/units/${id}/setup`} replace />;
@@ -98,12 +101,7 @@ export function WizardPage() {
         <span aria-hidden="true">/</span>
         <Link to={`/units/${id}`}>{detail.name}</Link>
       </nav>
-      <div className="page-head">
-        <div>
-          <h1>{format(ui.overviewTitle, { unit: detail.name })}</h1>
-          <p className="muted">{ui.overviewIntro}</p>
-        </div>
-      </div>
+      <p className="muted">{ui.overviewIntro}</p>
       {error ? <p role="alert">{error}</p> : null}
       <WizardOverview
         status={status}

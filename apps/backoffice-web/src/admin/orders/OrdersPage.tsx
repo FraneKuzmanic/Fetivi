@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router';
 import { type AdminOrderRow, type AdminOrderView, adminOrders } from '../../api';
 import { EmptyState } from '../../shell/EmptyState';
 import { Pager } from '../../shell/Pager';
+import { usePageTitle } from '../../shell/PageTitle';
 import { SearchBox } from '../../shell/SearchBox';
 import { Tabs } from '../../shell/Tabs';
 import { useAction } from '../../useAction';
@@ -65,11 +66,10 @@ export function OrdersPage() {
 
   const [emptyTitle, emptyText] = EMPTY[view];
 
+  usePageTitle('Orders');
+
   return (
     <>
-      <div className="page-head">
-        <h1>Orders</h1>
-      </div>
       <Tabs
         label="Order status"
         items={VIEWS}

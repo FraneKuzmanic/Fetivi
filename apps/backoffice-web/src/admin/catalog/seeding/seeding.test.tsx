@@ -9,6 +9,7 @@ import type {
   SeedingImport,
   SeedingOverview,
 } from '../../../api';
+import { WithPageTitle } from '../../../shell/testing';
 import { SeedingPage } from './SeedingPage';
 
 const DEST = 'd1';
@@ -141,11 +142,13 @@ async function mount() {
   root = createRoot(el);
   await act(async () => {
     root?.render(
-      <MemoryRouter initialEntries={[`/admin/catalog/destinations/${DEST}/seeding`]}>
-        <Routes>
-          <Route path="/admin/catalog/destinations/:id/seeding" element={<SeedingPage />} />
-        </Routes>
-      </MemoryRouter>,
+      <WithPageTitle>
+        <MemoryRouter initialEntries={[`/admin/catalog/destinations/${DEST}/seeding`]}>
+          <Routes>
+            <Route path="/admin/catalog/destinations/:id/seeding" element={<SeedingPage />} />
+          </Routes>
+        </MemoryRouter>
+      </WithPageTitle>,
     );
   });
 }

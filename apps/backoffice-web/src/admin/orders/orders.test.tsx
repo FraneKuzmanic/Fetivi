@@ -6,6 +6,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { AdminOrder, AdminOrderRow } from '../../api';
 import { formatMoment } from '../../forms/datetime';
 import { ConfirmProvider } from '../../shell/ConfirmDialog';
+import { WithPageTitle } from '../../shell/testing';
 import { OrderPage } from './OrderPage';
 import { OrdersPage } from './OrdersPage';
 
@@ -139,20 +140,22 @@ async function mount(path: string) {
   await act(async () => {
     root?.render(
       <ConfirmProvider>
-        <MemoryRouter initialEntries={[path]}>
-          <Routes>
-            <Route
-              path="/admin/orders"
-              element={
-                <>
-                  <OrdersPage />
-                  <Probe />
-                </>
-              }
-            />
-            <Route path="/admin/orders/:id" element={<OrderPage />} />
-          </Routes>
-        </MemoryRouter>
+        <WithPageTitle>
+          <MemoryRouter initialEntries={[path]}>
+            <Routes>
+              <Route
+                path="/admin/orders"
+                element={
+                  <>
+                    <OrdersPage />
+                    <Probe />
+                  </>
+                }
+              />
+              <Route path="/admin/orders/:id" element={<OrderPage />} />
+            </Routes>
+          </MemoryRouter>
+        </WithPageTitle>
       </ConfirmProvider>,
     );
   });

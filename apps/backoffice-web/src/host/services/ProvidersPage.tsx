@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { type HostProvider, host } from '../../api';
 import { CheckboxField, SelectField, TextArea, TextField } from '../../forms/fields';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 
 const offersLabel = (n: number) => (n === 1 ? '1 offer' : `${n} offers`);
@@ -61,14 +62,13 @@ export function ProvidersPage() {
   const replace = (updated: HostProvider) =>
     setProviders((list) => list?.map((p) => (p.id === updated.id ? updated : p)) ?? list);
 
+  usePageTitle('Providers your guests see');
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/services">Services</Link>
       </nav>
-      <div className="page-head">
-        <h1>Providers your guests see</h1>
-      </div>
       <p className="muted">
         Every approved Provider near your property is shown to your guests unless you hide it.
         Hiding never changes orders already made.

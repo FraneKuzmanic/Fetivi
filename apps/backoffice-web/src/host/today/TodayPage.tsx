@@ -26,6 +26,7 @@ import { host, type PropertySummary, type Stay } from '../../api';
 import { HarbourHouse } from '../../auth/HarbourHouse';
 import { addDays, todayIso } from '../../forms/datetime';
 import { EmptyState } from '../../shell/EmptyState';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { guestsLabel, nightsLabel } from '../stays/format';
 
@@ -416,13 +417,11 @@ export function TodayPage() {
   const inStay = data?.stays.filter((s) => s.phase === 'in_stay') ?? [];
   const units = data?.properties.flatMap((p) => p.units.map((u) => ({ ...u, property: p }))) ?? [];
 
+  usePageTitle('Today');
+
   return (
     <>
       <div className="page-head">
-        <div className="page-title">
-          <h1>Today</h1>
-          <p className="muted">{dayName(today)}</p>
-        </div>
         <Link className="button primary" to="/stays/new">
           <Plus aria-hidden="true" weight="bold" />
           Register a Stay
@@ -520,16 +519,18 @@ export function TodayPage() {
                     <li key={u.id}>
                       <Link to={`/units/${u.id}`} className="row-link unit-row">
                         <span className="block-text">
-                          <strong>{u.name}</strong>
+                          <span className="title-line">
+                            <strong>{u.name}</strong>
+                            {!u.property.approved ? (
+                              <span className="chip wait">Awaiting approval</span>
+                            ) : u.live ? (
+                              <span className="chip ok">Live</span>
+                            ) : (
+                              <span className="chip neutral">Setting up</span>
+                            )}
+                          </span>
                           <span className="muted">{u.property.name}</span>
                         </span>
-                        {!u.property.approved ? (
-                          <span className="chip wait">Awaiting approval</span>
-                        ) : u.live ? (
-                          <span className="chip ok">Live</span>
-                        ) : (
-                          <span className="chip neutral">Setting up</span>
-                        )}
                       </Link>
                     </li>
                   ))}

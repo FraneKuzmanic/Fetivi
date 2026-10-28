@@ -1,6 +1,6 @@
 {
-  "name": "Fetivi Host",
-  "short_name": "Fetivi Host",
+  "name": "Fetivi",
+  "short_name": "Fetivi",
   "start_url": "/inbox",
   "scope": "/",
   "display": "standalone",

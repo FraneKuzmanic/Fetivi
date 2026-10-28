@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { type HostSuggestion, host } from '../../api';
 import { EmptyState } from '../../shell/EmptyState';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { useWizardCopy } from '../wizard/copy';
 
@@ -46,11 +47,10 @@ export function SuggestionsPage() {
 
   const several = new Set(suggestions?.map((s) => s.unitId)).size > 1;
 
+  usePageTitle('Suggestions');
+
   return (
     <>
-      <div className="page-head">
-        <h1>Suggestions</h1>
-      </div>
       {suggestions === null ? (
         error ? (
           <p role="alert">{error}</p>

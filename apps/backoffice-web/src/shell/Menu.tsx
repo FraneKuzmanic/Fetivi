@@ -1,4 +1,14 @@
-import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
 
 export interface MenuItem {
   label: string;
@@ -10,6 +20,10 @@ export interface MenuItem {
 /**
  * A button that opens a short list of actions (the profile menu, a row's "⋯"). Arrow keys move
  * between items, Escape and a click outside close it, and focus returns to the button.
+ *
+ * The list floats in the body above everything, so a table row or a sticky bar can never cover it
+ * and opening it never moves the page. A Menu inside a modal `<dialog>` would sit under the
+ * dialog's top layer; none is placed there.
  */
 export function Menu({
   label,
@@ -36,6 +50,8 @@ export function Menu({
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
+  // Hidden until placed, so the list never flashes at the corner of the screen.
+  const [pos, setPos] = useState<CSSProperties>({ visibility: 'hidden' });
 
   const itemsOf = () => [
     ...(list.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []),
@@ -46,11 +62,41 @@ export function Menu({
     if (refocus) button.current?.focus();
   };
 
+  // Placed from the button's box, again on every scroll (a table's too) and resize; it opens
+  // upward when there is no room below.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const r = button.current?.getBoundingClientRect();
+      if (!r) return;
+      const height = list.current?.offsetHeight ?? 0;
+      const below = window.innerHeight - r.bottom - 8;
+      const above = r.top - 8;
+      const openUp = up || (height > below && above > below);
+      const width = document.documentElement.clientWidth;
+      setPos({
+        ...(openUp ? { bottom: window.innerHeight - r.top + 6 } : { top: r.bottom + 6 }),
+        ...(align === 'end'
+          ? { right: Math.max(8, width - r.right) }
+          : { left: Math.max(8, r.left) }),
+      });
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, { capture: true });
+      setPos({ visibility: 'hidden' });
+    };
+  }, [open, up, align]);
+
   useEffect(() => {
     if (!open) return;
     list.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
     const outside = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (!root.current?.contains(target) && !list.current?.contains(target)) setOpen(false);
     };
     document.addEventListener('pointerdown', outside);
     return () => document.removeEventListener('pointerdown', outside);
@@ -75,7 +121,8 @@ export function Menu({
       event.preventDefault();
       all[all.length - 1]?.focus();
     } else if (event.key === 'Tab') {
-      setOpen(false);
+      // Back on the button first, so Tab moves on from it rather than from the end of the body.
+      close(true);
     }
   };
 
@@ -93,34 +140,38 @@ export function Menu({
       >
         {trigger}
       </button>
-      {open ? (
-        <div
-          ref={list}
-          id={id}
-          role="menu"
-          aria-label={label}
-          className={`menu-list ${align}${up ? ' up' : ''}`}
-          onKeyDown={onKeyDown}
-        >
-          {header ? <div className="menu-header">{header}</div> : null}
-          {items.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              role="menuitem"
-              tabIndex={-1}
-              className={item.danger ? 'menu-item danger' : 'menu-item'}
-              onClick={() => {
-                close(true);
-                item.onSelect();
-              }}
+      {open
+        ? createPortal(
+            <div
+              ref={list}
+              id={id}
+              role="menu"
+              aria-label={label}
+              className={`menu-list ${align}`}
+              style={pos}
+              onKeyDown={onKeyDown}
             >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
+              {header ? <div className="menu-header">{header}</div> : null}
+              {items.map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  role="menuitem"
+                  tabIndex={-1}
+                  className={item.danger ? 'menu-item danger' : 'menu-item'}
+                  onClick={() => {
+                    close(true);
+                    item.onSelect();
+                  }}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { type HostMessage, type HostOrder, host } from '../../api';
 import { EmptyState } from '../../shell/EmptyState';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { dateRange } from '../stays/format';
 import { messageState, preview, receivedAt, STATE_CHIPS } from './format';
@@ -112,11 +113,10 @@ export function InboxPage() {
   const showTab = (next: 'messages' | 'orders') =>
     setParams(next === 'messages' ? {} : { tab: next }, { replace: true });
 
+  usePageTitle('Inbox');
+
   return (
     <>
-      <div className="page-head">
-        <h1>Inbox</h1>
-      </div>
       {error ? <p role="alert">{error}</p> : null}
       {messages === null && !error ? <p className="muted">Loading…</p> : null}
       {messages !== null && orders.length > 0 ? (

@@ -4,6 +4,7 @@ import {
   addMonths,
   formatDate,
   HALF_HOURS,
+  longDay,
   monthGrid,
   parseDate,
   parseTime,
@@ -81,5 +82,11 @@ describe('calendar helpers', () => {
   it('lists every half hour', () => {
     expect(HALF_HOURS).toHaveLength(48);
     expect(HALF_HOURS[31]).toBe('15:30');
+  });
+});
+
+describe('longDay', () => {
+  it('names the weekday, then the day and the month, day first', () => {
+    expect(longDay('2026-10-27')).toBe('Tuesday 27 October');
   });
 });

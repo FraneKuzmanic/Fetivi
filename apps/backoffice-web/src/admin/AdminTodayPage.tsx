@@ -8,12 +8,19 @@ import {
   Scales,
   SealCheck,
 } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { type AdminOrderRow, type AdminOverview, admin, adminOrders } from '../api';
-import { todayIso } from '../forms/datetime';
+import {
+  type AdminOrderRow,
+  type AdminOverview,
+  type AdminPropertyRow,
+  admin,
+  adminOrders,
+} from '../api';
 import { EmptyState } from '../shell/EmptyState';
+import { usePageTitle } from '../shell/PageTitle';
 import { useAction } from '../useAction';
+import { ApprovalsTable, approvalOrder } from './ApprovalsTable';
 import { OrdersTable } from './orders/OrdersTable';
 
 interface Attention {
@@ -77,39 +84,38 @@ export function adminAttention(o: AdminOverview): Attention[] {
   return items;
 }
 
-const dayName = (iso: string) =>
-  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'UTC',
-  });
-
-/** `/` for an admin: what waits, then the newest orders. */
+/** `/` for an admin: what waits, the properties waiting for approval, then the newest orders. */
 export function AdminTodayPage() {
   const { error, run } = useAction();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [orders, setOrders] = useState<AdminOrderRow[] | null>(null);
-  const today = todayIso();
+  const [waiting, setWaiting] = useState<AdminPropertyRow[]>([]);
+
+  const load = useCallback(
+    () =>
+      run(async () => {
+        const [o, list, pending] = await Promise.all([
+          admin.overview(),
+          adminOrders.list('active'),
+          admin.properties('pending'),
+        ]);
+        setOverview(o);
+        setOrders(list.orders.slice(0, 5));
+        setWaiting(pending.properties.sort(approvalOrder).slice(0, 5));
+      }),
+    [run],
+  );
 
   useEffect(() => {
-    void run(async () => {
-      const [o, list] = await Promise.all([admin.overview(), adminOrders.list('active')]);
-      setOverview(o);
-      setOrders(list.orders.slice(0, 5));
-    });
-  }, [run]);
+    void load();
+  }, [load]);
 
   const attention = overview ? adminAttention(overview) : [];
 
+  usePageTitle('Today');
+
   return (
     <>
-      <div className="page-head">
-        <div className="page-title">
-          <h1>Today</h1>
-          <p className="muted">{dayName(today)}</p>
-        </div>
-      </div>
       {error ? <p role="alert">{error}</p> : null}
       {overview === null && !error ? <p className="muted">Loading…</p> : null}
 
@@ -137,6 +143,23 @@ export function AdminTodayPage() {
                 <CheckCircle className="all-clear-icon" aria-hidden="true" weight="fill" />
                 All caught up. Nothing waits for you.
               </p>
+            )}
+          </section>
+
+          <section className="today-section" aria-labelledby="waiting-approvals">
+            <div className="section-title-row">
+              <h2 id="waiting-approvals" className="section-title">
+                <SealCheck className="section-icon" aria-hidden="true" />
+                Waiting for approval
+              </h2>
+              <Link to="/admin/approvals">All approvals</Link>
+            </div>
+            {waiting.length > 0 ? (
+              <ApprovalsTable rows={waiting} onChanged={load} />
+            ) : (
+              <EmptyState icon={SealCheck} title="No properties wait for approval">
+                New properties show up here until you approve them.
+              </EmptyState>
             )}
           </section>
 

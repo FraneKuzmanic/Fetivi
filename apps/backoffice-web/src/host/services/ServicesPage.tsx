@@ -5,6 +5,7 @@ import { formatPrice } from '../../admin/providers/money';
 import { host, type OfferSummary, type PaymentsStatus } from '../../api';
 import { OFFER_CATEGORY_LABELS } from '../../forms/labels';
 import { EmptyState } from '../../shell/EmptyState';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { paymentsState } from '../settings/PaymentsPage';
 import { TranslationChip } from '../translations/TranslationChip';
@@ -45,10 +46,11 @@ export function ServicesPage() {
 
   const line = payments ? PAYMENTS_LINE[paymentsState(payments)] : null;
 
+  usePageTitle('Services');
+
   return (
     <>
       <div className="page-head">
-        <h1>Services</h1>
         <Link className="button primary" to="/services/new">
           <Plus aria-hidden="true" weight="bold" />
           Add a service

@@ -9,6 +9,7 @@ import { catalog, curation, type Destination, type StalenessRecord } from '../..
 import { formatDay } from '../../forms/datetime';
 import { CATALOG_KIND_LABELS, PLACE_CATEGORY_LABELS } from '../../forms/labels';
 import { EmptyState } from '../../shell/EmptyState';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 
 const kindLabel = (r: StalenessRecord) =>
@@ -58,14 +59,13 @@ export function StalenessPage() {
       setNotice(`${record.title} marked verified.`);
     });
 
+  usePageTitle('Due for a re-check');
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/admin/curation">Curation</Link>
       </nav>
-      <div className="page-head">
-        <h1>Due for a re-check</h1>
-      </div>
       <p className="muted">
         Places due for a re-check now or in the next {STALENESS_NEAR_DAYS} days. Most overdue and
         most recommended first.

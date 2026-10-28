@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { host, type StayProposal } from '../../../api';
 import { NumberField, SelectField, TextField } from '../../../forms/fields';
 import { LANGUAGE_LABELS } from '../../../forms/labels';
+import { usePageTitle } from '../../../shell/PageTitle';
 import { useAction } from '../../../useAction';
 import { dateRange, nightsLabel } from '../format';
 
@@ -40,14 +41,13 @@ export function ConfirmProposalPage() {
     });
   }
 
+  usePageTitle('Confirm booking');
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/stays">Stays</Link>
       </nav>
-      <div className="page-head">
-        <h1>Confirm booking</h1>
-      </div>
       {proposal === undefined && !error ? <p className="muted">Loading…</p> : null}
       {proposal === undefined && error ? <p role="alert">{error}</p> : null}
       {proposal === null ? (

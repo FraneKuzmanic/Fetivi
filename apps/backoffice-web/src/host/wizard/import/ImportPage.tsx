@@ -7,6 +7,7 @@ import {
   type PropertyDetail,
   type UnitDetail,
 } from '../../../api';
+import { usePageTitle } from '../../../shell/PageTitle';
 import { useAction } from '../../../useAction';
 import { format, useWizardCopy } from '../copy';
 import { loadedValues } from '../targets';
@@ -52,6 +53,8 @@ export function ImportPage() {
     document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: 'start' });
   }, [ready]);
 
+  usePageTitle(mi.title);
+
   if (!data || !loaded)
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
   const { detail, manualImport } = data;
@@ -94,12 +97,7 @@ export function ImportPage() {
         <span aria-hidden="true">/</span>
         <Link to={setupPath}>{copy.ui.setup}</Link>
       </nav>
-      <div className="page-head">
-        <div>
-          <h1>{mi.title}</h1>
-          <p className="muted">{mi.intro}</p>
-        </div>
-      </div>
+      <p className="muted">{mi.intro}</p>
 
       {manualImport === null || replacing ? (
         <ManualSource

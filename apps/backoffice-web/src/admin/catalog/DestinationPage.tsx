@@ -1,10 +1,8 @@
 import { CATALOG_KINDS, type CatalogKind } from '@fetivi/domain/catalog-vocabulary';
-import { DRAFTING_LIMITS } from '@fetivi/domain/drafting-vocabulary';
 import { LIMITS } from '@fetivi/domain/vocabulary';
 import {
   ArrowsClockwise,
   CaretDown,
-  DotsThree,
   ListBullets,
   MagnifyingGlass,
   MapPin,
@@ -34,6 +32,8 @@ import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { EmptyState } from '../../shell/EmptyState';
 import { Menu } from '../../shell/Menu';
+import { MoreActions } from '../../shell/MoreActions';
+import { usePageTitle } from '../../shell/PageTitle';
 import { Tabs } from '../../shell/Tabs';
 import { useAction } from '../../useAction';
 import { StalenessChip } from './StalenessChip';
@@ -108,7 +108,7 @@ function AreaFields({
       </div>
       <div className="field-row">
         <NumberField
-          label="Distance from the centre (km)"
+          label="Area radius (km)"
           value={draft.radiusKm}
           min={1}
           max={100}
@@ -150,14 +150,13 @@ export function NewDestinationPage() {
     });
   }
 
+  usePageTitle('Add destination');
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/admin/catalog">Catalog</Link>
       </nav>
-      <div className="page-head">
-        <h1>Add destination</h1>
-      </div>
       <section className="panel narrow">
         <form onSubmit={submit}>
           <div className="fields">
@@ -212,6 +211,8 @@ export function DestinationPage() {
   }, [id, run, reloadRecords]);
 
   usePendingRefresh(records ?? [], reloadRecords);
+
+  usePageTitle(destination?.name);
 
   if (!destination || !draft) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
@@ -275,7 +276,6 @@ export function DestinationPage() {
       </nav>
       <div className="page-head">
         <div className="page-title">
-          <h1>{destination.name}</h1>
           <p className="muted">
             Within {destination.radiusKm} km · {recordCount(count)}
           </p>
@@ -285,9 +285,8 @@ export function DestinationPage() {
             <MagnifyingGlass aria-hidden="true" />
             Find places
           </Link>
-          <Menu
+          <MoreActions
             label={`More actions for ${destination.name}`}
-            trigger={<DotsThree aria-hidden="true" weight="bold" />}
             items={[
               {
                 label: 'Delete destination',
@@ -474,11 +473,6 @@ function RefreshPanel({ destinationId }: { destinationId: string }) {
   return (
     <section className="panel refresh-panel" aria-labelledby="refresh-heading">
       <h2 id="refresh-heading">Website check</h2>
-      <p className="muted">
-        Before the season, check verified places' websites for changes. Only changes come to you for
-        review, up to {DRAFTING_LIMITS.recordsPerRun} at a time. Places checked in the last{' '}
-        {DRAFTING_LIMITS.refreshCooldownDays} days are skipped.
-      </p>
       {status?.refresh ? <p>{refreshLine(status.refresh)}</p> : null}
       <div className="seeding-import">
         <button

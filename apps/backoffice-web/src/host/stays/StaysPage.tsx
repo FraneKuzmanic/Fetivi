@@ -2,6 +2,7 @@ import { Plus } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { host, type PropertySummary, type Stay } from '../../api';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import {
   dateRange,
@@ -63,10 +64,11 @@ export function StaysPage() {
     past ? 0 : proposalsWarned,
   );
 
+  usePageTitle('Stays');
+
   return (
     <>
       <div className="page-head">
-        <h1>Stays</h1>
         <Link className="button primary" to={unitId ? `/stays/new?unit=${unitId}` : '/stays/new'}>
           <Plus aria-hidden="true" weight="bold" />
           Register a Stay

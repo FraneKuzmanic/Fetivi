@@ -13,6 +13,7 @@ import {
 import { Section, TextArea } from '../../forms/fields';
 import { PLACE_CATEGORY_LABELS, TRANSLATION_ERROR_LABELS } from '../../forms/labels';
 import { useConfirm } from '../../shell/ConfirmDialog';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { BlockList, preview } from '../BlockList';
 import { TranslationChip } from '../translations/TranslationChip';
@@ -244,6 +245,8 @@ export function HostPicksPage() {
   usePendingRefresh([...(picks?.picks ?? []), ...(picks?.added ?? [])], reloadPicks);
   usePendingRefresh(detail?.blocks ?? [], reloadBlocks);
 
+  usePageTitle('Host picks and tips');
+
   if (!detail || !picks) {
     return error ? <p role="alert">{error}</p> : <p className="muted">Loading…</p>;
   }
@@ -258,9 +261,6 @@ export function HostPicksPage() {
         <span aria-hidden="true">/</span>
         <Link to={`/properties/${id}`}>{detail.name}</Link>
       </nav>
-      <div className="page-head">
-        <h1>Host picks and tips</h1>
-      </div>
       {error ? <p role="alert">{error}</p> : null}
 
       <div className="editor">

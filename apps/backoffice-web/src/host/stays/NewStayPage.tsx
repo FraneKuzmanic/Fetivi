@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { host } from '../../api';
 import { SelectField } from '../../forms/fields';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 import { liveUnits } from './format';
 import { type StayDraft, StayFields, stayBody } from './StayFields';
@@ -38,14 +39,13 @@ export function NewStayPage() {
     });
   }
 
+  usePageTitle('Register a Stay');
+
   return (
     <>
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/stays">Stays</Link>
       </nav>
-      <div className="page-head">
-        <h1>Register a Stay</h1>
-      </div>
       {units === null && !error ? <p className="muted">Loading…</p> : null}
       {units?.length === 0 ? (
         <section className="panel narrow">

@@ -1,10 +1,11 @@
-import type { FindingKind, ReconcileError } from '@fetivi/domain/payments-vocabulary';
+import type { FindingKind } from '@fetivi/domain/payments-vocabulary';
 import { ArrowsClockwise, Scales } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { type ReconciliationFinding, type ReconciliationRun, reconciliation } from '../../api';
+import { type ReconciliationFinding, reconciliation } from '../../api';
 import { formatMoment } from '../../forms/datetime';
 import { EmptyState } from '../../shell/EmptyState';
+import { usePageTitle } from '../../shell/PageTitle';
 import { Tabs } from '../../shell/Tabs';
 import { useAction } from '../../useAction';
 
@@ -21,11 +22,6 @@ const KIND_LABELS: Record<FindingKind, string> = {
   hold_on_active_order: 'Card hold ended on an active order',
   orphan_session: 'Stripe payment with no order',
   check_failed: 'Couldn’t check a payment',
-};
-
-const RUN_ERRORS: Record<ReconcileError, string> = {
-  'stripe-not-configured': 'Stripe is not configured, so only holds were checked',
-  'stripe-unavailable': 'Stripe was unavailable, so only holds were checked',
 };
 
 /** The stored action is `<what was fed>: <machine outcome>`; the admin reads it in words. */
@@ -58,19 +54,6 @@ const RELOAD_AFTER_MS = 5000;
 
 const time = formatMoment;
 
-function runLine(run: ReconciliationRun): string {
-  const at = time(run.startedAt);
-  if (!run.finishedAt) return `${at} did not finish.`;
-  const open = run.found - run.resolved;
-  const counts = `${run.checked} checked · ${run.resolved} fixed · ${open} need you`;
-  const error = run.error ? ` · ${RUN_ERRORS[run.error]}` : '';
-  return `${at} · ${counts}${error}`;
-}
-
-function lastRunLine(run: ReconciliationRun | undefined): string {
-  return run ? `Last check ${runLine(run)}` : 'No check yet. It runs every 5 minutes.';
-}
-
 /** Where a finding's subject lives in the admin, if it has a page. */
 function SubjectLink({ subject }: { subject: ReconciliationFinding['subject'] }) {
   if (!subject) return null;
@@ -89,14 +72,12 @@ function SubjectLink({ subject }: { subject: ReconciliationFinding['subject'] })
 export function ReconciliationPage() {
   const { busy, error, run } = useAction();
   const [tab, setTab] = useState<Tab>('needs_attention');
-  const [runs, setRuns] = useState<ReconciliationRun[]>([]);
   const [findings, setFindings] = useState<ReconciliationFinding[] | null>(null);
   const [queued, setQueued] = useState(false);
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchTab = useCallback(async () => {
     const result = await reconciliation.list(tab);
-    setRuns(result.runs);
     setFindings(result.findings);
   }, [tab]);
 
@@ -128,41 +109,30 @@ export function ReconciliationPage() {
       setFindings((rows) => rows?.filter((r) => r.id !== f.id) ?? null);
     });
 
+  usePageTitle('Payment checks');
+
   return (
     <>
-      <div className="page-head">
-        <h1>Payment checks</h1>
+      <div className="tabs-row">
+        <Tabs
+          label="Status"
+          items={[
+            { id: 'needs_attention', label: 'Needs you' },
+            { id: 'resolved', label: 'Resolved' },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
         <button type="button" className="primary" disabled={busy || queued} onClick={runNow}>
           <ArrowsClockwise aria-hidden="true" weight="bold" />
           Check now
         </button>
       </div>
-      <p className="muted">
-        Every 5 minutes Fetivi compares its orders with Stripe and fixes what it can. What it can’t
-        fix waits here.
-      </p>
-      <p className="muted">
-        {queued ? 'Check started. It finishes within a minute.' : lastRunLine(runs[0])}
-      </p>
-      {runs.length > 1 ? (
-        <details className="help">
-          <summary>Earlier checks</summary>
-          {runs.slice(1).map((r) => (
-            <p key={r.id} className="muted">
-              {runLine(r)}
-            </p>
-          ))}
-        </details>
+      {queued ? (
+        <output className="saved" aria-live="polite">
+          Check started. It finishes within a minute.
+        </output>
       ) : null}
-      <Tabs
-        label="Status"
-        items={[
-          { id: 'needs_attention', label: 'Needs you' },
-          { id: 'resolved', label: 'Resolved' },
-        ]}
-        value={tab}
-        onChange={setTab}
-      />
       {error ? <p role="alert">{error}</p> : null}
       {findings === null && !error ? <p className="muted">Loading…</p> : null}
       {findings?.length === 0 ? (

@@ -6,6 +6,7 @@ import { useSession } from '../session';
 import { useConfirm } from '../shell/ConfirmDialog';
 import { EmptyState } from '../shell/EmptyState';
 import { Menu } from '../shell/Menu';
+import { usePageTitle } from '../shell/PageTitle';
 import { SearchBox } from '../shell/SearchBox';
 import { useAction } from '../useAction';
 
@@ -60,11 +61,10 @@ export function HostsPage() {
   const needle = query.trim().toLowerCase();
   const shown = hosts?.filter((h) => h.email.toLowerCase().includes(needle)) ?? [];
 
+  usePageTitle('Hosts');
+
   return (
     <>
-      <div className="page-head">
-        <h1>Hosts</h1>
-      </div>
       {error ? <p role="alert">{error}</p> : null}
       {hosts === null && !error ? <p className="muted">Loading…</p> : null}
       {hosts?.length === 0 ? (

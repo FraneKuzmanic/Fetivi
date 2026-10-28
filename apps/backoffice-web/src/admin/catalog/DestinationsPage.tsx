@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { catalog, type Destination } from '../../api';
 import { EmptyState } from '../../shell/EmptyState';
+import { usePageTitle } from '../../shell/PageTitle';
 import { useAction } from '../../useAction';
 
 /** /admin/catalog: every destination and the size of its catalog. */
@@ -21,15 +22,11 @@ export function DestinationsPage() {
     </Link>
   );
 
+  usePageTitle('Catalog');
+
   return (
     <>
-      <div className="page-head">
-        <h1>Catalog</h1>
-        {list && list.length > 0 ? add : null}
-      </div>
-      <p className="muted">
-        Places, events, transport notes and day trips that guests get recommendations from.
-      </p>
+      {list && list.length > 0 ? <div className="page-head">{add}</div> : null}
       {error ? <p role="alert">{error}</p> : null}
       {list === null && !error ? <p className="muted">Loading…</p> : null}
       {list?.length === 0 ? (
