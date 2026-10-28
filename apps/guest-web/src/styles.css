@@ -1776,12 +1776,16 @@ a.button {
 }
 
 /*
- * Onboarding (unit link and "no link"): the one place the guest app is full-bleed Adriatic
- * Cobalt, chosen by Frane on 2026-10-27 so Fetivi's welcome feels like arriving at the sea.
- * Fetivi stands in the middle in a pale porthole; the shirt band runs along the bottom.
+ * Onboarding (unit link and "no link"): the one place the guest app is full-bleed sea, chosen by
+ * Frane so Fetivi's welcome feels like arriving at the sea. Per his welcome-screen design
+ * (2026-10-28) the sea deepens toward the bottom under faint wave lines: the guest app's one
+ * gradient. Fetivi stands in a pale porthole.
  */
 body:has(.onboarding) {
-  background: var(--blue-600);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='18'%3E%3Cpath d='M0 9q8-2.5 16 0t16 0' fill='none' stroke='%23ffffff' stroke-opacity='0.1'/%3E%3C/svg%3E"),
+    linear-gradient(#2055b3, #0f3468);
+  background-color: #0f3468;
 }
 
 .onboarding {
@@ -1799,18 +1803,12 @@ body:has(.onboarding) {
   color: var(--onb-ink);
 }
 
-/* The shirt band: 4px stripe blue, 4px white, as on the back office's signed-out pages. */
 .onboarding[data-step="language"] {
   justify-content: center;
 }
 
-.onboarding::after {
-  content: "";
-  position: fixed;
-  inset: auto 0 0;
-  height: 1.25rem;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='4' fill='%232f9fdc'/%3E%3Crect y='4' width='8' height='4' fill='%23ffffff'/%3E%3C/svg%3E")
-    repeat;
+.onboarding[data-step="intro"] {
+  padding: 2rem 1.25rem 2.5rem;
 }
 
 .onboarding :focus-visible {
@@ -1891,15 +1889,59 @@ body:has(.onboarding) {
   margin-bottom: -12%;
 }
 
-/* The one authored moment: Fetivi's first words appear after he does. */
+/*
+ * The welcome (Frane's design, 2026-10-28): the balloon at the top, Fetivi's porthole centred in
+ * the room below it inside two faint halo rings.
+ */
+.onboarding[data-step="intro"] .stage {
+  justify-content: flex-start;
+}
+
+.onboarding[data-step="intro"] .stage-porthole {
+  margin-block: auto;
+  width: 13.75rem;
+  height: 13.75rem;
+  border-width: 0.1875rem;
+  background: var(--gray-200);
+  box-shadow:
+    0 0 0 0.9375rem rgb(255 255 255 / 0.1),
+    0 0 0 2.75rem rgb(255 255 255 / 0.04),
+    0 0.75rem 2rem rgb(5 20 50 / 0.3);
+}
+
 .onboarding[data-step="intro"] .stage-speech {
-  animation: speech-in 520ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+  gap: 0.75rem;
+  padding: 1.75rem 1.5rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 0.75rem 2rem rgb(5 20 50 / 0.25);
+  color: var(--gray-500);
+  line-height: 1.65;
+  /* Fetivi's first words appear after he does, then keep bobbing gently. */
+  animation:
+    speech-in 520ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both,
+    speech-bob 2.8s ease-in-out 700ms infinite;
+}
+
+.onboarding[data-step="intro"] .stage-speech h1 {
+  color: var(--navy-900);
+  font-size: 1.625rem;
+  letter-spacing: -0.01em;
 }
 
 @keyframes speech-in {
   from {
     opacity: 0;
     transform: translateY(0.75rem) scale(0.94);
+  }
+}
+
+@keyframes speech-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.4rem);
   }
 }
 
@@ -1925,6 +1967,13 @@ body:has(.onboarding) {
   border-color: var(--onb-line);
   background: transparent;
   color: var(--onb-soft);
+}
+
+.onboarding[data-step="intro"] .onboarding-button {
+  min-height: 3.75rem;
+  border-radius: var(--radius-lg);
+  color: var(--navy-900);
+  font-size: 1.0625rem;
 }
 
 .onboarding-back {
