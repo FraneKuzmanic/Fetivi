@@ -57,7 +57,7 @@ const when = (date: string, startsAtLocal: string | null) =>
 export function respondMessage(draft: RespondOrderDraft): string {
   const price = draft.priceMinor === null ? '' : ` for ${money(draft.priceMinor, draft.currency)}`;
   const was = when(draft.previous.date, draft.previous.startsAtLocal);
-  return `New terms for ${draft.offerTitle}: ${when(draft.date, draft.startsAtLocal)}${price}, for ${draft.quantity} (was ${was}). Answer by ${draft.respondByLocal.replace('T', ' ')}. ${termsSentence(draft.cancellation, draft.paymentMode)}`.trimEnd();
+  return `New terms for ${draft.offerTitle}: ${when(draft.date, draft.startsAtLocal)}${price}, for ${draft.quantity} (was ${was}). Answer by ${draft.respondByLocal.replace('T', ' ')}. ${termsSentence(draft.cancellation, draft.paymentMode, false)}`.trimEnd();
 }
 
 /** One required answer: accepting or declining the terms, distinct from "not now". */

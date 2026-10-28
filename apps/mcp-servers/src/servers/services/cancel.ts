@@ -56,7 +56,7 @@ export function cancelMessage(draft: CancelOrderDraft): string {
   const when = draft.startsAtLocal
     ? `${draft.date} at ${draft.startsAtLocal.slice(11)}`
     : draft.date;
-  const terms = termsSentence(draft.cancellation, draft.paymentMode);
+  const terms = termsSentence(draft.cancellation, draft.paymentMode, false);
   let cost: string;
   // Pay-direct: no card is held, so the terms say what cancelling costs, never a refund.
   if (draft.paymentMode === 'direct') cost = `It was paid directly to the provider. ${terms}`;

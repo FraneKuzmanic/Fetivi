@@ -128,6 +128,10 @@ function cancelTermsLabels(t: TFunction, language: string): CancellationTermsLab
     onlineAfterNone: t('cancelTerms.onlineAfterNone'),
     onlineNow: (percent) => t('cancelTerms.onlineNow', { percent }),
     onlineNowNone: t('cancelTerms.onlineNowNone'),
+    chargeAfter: (percent) => t('cancelTerms.chargeAfter', { percent }),
+    chargeAfterFull: t('cancelTerms.chargeAfterFull'),
+    chargeNow: (percent) => t('cancelTerms.chargeNow', { percent }),
+    chargeNowFull: t('cancelTerms.chargeNowFull'),
     dateTime: f.dateTime,
   };
 }

@@ -283,9 +283,11 @@ export async function completeCancel(
     const refund = refundAt(current, now);
     const terms = termsAt(current, now);
     // A pay-direct card said "free" before the cutoff; after it the provider may charge, so the
-    // guest is asked again, as for a changed refund.
+    // guest is asked again, as for a changed refund. Under no late charge it stays free.
     const windowChanged =
-      draft.cancellation !== null && draft.cancellation.freeWindowPassed !== terms.freeWindowPassed;
+      draft.cancellation !== null &&
+      terms.lateChargePercent > 0 &&
+      draft.cancellation.freeWindowPassed !== terms.freeWindowPassed;
     if (refund.refundMinor !== draft.refundMinor || windowChanged) {
       const next: CancelOrderDraft = {
         ...draft,

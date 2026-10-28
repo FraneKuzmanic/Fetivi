@@ -45,7 +45,8 @@ export function confirmationMessage(draft: CreateOrderDraft): string {
     draft.paymentMode === 'direct'
       ? ', paid directly to the provider'
       : ', paid online after you confirm (your card is charged only once the booking is confirmed)';
-  const terms = termsSentence(draft.cancellation, draft.paymentMode);
+  // Nothing is paid before the guest confirms, so no refund wording yet.
+  const terms = termsSentence(draft.cancellation, draft.paymentMode, false);
   return `Book ${draft.offerTitle} on ${when} for ${draft.quantity}${price}${paid}? ${terms}`.trimEnd();
 }
 

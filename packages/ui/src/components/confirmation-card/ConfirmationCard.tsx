@@ -110,7 +110,8 @@ export function ConfirmationCard({
     onConfirm(content);
   };
 
-  const terms = cancellationTermsText(draft.cancellation, draft.paymentMode, labels.terms);
+  // Nothing is paid before the guest confirms, so no refund wording yet.
+  const terms = cancellationTermsText(draft.cancellation, draft.paymentMode, false, labels.terms);
   const facts: [string, string][] = [
     [labels.offer, draft.offerTitle],
     [labels.when, labels.dateTime(draft.date, draft.startsAtLocal)],

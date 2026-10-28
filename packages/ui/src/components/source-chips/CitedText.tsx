@@ -78,7 +78,8 @@ export function CitedText({
   }, [open]);
 
   // Under the badge's line, across the turn's column (the nearest positioned ancestor).
-  // Again on resize: the text rewraps and the badge moves.
+  // Again on resize: the text rewraps and the badge moves. Opened by a tap or a key, it scrolls
+  // clear of the composer (the page's scroll padding); a hover never scrolls the page.
   useLayoutEffect(() => {
     if (!open) return;
     const place = () => {
@@ -90,6 +91,7 @@ export function CitedText({
       pop.style.top = `${top}px`;
     };
     place();
+    if (open.pinned) popover.current?.scrollIntoView?.({ block: 'nearest' });
     window.addEventListener('resize', place);
     return () => window.removeEventListener('resize', place);
   }, [open]);

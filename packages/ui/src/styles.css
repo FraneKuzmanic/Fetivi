@@ -1382,11 +1382,15 @@
   cursor: pointer;
 }
 
-/* A finger-sized hit area around the small badge. */
+/* A finger-sized hit area (44px) around the small badge. */
 .fv-cite::after {
   content: "";
   position: absolute;
-  inset: -0.375rem -0.125rem;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 2.75rem);
+  height: 2.75rem;
+  transform: translate(-50%, -50%);
 }
 
 .fv-cite[aria-expanded="true"] {
@@ -1405,10 +1409,9 @@
   gap: 0.375rem;
   max-width: 22rem;
   padding: 0.75rem 0.875rem;
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--gray-300);
   border-radius: var(--radius-lg);
   background: var(--white);
-  box-shadow: 0 0.25rem 1rem rgb(26 44 91 / 0.12);
   color: var(--navy-900);
   font-size: 0.9375rem;
   line-height: 1.45;
@@ -1441,14 +1444,6 @@
 .fv-cite-pop-note {
   color: var(--gray-500);
   font-size: 0.8125rem;
-}
-
-.fv-source-chip {
-  flex: none;
-  flex-wrap: nowrap;
-  color: var(--blue-700);
-  text-decoration: none;
-  white-space: nowrap;
 }
 
 .fv-source-chip {
@@ -1499,7 +1494,19 @@
   overflow-x: auto;
 }
 
-.fv-source-row-links
+/* Each source is a link here: one line, finger-sized. */
+.fv-source-row-links .fv-source-chip {
+  flex-wrap: nowrap;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  color: var(--blue-700);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.fv-source-row-links li {
+  flex: none;
+}
 
 /* Events: the numbered list with its map */
 

@@ -117,6 +117,9 @@ describe('RespondOrderCard', () => {
     expect(host.querySelector('del')).toBeNull();
     expect(host.textContent).toContain('€120.50');
     expect(host.textContent).toContain("You'll pay on a secure page after accepting");
+    // Nothing is paid yet: the terms speak of a cost, never a refund.
+    expect(host.textContent).toContain('After that, cancelling costs 50 % of the price.');
+    expect(host.textContent).not.toMatch(/refund/i);
   });
 
   it('shows the terms for the new start instead of the policy text', () => {

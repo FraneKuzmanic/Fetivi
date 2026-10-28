@@ -292,6 +292,10 @@ describe('answers in stream order, refunds and citations', () => {
     expect(INSTRUCTIONS).not.toContain('the card follows your text');
   });
 
+  it('never lets cards or chips stand in for words', () => {
+    expect(INSTRUCTIONS).toContain('Cards and chips never replace your words');
+  });
+
   it('ties refund talk to paying online', () => {
     expect(INSTRUCTIONS).toContain('Talk about a refund only for an order paid online');
     expect(INSTRUCTIONS).toContain('never from the policy text');

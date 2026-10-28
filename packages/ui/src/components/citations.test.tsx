@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { WebResultsPayload } from '../payloads';
 import { type CitationLabels, CitedText } from './source-chips/CitedText';
 import { citesAny, parseCitations, siteName, uncitedText } from './source-chips/citations';
@@ -134,6 +134,22 @@ describe('CitedText', () => {
     // A second click closes it.
     act(() => first?.click());
     expect(popover(host)).toBeNull();
+  });
+
+  it('scrolls a tapped preview clear of the composer, never a hovered one', () => {
+    const scroll = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
+    const host = cited();
+    const [first, second] = badges(host);
+    act(() => {
+      second?.dispatchEvent(
+        new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }),
+      );
+      second?.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+    });
+    expect(scroll).not.toHaveBeenCalled();
+    act(() => first?.click());
+    expect(scroll).toHaveBeenCalledWith({ block: 'nearest' });
+    scroll.mockRestore();
   });
 
   it('closes on Escape and gives focus back to the badge', () => {

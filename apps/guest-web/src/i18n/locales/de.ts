@@ -334,6 +334,12 @@ export const de: Messages = {
     onlineNow:
       'Die kostenlose Stornierung ist vorbei: {{percent}} % des bezahlten Betrags werden erstattet.',
     onlineNowNone: 'Die kostenlose Stornierung ist vorbei: Es wird nichts erstattet.',
+    chargeAfter: 'Danach kostet eine Stornierung {{percent}} % des Preises.',
+    chargeAfterFull: 'Danach kostet eine Stornierung den vollen Preis.',
+    chargeNow:
+      'Die kostenlose Stornierung ist vorbei: Eine Stornierung kostet {{percent}} % des Preises.',
+    chargeNowFull:
+      'Die kostenlose Stornierung ist vorbei: Eine Stornierung kostet den vollen Preis.',
   },
   respondOrder: {
     headingTime: 'Der Anbieter schlägt eine andere Zeit vor',

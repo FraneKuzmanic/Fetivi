@@ -332,6 +332,10 @@ export const fr: Messages = {
     onlineNow:
       'L’annulation gratuite est terminée : {{percent}} % de ce que vous avez payé est remboursé.',
     onlineNowNone: 'L’annulation gratuite est terminée : rien n’est remboursé.',
+    chargeAfter: 'Ensuite, l’annulation coûte {{percent}} % du prix.',
+    chargeAfterFull: 'Ensuite, l’annulation coûte le prix total.',
+    chargeNow: 'L’annulation gratuite est terminée : l’annulation coûte {{percent}} % du prix.',
+    chargeNowFull: 'L’annulation gratuite est terminée : l’annulation coûte le prix total.',
   },
   respondOrder: {
     headingTime: 'Le prestataire propose un autre horaire',

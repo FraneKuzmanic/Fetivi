@@ -36,13 +36,13 @@ export function orderStart(proposal: { date: string; startsAt: Date | null }, zo
 }
 
 /** What cancelling costs, as the guest is told it; the policy text is never read. */
-export interface CancellationPolicyTerms {
+export interface LateChargeRule {
   freeCancelHoursBefore: number;
   /** The share of the price the guest loses after the free window. */
   lateChargePercent: number;
 }
 
-export interface CancellationTerms extends CancellationPolicyTerms {
+export interface CancellationTerms extends LateChargeRule {
   /** ISO instant free cancellation ends. */
   freeUntil: string;
   /** 'YYYY-MM-DDTHH:mm' in the property's zone. */
@@ -67,7 +67,7 @@ export const lateChargePercent = (refundPercentAfter: number) => 100 - refundPer
 
 /** The terms at `now` for an Order or draft starting at `start`; the same cutoff as `refundFor`. */
 export function cancellationTermsAt(
-  policy: CancellationPolicyTerms,
+  policy: LateChargeRule,
   start: Date,
   zone: string,
   now: Date,

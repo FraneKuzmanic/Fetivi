@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, type SQL } from 'drizzle-orm';
 import type { Executor } from '../db/client';
 import { offers, offerTranslations, providers } from '../db/schema/offers';
-import { type CancellationPolicyTerms, lateChargePercent } from '../orders/refunds';
+import { type LateChargeRule, lateChargePercent } from '../orders/refunds';
 import { type GuestOfferScope, visibleOfferCondition } from './visibility';
 import type {
   AvailabilityMode,
@@ -23,7 +23,7 @@ export interface GuestOffer {
   description: string;
   /** The provider's own words; what cancelling costs is `cancellation`. */
   cancellationPolicy: string;
-  cancellation: CancellationPolicyTerms;
+  cancellation: LateChargeRule;
   category: OfferCategory;
   orderKind: OrderKind;
   availabilityMode: AvailabilityMode;

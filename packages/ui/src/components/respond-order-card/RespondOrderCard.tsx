@@ -67,7 +67,8 @@ export function RespondOrderCard({
   const { previous } = draft;
   const price = (minor: number | null) =>
     minor === null ? null : money(minor, draft.currency, draft.language);
-  const terms = cancellationTermsText(draft.cancellation, draft.paymentMode, labels.terms);
+  // An Order waiting on new terms is paid only after they are accepted: no refund wording yet.
+  const terms = cancellationTermsText(draft.cancellation, draft.paymentMode, false, labels.terms);
 
   return (
     <section className="fv-confirm fv-respond" aria-labelledby={headingId}>

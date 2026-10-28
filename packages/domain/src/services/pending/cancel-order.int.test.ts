@@ -411,6 +411,37 @@ describe('cancel_order on other Orders', () => {
     expect((await tap()).outcome).toBe('cancelled');
   });
 
+  it('does not re-ask a pay-direct cancel under no late charge when the cutoff passes', async () => {
+    clock = NOW;
+    const provider = await seedProvider(testDb.db);
+    const { offerId, slotId } = await seedOrderableOffer(testDb.db, {
+      providerId: provider.id,
+      availabilityMode: 'allotment',
+      startsAt: SLOT_AT,
+    });
+    await testDb.db
+      .update(offers)
+      .set({ freeCancelHoursBefore: 24, refundPercentAfter: 100 })
+      .where(eq(offers.id, offerId));
+    const { order } = await createOrder(deps(), {
+      spaceId: guest.spaceId,
+      offerId,
+      slotId,
+      date: DAY,
+      quantity: 1,
+      contact: { email: 'guest@example.test' },
+      hold: { expiresAt: new Date(NOW.getTime() + 15 * MINUTE) },
+    });
+    await confirmHeldOrder(deps(), {
+      orderId: order.id,
+      proposalId: order.currentProposalId as string,
+    });
+    clock = new Date(CUTOFF.getTime() - MINUTE);
+    const { tap } = await guestCancels(order.id);
+    clock = new Date(CUTOFF.getTime() + MINUTE);
+    expect((await tap()).outcome).toBe('cancelled');
+  });
+
   it("refuses another space's Order, a confirming one, a started one, and after checkout", async () => {
     const w = world();
     const { orderId } = await paidOrder(w);

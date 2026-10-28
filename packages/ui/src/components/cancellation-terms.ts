@@ -18,17 +18,25 @@ export interface CancellationTermsLabels {
   /** Pay-online, after the cutoff. */
   onlineNow: (refundPercent: number) => string;
   onlineNowNone: string;
+  /** Pay-online, nothing paid yet, before the cutoff: what cancelling costs afterwards. */
+  chargeAfter: (percent: number) => string;
+  chargeAfterFull: string;
+  /** Pay-online, nothing paid yet, after the cutoff. */
+  chargeNow: (percent: number) => string;
+  chargeNowFull: string;
   dateTime: (date: string, startsAtLocal: string | null) => string;
 }
 
 /**
  * What cancelling costs, built from the snapshotted rules and never from the provider's text. A
- * guest who pays the provider directly never reads "refund": Fetivi holds no money for it. Null
- * when the draft has no terms (stored before they existed): the card then shows no terms line.
+ * guest reads "refund" only once they paid online (`paid`: authorized or captured); paying the
+ * provider directly, Fetivi holds no money, and before an online payment there is nothing to give
+ * back. Null when the draft has no terms (stored before they existed): no terms line then.
  */
 export function cancellationTermsText(
   terms: CancellationTermsPayload | null,
   paymentMode: PaymentMode,
+  paid: boolean,
   labels: CancellationTermsLabels,
 ): string | null {
   if (!terms) return null;
@@ -40,6 +48,10 @@ export function cancellationTermsText(
   if (paymentMode === 'direct') {
     if (terms.freeWindowPassed) return late === 100 ? labels.directNowFull : labels.directNow(late);
     return `${until} ${late === 100 ? labels.directAfterFull : labels.directAfter(late)}`;
+  }
+  if (!paid) {
+    if (terms.freeWindowPassed) return late === 100 ? labels.chargeNowFull : labels.chargeNow(late);
+    return `${until} ${late === 100 ? labels.chargeAfterFull : labels.chargeAfter(late)}`;
   }
   const back = 100 - late;
   if (terms.freeWindowPassed) return back === 0 ? labels.onlineNowNone : labels.onlineNow(back);

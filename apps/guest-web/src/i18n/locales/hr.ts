@@ -324,6 +324,10 @@ export const hr: Messages = {
     onlineAfterNone: 'Nakon toga ništa se ne vraća.',
     onlineNow: 'Besplatno otkazivanje je isteklo: vraća se {{percent}} % plaćenog iznosa.',
     onlineNowNone: 'Besplatno otkazivanje je isteklo: ništa se ne vraća.',
+    chargeAfter: 'Nakon toga otkazivanje košta {{percent}} % cijene.',
+    chargeAfterFull: 'Nakon toga otkazivanje košta punu cijenu.',
+    chargeNow: 'Besplatno otkazivanje je isteklo: otkazivanje košta {{percent}} % cijene.',
+    chargeNowFull: 'Besplatno otkazivanje je isteklo: otkazivanje košta punu cijenu.',
   },
   respondOrder: {
     headingTime: 'Pružatelj predlaže drugo vrijeme',

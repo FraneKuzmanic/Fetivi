@@ -329,6 +329,12 @@ export const it: Messages = {
     onlineNow:
       'La cancellazione gratuita è terminata: ti rimborsiamo il {{percent}} % di quanto hai pagato.',
     onlineNowNone: 'La cancellazione gratuita è terminata: non è previsto alcun rimborso.',
+    chargeAfter: 'Dopo, la cancellazione costa il {{percent}} % del prezzo.',
+    chargeAfterFull: 'Dopo, la cancellazione costa il prezzo intero.',
+    chargeNow:
+      'La cancellazione gratuita è terminata: la cancellazione costa il {{percent}} % del prezzo.',
+    chargeNowFull:
+      'La cancellazione gratuita è terminata: la cancellazione costa il prezzo intero.',
   },
   respondOrder: {
     headingTime: 'Il fornitore propone un altro orario',

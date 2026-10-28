@@ -140,7 +140,7 @@ describe('ConfirmationCard', () => {
     expect(host.querySelector('button[type="submit"]')?.textContent).toBe('Continue to payment');
   });
 
-  it('words online terms as a refund, and leaves out the row without terms', () => {
+  it('words online terms as a cost before anything is paid, and leaves out the row without terms', () => {
     mount(
       <ConfirmationCard
         draft={{ ...DRAFT, paymentMode: 'online' }}
@@ -151,7 +151,8 @@ describe('ConfirmationCard', () => {
         labels={CARD}
       />,
     );
-    expect(host.textContent).toContain('After that, 50 % of what you paid is refunded.');
+    expect(host.textContent).toContain('After that, cancelling costs 50 % of the price.');
+    expect(host.textContent).not.toMatch(/refund/i);
     mount(
       <ConfirmationCard
         draft={{ ...DRAFT, cancellation: null }}

@@ -94,7 +94,7 @@ describe('confirmationMessage', () => {
 
   it('says a pay-online booking is charged only once confirmed', () => {
     expect(confirmationMessage({ ...draft, paymentMode: 'online' })).toBe(
-      'Book Blue Lagoon boat trip on 2027-05-04 at 09:00 for 2, 90.00 EUR total, paid online after you confirm (your card is charged only once the booking is confirmed)? Free cancellation until 2027-05-03 09:00; after that 50 % of what you paid is refunded.',
+      'Book Blue Lagoon boat trip on 2027-05-04 at 09:00 for 2, 90.00 EUR total, paid online after you confirm (your card is charged only once the booking is confirmed)? Free cancellation until 2027-05-03 09:00; after that cancelling costs 50 % of the price.',
     );
   });
 });
@@ -102,30 +102,39 @@ describe('confirmationMessage', () => {
 describe('termsSentence', () => {
   it('never says refund for a pay-direct order', () => {
     for (const t of [terms, passed, { ...terms, lateChargePercent: 100 }]) {
-      expect(termsSentence(t, 'direct')).not.toMatch(/refund/i);
+      expect(termsSentence(t, 'direct', false)).not.toMatch(/refund/i);
     }
-    expect(termsSentence(passed, 'direct')).toBe(
+    expect(termsSentence(passed, 'direct', false)).toBe(
       "The provider's late-cancellation terms apply: they may ask for 50 % of the price directly.",
     );
-    expect(termsSentence({ ...terms, lateChargePercent: 100 }, 'direct')).toContain(
+    expect(termsSentence({ ...terms, lateChargePercent: 100 }, 'direct', false)).toContain(
       'the full price',
     );
   });
 
   it('speaks of refunds for an order paid online', () => {
-    expect(termsSentence(passed, 'online')).toBe(
+    expect(termsSentence(passed, 'online', true)).toBe(
       'Free cancellation has ended: 50 % of what you paid is refunded.',
     );
-    expect(termsSentence({ ...passed, lateChargePercent: 100 }, 'online')).toBe(
+    expect(termsSentence({ ...passed, lateChargePercent: 100 }, 'online', true)).toBe(
       'Free cancellation has ended: nothing is refunded.',
     );
   });
 
+  it('speaks of a cost, never a refund, for an online order not paid yet', () => {
+    expect(termsSentence(terms, 'online', false)).toBe(
+      'Free cancellation until 2027-05-03 09:00; after that cancelling costs 50 % of the price.',
+    );
+    expect(termsSentence(passed, 'online', false)).toBe(
+      'Free cancellation has ended: cancelling costs 50 % of the price.',
+    );
+  });
+
   it('is free at any time under a 0 % late charge, and empty without terms', () => {
-    expect(termsSentence({ ...terms, lateChargePercent: 0 }, 'direct')).toBe(
+    expect(termsSentence({ ...terms, lateChargePercent: 0 }, 'direct', false)).toBe(
       'Cancelling is free at any time.',
     );
-    expect(termsSentence(null, 'online')).toBe('');
+    expect(termsSentence(null, 'online', true)).toBe('');
   });
 });
 

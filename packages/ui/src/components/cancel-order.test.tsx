@@ -106,9 +106,15 @@ describe('CancelOrderCard', () => {
     expect(text).not.toContain('Free until');
   });
 
-  it('shows a free cancellation with its cutoff', () => {
-    const { refund } = render({ refundMinor: 9000, refundPercent: 100 });
+  it('shows a free cancellation with its cutoff once', () => {
+    const { refund } = render({ refundMinor: 9000, refundPercent: 100, cancellation: TERMS });
     expect(refund).toBe('Free cancellation: you get back all €90.00');
+    const text = host.textContent ?? '';
+    expect(text).toContain('Free cancellation until 2026-10-21 at 09:00.');
+    expect(text).not.toContain('Free until');
+
+    // A draft stored without terms keeps its own cutoff line.
+    render({ refundMinor: 9000, refundPercent: 100, cancellation: null });
     expect(host.textContent).toContain('Free until 2026-10-21 at 09:00');
   });
 
@@ -119,6 +125,9 @@ describe('CancelOrderCard', () => {
     expect(render({ paymentStatus: 'none', refundMinor: null, refundPercent: null }).refund).toBe(
       'Nothing has been paid yet',
     );
+    // No terms that would contradict it, and no refund wording.
+    expect(host.querySelector('.fv-cancel-policy')).toBeNull();
+    expect(host.textContent).not.toMatch(/refund/i);
   });
 
   it('never speaks of a refund for a pay-direct order', () => {
@@ -166,8 +175,8 @@ describe('CancelOrderCard', () => {
 });
 
 describe('cancellationTermsText', () => {
-  const text = (terms: typeof TERMS | null, mode: 'direct' | 'online') =>
-    cancellationTermsText(terms, mode, TERMS_LABELS);
+  const text = (terms: typeof TERMS | null, mode: 'direct' | 'online', paid = true) =>
+    cancellationTermsText(terms, mode, paid, TERMS_LABELS);
 
   it('words pay-direct terms as what the provider may ask, never a refund', () => {
     expect(text({ ...TERMS, lateChargePercent: 100 }, 'direct')).toBe(
@@ -188,6 +197,18 @@ describe('cancellationTermsText', () => {
     expect(text({ ...TERMS, lateChargePercent: 100, freeWindowPassed: true }, 'online')).toBe(
       'Free cancellation has ended: nothing is refunded.',
     );
+  });
+
+  it('words pay-online terms as a cost, never a refund, while nothing is paid yet', () => {
+    expect(text(TERMS, 'online', false)).toBe(
+      'Free cancellation until 2026-10-21 at 09:00. After that, cancelling costs 50 % of the price.',
+    );
+    expect(
+      text({ ...TERMS, lateChargePercent: 100, freeWindowPassed: true }, 'online', false),
+    ).toBe('Free cancellation has ended: cancelling costs the full price.');
+    for (const terms of [TERMS, { ...TERMS, freeWindowPassed: true }]) {
+      expect(text(terms, 'online', false)).not.toMatch(/refund/i);
+    }
   });
 
   it('is free at any time with no late charge, and null without terms', () => {

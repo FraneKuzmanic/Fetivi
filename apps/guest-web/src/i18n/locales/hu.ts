@@ -328,6 +328,10 @@ export const hu: Messages = {
     onlineAfterNone: 'Ezután nincs visszatérítés.',
     onlineNow: 'Az ingyenes lemondás lejárt: a kifizetett összeg {{percent}} %-át visszatérítjük.',
     onlineNowNone: 'Az ingyenes lemondás lejárt: nincs visszatérítés.',
+    chargeAfter: 'Ezután a lemondás az ár {{percent}} %-ába kerül.',
+    chargeAfterFull: 'Ezután a lemondás a teljes árba kerül.',
+    chargeNow: 'Az ingyenes lemondás lejárt: a lemondás az ár {{percent}} %-ába kerül.',
+    chargeNowFull: 'Az ingyenes lemondás lejárt: a lemondás a teljes árba kerül.',
   },
   respondOrder: {
     headingTime: 'A szolgáltató másik időpontot javasol',

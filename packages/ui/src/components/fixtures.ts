@@ -109,6 +109,10 @@ export const TERMS_LABELS: CancellationTermsLabels = {
   onlineAfterNone: 'After that, nothing is refunded.',
   onlineNow: (p) => `Free cancellation has ended: ${p} % of what you paid is refunded.`,
   onlineNowNone: 'Free cancellation has ended: nothing is refunded.',
+  chargeAfter: (p) => `After that, cancelling costs ${p} % of the price.`,
+  chargeAfterFull: 'After that, cancelling costs the full price.',
+  chargeNow: (p) => `Free cancellation has ended: cancelling costs ${p} % of the price.`,
+  chargeNowFull: 'Free cancellation has ended: cancelling costs the full price.',
   dateTime: (date, local) => (local ? `${date} at ${local.slice(11)}` : date),
 };
 

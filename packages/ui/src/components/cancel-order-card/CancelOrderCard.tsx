@@ -71,14 +71,20 @@ export function CancelOrderCard({
 }) {
   const headingId = `${useId()}-heading`;
   const sending = state === 'sending';
-  // A cutoff is only set for a captured Order, and a full refund means it is still ahead.
+  // A cutoff is only set for a captured Order, and a full refund means it is still ahead. The
+  // terms below name the same date, so this line is only for drafts stored without them.
   const freeUntil =
-    draft.freeUntilLocal && draft.refundPercent === 100
+    !draft.cancellation && draft.freeUntilLocal && draft.refundPercent === 100
       ? labels.freeUntil(labels.dateTime(draft.freeUntilLocal.slice(0, 10), draft.freeUntilLocal))
       : null;
 
   const refund = refundLine(draft, labels);
-  const terms = cancellationTermsText(draft.cancellation, draft.paymentMode, labels.terms);
+  const paid = draft.paymentStatus === 'authorized' || draft.paymentStatus === 'captured';
+  // Paying online with nothing paid yet, cancelling costs nothing: the terms would contradict it.
+  const terms =
+    draft.paymentMode === 'online' && !paid
+      ? null
+      : cancellationTermsText(draft.cancellation, draft.paymentMode, paid, labels.terms);
 
   const facts: [string, string][] = [
     [labels.offer, draft.offerTitle],

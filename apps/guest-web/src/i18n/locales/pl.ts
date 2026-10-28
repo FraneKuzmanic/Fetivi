@@ -325,6 +325,10 @@ export const pl: Messages = {
     onlineAfterNone: 'Później nic nie jest zwracane.',
     onlineNow: 'Bezpłatne anulowanie się skończyło: zwracamy {{percent}} % zapłaconej kwoty.',
     onlineNowNone: 'Bezpłatne anulowanie się skończyło: nic nie jest zwracane.',
+    chargeAfter: 'Później anulowanie kosztuje {{percent}} % ceny.',
+    chargeAfterFull: 'Później anulowanie kosztuje pełną cenę.',
+    chargeNow: 'Bezpłatne anulowanie się skończyło: anulowanie kosztuje {{percent}} % ceny.',
+    chargeNowFull: 'Bezpłatne anulowanie się skończyło: anulowanie kosztuje pełną cenę.',
   },
   respondOrder: {
     headingTime: 'Usługodawca proponuje inną godzinę',
