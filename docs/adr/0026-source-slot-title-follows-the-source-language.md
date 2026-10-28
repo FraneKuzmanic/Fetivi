@@ -24,3 +24,4 @@ The translation job stored a block's own title and text unchanged in the slot of
 - The frozen system prompt changed once, so the prompt cache resets once.
 - The source slot's title may differ from `info_blocks.title`. The back office keeps showing the host's own title.
 - Host corrections are never touched: they cannot target the source slot, and machine rows keep their insert rules.
+- A block job rerun at the same revision with all seven languages present makes no model call and keeps the source title already stored. Host places, offers and catalog records do not have that guard yet: such a rerun would put the host's own title back. No normal path reaches it today, since an edit bumps the revision and a complete item publishes.

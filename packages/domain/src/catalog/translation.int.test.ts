@@ -126,6 +126,20 @@ describe('runCatalogTranslation', () => {
     });
   });
 
+  it('translates a title written in another language into the source slot', async () => {
+    const record = await create();
+    const result = output({ hr: { ...good('hr'), title: 'Kula Kamerlengo' } });
+    if (!result.ok) throw new Error('bad script');
+    const model = scripted({ ok: true, output: { ...result.output, title_language: 'en' } });
+    await runCatalogTranslation({ ...deps(), model }, { recordId: record.id, revision: 1 });
+    expect((await rowsOf(record.id, 1)).find((r) => r.language === 'hr')).toMatchObject({
+      title: 'Kula Kamerlengo',
+      body: SOURCE.description,
+      origin: 'source',
+    });
+    expect((await recordOf(record.id)).title).toBe(SOURCE.title);
+  });
+
   it('discards a job for a revision that moved on, or a deleted record', async () => {
     const record = await create();
     await updateCatalogRecord(testDb.db, queue, record.id, { title: 'Kamerlengo' }, new Date());

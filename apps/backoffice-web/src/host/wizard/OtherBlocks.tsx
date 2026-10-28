@@ -73,6 +73,7 @@ export function OtherBlocks({
               <div className="entry-actions">
                 <button
                   type="button"
+                  aria-label={t('blocks.editFor', { title: block.title })}
                   disabled={busy || editing !== null}
                   onClick={() => {
                     setWarnings([]);
@@ -85,6 +86,7 @@ export function OtherBlocks({
                 <button
                   type="button"
                   className="danger"
+                  aria-label={t('blocks.deleteFor', { title: block.title })}
                   disabled={busy || editing !== null}
                   onClick={async () => {
                     const yes = await confirm({

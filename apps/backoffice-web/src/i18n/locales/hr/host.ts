@@ -363,6 +363,8 @@ export const host: Translation<typeof en> = {
     videos_other: '{{count}} videozapisa',
     editEntry: 'Uredi unos u Vodiču',
     moreFor: 'Više za {{title}}',
+    editFor: 'Uredi {{title}}',
+    deleteFor: 'Obriši {{title}}',
     hideTranslations: 'Sakrij prijevode',
     translations: 'Prijevodi',
     hideMedia: 'Sakrij fotografije i videozapise',

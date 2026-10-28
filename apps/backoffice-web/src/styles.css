@@ -2934,8 +2934,9 @@ html:has(.wizard-footer) {
   padding-bottom: 0;
 }
 
+/* Rows inside the panel padding, in line with the step's field dividers. */
 .wizard-other .rows {
-  margin-top: 6px;
+  margin: 6px 0 0;
   border-bottom: 0;
 }
 
@@ -4223,6 +4224,11 @@ button.staycal-today:disabled {
 .entry-row {
   align-items: flex-start;
   padding: 14px 20px;
+}
+
+/* In the wizard, rows line up with the step's field dividers. */
+.wizard-other .entry-row {
+  padding-inline: 0;
 }
 
 .entry-preview {

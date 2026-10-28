@@ -108,6 +108,13 @@ describe('OtherBlocks', () => {
     expect(el.textContent).not.toContain('Laundry');
   });
 
+  it("names each action after its entry's title", async () => {
+    stubApi();
+    await mount(unit([KEYED, IMPORT]));
+    expect(button('Edit')?.getAttribute('aria-label')).toBe('Edit Kako koristiti uređaje');
+    expect(button('Delete')?.getAttribute('aria-label')).toBe('Delete Kako koristiti uređaje');
+  });
+
   it('edits the entry where it lives', async () => {
     stubApi();
     await mount(unit([KEYED, IMPORT]));

@@ -336,6 +336,8 @@ export const host = {
     videos_other: '{{count}} videos',
     editEntry: 'Edit guide entry',
     moreFor: 'More for {{title}}',
+    editFor: 'Edit {{title}}',
+    deleteFor: 'Delete {{title}}',
     hideTranslations: 'Hide translations',
     translations: 'Translations',
     hideMedia: 'Hide photos and video',

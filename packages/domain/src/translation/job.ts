@@ -117,6 +117,7 @@ export async function runTranslation(
   const existing = await db
     .select({
       language: blockTranslations.language,
+      title: blockTranslations.title,
       origin: blockTranslations.origin,
       captions: blockTranslations.captions,
     })
@@ -137,6 +138,11 @@ export async function runTranslation(
   const result = await collectTranslations(model, source, need, block.sourceLanguage);
   if (!result.ok) return markFailed(deps, block, result.error);
   const { sourceLanguage } = result;
+  // With nothing to translate no title was judged: the source title already written stays.
+  const keptTitle =
+    need.length === 0
+      ? existing.find((r) => r.language === sourceLanguage && r.origin === 'source')?.title
+      : undefined;
   // Captions go through their own call, one bullet per item, so the frozen prompt and the
   // structure check stay unchanged; the bullet count keeps them aligned with the media.
   // The first call's detected language is authoritative.
@@ -176,7 +182,7 @@ export async function runTranslation(
       // The source slot is always the host's own text, with its title in the source language,
       // even over a correction made before the source language was known.
       const row = {
-        title: result.sourceTitle ?? block.title,
+        title: result.sourceTitle ?? keptTitle ?? block.title,
         body: block.body,
         captions: captionMap(media.map((m) => m.caption)),
         origin: 'source' as const,

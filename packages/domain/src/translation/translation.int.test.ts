@@ -349,6 +349,23 @@ describe('runTranslation', () => {
     );
     expect(model.calls).toBe(0);
   });
+
+  it('keeps a translated source title on a rerun with nothing left to translate', async () => {
+    const { block } = await fixture({ title: 'How to find us', body: SOURCE.body });
+    const first = scripted(titledIn('en', output({ hr: { ...good('hr'), title: 'Kako do nas' } })));
+    await runTranslation({ ...deps(), model: first }, { blockId: block.id, revision: 1 });
+    await testDb.db
+      .update(infoBlocks)
+      .set({ translationStatus: 'pending' })
+      .where(eq(infoBlocks.id, block.id));
+    const model = scripted();
+    expect(await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 })).toBe(
+      'published',
+    );
+    expect(model.calls).toBe(0);
+    const hr = (await rowsOf(block.id, 1)).find((r) => r.language === 'hr');
+    expect(hr).toMatchObject({ title: 'Kako do nas', origin: 'source' });
+  });
 });
 
 describe('correctTranslation', () => {
