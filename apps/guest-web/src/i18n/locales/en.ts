@@ -168,6 +168,8 @@ export const en = {
     minutes: '{{minutes}} min away',
     lastChecked: 'Last checked {{month}} · call ahead',
     unverified: 'Call ahead to check',
+    more: 'More',
+    less: 'Less',
     hostPick: "Your host's pick",
     hostAdded: 'Added by your host',
     save: 'Save',

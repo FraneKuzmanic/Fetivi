@@ -172,6 +172,8 @@ export const fr: Messages = {
     minutes: 'à {{minutes}} min',
     lastChecked: 'Vérifié pour la dernière fois en {{month}} · appelez avant',
     unverified: 'Appelez avant de venir',
+    more: 'Plus',
+    less: 'Moins',
     hostPick: 'Le choix de votre hôte',
     hostAdded: 'Ajouté par votre hôte',
     save: 'Enregistrer',

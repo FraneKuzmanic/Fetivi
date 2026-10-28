@@ -91,7 +91,7 @@ function modelReturning(source: BlockText, translated: BlockText): TranslationMo
   return {
     translate: async (): Promise<ModelResult> => ({
       ok: true,
-      output: { source_language: 'hr', translations },
+      output: { source_language: 'hr', title_language: 'hr', translations },
     }),
   };
 }

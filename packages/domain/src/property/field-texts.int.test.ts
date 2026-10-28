@@ -41,7 +41,7 @@ function output(slot: (l: string) => Slot): ModelResult {
     GuestLanguage,
     Slot
   >;
-  return { ok: true, output: { source_language: 'hr', translations } };
+  return { ok: true, output: { source_language: 'hr', title_language: 'hr', translations } };
 }
 
 function scripted(...results: ModelResult[]) {

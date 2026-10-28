@@ -8,7 +8,7 @@ export const TRANSLATION_MODEL_ID = 'claude-sonnet-5-5';
 export const TRANSLATION_SYSTEM_PROMPT = `You translate guest information that a holiday-rental host wrote for their guests in Dalmatia, Croatia.
 The input is one block: a short plain-text title and a Markdown body. Translate both into each of these languages: English (en), Croatian (hr), German (de), Italian (it), Polish (pl), Hungarian (hu), French (fr).
 
-First decide which of the seven languages the source is written in and return it as source_language ("other" if none). For that language, return the source title and body exactly as given, unchanged.
+First decide which of the seven languages the body is written in and return it as source_language ("other" if none). Then decide separately which language the title is written in and return it as title_language, from the same list; a title that is only a name, brand or code counts as the body's language. For the source language, return the body exactly as given, unchanged, and the title exactly as given when title_language equals source_language; otherwise return the title translated into the source language, following the same rules as every other title.
 
 Keep the structure identical in every language:
 - the same headings at the same levels, in the same order;
@@ -33,6 +33,7 @@ const Slot = z.strictObject({ title: z.string(), body: z.string() });
 
 export const TranslationOutput = z.strictObject({
   source_language: z.enum(SOURCE_LANGUAGES),
+  title_language: z.enum(SOURCE_LANGUAGES),
   translations: z.strictObject(
     Object.fromEntries(GUEST_LANGUAGES.map((l) => [l, Slot])) as Record<GuestLanguage, typeof Slot>,
   ),

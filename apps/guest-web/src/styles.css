@@ -1306,6 +1306,20 @@ input {
   font-size: 1.25rem;
 }
 
+/* The section's parts (facts card, amenities, parking, entries, picks) read as separate groups. */
+.guide-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Plain-text groups get a hairline above them; the bordered card and topic list carry their own edge. */
+.guide-content > * + .guide-block,
+.guide-content > * + .guide-tips {
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--gray-200);
+}
+
 .guide-note {
   color: var(--gray-500);
 }

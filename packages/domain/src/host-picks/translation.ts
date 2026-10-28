@@ -104,7 +104,7 @@ export async function runHostPlaceTranslation(
     const now = deps.now();
     if (sourceLanguage !== null && sourceLanguage !== 'other') {
       const values = {
-        name: row.name ?? '',
+        name: isPick ? '' : (result.sourceTitle ?? row.name ?? ''),
         note: row.note ?? '',
         origin: 'source' as const,
         updatedAt: now,

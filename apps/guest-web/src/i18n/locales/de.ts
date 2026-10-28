@@ -173,6 +173,8 @@ export const de: Messages = {
     minutes: '{{minutes}} Min. entfernt',
     lastChecked: 'Zuletzt geprüft {{month}} · vorher anrufen',
     unverified: 'Am besten vorher anrufen',
+    more: 'Mehr',
+    less: 'Weniger',
     hostPick: 'Tipp Ihres Gastgebers',
     hostAdded: 'Von Ihrem Gastgeber hinzugefügt',
     save: 'Merken',

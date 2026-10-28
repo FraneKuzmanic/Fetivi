@@ -63,7 +63,7 @@ function output(
   const translations = Object.fromEntries(
     GUEST_LANGUAGES.map((l) => [l, overrides[l] ?? good(l, tag)]),
   ) as Record<GuestLanguage, { title: string; body: string }>;
-  return { ok: true, output: { source_language: 'hr', translations } };
+  return { ok: true, output: { source_language: 'hr', title_language: 'hr', translations } };
 }
 
 function scripted(...results: ModelResult[]) {

@@ -103,7 +103,7 @@ export async function runOfferTranslation(
     const now = deps.now();
     if (sourceLanguage !== null && sourceLanguage !== 'other') {
       const row = {
-        title: offer.title,
+        title: a.sourceTitle ?? offer.title,
         body: offer.description,
         cancellationPolicy: offer.cancellationPolicy,
         origin: 'source' as const,

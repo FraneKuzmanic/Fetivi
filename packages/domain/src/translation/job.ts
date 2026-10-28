@@ -59,7 +59,7 @@ export async function enqueueTranslation(
   await queue.send(QUEUES.translateBlock, data, tx, options);
 }
 
-async function lockBlock(tx: Executor, blockId: string) {
+export async function lockBlock(tx: Executor, blockId: string) {
   const [block] = await tx
     .select()
     .from(infoBlocks)
@@ -71,7 +71,7 @@ async function lockBlock(tx: Executor, blockId: string) {
 const projectionKey = (block: BlockRow) =>
   block.propertyId ? { propertyId: block.propertyId } : { unitId: block.unitId };
 
-async function emitInvalidated(tx: Executor, queue: JobQueue, block: BlockRow) {
+export async function emitInvalidated(tx: Executor, queue: JobQueue, block: BlockRow) {
   await queue.publish(EVENTS.unitProjectionInvalidated, projectionKey(block), tx);
 }
 
@@ -173,10 +173,11 @@ export async function runTranslation(
         media.flatMap((m, i) => (still.has(m.id) ? [[m.id, captions[i] ?? m.caption]] : [])),
       );
     if (sourceLanguage !== null && sourceLanguage !== 'other') {
-      // The source slot is always the host's own text, even over a correction made before the
-      // source language was known.
+      // The source slot is always the host's own text, with its title in the source language,
+      // even over a correction made before the source language was known.
       const row = {
-        ...source,
+        title: result.sourceTitle ?? block.title,
+        body: block.body,
         captions: captionMap(media.map((m) => m.caption)),
         origin: 'source' as const,
         updatedAt: now,

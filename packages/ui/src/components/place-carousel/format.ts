@@ -25,11 +25,13 @@ export type LastCheckedNote = { kind: 'stale'; verifiedAt: string } | { kind: 'u
 
 /**
  * A card says when it was last checked only past the staleness budget (PRD §6.3): a fresh place
- * shows nothing, a stale one its check month, an unchecked one a call-ahead hint.
+ * shows nothing, a stale one its check month, an unchecked one a call-ahead hint. A host-added
+ * place has none: the host vouches for it.
  */
 export function lastCheckedNote(
-  place: Pick<PlaceCardPayload, 'staleness' | 'verifiedAt'>,
+  place: Pick<PlaceCardPayload, 'staleness' | 'verifiedAt' | 'hostAdded'>,
 ): LastCheckedNote | null {
+  if (place.hostAdded) return null;
   const { status } = place.staleness;
   if (status === 'stale' && place.verifiedAt)
     return { kind: 'stale', verifiedAt: place.verifiedAt };

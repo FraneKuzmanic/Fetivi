@@ -170,6 +170,8 @@ export const hu: Messages = {
     minutes: '{{minutes}} percre',
     lastChecked: 'Utoljára ellenőrizve: {{month}} · előtte telefonálj',
     unverified: 'Előtte érdemes telefonálni',
+    more: 'Több',
+    less: 'Kevesebb',
     hostPick: 'A szállásadód ajánlja',
     hostAdded: 'A házigazda tette hozzá',
     save: 'Mentés',

@@ -343,6 +343,10 @@ export const host = {
     deleteTitle: 'Delete “{{title}}”?',
     deleteBody: 'Guests stop seeing it in the guide. This cannot be undone.',
     deleteEntry: 'Delete entry',
+    deleteForAllUnits: 'It comes from the property, so it disappears for every unit.',
+    otherInStep: 'Other entries in this section',
+    otherInStepHint:
+      'Already in the Guide, for example from your house manual. Edit or delete them instead of adding the same thing twice.',
     newEntry: 'New guide entry',
     addEntry: 'Add guide entry',
     mediaIntro:

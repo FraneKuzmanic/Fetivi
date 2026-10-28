@@ -170,6 +170,8 @@ export const it: Messages = {
     minutes: 'a {{minutes}} min',
     lastChecked: 'Ultimo controllo {{month}} · meglio chiamare',
     unverified: 'Meglio chiamare prima',
+    more: 'Altro',
+    less: 'Meno',
     hostPick: "Consiglio dell'host",
     hostAdded: "Aggiunto dall'host",
     save: 'Salva',

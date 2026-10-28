@@ -101,7 +101,7 @@ describe('loadGuestProjection field text (ticket 50)', () => {
       const translations = Object.fromEntries(
         GUEST_LANGUAGES.map((l) => [l, { title: source.title, body: `[${l}] ${source.body}` }]),
       ) as Record<GuestLanguage, { title: string; body: string }>;
-      return { ok: true, output: { source_language: 'hr', translations } };
+      return { ok: true, output: { source_language: 'hr', title_language: 'hr', translations } };
     },
   };
 

@@ -20,6 +20,8 @@ export const LABELS: PlaceLabels = {
   hostAdded: 'Added by your host',
   save: 'Save',
   saved: 'Saved',
+  more: 'More',
+  less: 'Less',
 };
 
 export const place = (over: Partial<PlaceCardPayload> = {}): PlaceCardPayload => ({

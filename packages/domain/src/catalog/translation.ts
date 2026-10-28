@@ -95,7 +95,12 @@ export async function runCatalogTranslation(
     if (!current || current.revision !== revision) return 'discarded';
     const now = deps.now();
     if (sourceLanguage !== null && sourceLanguage !== 'other') {
-      const row = { ...source, origin: 'source' as const, updatedAt: now };
+      const row = {
+        title: result.sourceTitle ?? record.title,
+        body: record.description,
+        origin: 'source' as const,
+        updatedAt: now,
+      };
       await tx
         .insert(catalogTranslations)
         .values({ recordId, revision, language: sourceLanguage, ...row, createdAt: now })

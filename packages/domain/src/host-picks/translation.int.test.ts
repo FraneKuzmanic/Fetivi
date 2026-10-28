@@ -60,7 +60,7 @@ function output(slot: (l: string) => Slot): ModelResult {
     GuestLanguage,
     Slot
   >;
-  return { ok: true, output: { source_language: 'hr', translations } };
+  return { ok: true, output: { source_language: 'hr', title_language: 'hr', translations } };
 }
 
 function scripted(...results: ModelResult[]) {
@@ -131,6 +131,19 @@ describe('runHostPlaceTranslation', () => {
       publishedRevision: 1,
       translationStatus: 'published',
       sourceLanguage: 'hr',
+    });
+  });
+
+  it('translates a name written in another language into the source slot', async () => {
+    const row = await addPlace();
+    const result = output((l) => (l === 'hr' ? { ...good(l), title: 'Konoba kod Ante' } : good(l)));
+    if (!result.ok) throw new Error('unreachable');
+    const model = scripted({ ok: true, output: { ...result.output, title_language: 'en' } });
+    await runHostPlaceTranslation({ ...deps(), model }, { hostPlaceId: row.id, revision: 1 });
+    expect((await translationsOf(row.id, 1)).find((r) => r.language === 'hr')).toMatchObject({
+      name: 'Konoba kod Ante',
+      note: 'Najbolja riba, pitajte Antu.',
+      origin: 'source',
     });
   });
 

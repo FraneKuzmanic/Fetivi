@@ -186,7 +186,11 @@ export function GuideSection() {
         </div>
       </header>
       <UnitGate state={state} reload={reload}>
-        {(unit) => <SectionContent category={section.category} unit={unit} />}
+        {(unit) => (
+          <div className="guide-content">
+            <SectionContent category={section.category} unit={unit} />
+          </div>
+        )}
       </UnitGate>
     </section>
   );

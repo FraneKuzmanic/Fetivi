@@ -71,7 +71,7 @@ function output(
   const translations = Object.fromEntries(
     GUEST_LANGUAGES.map((l) => [l, overrides[l] ?? slot(l)]),
   ) as Record<GuestLanguage, Slot>;
-  return { ok: true, output: { source_language: 'hr', translations } };
+  return { ok: true, output: { source_language: 'hr', title_language: 'hr', translations } };
 }
 
 function scripted(...results: ModelResult[]) {
@@ -141,6 +141,22 @@ describe('runOfferTranslation', () => {
       publishedRevision: 1,
       translationStatus: 'published',
       sourceLanguage: 'hr',
+    });
+  });
+
+  it('translates a title written in another language into the source slot', async () => {
+    const offer = await create();
+    const main = output(mainGood, { hr: { ...mainGood('hr'), title: 'Brodski izlet' } });
+    if (!main.ok) throw new Error('unreachable');
+    const model = scripted(
+      { ok: true, output: { ...main.output, title_language: 'en' } },
+      output(policyGood),
+    );
+    await runOfferTranslation({ ...deps(), model }, { offerId: offer.id, revision: 1 });
+    expect((await rowsOf(offer.id, 1)).find((r) => r.language === 'hr')).toMatchObject({
+      title: 'Brodski izlet',
+      body: SOURCE.description,
+      origin: 'source',
     });
   });
 

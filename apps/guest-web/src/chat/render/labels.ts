@@ -42,6 +42,8 @@ export function placeLabels(t: TFunction, language: string): PlaceLabels {
     hostAdded: t('components.hostAdded'),
     save: t('components.save'),
     saved: t('components.saved'),
+    more: t('components.more'),
+    less: t('components.less'),
   };
 }
 

@@ -34,6 +34,7 @@ import { useAction } from '../../useAction';
 import { AddressFields } from '../address/AddressFields';
 import { BlockPrompt } from './BlockPrompt';
 import { format, useWizardCopy } from './copy';
+import { OtherBlocks } from './OtherBlocks';
 import {
   type DraftValues,
   fieldPatches,
@@ -504,6 +505,7 @@ export function WizardStep({
                 onSaved={reload}
               />
             ))}
+          <OtherBlocks stepId={stepId} detail={detail} onChanged={reload} />
         </div>
 
         <div className="wizard-footer">

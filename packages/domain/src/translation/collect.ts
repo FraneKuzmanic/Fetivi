@@ -16,8 +16,33 @@ export interface Collected extends BlockText {
 }
 
 export type Collection =
-  | { ok: true; sourceLanguage: SourceLanguage | null; collected: Map<GuestLanguage, Collected> }
+  | {
+      ok: true;
+      sourceLanguage: SourceLanguage | null;
+      /** The source slot's title when the host wrote the title in another language (first call). */
+      sourceTitle: string | null;
+      collected: Map<GuestLanguage, Collected>;
+    }
   | { ok: false; error: TranslationError };
+
+/**
+ * The source language's title when the host wrote the title in another language: the model's
+ * source-slot title, kept only if it keeps the title's links and placeholders. Null keeps the
+ * host's own title.
+ */
+export function sourceTitleOf(
+  source: BlockText,
+  output: TranslationOutputData,
+  sourceLanguage: SourceLanguage | null,
+): string | null {
+  if (sourceLanguage === null || sourceLanguage === 'other') return null;
+  if (output.title_language === sourceLanguage) return null;
+  const title = output.translations[sourceLanguage].title.trim();
+  if (!title || title === source.title) return null;
+  return checkStructure({ title: source.title, body: '' }, { title, body: '' }).length === 0
+    ? title
+    : null;
+}
 
 /** The slots of `output` among `wanted` that keep the source's structure. */
 function passing(
@@ -46,7 +71,7 @@ export async function collectTranslations(
   known: SourceLanguage | null,
 ): Promise<Collection> {
   const collected = new Map<GuestLanguage, Collected>();
-  if (need.length === 0) return { ok: true, sourceLanguage: known, collected };
+  if (need.length === 0) return { ok: true, sourceLanguage: known, sourceTitle: null, collected };
   const first = await model.translate(source);
   if (!first.ok) return { ok: false, error: first.error };
   const sourceLanguage = first.output.source_language;
@@ -59,5 +84,6 @@ export async function collectTranslations(
       for (const [l, t] of passing(source, second.output, missing())) collected.set(l, t);
     }
   }
-  return { ok: true, sourceLanguage, collected };
+  const sourceTitle = sourceTitleOf(source, first.output, sourceLanguage);
+  return { ok: true, sourceLanguage, sourceTitle, collected };
 }

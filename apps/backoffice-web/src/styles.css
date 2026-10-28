@@ -2915,6 +2915,30 @@ html:has(.wizard-footer) {
   gap: 16px;
 }
 
+/* The section's entries no prompt answers, after the prompts, set off like one more field. */
+.wizard-other {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 0;
+  border-top: 1px solid var(--gray-200);
+}
+
+.wizard-other h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* The last row meets the panel's own edge: no second line under it. */
+.wizard-other:last-child {
+  padding-bottom: 0;
+}
+
+.wizard-other .rows {
+  margin-top: 6px;
+  border-bottom: 0;
+}
+
 /* Above the phone's bottom nav, which is 60px tall. */
 .wizard-footer {
   position: sticky;

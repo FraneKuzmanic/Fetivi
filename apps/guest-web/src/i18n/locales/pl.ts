@@ -170,6 +170,8 @@ export const pl: Messages = {
     minutes: '{{minutes}} min stąd',
     lastChecked: 'Ostatnio sprawdzono: {{month}} · zadzwoń wcześniej',
     unverified: 'Lepiej zadzwoń wcześniej',
+    more: 'Więcej',
+    less: 'Mniej',
     hostPick: 'Poleca gospodarz',
     hostAdded: 'Dodane przez gospodarza',
     save: 'Zapisz',

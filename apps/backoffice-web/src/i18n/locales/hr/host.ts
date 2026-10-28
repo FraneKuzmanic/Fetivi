@@ -370,6 +370,10 @@ export const host: Translation<typeof en> = {
     deleteTitle: 'Obrisati „{{title}}”?',
     deleteBody: 'Gosti ga više neće vidjeti u Vodiču. To se ne može poništiti.',
     deleteEntry: 'Obriši unos',
+    deleteForAllUnits: 'Dolazi s objekta pa nestaje za sve jedinice.',
+    otherInStep: 'Ostali unosi u ovom odjeljku',
+    otherInStepHint:
+      'Već su u Vodiču, na primjer iz vaših uputa za kuću. Uredite ih ili obrišite umjesto da isto dodate dvaput.',
     newEntry: 'Novi unos u Vodiču',
     addEntry: 'Dodaj unos u Vodič',
     mediaIntro:

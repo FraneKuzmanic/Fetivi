@@ -194,6 +194,15 @@ describe('format', () => {
     });
   });
 
+  it('never notes a host-added place: the host vouches for it', () => {
+    expect(
+      lastCheckedNote(place({ staleness: { status: 'never_verified' }, hostAdded: true })),
+    ).toBeNull();
+    expect(
+      lastCheckedNote(place({ staleness: { status: 'never_verified' }, hostAdded: false })),
+    ).toEqual({ kind: 'unverified' });
+  });
+
   it('bounds the located places', () => {
     expect(boundsOf([place({ location: null })])).toBeNull();
     expect(

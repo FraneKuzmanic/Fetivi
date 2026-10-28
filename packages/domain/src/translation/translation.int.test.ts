@@ -66,7 +66,13 @@ function output(
   const translations = Object.fromEntries(
     GUEST_LANGUAGES.map((l) => [l, overrides[l] ?? good(l, tag)]),
   ) as Record<GuestLanguage, { title: string; body: string }>;
-  return { ok: true, output: { source_language: 'hr', translations } };
+  return { ok: true, output: { source_language: 'hr', title_language: 'hr', translations } };
+}
+
+/** `result` with the title detected as written in `language`. */
+function titledIn(language: 'hr' | 'en', result: ModelResult): ModelResult {
+  if (!result.ok) return result;
+  return { ok: true, output: { ...result.output, title_language: language } };
 }
 
 /** A model that answers from a script, one entry per call. */
@@ -84,7 +90,7 @@ function scripted(...results: (ModelResult | (() => Promise<ModelResult>))[]) {
 }
 
 let seq = 0;
-async function fixture() {
+async function fixture(source: { title: string; body: string } = SOURCE) {
   seq += 1;
   const { db } = testDb;
   const [host] = await db
@@ -101,7 +107,7 @@ async function fixture() {
   if (!unit) throw new Error('no unit');
   const [block] = await db
     .insert(infoBlocks)
-    .values({ propertyId: property.id, category: 'arrival_access', ...SOURCE })
+    .values({ propertyId: property.id, category: 'arrival_access', ...source })
     .returning();
   if (!block) throw new Error('no block');
   return { property, unit, block };
@@ -153,6 +159,80 @@ describe('runTranslation', () => {
       sourceLanguage: 'hr',
     });
     expect(await eventsFor(property.id)).toHaveLength(1);
+  });
+
+  it('translates a title written in another language into the source slot', async () => {
+    const { block } = await fixture({ title: 'How to find us', body: SOURCE.body });
+    const model = scripted(titledIn('en', output({ hr: { ...good('hr'), title: 'Kako do nas' } })));
+    expect(await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 })).toBe(
+      'published',
+    );
+    const rows = await rowsOf(block.id, 1);
+    expect(rows.find((r) => r.language === 'hr')).toMatchObject({
+      title: 'Kako do nas',
+      body: SOURCE.body,
+      origin: 'source',
+    });
+    expect(rows.find((r) => r.language === 'en')).toMatchObject({
+      title: 'Parking en',
+      origin: 'machine',
+    });
+    expect((await blockOf(block.id)).title).toBe('How to find us');
+  });
+
+  it('keeps a title already in the source language verbatim', async () => {
+    const { block } = await fixture();
+    const model = scripted(
+      titledIn('hr', output({ hr: { ...good('hr'), title: 'Parkiralište' } })),
+    );
+    await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 });
+    const hr = (await rowsOf(block.id, 1)).find((r) => r.language === 'hr');
+    expect(hr).toMatchObject({ ...SOURCE, origin: 'source' });
+  });
+
+  it('leaves a host correction alone while translating the source title', async () => {
+    const { block } = await fixture({ title: 'How to find us', body: SOURCE.body });
+    await testDb.db.insert(blockTranslations).values({
+      blockId: block.id,
+      revision: 1,
+      language: 'de',
+      title: 'Mein Titel',
+      body: 'Mein Text',
+      origin: 'host',
+    });
+    const model = scripted(titledIn('en', output({ hr: { ...good('hr'), title: 'Kako do nas' } })));
+    expect(await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 })).toBe(
+      'published',
+    );
+    const rows = await rowsOf(block.id, 1);
+    expect(rows.find((r) => r.language === 'de')).toMatchObject({
+      title: 'Mein Titel',
+      body: 'Mein Text',
+      origin: 'host',
+    });
+    expect(rows.find((r) => r.language === 'hr')?.title).toBe('Kako do nas');
+  });
+
+  it('keeps the host title when the translated one drops a placeholder', async () => {
+    const { block } = await fixture({ title: 'Gate {{gate_code}}', body: SOURCE.body });
+    const model = scripted(
+      titledIn(
+        'en',
+        output(
+          Object.fromEntries(
+            GUEST_LANGUAGES.map((l) => [
+              l,
+              { ...good(l), title: l === 'hr' ? 'Kod vrata' : `Gate {{gate_code}} ${l}` },
+            ]),
+          ),
+        ),
+      ),
+    );
+    expect(await runTranslation({ ...deps(), model }, { blockId: block.id, revision: 1 })).toBe(
+      'published',
+    );
+    const hr = (await rowsOf(block.id, 1)).find((r) => r.language === 'hr');
+    expect(hr?.title).toBe('Gate {{gate_code}}');
   });
 
   it('retries once and fails a language that mismatches twice', async () => {
@@ -413,7 +493,7 @@ describe('runTranslation with media captions', () => {
         { title: `Parking ${l}`, body: overrides[l] ?? `- ${l}:c1\n- ${l}:c2` },
       ]),
     ) as Record<GuestLanguage, { title: string; body: string }>;
-    return { ok: true, output: { source_language: 'hr', translations } };
+    return { ok: true, output: { source_language: 'hr', title_language: 'hr', translations } };
   };
 
   async function withMedia() {

@@ -170,6 +170,8 @@ export const hr: Messages = {
     minutes: '{{minutes}} min od vas',
     lastChecked: 'Zadnja provjera: {{month}} · nazovite prije',
     unverified: 'Nazovite prije dolaska',
+    more: 'Više',
+    less: 'Manje',
     hostPick: 'Preporuka domaćina',
     hostAdded: 'Dodao domaćin',
     save: 'Spremi',

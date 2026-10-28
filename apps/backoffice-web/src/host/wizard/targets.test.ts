@@ -3,7 +3,14 @@ import { WIZARD_FIELDS, type WizardFieldId, wizardField } from '@fetivi/domain/w
 import { describe, expect, it } from 'vitest';
 import type { Block, CoreValues, PropertyDetail, UnitDetail } from '../../api';
 import { format } from './copy';
-import { fieldPatches, fieldTarget, loadedValues, promptBlock, toggledAmenities } from './targets';
+import {
+  fieldPatches,
+  fieldTarget,
+  loadedValues,
+  otherStepBlocks,
+  promptBlock,
+  toggledAmenities,
+} from './targets';
 
 const nullCore = Object.fromEntries(
   SHARED_CORE_FIELDS.map((f) => [f, null]),
@@ -148,6 +155,34 @@ describe('promptBlock and amenities', () => {
       { amenity: 'ac', note: null },
     ]);
     expect(toggledAmenities(current, 'pool', false)).toEqual([]);
+  });
+});
+
+describe('otherStepBlocks', () => {
+  const entry = (id: string, category: Block['category'], wizardKey: Block['wizardKey']) =>
+    ({ id, category, wizardKey, source: 'property' }) as Block & { source: 'property' };
+  const withBlocks = (...blocks: (Block & { source: 'property' })[]) =>
+    unit({ effective: { ...unit().effective, blocks } });
+
+  it("lists the section's entries no prompt answers", () => {
+    const detail = withBlocks(
+      entry('keyed', 'arrival_access', 'arrival_directions'),
+      entry('import', 'arrival_access', null),
+      entry('elsewhere', 'how_tos', null),
+    );
+    expect(otherStepBlocks('arrival_access', detail).map((b) => b.id)).toEqual(['import']);
+  });
+
+  it('lists an unkeyed entry in a section with several prompts', () => {
+    const detail = withBlocks(
+      entry('laundry', 'how_tos', 'laundry'),
+      entry('manual', 'how_tos', null),
+    );
+    expect(otherStepBlocks('how_tos', detail).map((b) => b.id)).toEqual(['manual']);
+  });
+
+  it('is empty for a step without prompts', () => {
+    expect(otherStepBlocks('saved_places', withBlocks(entry('x', 'how_tos', null)))).toEqual([]);
   });
 });
 

@@ -100,6 +100,22 @@ export function promptBlock(
   return detail.effective.blocks.find((b) => answersPrompt(b, key)) ?? null;
 }
 
+/**
+ * The step's guide entries no prompt of the step answers, e.g. entries confirmed from the house
+ * manual. All of the step's prompts count, not only the visible ones, so the list is stable.
+ */
+export function otherStepBlocks(
+  stepId: WizardStepId,
+  detail: UnitDetail,
+): (Block & { source: 'property' | 'unit' })[] {
+  const prompts = fieldsOfStep(stepId).filter((f) => f.kind === 'prompt');
+  const categories = new Set<string | undefined>(prompts.map((f) => f.prompt?.category));
+  const answered = new Set(
+    prompts.map((f) => promptBlock(f.id as WizardPromptKey, detail)?.id).filter(Boolean),
+  );
+  return detail.effective.blocks.filter((b) => categories.has(b.category) && !answered.has(b.id));
+}
+
 /** The property's amenity list with one amenity switched on or off, keeping the notes. */
 export function toggledAmenities(
   current: PropertyDetail['amenities'],

@@ -25,7 +25,7 @@ A photo or short video a host attaches to an Info block, with a caption that is 
 _Avoid_: Attachment, upload
 
 **Translation**:
-One guest language's version of an Info block's title, text and Block media captions, for one revision: the host's own text, a machine translation, or the host's correction (which keeps the machine captions). A host's free-text field (access, parking, house-rule and amenity notes) also has a Translation per language, served only while it was made from the field's current text.
+One guest language's version of an Info block's title, text and Block media captions, for one revision: the host's own text (with the title translated when the host wrote it in another language than the text), a machine translation, or the host's correction (which keeps the machine captions). A host's free-text field (access, parking, house-rule and amenity notes) also has a Translation per language, served only while it was made from the field's current text.
 
 **Field text**:
 A Property's or Unit's own short free-text note that guests see (access instructions, parking notes, other house rules, or the note on one amenity), with a revision that grows with every change of its text. Its Translations are made by machine only; the host corrects one by editing the note.
