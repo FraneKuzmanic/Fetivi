@@ -59,7 +59,7 @@ export const cancelOrderSpec: GuestToolSpec = guestTool({
   config: {
     title: 'Cancel order',
     description:
-      "Cancel one of the guest's orders. The guest sees the cancellation policy and the refund on a card and confirms; nothing changes until they tap Cancel booking. Never promise a refund amount yourself, and never say it is cancelled without a `cancelled` outcome.",
+      "Cancel one of the guest's orders. The guest sees the cancellation terms and, for an order paid online, the refund on a card and confirms; nothing changes until they tap Cancel booking. Never promise a refund amount yourself, never mention a refund for an order paid directly to the provider, and never say it is cancelled without a `cancelled` outcome.",
     scope: 'orders:manage',
     inputSchema: cancelOrderInput,
     outputSchema: cancelOrderOutput,
@@ -106,7 +106,7 @@ export const servicesTools: readonly GuestToolSpec[] = [
     config: {
       title: 'List offers',
       description:
-        "Services the guest can arrange through Fetivi: boat trips, tours, tastings, transfers, rentals and more, with price, cancellation policy and the contact details the provider needs. Filter by category, or by a place's id from search_places. Offers with availabilityMode allotment or on_request can be booked in chat; an on_request one waits for the provider's answer within a response window, and the provider may propose a new time or price. paymentMode online ones are paid on a secure page after the guest confirms.",
+        "Services the guest can arrange through Fetivi: boat trips, tours, tastings, transfers, rentals and more, with price, the cancellation terms (cancellation) and the contact details the provider needs. Filter by category, or by a place's id from search_places. Offers with availabilityMode allotment or on_request can be booked in chat; an on_request one waits for the provider's answer within a response window, and the provider may propose a new time or price. paymentMode online ones are paid on a secure page after the guest confirms. Refunds exist only for paymentMode online: for direct, cancelling is free until the free window ends, after that the provider may ask the guest to pay lateChargePercent of the price directly to them.",
       scope: 'offers:read',
       inputSchema: listOffersInput,
       outputSchema: listOffersOutput,
@@ -139,7 +139,7 @@ export const servicesTools: readonly GuestToolSpec[] = [
     config: {
       title: 'My orders',
       description:
-        "The guest's orders in this stay, newest first, with status, day, local start time, party size and total.",
+        "The guest's orders in this stay, newest first, with status, day, local start time, party size, total and the cancellation terms (whether free cancellation has passed). Talk about a refund only for paymentMode online with paymentStatus authorized or captured.",
       scope: 'orders:read',
       inputSchema: listMyOrdersInput,
       outputSchema: listMyOrdersOutput,

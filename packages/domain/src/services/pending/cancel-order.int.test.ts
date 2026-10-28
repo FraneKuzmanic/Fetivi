@@ -367,6 +367,50 @@ describe('cancel_order on other Orders', () => {
     expect(rows.map((r) => r.kind)).toContain('order_cancelled');
   });
 
+  it('re-asks a pay-direct cancel when free cancellation ends between card and tap', async () => {
+    clock = NOW;
+    const provider = await seedProvider(testDb.db);
+    const { offerId, slotId } = await seedOrderableOffer(testDb.db, {
+      providerId: provider.id,
+      availabilityMode: 'allotment',
+      startsAt: SLOT_AT,
+    });
+    await testDb.db
+      .update(offers)
+      .set({ freeCancelHoursBefore: 24, refundPercentAfter: 50 })
+      .where(eq(offers.id, offerId));
+    const { order } = await createOrder(deps(), {
+      spaceId: guest.spaceId,
+      offerId,
+      slotId,
+      date: DAY,
+      quantity: 1,
+      contact: { email: 'guest@example.test' },
+      hold: { expiresAt: new Date(NOW.getTime() + 15 * MINUTE) },
+    });
+    await confirmHeldOrder(deps(), {
+      orderId: order.id,
+      proposalId: order.currentProposalId as string,
+    });
+    clock = new Date(CUTOFF.getTime() - MINUTE);
+    const { draft, tap } = await guestCancels(order.id);
+    expect(draft.cancellation).toEqual({
+      freeCancelHoursBefore: 24,
+      lateChargePercent: 50,
+      freeUntil: CUTOFF.toISOString(),
+      freeUntilLocal: '2027-05-03T09:00',
+      freeWindowPassed: false,
+    });
+
+    clock = new Date(CUTOFF.getTime() + MINUTE);
+    expect(await tap()).toMatchObject({
+      outcome: 'changed',
+      draft: { refundMinor: null, cancellation: { freeWindowPassed: true } },
+    });
+    expect((await orderOf(order.id)).status).toBe('confirmed');
+    expect((await tap()).outcome).toBe('cancelled');
+  });
+
   it("refuses another space's Order, a confirming one, a started one, and after checkout", async () => {
     const w = world();
     const { orderId } = await paidOrder(w);

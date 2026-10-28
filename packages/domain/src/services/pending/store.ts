@@ -9,6 +9,7 @@ import {
   PAYMENT_MODES,
   PRICE_UNITS,
 } from '../../offers/vocabulary';
+import { cancellationTermsSchema } from '../../orders/refunds';
 import { GUEST_LANGUAGES } from '../../property/vocabulary';
 import type { CancelOrderDraft } from './cancel-order';
 import type { RespondOrderDraft } from './respond-order';
@@ -33,8 +34,11 @@ export const createOrderPayload = z.object({
   priceUnit: z.enum(PRICE_UNITS),
   paymentMode: z.enum(PAYMENT_MODES),
   availabilityMode: z.enum(AVAILABILITY_MODES),
+  /** Stored, no longer shown: the card shows `cancellation`. */
   cancellationPolicy: z.string(),
   contactFields: z.enum(CONTACT_FIELDS),
+  /** Null on drafts stored before the terms existed. */
+  cancellation: cancellationTermsSchema.nullable().default(null),
 });
 export type CreateOrderDraft = z.infer<typeof createOrderPayload>;
 

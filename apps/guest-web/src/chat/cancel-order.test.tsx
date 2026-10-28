@@ -27,6 +27,13 @@ const CANCEL = {
   refundPercent: 50,
   freeUntil: '2026-10-21T07:00:00.000Z',
   freeUntilLocal: '2026-10-21T09:00',
+  cancellation: {
+    freeCancelHoursBefore: 24,
+    lateChargePercent: 50,
+    freeUntil: '2026-10-21T07:00:00.000Z',
+    freeUntilLocal: '2026-10-21T09:00',
+    freeWindowPassed: true,
+  },
 };
 const CANCELLED = {
   id: CANCEL.orderId,
@@ -175,7 +182,10 @@ describe('cancel card in the guest app', () => {
     expect(card?.querySelector('.fv-cancel-amount')?.textContent).toBe(
       'You get back €45.00 (50 %)',
     );
-    expect(card?.textContent).toContain(CANCEL.cancellationPolicy);
+    expect(card?.textContent).toContain(
+      'Free cancellation has ended: 50 % of what you paid is refunded.',
+    );
+    expect(card?.textContent).not.toContain(CANCEL.cancellationPolicy);
 
     await act(async () => button('Cancel booking').click());
     await vi.waitFor(() => {

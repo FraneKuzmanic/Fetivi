@@ -11,6 +11,7 @@ import {
   ConfirmationCard,
   type ConfirmationCardLabels,
 } from './confirmation-card/ConfirmationCard';
+import { TERMS, TERMS_LABELS } from './fixtures';
 import { ReceiptCard, type ReceiptLabels } from './receipt-card/ReceiptCard';
 
 let root: Root | null = null;
@@ -79,6 +80,7 @@ const DRAFT: OrderDraft = {
   availabilityMode: 'allotment',
   cancellationPolicy: 'Free cancellation up to 24 hours before.',
   contactFields: 'name_and_phone',
+  cancellation: TERMS,
 };
 
 const CARD: ConfirmationCardLabels = {
@@ -89,6 +91,7 @@ const CARD: ConfirmationCardLabels = {
   total: 'Total',
   payment: 'Payment',
   cancellation: 'Cancellation',
+  terms: TERMS_LABELS,
   dateTime: (date, local) => (local ? `${date} at ${local.slice(11)}` : date),
   price: (minor, currency) =>
     minor === null ? 'Set by the provider' : `${minor / 100} ${currency}`,
@@ -137,6 +140,31 @@ describe('ConfirmationCard', () => {
     expect(host.querySelector('button[type="submit"]')?.textContent).toBe('Continue to payment');
   });
 
+  it('words online terms as a refund, and leaves out the row without terms', () => {
+    mount(
+      <ConfirmationCard
+        draft={{ ...DRAFT, paymentMode: 'online' }}
+        fields={FIELDS}
+        state="open"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        labels={CARD}
+      />,
+    );
+    expect(host.textContent).toContain('After that, 50 % of what you paid is refunded.');
+    mount(
+      <ConfirmationCard
+        draft={{ ...DRAFT, cancellation: null }}
+        fields={FIELDS}
+        state="open"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        labels={CARD}
+      />,
+    );
+    expect(host.textContent).not.toContain('Cancellation');
+  });
+
   it('keeps the pay-direct copy', () => {
     card();
     expect(host.textContent).not.toContain(CARD.noteOnline);
@@ -152,11 +180,13 @@ describe('ConfirmationCard', () => {
       'People2',
       '90 EUR',
       'Pay the provider directly',
-      'Free cancellation up to 24 hours before.',
+      'CancellationFree cancellation until 2026-10-21 at 09:00. After that, the provider may ask you to pay 50 % of the price directly to them.',
       'These details go to the provider for this booking only.',
     ]) {
       expect(text).toContain(fact);
     }
+    expect(text).not.toContain(DRAFT.cancellationPolicy);
+    expect(text).not.toMatch(/refund/i);
     const section = host.querySelector('section');
     const heading = host.querySelector('h3');
     expect(section?.getAttribute('aria-labelledby')).toBe(heading?.id);
@@ -392,6 +422,7 @@ const ORDER: OrderSummaryPayload = {
   payBy: null,
   refundMinor: null,
   respondBy: null,
+  cancellation: null,
 };
 
 const RECEIPT: ReceiptLabels = {

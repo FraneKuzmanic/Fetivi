@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import type { RespondOrderDraftPayload } from '../../payloads';
+import { type CancellationTermsLabels, cancellationTermsText } from '../cancellation-terms';
 
 export interface RespondOrderLabels {
   /** The heading per who proposed the terms. */
@@ -15,6 +16,7 @@ export interface RespondOrderLabels {
   payOnline: string;
   payDirect: string;
   policy: string;
+  terms: CancellationTermsLabels;
   accept: string;
   decline: string;
   notNow: string;
@@ -65,6 +67,7 @@ export function RespondOrderCard({
   const { previous } = draft;
   const price = (minor: number | null) =>
     minor === null ? null : money(minor, draft.currency, draft.language);
+  const terms = cancellationTermsText(draft.cancellation, draft.paymentMode, labels.terms);
 
   return (
     <section className="fv-confirm fv-respond" aria-labelledby={headingId}>
@@ -113,10 +116,12 @@ export function RespondOrderCard({
           {draft.paymentMode === 'online' ? labels.payOnline : labels.payDirect}
         </p>
       </div>
-      <div className="fv-cancel-policy">
-        <h4>{labels.policy}</h4>
-        <p>{draft.cancellationPolicy}</p>
-      </div>
+      {terms && (
+        <div className="fv-cancel-policy">
+          <h4>{labels.policy}</h4>
+          <p>{terms}</p>
+        </div>
+      )}
       {declining ? (
         <div className="fv-confirm-actions">
           <p className="fv-respond-question">{labels.declineQuestion}</p>

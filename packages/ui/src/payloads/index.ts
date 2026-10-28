@@ -127,6 +127,15 @@ export const availabilityPicker = z.object({
     .max(24),
 });
 
+/** What cancelling costs, built from the rules snapshotted on the Order; never the policy text. */
+const cancellationTerms = z.object({
+  freeCancelHoursBefore: z.number().int(),
+  lateChargePercent: z.number().int().min(0).max(100),
+  freeUntil: z.string(),
+  freeUntilLocal: z.string(),
+  freeWindowPassed: z.boolean(),
+});
+
 /** One Order as the guest sees it: the receipt in chat and in My trip. */
 export const orderSummary = z.object({
   id: z.string().min(1),
@@ -149,6 +158,8 @@ export const orderSummary = z.object({
   refundMinor: z.number().int().nullable().default(null),
   /** Defaults so receipts stored before 36 still parse. */
   respondBy: z.string().nullable().default(null),
+  /** Defaults so payloads stored before 57 still parse. */
+  cancellation: cancellationTerms.nullable().default(null),
 });
 
 export const receiptCard = z.object({ order: orderSummary });
@@ -306,6 +317,8 @@ export const orderDraft = z.object({
   availabilityMode: z.enum(AVAILABILITY_MODES),
   cancellationPolicy: z.string(),
   contactFields: z.enum(CONTACT_FIELDS),
+  /** Defaults so drafts stored before 57 still parse; null shows no terms line. */
+  cancellation: cancellationTerms.nullable().default(null),
 });
 
 /** The stored send_host_message draft the host message card shows; the guest may edit the text. */
@@ -337,6 +350,7 @@ export const cancelOrderDraft = z.object({
   refundPercent: z.number().int().nullable(),
   freeUntil: z.string().nullable(),
   freeUntilLocal: z.string().nullable(),
+  cancellation: cancellationTerms.nullable().default(null),
 });
 
 /** The stored respond_to_order_update draft: the new terms next to the ones they replace. */
@@ -361,6 +375,7 @@ export const respondOrderDraft = z.object({
   cancellationPolicy: z.string(),
   respondBy: z.string(),
   respondByLocal: z.string(),
+  cancellation: cancellationTerms.nullable().default(null),
 });
 
 /**
@@ -500,6 +515,7 @@ export type EventCardPayload = z.infer<typeof eventCard>;
 export type ComponentPart = z.infer<typeof componentPart>;
 export type AvailabilityPickerPayload = z.infer<typeof availabilityPicker>;
 export type OrderSummaryPayload = z.infer<typeof orderSummary>;
+export type CancellationTermsPayload = z.infer<typeof cancellationTerms>;
 export type OrderDraft = z.infer<typeof orderDraft>;
 export type ElicitationPayload = z.infer<typeof elicitationPayload>;
 export type HostMessageDraftPayload = z.infer<typeof hostMessageDraft>;

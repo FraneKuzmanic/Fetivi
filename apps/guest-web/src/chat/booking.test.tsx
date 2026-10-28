@@ -26,6 +26,13 @@ const DRAFT = {
   availabilityMode: 'allotment',
   cancellationPolicy: 'Free cancellation up to 24 hours before.',
   contactFields: 'name',
+  cancellation: {
+    freeCancelHoursBefore: 24,
+    lateChargePercent: 50,
+    freeUntil: '2026-10-21T07:00:00.000Z',
+    freeUntilLocal: '2026-10-21T09:00',
+    freeWindowPassed: false,
+  },
 };
 
 const ORDER = {
@@ -222,7 +229,12 @@ describe('booking confirmation in the guest app', () => {
 
     const card = host.querySelector('.fv-confirm');
     expect(card?.textContent).toContain('Blue Lagoon boat trip');
-    expect(card?.textContent).toContain('Free cancellation up to 24 hours before.');
+    // The terms from the rules, worded for paying the provider directly; never the policy text.
+    expect(card?.textContent).toContain(
+      'After that, the provider may ask you to pay 50 % of the price directly to them.',
+    );
+    expect(card?.textContent).not.toContain(DRAFT.cancellationPolicy);
+    expect(card?.textContent).not.toMatch(/refund/i);
     expect(card?.textContent).toContain('People2');
     // The card's own order, whatever order the stored schema's keys come back in.
     const names = [...host.querySelectorAll('.fv-confirm input')].map((i) =>

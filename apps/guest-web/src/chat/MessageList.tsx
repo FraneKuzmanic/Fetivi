@@ -1,4 +1,5 @@
-import { componentPart } from '@fetivi/ui/payloads';
+import { CitedText, citesAny, uncitedText } from '@fetivi/ui';
+import { componentPart, type WebResultsPayload } from '@fetivi/ui/payloads';
 import { type ChatStatus, isToolUIPart, type UIMessage } from 'ai';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,18 +20,17 @@ import { ComponentPart } from './render/ComponentPart';
 import { type CardAnswer, ConfirmationPart } from './render/ConfirmationPart';
 import { HostMessagePart, isHostMessageCard } from './render/HostMessagePart';
 import { InboxPart } from './render/InboxPart';
+import { citationLabels } from './render/labels';
 import { isRespondOrderCard, RespondOrderPart } from './render/RespondOrderPart';
 
 const NEAR_BOTTOM_PX = 120;
 
 const isBusy = (status: ChatStatus) => status === 'submitted' || status === 'streaming';
 
+type WebResult = WebResultsPayload['results'][number];
 type Card = { key: string; card: unknown; state: 'open' | 'sending' };
-type Segment =
-  | { key: string; text: string }
-  | { key: string; data: unknown }
-  | { key: string; app: unknown }
-  | Card;
+type TextSegment = { key: string; text: string; results: WebResult[] | null };
+type Segment = TextSegment | { key: string; data: unknown } | { key: string; app: unknown } | Card;
 
 const nameOf = (segment: Segment) =>
   'data' in segment ? (segment.data as { name?: unknown } | null)?.name : undefined;
@@ -39,26 +39,21 @@ const isPicker = (segment: Segment) => nameOf(segment) === 'availability-picker'
 const isDayPlan = (segment: Segment) => nameOf(segment) === 'day-plan';
 
 /**
- * The confirmation cards still waiting: open while the call has no result, sending while the
- * guest's tap is on its way. A tap left on the part after a reply (the server asked again) opens
- * the card again. Answered cards are gone: the receipt or the words tell.
+ * The confirmation card of one elicitation part, if it still waits: open while the call has no
+ * result, sending while the guest's tap is on its way. A tap left on the part after a reply (the
+ * server asked again) opens the card again. Answered cards are gone: the receipt or the words tell.
  */
-function cardsOf(message: UIMessage, busy: boolean): Card[] {
-  const cards: Card[] = [];
-  for (const part of message.parts) {
-    if (!isElicitationPart(part) || !part.id) continue;
-    const call = message.parts.find((p) => isToolUIPart(p) && p.toolCallId === part.id);
-    if (!call || !isToolUIPart(call)) continue;
-    const tapped = call.state === 'output-available' && isGuestAnswer(call.output);
-    if (call.state !== 'input-available' && !tapped) continue;
-    cards.push({
-      key: `card-${part.id}`,
-      card: part.data,
-      state: tapped && busy ? 'sending' : 'open',
-    });
-  }
-  return cards;
+function cardOf(message: UIMessage, part: UIMessage['parts'][number], busy: boolean): Card | null {
+  if (!isElicitationPart(part) || !part.id) return null;
+  const call = message.parts.find((p) => isToolUIPart(p) && p.toolCallId === part.id);
+  if (!call || !isToolUIPart(call)) return null;
+  const tapped = call.state === 'output-available' && isGuestAnswer(call.output);
+  if (call.state !== 'input-available' && !tapped) return null;
+  return { key: `card-${part.id}`, card: part.data, state: tapped && busy ? 'sending' : 'open' };
 }
+
+const cardsOf = (message: UIMessage, busy: boolean): Card[] =>
+  message.parts.flatMap((part) => cardOf(message, part, busy) ?? []);
 
 /** Whether an answer ends with a card for the guest to confirm, for the spoken announcement. */
 export const asksToConfirm = (message: UIMessage | undefined) =>
@@ -83,29 +78,80 @@ function cardShownKey(
   return isHostMessageCard(card.card) ? 'hostMessage.cardShown' : 'order.cardShown';
 }
 
-/**
- * An answer reads as its words first, in one bubble, then any confirmation card, then its
- * components and external widgets in part order, with follow-up chips last: the model often
- * searches before it writes, and the words introduce the cards.
- */
-function segmentsOf(message: UIMessage, busy: boolean): Segment[] {
-  const text = message.parts.flatMap((p) => (p.type === 'text' && p.text ? [p.text] : []));
-  const components: Segment[] = [];
-  message.parts.forEach((part, index) => {
-    if (isComponentPart(part))
-      components.push({ key: part.id ?? `part-${index}`, data: part.data });
-    else if (isMcpAppPart(part))
-      components.push({ key: `app-${part.id ?? index}`, app: part.data });
-  });
-  // get_plan then update_plan in one answer: the later state is the one to show.
-  const lastPlan = components.findLast(isDayPlan);
-  return [
-    ...(text.length > 0 ? [{ key: 'text', text: text.join('\n') }] : []),
-    ...cardsOf(message, busy),
-    ...components.filter((s) => !isChips(s) && (!isDayPlan(s) || s === lastPlan)),
-    ...components.filter(isChips),
-  ];
+/** A web search's results, if the component part's data holds them. */
+function webResultsOf(data: unknown): WebResult[] | null {
+  const parsed = componentPart.safeParse(data);
+  return parsed.success && parsed.data.name === 'web-results' ? parsed.data.payload.results : null;
 }
+
+/**
+ * An answer reads in the order it streamed, so new content only ever appears below what is
+ * shown: consecutive text joins one bubble until a card, component or widget comes between
+ * (calls with nothing to show, like a search, do not split it). Only the last day plan shows
+ * (get_plan then update_plan: the later state counts), and follow-up chips always come last.
+ *
+ * Web results never show in place: text after a search cites them with `[n]` badges. An answer
+ * that cited none shows one row of their sources at the end, once it has finished, so it never
+ * appears and then vanishes when the first badge streams in.
+ */
+function segmentsOf(message: UIMessage, busy: boolean, finished: boolean): Segment[] {
+  const segments: Segment[] = [];
+  const chips: Segment[] = [];
+  let run: TextSegment | null = null;
+  let results: { key: string; data: unknown; list: WebResult[] } | null = null;
+  const show = (segment: Segment) => {
+    run = null;
+    segments.push(segment);
+  };
+  const lastPlan = message.parts.findLastIndex(
+    (p) => isComponentPart(p) && nameOf({ key: '', data: p.data }) === 'day-plan',
+  );
+  for (const [index, part] of message.parts.entries()) {
+    if (part.type === 'text') {
+      if (!part.text) continue;
+      if (run)
+        run.text = `${run.text}
+${part.text}`;
+      else {
+        run = { key: `text-${index}`, text: part.text, results: results?.list ?? null };
+        segments.push(run);
+      }
+      continue;
+    }
+    if (isElicitationPart(part)) {
+      const card = cardOf(message, part, busy);
+      if (card) show(card);
+    } else if (isComponentPart(part)) {
+      const segment = { key: part.id ?? `part-${index}`, data: part.data };
+      const found = webResultsOf(part.data);
+      if (found) {
+        // Text after the search cites these results, so it starts its own bubble.
+        run = null;
+        results = { ...segment, list: found };
+      } else if (isChips(segment)) chips.push(segment);
+      else if (!isDayPlan(segment) || index === lastPlan) show(segment);
+    } else if (isMcpAppPart(part)) {
+      show({ key: `app-${part.id ?? index}`, app: part.data });
+    }
+  }
+  const cited = segments.some(
+    (s) => 'text' in s && s.results !== null && citesAny(s.text, s.results.length),
+  );
+  const sources: Segment[] =
+    results && !cited && finished ? [{ key: results.key, data: results.data }] : [];
+  return [...segments, ...sources, ...chips];
+}
+
+/** An answer's words as read out: citation markers resolve to badges, so they are not spoken. */
+function spokenText(message: UIMessage): string {
+  const results = message.parts.flatMap((p) => (isComponentPart(p) && webResultsOf(p.data)) || []);
+  const text = messageText(message);
+  return results.length > 0 ? uncitedText(text, results.length) : text;
+}
+
+/** Whether a part is text still arriving: the guest sees it grow, so no typing line. */
+const isStreamingText = (part: UIMessage['parts'][number] | undefined) =>
+  part?.type === 'text' && part.state === 'streaming' && part.text.length > 0;
 
 /** How many place cards an answer shows, for the spoken announcement. */
 const placesShown = (message: UIMessage) =>
@@ -177,7 +223,7 @@ export function MessageList({
     const cardKey = cardShownKey(last);
     setAnnouncement(
       [
-        messageText(last),
+        spokenText(last),
         count > 0 ? t('components.placesShown', { count }) : '',
         cardKey ? t(cardKey) : '',
       ]
@@ -190,8 +236,9 @@ export function MessageList({
   const inboxAfter = (id: string | null) => inbox.filter((e) => e.afterId === id);
   const inboxRows = (id: string | null) =>
     inboxAfter(id).map((e) => <InboxPart key={`inbox-${e.id}`} item={e.item} />);
+  // Shown while Fetivi works and nothing is arriving, also between steps of one answer.
   const typing =
-    isBusy(status) && !(last?.role === 'assistant' && messageText(last).trim().length > 0);
+    isBusy(status) && !(last?.role === 'assistant' && isStreamingText(last.parts.at(-1)));
 
   return (
     <>
@@ -222,7 +269,8 @@ export function MessageList({
         </p>
       );
     }
-    const segments = segmentsOf(m, isBusy(status));
+    const streaming = isBusy(status) && i === messages.length - 1;
+    const segments = segmentsOf(m, isBusy(status), !streaming);
     if (segments.length === 0) return null;
     const previous = messages[i - 1];
     // A host reply in between starts a new run, so Fetivi's mascot shows again.
@@ -233,8 +281,7 @@ export function MessageList({
     const pickerLive = latest && !m.parts.some(isElicitationPart);
     let named = false;
     // Rated by the stored id: the newest answer's id is final only once it has finished.
-    const rateable =
-      messageText(m).trim().length > 0 && !(isBusy(status) && i === messages.length - 1);
+    const rateable = messageText(m).trim().length > 0 && !streaming;
     // Under the row, so the mascot stays beside the answer itself.
     return (
       <>
@@ -310,7 +357,15 @@ export function MessageList({
               return (
                 <p key={segment.key} className="bubble fetivi">
                   {name && <span className="visually-hidden">{`${t('chat.fetivi')}: `}</span>}
-                  {segment.text}
+                  {segment.results ? (
+                    <CitedText
+                      text={segment.text}
+                      results={segment.results}
+                      labels={citationLabels(t)}
+                    />
+                  ) : (
+                    segment.text
+                  )}
                 </p>
               );
             })}

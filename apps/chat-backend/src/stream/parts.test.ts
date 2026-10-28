@@ -206,6 +206,7 @@ const ORDER = {
   payBy: null,
   refundMinor: null,
   respondBy: null,
+  cancellation: null,
 };
 
 describe('booking components', () => {

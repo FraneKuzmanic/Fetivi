@@ -17,6 +17,7 @@ import type { z } from 'zod';
 import type { StateCodec } from '../request-state';
 import { ClaimMismatchError, GuestToolError, type ToolDeps } from '../tool';
 import type { respondToOrderUpdateInput, respondToOrderUpdateOutput } from './schemas';
+import { termsSentence } from './terms';
 
 export type RespondToOrderUpdateOutput = z.infer<typeof respondToOrderUpdateOutput>;
 
@@ -56,7 +57,7 @@ const when = (date: string, startsAtLocal: string | null) =>
 export function respondMessage(draft: RespondOrderDraft): string {
   const price = draft.priceMinor === null ? '' : ` for ${money(draft.priceMinor, draft.currency)}`;
   const was = when(draft.previous.date, draft.previous.startsAtLocal);
-  return `New terms for ${draft.offerTitle}: ${when(draft.date, draft.startsAtLocal)}${price}, for ${draft.quantity} (was ${was}). Answer by ${draft.respondByLocal.replace('T', ' ')}. Cancellation policy: ${draft.cancellationPolicy}`;
+  return `New terms for ${draft.offerTitle}: ${when(draft.date, draft.startsAtLocal)}${price}, for ${draft.quantity} (was ${was}). Answer by ${draft.respondByLocal.replace('T', ' ')}. ${termsSentence(draft.cancellation, draft.paymentMode)}`.trimEnd();
 }
 
 /** One required answer: accepting or declining the terms, distinct from "not now". */

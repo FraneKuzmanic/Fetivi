@@ -105,7 +105,7 @@ describe('component parts in the chat', () => {
     expect(html).toContain('class="fv-map" aria-hidden="true"');
   });
 
-  it('puts the words before cards the model showed first', () => {
+  it('keeps cards the model showed first above the words written after them', () => {
     const html = render([
       question,
       {
@@ -118,8 +118,8 @@ describe('component parts in the chat', () => {
         ] as UIMessage['parts'],
       },
     ]);
-    expect(html.indexOf('Konoba Mala is my pick.')).toBeLessThan(
-      html.indexOf('class="fv-carousel"'),
+    expect(html.indexOf('class="fv-carousel"')).toBeLessThan(
+      html.indexOf('Konoba Mala is my pick.'),
     );
     // The welcome's bubble, then the answer's words in one bubble.
     expect(html.match(/class="bubble fetivi"/g)).toHaveLength(2);
@@ -335,13 +335,14 @@ describe('web results in the chat', () => {
     },
   } as const;
 
-  it('renders a stored web-results part as links with source chips, not place cards', () => {
+  it('renders uncited stored web results as one row of source links, not place cards', () => {
     const html = render([question, answer([results])]);
-    expect(html).toContain('From the web');
-    expect(html).toContain('Not checked by Fetivi.');
+    expect(html).toContain('class="fv-source-row"');
+    expect(html).toContain('From the web, not checked by Fetivi');
     expect(html).toContain('href="https://www.visittrogir.hr/en/kayak"');
     expect(html).toContain('visittrogir.hr');
     expect(html).toContain('Tourist board');
     expect(html).not.toContain('fv-place-card');
+    expect(html).not.toContain('fv-web-results');
   });
 });

@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, type SQL } from 'drizzle-orm';
 import type { Executor } from '../db/client';
 import { offers, offerTranslations, providers } from '../db/schema/offers';
+import { type CancellationPolicyTerms, lateChargePercent } from '../orders/refunds';
 import { type GuestOfferScope, visibleOfferCondition } from './visibility';
 import type {
   AvailabilityMode,
@@ -20,7 +21,9 @@ export interface GuestOffer {
   /** Published translation, guest language. */
   title: string;
   description: string;
+  /** The provider's own words; what cancelling costs is `cancellation`. */
   cancellationPolicy: string;
+  cancellation: CancellationPolicyTerms;
   category: OfferCategory;
   orderKind: OrderKind;
   availabilityMode: AvailabilityMode;
@@ -58,6 +61,8 @@ const columns = {
   contactFields: offers.contactFields,
   placeId: offers.placeId,
   providerId: offers.providerId,
+  freeCancelHoursBefore: offers.freeCancelHoursBefore,
+  refundPercentAfter: offers.refundPercentAfter,
 };
 
 function selectGuestOffers(db: Executor, scope: GuestOfferScope, extra: (SQL | undefined)[]) {
@@ -71,9 +76,18 @@ function selectGuestOffers(db: Executor, scope: GuestOfferScope, extra: (SQL | u
 
 function guestOfferOf({
   providerId,
+  freeCancelHoursBefore,
+  refundPercentAfter,
   ...rest
 }: Awaited<ReturnType<typeof selectGuestOffers>>[number]): GuestOffer {
-  return { ...rest, owner: providerId ? 'provider' : 'host' };
+  return {
+    ...rest,
+    cancellation: {
+      freeCancelHoursBefore,
+      lateChargePercent: lateChargePercent(refundPercentAfter),
+    },
+    owner: providerId ? 'provider' : 'host',
+  };
 }
 
 /** The Offers this guest may see, by translated title. */

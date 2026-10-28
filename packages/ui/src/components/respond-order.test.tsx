@@ -3,6 +3,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { RespondOrderDraftPayload } from '../payloads';
+import { TERMS, TERMS_LABELS } from './fixtures';
 import { RespondOrderCard, type RespondOrderLabels } from './respond-order-card/RespondOrderCard';
 
 let root: Root | null = null;
@@ -41,6 +42,7 @@ const DRAFT: RespondOrderDraftPayload = {
   cancellationPolicy: 'Free cancellation until 24 hours before.',
   respondBy: '2026-10-21T08:00:00.000Z',
   respondByLocal: '2026-10-21T10:00',
+  cancellation: TERMS,
 };
 
 const LABELS: RespondOrderLabels = {
@@ -59,6 +61,7 @@ const LABELS: RespondOrderLabels = {
   payOnline: "You'll pay on a secure page after accepting",
   payDirect: 'Paid directly to the provider',
   policy: 'Cancellation policy',
+  terms: TERMS_LABELS,
   accept: 'Accept',
   decline: 'Decline',
   notNow: 'Not now',
@@ -114,6 +117,18 @@ describe('RespondOrderCard', () => {
     expect(host.querySelector('del')).toBeNull();
     expect(host.textContent).toContain('€120.50');
     expect(host.textContent).toContain("You'll pay on a secure page after accepting");
+  });
+
+  it('shows the terms for the new start instead of the policy text', () => {
+    render();
+    const text = host.textContent ?? '';
+    expect(text).toContain(
+      'Free cancellation until 2026-10-21 at 09:00. After that, the provider may ask you to pay 50 % of the price directly to them.',
+    );
+    expect(text).not.toContain(DRAFT.cancellationPolicy);
+    expect(text).not.toMatch(/refund/i);
+    render({ cancellation: null });
+    expect(host.querySelector('.fv-cancel-policy')).toBeNull();
   });
 
   it('accepts at once, declines only after a second tap, and Not now answers nothing', () => {

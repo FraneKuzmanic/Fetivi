@@ -117,6 +117,10 @@ _Avoid_: notice (a Notice is Fetivi's inbox message)
 A search of allowlisted sites (tourist boards, ferry operators, DHMZ, venues' own sites) through Brave, used when curated search has no answer and as the only local source outside a destination. The query is topic keywords plus a place, never private data. Results are unchecked links with a source chip, never recommendations and never bookable.
 _Avoid_: web search (for the whole feature)
 
+**Citation**:
+An inline `[n]` marker the model writes after a sentence that uses the n-th Web fallback result; the Chat shows it as a badge of the site that opens a preview of the result. An answer that cites none of its results shows one row of their sources instead.
+_Avoid_: reference, footnote
+
 **Ferry widget**:
 Ferryhopper's own sailings card (an MCP App), shown in the Chat in a sandbox on its own origin. Its data is Ferryhopper's and untrusted; booking continues on Ferryhopper's site, and Fetivi earns nothing from it.
 _Avoid_: ferry card (Fetivi has no ferry component of its own), booking widget
@@ -170,7 +174,11 @@ _Avoid_: Payment, charge, transaction
 
 **Refund rule**:
 The structured part of an Offer's cancellation policy, snapshotted on the Order: free until a number of hours before the start, then a percentage. Refunds are computed from it, never from the policy text.
-_Avoid_: Refund policy, cancellation terms
+_Avoid_: Refund policy
+
+**Cancellation terms**:
+What cancelling costs as the guest and the model are told it, built from the Refund rule: free until a number of hours before the start, then a late charge (the share of the price the guest loses). A refund is mentioned only for an Order paid online with a payment authorized or captured; for an Order paid directly to the Provider, the Provider may ask for the late charge directly, and nothing is ever refunded.
+_Avoid_: Refund policy, cancellation policy (the Provider's own text)
 
 **Reconciliation finding**:
 One disagreement between Fetivi and Stripe or a hold, found by the reconciliation job: what it was, and what was done about it.

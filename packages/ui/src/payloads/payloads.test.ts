@@ -126,6 +126,7 @@ const ORDER: OrderSummaryPayload = {
   payBy: null,
   refundMinor: null,
   respondBy: null,
+  cancellation: null,
 };
 
 const ELICITATION: ElicitationPayload = {
@@ -162,6 +163,7 @@ const ELICITATION: ElicitationPayload = {
     availabilityMode: 'allotment',
     cancellationPolicy: 'Free cancellation up to 24 hours before.',
     contactFields: 'name',
+    cancellation: null,
   },
 };
 
@@ -253,6 +255,13 @@ describe('elicitation', () => {
       refundPercent: 50,
       freeUntil: null,
       freeUntilLocal: null,
+      cancellation: {
+        freeCancelHoursBefore: 24,
+        lateChargePercent: 50,
+        freeUntil: '2026-10-21T07:00:00.000Z',
+        freeUntilLocal: '2026-10-21T09:00',
+        freeWindowPassed: true,
+      },
     };
     const card = {
       ...ELICITATION,
@@ -267,6 +276,17 @@ describe('elicitation', () => {
       elicitationPayload.safeParse({ ...card, cancelOrder: { ...cancelOrder, refundMinor: 1.5 } })
         .success,
     ).toBe(false);
+  });
+
+  it('still takes drafts stored before the cancellation terms, as no terms', () => {
+    const { cancellation: _, ...stored } = ELICITATION.draft as NonNullable<
+      ElicitationPayload['draft']
+    >;
+    expect(elicitationPayload.parse({ ...ELICITATION, draft: stored }).draft?.cancellation).toBe(
+      null,
+    );
+    const { cancellation: __, ...order } = ORDER;
+    expect(receiptCard.parse({ order }).order.cancellation).toBe(null);
   });
 
   it('refuses a missing state, a non-object schema or a broken draft', () => {

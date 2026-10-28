@@ -16,6 +16,7 @@ import type { z } from 'zod';
 import type { StateCodec } from '../request-state';
 import { ClaimMismatchError, GuestToolError, type ToolDeps } from '../tool';
 import type { cancelOrderInput, cancelOrderOutput } from './schemas';
+import { termsSentence } from './terms';
 
 export type CancelOrderOutput = z.infer<typeof cancelOrderOutput>;
 
@@ -55,13 +56,15 @@ export function cancelMessage(draft: CancelOrderDraft): string {
   const when = draft.startsAtLocal
     ? `${draft.date} at ${draft.startsAtLocal.slice(11)}`
     : draft.date;
-  let refund: string;
-  if (draft.paymentMode === 'direct') refund = 'It was paid directly to the provider.';
-  else if (draft.refundMinor === null) refund = 'Nothing was paid yet.';
-  else if (draft.refundMinor === 0) refund = 'Nothing is refunded under this policy.';
+  const terms = termsSentence(draft.cancellation, draft.paymentMode);
+  let cost: string;
+  // Pay-direct: no card is held, so the terms say what cancelling costs, never a refund.
+  if (draft.paymentMode === 'direct') cost = `It was paid directly to the provider. ${terms}`;
+  else if (draft.refundMinor === null) cost = 'Nothing was paid yet, so cancelling costs nothing.';
+  else if (draft.refundMinor === 0) cost = 'Nothing is refunded under this policy.';
   else
-    refund = `You get back ${money(draft.refundMinor, draft.currency)} (${draft.refundPercent} %).`;
-  return `Cancel ${draft.offerTitle} on ${when} for ${draft.quantity}? ${refund} Cancellation policy: ${draft.cancellationPolicy}`;
+    cost = `You get back ${money(draft.refundMinor, draft.currency)} (${draft.refundPercent} %).`;
+  return `Cancel ${draft.offerTitle} on ${when} for ${draft.quantity}? ${cost}`.trimEnd();
 }
 
 /** The card has nothing to fill in: the tap is the answer. */

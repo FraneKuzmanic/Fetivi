@@ -1,5 +1,6 @@
 import type { GuestProjection } from '@fetivi/domain/projection-types';
-import type { PlaceCardPayload } from '../payloads';
+import type { CancellationTermsPayload, PlaceCardPayload } from '../payloads';
+import type { CancellationTermsLabels } from './cancellation-terms';
 import type { PlaceLabels } from './place-carousel/PlaceCard';
 
 /** Test data shared by the component tests. */
@@ -93,3 +94,29 @@ export function projection(
     ...over,
   };
 }
+
+export const TERMS_LABELS: CancellationTermsLabels = {
+  freeAnyTime: 'Cancelling is free at any time.',
+  freeUntil: (when) => `Free cancellation until ${when}.`,
+  directAfter: (p) =>
+    `After that, the provider may ask you to pay ${p} % of the price directly to them.`,
+  directAfterFull: 'After that, the provider may ask you to pay the full price directly to them.',
+  directNow: (p) =>
+    `The provider's late-cancellation terms apply: they may ask you to pay ${p} % of the price directly to them.`,
+  directNowFull:
+    "The provider's late-cancellation terms apply: they may ask you to pay the full price directly to them.",
+  onlineAfter: (p) => `After that, ${p} % of what you paid is refunded.`,
+  onlineAfterNone: 'After that, nothing is refunded.',
+  onlineNow: (p) => `Free cancellation has ended: ${p} % of what you paid is refunded.`,
+  onlineNowNone: 'Free cancellation has ended: nothing is refunded.',
+  dateTime: (date, local) => (local ? `${date} at ${local.slice(11)}` : date),
+};
+
+/** 24 h free, then half: before the cutoff. */
+export const TERMS: CancellationTermsPayload = {
+  freeCancelHoursBefore: 24,
+  lateChargePercent: 50,
+  freeUntil: '2026-10-21T07:00:00.000Z',
+  freeUntilLocal: '2026-10-21T09:00',
+  freeWindowPassed: false,
+};

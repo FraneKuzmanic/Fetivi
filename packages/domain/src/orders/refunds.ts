@@ -1,4 +1,5 @@
-import { type CivilDate, startOfCivilDay } from '../time';
+import { z } from 'zod';
+import { type CivilDate, startOfCivilDay, toLocalDateTime } from '../time';
 
 /** The structured part of a cancellation policy, snapshotted on the Order. */
 export interface RefundRule {
@@ -32,4 +33,52 @@ export function refundFor(
 export function orderStart(proposal: { date: string; startsAt: Date | null }, zone: string): Date {
   if (proposal.startsAt) return proposal.startsAt;
   return startOfCivilDay(proposal.date as CivilDate, zone);
+}
+
+/** What cancelling costs, as the guest is told it; the policy text is never read. */
+export interface CancellationPolicyTerms {
+  freeCancelHoursBefore: number;
+  /** The share of the price the guest loses after the free window. */
+  lateChargePercent: number;
+}
+
+export interface CancellationTerms extends CancellationPolicyTerms {
+  /** ISO instant free cancellation ends. */
+  freeUntil: string;
+  /** 'YYYY-MM-DDTHH:mm' in the property's zone. */
+  freeUntilLocal: string;
+  freeWindowPassed: boolean;
+}
+
+/** Stored on card drafts; mirrored by the UI payloads. */
+export const cancellationTermsSchema = z.object({
+  freeCancelHoursBefore: z.number().int(),
+  lateChargePercent: z.number().int().min(0).max(100),
+  freeUntil: z.string(),
+  freeUntilLocal: z.string(),
+  freeWindowPassed: z.boolean(),
+});
+
+/**
+ * The share of the price the guest loses after the free window: 100 − the refunded share. Said
+ * this way, it reads right for direct pay too, where nothing is ever refunded.
+ */
+export const lateChargePercent = (refundPercentAfter: number) => 100 - refundPercentAfter;
+
+/** The terms at `now` for an Order or draft starting at `start`; the same cutoff as `refundFor`. */
+export function cancellationTermsAt(
+  policy: CancellationPolicyTerms,
+  start: Date,
+  zone: string,
+  now: Date,
+): CancellationTerms {
+  const cutoff = new Date(start.getTime() - policy.freeCancelHoursBefore * HOUR_MS);
+  return {
+    freeCancelHoursBefore: policy.freeCancelHoursBefore,
+    lateChargePercent: policy.lateChargePercent,
+    freeUntil: cutoff.toISOString(),
+    freeUntilLocal: toLocalDateTime(cutoff, zone),
+    // Cancelling exactly at the cutoff is still free.
+    freeWindowPassed: now.getTime() > cutoff.getTime(),
+  };
 }

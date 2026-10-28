@@ -1,6 +1,7 @@
 import { CalendarX } from '@phosphor-icons/react';
 import { useId } from 'react';
 import type { CancelOrderDraftPayload } from '../../payloads';
+import { type CancellationTermsLabels, cancellationTermsText } from '../cancellation-terms';
 
 export interface CancelOrderLabels {
   heading: string;
@@ -16,11 +17,12 @@ export interface CancelOrderLabels {
   refundNone: string;
   /** Pay-online, nothing paid yet. */
   refundNotPaid: string;
-  /** Pay-direct: Fetivi holds no money for it. */
-  refundDirect: string;
+  /** Pay-direct, before the cutoff (or under no late charge). */
+  cancelFree: string;
   /** While cancelling is still free: until when. */
   freeUntil: (when: string) => string;
   policy: string;
+  terms: CancellationTermsLabels;
   confirm: string;
   keep: string;
   sending: string;
@@ -29,9 +31,19 @@ export interface CancelOrderLabels {
 const money = (minor: number, currency: string, language: string) =>
   new Intl.NumberFormat(language, { style: 'currency', currency }).format(minor / 100);
 
-/** What the cancel gives back, in the guest's words; every amount comes from the stored draft. */
-function refundLine(draft: CancelOrderDraftPayload, labels: CancelOrderLabels): string {
-  if (draft.paymentMode === 'direct') return labels.refundDirect;
+/**
+ * What the cancel costs or gives back, in the guest's words; every amount comes from the stored
+ * draft. Pay-direct never speaks of a refund: free before the cutoff, the provider's terms after.
+ */
+function refundLine(draft: CancelOrderDraftPayload, labels: CancelOrderLabels): string | null {
+  if (draft.paymentMode === 'direct') {
+    const terms = draft.cancellation;
+    if (!terms) return null;
+    if (!terms.freeWindowPassed || terms.lateChargePercent === 0) return labels.cancelFree;
+    return terms.lateChargePercent === 100
+      ? labels.terms.directNowFull
+      : labels.terms.directNow(terms.lateChargePercent);
+  }
   if (draft.refundMinor === null) return labels.refundNotPaid;
   if (draft.refundMinor === 0) return labels.refundNone;
   const amount = money(draft.refundMinor, draft.currency, draft.language);
@@ -40,7 +52,8 @@ function refundLine(draft: CancelOrderDraftPayload, labels: CancelOrderLabels): 
 }
 
 /**
- * The cancel card: the Order, the refund the snapshotted rules give now and the policy text.
+ * The cancel card: the Order, what cancelling costs or gives back now and the terms, all from the
+ * snapshotted rules.
  * Nothing changes before Cancel booking. The card never takes focus on its own.
  */
 export function CancelOrderCard({
@@ -64,6 +77,9 @@ export function CancelOrderCard({
       ? labels.freeUntil(labels.dateTime(draft.freeUntilLocal.slice(0, 10), draft.freeUntilLocal))
       : null;
 
+  const refund = refundLine(draft, labels);
+  const terms = cancellationTermsText(draft.cancellation, draft.paymentMode, labels.terms);
+
   const facts: [string, string][] = [
     [labels.offer, draft.offerTitle],
     [labels.when, labels.dateTime(draft.date, draft.startsAtLocal)],
@@ -83,14 +99,19 @@ export function CancelOrderCard({
           </div>
         ))}
       </dl>
-      <div className="fv-cancel-refund">
-        <p className="fv-cancel-amount">{refundLine(draft, labels)}</p>
-        {freeUntil && <p className="fv-confirm-note">{freeUntil}</p>}
-      </div>
-      <div className="fv-cancel-policy">
-        <h4>{labels.policy}</h4>
-        <p>{draft.cancellationPolicy}</p>
-      </div>
+      {(refund || freeUntil) && (
+        <div className="fv-cancel-refund">
+          {refund && <p className="fv-cancel-amount">{refund}</p>}
+          {freeUntil && <p className="fv-confirm-note">{freeUntil}</p>}
+        </div>
+      )}
+      {/* After a pay-direct cutoff the line above already says it. */}
+      {terms && terms !== refund && (
+        <div className="fv-cancel-policy">
+          <h4>{labels.policy}</h4>
+          <p>{terms}</p>
+        </div>
+      )}
       <div className="fv-confirm-actions">
         <button
           type="button"

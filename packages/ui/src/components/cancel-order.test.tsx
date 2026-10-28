@@ -4,6 +4,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { CancelOrderDraftPayload } from '../payloads';
 import { CancelOrderCard, type CancelOrderLabels } from './cancel-order-card/CancelOrderCard';
+import { cancellationTermsText } from './cancellation-terms';
+import { TERMS, TERMS_LABELS } from './fixtures';
 
 let root: Root | null = null;
 let host: HTMLElement;
@@ -50,6 +52,7 @@ const DRAFT: CancelOrderDraftPayload = {
   refundPercent: 50,
   freeUntil: '2026-10-21T07:00:00.000Z',
   freeUntilLocal: '2026-10-21T09:00',
+  cancellation: { ...TERMS, freeWindowPassed: true },
 };
 
 const LABELS: CancelOrderLabels = {
@@ -62,9 +65,10 @@ const LABELS: CancelOrderLabels = {
   refundFull: (amount) => `Free cancellation: you get back all ${amount}`,
   refundNone: 'Nothing is refunded under this policy',
   refundNotPaid: 'Nothing has been paid yet',
-  refundDirect: 'Paid directly to the provider',
+  cancelFree: 'Cancelling is free.',
   freeUntil: (when) => `Free until ${when}`,
   policy: 'Cancellation policy',
+  terms: TERMS_LABELS,
   confirm: 'Cancel booking',
   keep: 'Keep it',
   sending: 'Cancelling…',
@@ -89,14 +93,15 @@ const render = (
 };
 
 describe('CancelOrderCard', () => {
-  it('shows the facts, the policy text and the partial refund', () => {
+  it('shows the facts, the terms and the partial refund, never the policy text', () => {
     const { refund } = render();
     expect(refund).toBe('You get back €45.00 (50 %)');
     const text = host.textContent ?? '';
     for (const fact of ['Blue Lagoon boat trip', '2026-10-22 at 09:00', 'People2']) {
       expect(text).toContain(fact);
     }
-    expect(text).toContain(DRAFT.cancellationPolicy);
+    expect(text).toContain('Free cancellation has ended: 50 % of what you paid is refunded.');
+    expect(text).not.toContain(DRAFT.cancellationPolicy);
     // Past the cutoff: no "free until" line.
     expect(text).not.toContain('Free until');
   });
@@ -111,12 +116,39 @@ describe('CancelOrderCard', () => {
     expect(render({ refundMinor: 0, refundPercent: 0 }).refund).toBe(
       'Nothing is refunded under this policy',
     );
-    expect(render({ paymentMode: 'direct', paymentStatus: 'none', refundMinor: null }).refund).toBe(
-      'Paid directly to the provider',
-    );
     expect(render({ paymentStatus: 'none', refundMinor: null, refundPercent: null }).refund).toBe(
       'Nothing has been paid yet',
     );
+  });
+
+  it('never speaks of a refund for a pay-direct order', () => {
+    const direct = {
+      paymentMode: 'direct',
+      paymentStatus: 'none',
+      refundMinor: null,
+      refundPercent: null,
+      freeUntil: null,
+      freeUntilLocal: null,
+    } as const;
+    expect(render({ ...direct, cancellation: TERMS }).refund).toBe('Cancelling is free.');
+    expect(host.textContent).toContain(
+      'Free cancellation until 2026-10-21 at 09:00. After that, the provider may ask you to pay 50 % of the price directly to them.',
+    );
+    expect(host.textContent).not.toMatch(/refund/i);
+
+    const late = render({ ...direct, cancellation: { ...TERMS, freeWindowPassed: true } });
+    expect(late.refund).toBe(
+      "The provider's late-cancellation terms apply: they may ask you to pay 50 % of the price directly to them.",
+    );
+    // Said once, not repeated as the terms.
+    expect(host.querySelector('.fv-cancel-policy')).toBeNull();
+    expect(host.textContent).not.toMatch(/refund/i);
+  });
+
+  it('shows no terms line for a draft stored without terms', () => {
+    render({ cancellation: null });
+    expect(host.querySelector('.fv-cancel-policy')).toBeNull();
+    expect(host.textContent).not.toContain(DRAFT.cancellationPolicy);
   });
 
   it('calls back on Cancel booking and Keep it; both wait while sending', () => {
@@ -130,5 +162,38 @@ describe('CancelOrderCard', () => {
     expect(button('Cancel booking').disabled).toBe(true);
     expect(button('Keep it').disabled).toBe(true);
     expect(host.querySelector('[role="status"]')?.textContent).toBe('Cancelling…');
+  });
+});
+
+describe('cancellationTermsText', () => {
+  const text = (terms: typeof TERMS | null, mode: 'direct' | 'online') =>
+    cancellationTermsText(terms, mode, TERMS_LABELS);
+
+  it('words pay-direct terms as what the provider may ask, never a refund', () => {
+    expect(text({ ...TERMS, lateChargePercent: 100 }, 'direct')).toBe(
+      'Free cancellation until 2026-10-21 at 09:00. After that, the provider may ask you to pay the full price directly to them.',
+    );
+    expect(text({ ...TERMS, lateChargePercent: 100, freeWindowPassed: true }, 'direct')).toBe(
+      "The provider's late-cancellation terms apply: they may ask you to pay the full price directly to them.",
+    );
+  });
+
+  it('words pay-online terms as a refund', () => {
+    expect(text(TERMS, 'online')).toBe(
+      'Free cancellation until 2026-10-21 at 09:00. After that, 50 % of what you paid is refunded.',
+    );
+    expect(text({ ...TERMS, lateChargePercent: 100 }, 'online')).toContain(
+      'After that, nothing is refunded.',
+    );
+    expect(text({ ...TERMS, lateChargePercent: 100, freeWindowPassed: true }, 'online')).toBe(
+      'Free cancellation has ended: nothing is refunded.',
+    );
+  });
+
+  it('is free at any time with no late charge, and null without terms', () => {
+    expect(text({ ...TERMS, lateChargePercent: 0, freeWindowPassed: true }, 'direct')).toBe(
+      'Cancelling is free at any time.',
+    );
+    expect(text(null, 'online')).toBeNull();
   });
 });

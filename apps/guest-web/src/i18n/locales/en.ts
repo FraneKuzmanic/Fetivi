@@ -299,14 +299,29 @@ export const en = {
     refundPartial: 'You get back {{amount}} ({{percent}} %)',
     refundFull: 'Free cancellation: you get back the full {{amount}}',
     refundNone: 'Under this policy nothing is refunded now.',
-    refundNotPaid: "Nothing has been paid yet, so there's nothing to refund.",
-    refundDirect: 'You paid the provider directly, so nothing is refunded through Fetivi.',
+    refundNotPaid: 'Nothing has been paid yet, so cancelling costs nothing.',
+    cancelFree: 'Cancelling is free.',
     freeUntil: 'Free to cancel until {{when}}',
     policy: 'Cancellation policy',
     confirm: 'Cancel booking',
     keep: 'Keep it',
     sending: 'Cancelling…',
     cardShown: 'Your cancellation is ready to check and confirm.',
+  },
+  cancelTerms: {
+    freeAnyTime: 'Cancelling is free at any time.',
+    freeUntil: 'Free cancellation until {{when}}.',
+    directAfter:
+      'After that, the provider may ask you to pay {{percent}} % of the price directly to them.',
+    directAfterFull: 'After that, the provider may ask you to pay the full price directly to them.',
+    directNow:
+      "The provider's late-cancellation terms apply: they may ask you to pay {{percent}} % of the price directly to them.",
+    directNowFull:
+      "The provider's late-cancellation terms apply: they may ask you to pay the full price directly to them.",
+    onlineAfter: 'After that, {{percent}} % of what you paid is refunded.',
+    onlineAfterNone: 'After that, nothing is refunded.',
+    onlineNow: 'Free cancellation has ended: {{percent}} % of what you paid is refunded.',
+    onlineNowNone: 'Free cancellation has ended: nothing is refunded.',
   },
   respondOrder: {
     headingTime: 'The provider suggests another time',
@@ -415,7 +430,8 @@ export const en = {
       "Ferryhopper's results couldn't load here. Fetivi's answer above still has the details.",
   },
   webResults: {
-    heading: 'From the web',
+    open: 'Source: {{site}}',
+    sources: 'From the web, not checked by Fetivi',
     notChecked: 'Not checked by Fetivi. Confirm on the site before you go.',
     opensInNewTab: 'opens in a new tab',
     kind_tourist_board: 'Tourist board',

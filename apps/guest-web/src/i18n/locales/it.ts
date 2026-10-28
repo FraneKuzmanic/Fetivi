@@ -305,14 +305,30 @@ export const it: Messages = {
     refundPartial: 'Ti rimborsiamo {{amount}} ({{percent}} %)',
     refundFull: "Cancellazione gratuita: ti rimborsiamo l'intero importo di {{amount}}",
     refundNone: 'Con queste condizioni ora non è previsto alcun rimborso.',
-    refundNotPaid: 'Non hai ancora pagato nulla, quindi non c’è niente da rimborsare.',
-    refundDirect: 'Hai pagato direttamente il fornitore, quindi Fetivi non rimborsa nulla.',
+    refundNotPaid: 'Non hai ancora pagato nulla, quindi cancellare non costa niente.',
+    cancelFree: 'La cancellazione è gratuita.',
     freeUntil: 'Cancellazione gratuita fino a {{when}}',
     policy: 'Condizioni di cancellazione',
     confirm: 'Annulla prenotazione',
     keep: 'Tienila',
     sending: 'Annullamento…',
     cardShown: 'La cancellazione è pronta da controllare e confermare.',
+  },
+  cancelTerms: {
+    freeAnyTime: 'La cancellazione è gratuita in qualsiasi momento.',
+    freeUntil: 'Cancellazione gratuita fino a {{when}}.',
+    directAfter:
+      'Dopo, il fornitore può chiederti di pagargli direttamente il {{percent}} % del prezzo.',
+    directAfterFull: 'Dopo, il fornitore può chiederti di pagargli direttamente il prezzo intero.',
+    directNow:
+      'Valgono le condizioni del fornitore per la cancellazione tardiva: può chiederti di pagargli direttamente il {{percent}} % del prezzo.',
+    directNowFull:
+      'Valgono le condizioni del fornitore per la cancellazione tardiva: può chiederti di pagargli direttamente il prezzo intero.',
+    onlineAfter: 'Dopo, ti rimborsiamo il {{percent}} % di quanto hai pagato.',
+    onlineAfterNone: 'Dopo, non è previsto alcun rimborso.',
+    onlineNow:
+      'La cancellazione gratuita è terminata: ti rimborsiamo il {{percent}} % di quanto hai pagato.',
+    onlineNowNone: 'La cancellazione gratuita è terminata: non è previsto alcun rimborso.',
   },
   respondOrder: {
     headingTime: 'Il fornitore propone un altro orario',
@@ -423,7 +439,8 @@ export const it: Messages = {
       'Non è stato possibile caricare qui i risultati di Ferryhopper. La risposta di Fetivi qui sopra contiene comunque i dettagli.',
   },
   webResults: {
-    heading: 'Dal web',
+    open: 'Fonte: {{site}}',
+    sources: 'Dal web, non verificato da Fetivi',
     notChecked: 'Non verificato da Fetivi. Controllate sul sito prima di andare.',
     opensInNewTab: 'si apre in una nuova scheda',
     kind_tourist_board: 'Ente del turismo',

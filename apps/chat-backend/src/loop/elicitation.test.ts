@@ -32,6 +32,7 @@ const DRAFT = {
   availabilityMode: 'allotment',
   cancellationPolicy: 'Free cancellation up to 24 hours before.',
   contactFields: 'name',
+  cancellation: null,
 };
 
 const SCHEMA = {

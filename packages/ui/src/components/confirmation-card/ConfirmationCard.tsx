@@ -1,6 +1,7 @@
 import type { PaymentMode, PriceUnit } from '@fetivi/domain/offer-vocabulary';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import type { OrderDraft } from '../../payloads';
+import { type CancellationTermsLabels, cancellationTermsText } from '../cancellation-terms';
 
 export type ContactField = 'email' | 'name' | 'phone';
 
@@ -13,6 +14,7 @@ export interface ConfirmationCardLabels {
   total: string;
   payment: string;
   cancellation: string;
+  terms: CancellationTermsLabels;
   dateTime: (date: string, startsAtLocal: string | null) => string;
   /** null: the provider sets the price. */
   price: (priceMinor: number | null, currency: string) => string;
@@ -108,13 +110,14 @@ export function ConfirmationCard({
     onConfirm(content);
   };
 
+  const terms = cancellationTermsText(draft.cancellation, draft.paymentMode, labels.terms);
   const facts: [string, string][] = [
     [labels.offer, draft.offerTitle],
     [labels.when, labels.dateTime(draft.date, draft.startsAtLocal)],
     [labels.quantity(draft.priceUnit), String(draft.quantity)],
     [labels.total, labels.price(draft.priceMinor, draft.currency)],
     [labels.payment, labels.paymentMode(draft.paymentMode)],
-    [labels.cancellation, draft.cancellationPolicy],
+    ...(terms ? [[labels.cancellation, terms] as [string, string]] : []),
   ];
 
   return (

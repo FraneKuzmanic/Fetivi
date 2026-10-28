@@ -301,14 +301,29 @@ export const hr: Messages = {
     refundPartial: 'Vraćamo vam {{amount}} ({{percent}} %)',
     refundFull: 'Besplatno otkazivanje: vraćamo vam cijelih {{amount}}',
     refundNone: 'Prema ovim uvjetima sada se ništa ne vraća.',
-    refundNotPaid: 'Još ništa nije plaćeno, pa nema povrata.',
-    refundDirect: 'Platili ste izravno pružatelju, pa se preko Fetivija ništa ne vraća.',
+    refundNotPaid: 'Još ništa nije plaćeno, pa vas otkazivanje ništa ne košta.',
+    cancelFree: 'Otkazivanje je besplatno.',
     freeUntil: 'Besplatno otkazivanje do {{when}}',
     policy: 'Uvjeti otkazivanja',
     confirm: 'Otkaži rezervaciju',
     keep: 'Zadrži',
     sending: 'Otkazujem…',
     cardShown: 'Otkazivanje je spremno za provjeru i potvrdu.',
+  },
+  cancelTerms: {
+    freeAnyTime: 'Otkazivanje je besplatno u bilo kojem trenutku.',
+    freeUntil: 'Besplatno otkazivanje do {{when}}.',
+    directAfter:
+      'Nakon toga pružatelj vas može zamoliti da mu izravno platite {{percent}} % cijene.',
+    directAfterFull: 'Nakon toga pružatelj vas može zamoliti da mu izravno platite punu cijenu.',
+    directNow:
+      'Vrijede pružateljevi uvjeti za kasno otkazivanje: može vas zamoliti da mu izravno platite {{percent}} % cijene.',
+    directNowFull:
+      'Vrijede pružateljevi uvjeti za kasno otkazivanje: može vas zamoliti da mu izravno platite punu cijenu.',
+    onlineAfter: 'Nakon toga vraća se {{percent}} % plaćenog iznosa.',
+    onlineAfterNone: 'Nakon toga ništa se ne vraća.',
+    onlineNow: 'Besplatno otkazivanje je isteklo: vraća se {{percent}} % plaćenog iznosa.',
+    onlineNowNone: 'Besplatno otkazivanje je isteklo: ništa se ne vraća.',
   },
   respondOrder: {
     headingTime: 'Pružatelj predlaže drugo vrijeme',
@@ -418,7 +433,8 @@ export const hr: Messages = {
       'Rezultati s Ferryhoppera ovdje se nisu mogli učitati. Fetivijev odgovor iznad i dalje sadrži pojedinosti.',
   },
   webResults: {
-    heading: 'S interneta',
+    open: 'Izvor: {{site}}',
+    sources: 'S interneta, Fetivi nije provjerio',
     notChecked: 'Fetivi ovo nije provjerio. Provjerite na stranici prije polaska.',
     opensInNewTab: 'otvara se u novoj kartici',
     kind_tourist_board: 'Turistička zajednica',

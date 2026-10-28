@@ -310,15 +310,30 @@ export const de: Messages = {
     refundPartial: 'Sie bekommen {{amount}} zurück ({{percent}} %)',
     refundFull: 'Kostenlose Stornierung: Sie bekommen die vollen {{amount}} zurück',
     refundNone: 'Nach diesen Bedingungen wird jetzt nichts erstattet.',
-    refundNotPaid: 'Es wurde noch nichts bezahlt, also gibt es nichts zu erstatten.',
-    refundDirect:
-      'Sie haben direkt beim Anbieter bezahlt, daher wird über Fetivi nichts erstattet.',
+    refundNotPaid: 'Es wurde noch nichts bezahlt, die Stornierung kostet also nichts.',
+    cancelFree: 'Die Stornierung ist kostenlos.',
     freeUntil: 'Kostenlos stornierbar bis {{when}}',
     policy: 'Stornobedingungen',
     confirm: 'Buchung stornieren',
     keep: 'Behalten',
     sending: 'Wird storniert…',
     cardShown: 'Ihre Stornierung ist bereit zum Prüfen und Bestätigen.',
+  },
+  cancelTerms: {
+    freeAnyTime: 'Die Stornierung ist jederzeit kostenlos.',
+    freeUntil: 'Kostenlose Stornierung bis {{when}}.',
+    directAfter:
+      'Danach kann der Anbieter Sie bitten, ihm {{percent}} % des Preises direkt zu zahlen.',
+    directAfterFull: 'Danach kann der Anbieter Sie bitten, ihm den vollen Preis direkt zu zahlen.',
+    directNow:
+      'Es gelten die Bedingungen des Anbieters für späte Stornierungen: Er kann Sie bitten, ihm {{percent}} % des Preises direkt zu zahlen.',
+    directNowFull:
+      'Es gelten die Bedingungen des Anbieters für späte Stornierungen: Er kann Sie bitten, ihm den vollen Preis direkt zu zahlen.',
+    onlineAfter: 'Danach werden {{percent}} % des bezahlten Betrags erstattet.',
+    onlineAfterNone: 'Danach wird nichts erstattet.',
+    onlineNow:
+      'Die kostenlose Stornierung ist vorbei: {{percent}} % des bezahlten Betrags werden erstattet.',
+    onlineNowNone: 'Die kostenlose Stornierung ist vorbei: Es wird nichts erstattet.',
   },
   respondOrder: {
     headingTime: 'Der Anbieter schlägt eine andere Zeit vor',
@@ -430,7 +445,8 @@ export const de: Messages = {
       'Die Ergebnisse von Ferryhopper konnten hier nicht geladen werden. Fetivis Antwort oben enthält trotzdem die Details.',
   },
   webResults: {
-    heading: 'Aus dem Web',
+    open: 'Quelle: {{site}}',
+    sources: 'Aus dem Web, nicht von Fetivi geprüft',
     notChecked: 'Nicht von Fetivi geprüft. Schauen Sie vor dem Losgehen auf der Seite nach.',
     opensInNewTab: 'öffnet in einem neuen Tab',
     kind_tourist_board: 'Tourismusverband',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { orderStart, refundFor } from './refunds';
+import { cancellationTermsAt, lateChargePercent, orderStart, refundFor } from './refunds';
 
 const startsAt = new Date('2026-10-25T16:00:00Z');
 const cutoff = new Date('2026-10-24T16:00:00Z');
@@ -70,5 +70,50 @@ describe('orderStart', () => {
     expect(orderStart({ date: '2026-03-29', startsAt: null }, 'Europe/Zagreb')).toEqual(
       new Date('2026-03-28T23:00:00Z'),
     );
+  });
+});
+
+describe('cancellationTermsAt', () => {
+  const policy = { freeCancelHoursBefore: 24, lateChargePercent: 50 };
+
+  it('is free before the cutoff, with the cutoff in UTC and local time', () => {
+    expect(cancellationTermsAt(policy, startsAt, 'Europe/Zagreb', at(-1))).toEqual({
+      freeCancelHoursBefore: 24,
+      lateChargePercent: 50,
+      freeUntil: '2026-10-24T16:00:00.000Z',
+      freeUntilLocal: '2026-10-24T18:00',
+      freeWindowPassed: false,
+    });
+  });
+
+  it('is still free exactly at the cutoff', () => {
+    expect(cancellationTermsAt(policy, startsAt, 'Europe/Zagreb', at(0)).freeWindowPassed).toBe(
+      false,
+    );
+  });
+
+  it('has passed after the cutoff', () => {
+    expect(cancellationTermsAt(policy, startsAt, 'Europe/Zagreb', at(1)).freeWindowPassed).toBe(
+      true,
+    );
+  });
+
+  it('keeps 0 % and 100 % late charges as they are', () => {
+    expect(
+      cancellationTermsAt({ ...policy, lateChargePercent: 0 }, startsAt, 'UTC', at(1))
+        .lateChargePercent,
+    ).toBe(0);
+    expect(
+      cancellationTermsAt({ ...policy, lateChargePercent: 100 }, startsAt, 'UTC', at(1))
+        .lateChargePercent,
+    ).toBe(100);
+  });
+});
+
+describe('lateChargePercent', () => {
+  it('is the share that is not refunded', () => {
+    expect(lateChargePercent(50)).toBe(50);
+    expect(lateChargePercent(0)).toBe(100);
+    expect(lateChargePercent(100)).toBe(0);
   });
 });

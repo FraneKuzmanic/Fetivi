@@ -27,7 +27,7 @@ export function presentationTools(deps: {
   return {
     suggest_replies: tool({
       description:
-        "Show 1–4 tappable follow-ups under your answer, written as the guest would say them, in the guest's language. Always write your answer as text first; call this last, in the same response as that text, and never together with another tool.",
+        "Show 1–4 tappable follow-ups under your answer, written as the guest would say them, in the guest's language. Call this last, in the same response as your answer, and never together with another tool.",
       inputSchema: followUpChips,
       execute: async () => ({ shown: true }),
     }),
@@ -39,7 +39,7 @@ export function presentationTools(deps: {
     }),
     show_property_info: tool({
       description:
-        "Show the guest a card with the unit's facts for one topic, with copy buttons for codes and passwords: arrival (check-in, access, codes), wifi, checkout (checkout time and house rules), contacts (112, host, emergency contact). Write your answer as text first, then call this once in the same response. The card is filled from the unit record, never from your words.",
+        "Show the guest a card with the unit's facts for one topic, with copy buttons for codes and passwords: arrival (check-in, access, codes), wifi, checkout (checkout time and house rules), contacts (112, host, emergency contact). Call this once, in the same response as your short answer; it ends your reply. The card is filled from the unit record, never from your words.",
       inputSchema: z.object({ topic: z.enum(PROPERTY_INFO_TOPICS) }),
       execute: async ({ topic }) => propertyInfo(await deps.readProjection(), topic),
     }),
@@ -58,8 +58,7 @@ const endsTurn = (name: string) =>
 
 /**
  * Stops the loop after a step whose calls are all presentation calls or the property card: the
- * guest answers next, so another model round trip would only cost, and its text would land above
- * the card again (all of a message's text is shown before its cards). A step that also searched
+ * guest answers next, so another model round trip would only cost. A step that also searched
  * continues, so the model sees the results; so does one with an invalid call, so the model can
  * correct it. Chips or a card without any text in the turn continue too, so the guest never gets
  * them without words (a choice card carries its own question).

@@ -304,14 +304,30 @@ export const hu: Messages = {
     refundPartial: 'Visszakap {{amount}} összeget ({{percent}} %)',
     refundFull: 'Ingyenes lemondás: a teljes {{amount}} összeget visszakapja',
     refundNone: 'Ezek a feltételek szerint most nincs visszatérítés.',
-    refundNotPaid: 'Még nem fizetett semmit, így nincs mit visszatéríteni.',
-    refundDirect: 'Közvetlenül a szolgáltatónak fizetett, ezért a Fetivi nem térít vissza semmit.',
+    refundNotPaid: 'Még nem fizetett semmit, így a lemondás nem kerül semmibe.',
+    cancelFree: 'A lemondás ingyenes.',
     freeUntil: 'Ingyenesen lemondható eddig: {{when}}',
     policy: 'Lemondási feltételek',
     confirm: 'Foglalás lemondása',
     keep: 'Megtartom',
     sending: 'Lemondás…',
     cardShown: 'A lemondás készen áll ellenőrzésre és megerősítésre.',
+  },
+  cancelTerms: {
+    freeAnyTime: 'A lemondás bármikor ingyenes.',
+    freeUntil: 'Ingyenes lemondás eddig: {{when}}.',
+    directAfter:
+      'Ezután a szolgáltató kérheti, hogy az ár {{percent}} %-át közvetlenül neki fizesse ki.',
+    directAfterFull:
+      'Ezután a szolgáltató kérheti, hogy a teljes árat közvetlenül neki fizesse ki.',
+    directNow:
+      'A szolgáltató késői lemondásra vonatkozó feltételei érvényesek: kérheti, hogy az ár {{percent}} %-át közvetlenül neki fizesse ki.',
+    directNowFull:
+      'A szolgáltató késői lemondásra vonatkozó feltételei érvényesek: kérheti, hogy a teljes árat közvetlenül neki fizesse ki.',
+    onlineAfter: 'Ezután a kifizetett összeg {{percent}} %-át visszatérítjük.',
+    onlineAfterNone: 'Ezután nincs visszatérítés.',
+    onlineNow: 'Az ingyenes lemondás lejárt: a kifizetett összeg {{percent}} %-át visszatérítjük.',
+    onlineNowNone: 'Az ingyenes lemondás lejárt: nincs visszatérítés.',
   },
   respondOrder: {
     headingTime: 'A szolgáltató másik időpontot javasol',
@@ -420,7 +436,8 @@ export const hu: Messages = {
       'A Ferryhopper találatai itt nem töltődtek be. Fetivi fenti válaszában így is megvannak a részletek.',
   },
   webResults: {
-    heading: 'Az internetről',
+    open: 'Forrás: {{site}}',
+    sources: 'Az internetről, a Fetivi nem ellenőrizte',
     notChecked: 'A Fetivi ezt nem ellenőrizte. Indulás előtt nézze meg az oldalon.',
     opensInNewTab: 'új lapon nyílik meg',
     kind_tourist_board: 'Turisztikai iroda',

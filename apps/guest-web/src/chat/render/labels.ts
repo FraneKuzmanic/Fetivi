@@ -4,8 +4,10 @@ import type { OrderStatus, PaymentStatus } from '@fetivi/domain/order-vocabulary
 import { DHMZ_URL, type WarningLevel } from '@fetivi/domain/weather-vocabulary';
 import type {
   AvailabilityPickerLabels,
+  CancellationTermsLabels,
   CancelOrderLabels,
   ChoiceCardLabels,
+  CitationLabels,
   ConfirmationCardLabels,
   DayPlanLabels,
   EventListLabels,
@@ -14,8 +16,8 @@ import type {
   PlaceLabels,
   ReceiptLabels,
   RespondOrderLabels,
+  SourceRowLabels,
   WeatherLabels,
-  WebResultsLabels,
 } from '@fetivi/ui';
 import type { InboxItem } from '@fetivi/ui/payloads';
 import type { TFunction } from 'i18next';
@@ -112,6 +114,24 @@ function orderFormat(t: TFunction, language: string) {
   };
 }
 
+/** The cancellation terms the three order cards share; refund words only for paying online. */
+function cancelTermsLabels(t: TFunction, language: string): CancellationTermsLabels {
+  const f = orderFormat(t, language);
+  return {
+    freeAnyTime: t('cancelTerms.freeAnyTime'),
+    freeUntil: (when) => t('cancelTerms.freeUntil', { when }),
+    directAfter: (percent) => t('cancelTerms.directAfter', { percent }),
+    directAfterFull: t('cancelTerms.directAfterFull'),
+    directNow: (percent) => t('cancelTerms.directNow', { percent }),
+    directNowFull: t('cancelTerms.directNowFull'),
+    onlineAfter: (percent) => t('cancelTerms.onlineAfter', { percent }),
+    onlineAfterNone: t('cancelTerms.onlineAfterNone'),
+    onlineNow: (percent) => t('cancelTerms.onlineNow', { percent }),
+    onlineNowNone: t('cancelTerms.onlineNowNone'),
+    dateTime: f.dateTime,
+  };
+}
+
 export function confirmationLabels(t: TFunction, language: string): ConfirmationCardLabels {
   const f = orderFormat(t, language);
   return {
@@ -122,6 +142,7 @@ export function confirmationLabels(t: TFunction, language: string): Confirmation
     total: t('order.total'),
     payment: t('order.payment'),
     cancellation: t('order.cancellation'),
+    terms: cancelTermsLabels(t, language),
     dateTime: f.dateTime,
     price: f.price,
     paymentMode: (mode) => t(mode === 'direct' ? 'order.payDirect' : 'order.payOnline'),
@@ -153,9 +174,10 @@ export function cancelOrderLabels(t: TFunction, language: string): CancelOrderLa
     refundFull: (amount) => t('cancelOrder.refundFull', { amount }),
     refundNone: t('cancelOrder.refundNone'),
     refundNotPaid: t('cancelOrder.refundNotPaid'),
-    refundDirect: t('cancelOrder.refundDirect'),
+    cancelFree: t('cancelOrder.cancelFree'),
     freeUntil: (when) => t('cancelOrder.freeUntil', { when }),
     policy: t('cancelOrder.policy'),
+    terms: cancelTermsLabels(t, language),
     confirm: t('cancelOrder.confirm'),
     keep: t('cancelOrder.keep'),
     sending: t('cancelOrder.sending'),
@@ -181,6 +203,7 @@ export function respondOrderLabels(t: TFunction, language: string): RespondOrder
     payOnline: t('respondOrder.payOnline'),
     payDirect: t('respondOrder.payDirect'),
     policy: t('cancelOrder.policy'),
+    terms: cancelTermsLabels(t, language),
     accept: t('respondOrder.accept'),
     decline: t('respondOrder.decline'),
     notNow: t('respondOrder.notNow'),
@@ -315,10 +338,17 @@ export function weatherLabels(t: TFunction, language: string): WeatherLabels {
   };
 }
 
-/** The web results' strings: heading, the not-checked line and each source kind. */
-export const webResultsLabels = (t: TFunction): WebResultsLabels => ({
-  heading: t('webResults.heading'),
+/** A citation badge's and its preview's strings: the not-checked line and each source kind. */
+export const citationLabels = (t: TFunction): CitationLabels => ({
   notChecked: t('webResults.notChecked'),
+  opensInNewTab: t('webResults.opensInNewTab'),
+  kind: (kind) => t(`webResults.kind_${kind}`),
+  open: (site) => t('webResults.open', { site }),
+});
+
+/** The strings of the source row under an answer that cited none of its web results. */
+export const sourceRowLabels = (t: TFunction): SourceRowLabels => ({
+  label: t('webResults.sources'),
   opensInNewTab: t('webResults.opensInNewTab'),
   kind: (kind) => t(`webResults.kind_${kind}`),
 });

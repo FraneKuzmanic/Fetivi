@@ -26,6 +26,13 @@ const RESPOND = {
   cancellationPolicy: 'Free cancellation until 24 hours before.',
   respondBy: '2026-10-21T08:00:00.000Z',
   respondByLocal: '2026-10-21T10:00',
+  cancellation: {
+    freeCancelHoursBefore: 24,
+    lateChargePercent: 50,
+    freeUntil: '2026-10-21T07:00:00.000Z',
+    freeUntilLocal: '2026-10-21T09:00',
+    freeWindowPassed: false,
+  },
 };
 const CONFIRMED = {
   id: RESPOND.orderId,
@@ -180,6 +187,8 @@ describe('new-terms card in the guest app', () => {
     expect(card?.querySelector('h3')?.textContent).toBe('The provider suggests another time');
     expect(card?.querySelector('ins')?.textContent).toContain('5:30');
     expect(card?.textContent).toContain('You pay the provider directly.');
+    expect(card?.textContent).toContain('the provider may ask you to pay 50 % of the price');
+    expect(card?.textContent).not.toMatch(/refund/i);
 
     await act(async () => button('Accept').click());
     await vi.waitFor(() => expect(host.querySelector('.fv-receipt')).not.toBeNull());

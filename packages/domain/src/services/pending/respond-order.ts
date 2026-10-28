@@ -7,6 +7,7 @@ import { properties, units } from '../../db/schema/properties';
 import { stays } from '../../db/schema/stays';
 import { PAYMENT_MODES } from '../../offers/vocabulary';
 import { cancel, guestConfirm, type OrderDeps } from '../../orders/machine';
+import { cancellationTermsSchema } from '../../orders/refunds';
 import { NEW_TERMS_PROPOSERS } from '../../orders/vocabulary';
 import { CHECKOUT_HOLD_MINUTES } from '../../payments/vocabulary';
 import { GUEST_LANGUAGES, type GuestLanguage } from '../../property/vocabulary';
@@ -48,6 +49,8 @@ export const respondOrderPayload = z.object({
   respondBy: z.string(),
   /** `respondBy` as 'YYYY-MM-DDTHH:mm' in the property's zone. */
   respondByLocal: z.string(),
+  /** The terms for the new start; null on drafts stored before the terms existed. */
+  cancellation: cancellationTermsSchema.nullable().default(null),
 });
 export type RespondOrderDraft = z.infer<typeof respondOrderPayload>;
 
@@ -144,6 +147,8 @@ export async function prepareRespond(
     cancellationPolicy: order.cancellationPolicy,
     respondBy: proposal.cardExpiresAt.toISOString(),
     respondByLocal: toLocalDateTime(proposal.cardExpiresAt, zone),
+    // The summary reads the current (new) proposal, so the cutoff follows the new start.
+    cancellation: summary.cancellation,
   };
   const ttl = Math.min(
     now.getTime() + PENDING_TTL_SECONDS * 1000,

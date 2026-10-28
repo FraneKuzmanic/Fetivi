@@ -8,8 +8,8 @@ import {
   PlaceCarousel,
   PropertyInfoCard,
   ReceiptCard,
+  SourceRow,
   WeatherCard,
-  WebResults,
 } from '@fetivi/ui';
 import { componentPart, type OrderSummaryPayload } from '@fetivi/ui/payloads';
 import { useMemo } from 'react';
@@ -29,8 +29,8 @@ import {
   placeLabels,
   planLabels,
   receiptLabels,
+  sourceRowLabels,
   weatherLabels,
-  webResultsLabels,
 } from './labels';
 import { useSavedPlaces } from './SavedPlaces';
 
@@ -163,8 +163,9 @@ export function ComponentPart({
     case 'weather':
       return <WeatherCard report={part.payload} labels={weatherLabels(t, i18n.language)} />;
     case 'web-results':
-      // Links with source chips: never place cards, nothing to save or book.
-      return <WebResults results={part.payload.results} labels={webResultsLabels(t)} />;
+      // Shown only for results the answer never cited (see MessageList): one row of site links,
+      // never place cards, nothing to save or book.
+      return <SourceRow results={part.payload.results} labels={sourceRowLabels(t)} />;
     case 'property-info':
       return (
         <PropertyInfoCard

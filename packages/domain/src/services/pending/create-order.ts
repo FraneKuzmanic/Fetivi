@@ -11,7 +11,13 @@ import { stays } from '../../db/schema/stays';
 import { type GuestOffer, type GuestOfferScope, getGuestOffer } from '../../offers/guest';
 import type { PaymentMode, PriceUnit } from '../../offers/vocabulary';
 import { createOrder, getOrder, type OrderDeps, OrderRuleError } from '../../orders/machine';
-import type { OrderStatus, PaymentStatus } from '../../orders/vocabulary';
+import {
+  type CancellationTerms,
+  cancellationTermsAt,
+  lateChargePercent,
+  orderStart,
+} from '../../orders/refunds';
+import { isFinalOrderStatus, type OrderStatus, type PaymentStatus } from '../../orders/vocabulary';
 import { checkoutOpen } from '../../payments/checkout';
 import { merchantAcceptsCards } from '../../payments/merchant';
 import { CHECKOUT_HOLD_MINUTES } from '../../payments/vocabulary';
@@ -104,6 +110,8 @@ export interface OrderSummary {
   refundMinor: number | null;
   /** ISO instant the guest must answer new terms by; set only while a new proposal waits for them. */
   respondBy: string | null;
+  /** What cancelling costs now; null once the Order is final. */
+  cancellation: CancellationTerms | null;
 }
 
 const CIVIL_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -220,6 +228,7 @@ export async function prepareOrder(
   }
   if (!start) throw new ServiceRuleError('no-availability');
 
+  const now = deps.now();
   const draft: CreateOrderDraft = {
     offerId: offer.id,
     offerTitle: offer.title,
@@ -236,8 +245,16 @@ export async function prepareOrder(
     availabilityMode: offer.availabilityMode,
     cancellationPolicy: offer.cancellationPolicy,
     contactFields: offer.contactFields,
+    cancellation: cancellationTermsAt(
+      offer.cancellation,
+      orderStart(
+        { date: input.date, startsAt: start.startsAt ? new Date(start.startsAt) : null },
+        stay.zone,
+      ),
+      stay.zone,
+      now,
+    ),
   };
-  const now = deps.now();
   const row = await insertPending(deps.db, {
     kind: 'create_order',
     spaceId: ctx.spaceId,
@@ -482,6 +499,17 @@ async function summaries(
       order.status === 'awaiting_confirmation' && proposal.version > 1
         ? (proposal.cardExpiresAt?.toISOString() ?? null)
         : null,
+    cancellation: isFinalOrderStatus(order.status)
+      ? null
+      : cancellationTermsAt(
+          {
+            freeCancelHoursBefore: order.freeCancelHoursBefore,
+            lateChargePercent: lateChargePercent(order.refundPercentAfter),
+          },
+          orderStart(proposal, zone),
+          zone,
+          now,
+        ),
   }));
 }
 

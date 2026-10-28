@@ -7,7 +7,14 @@ import { properties, units } from '../../db/schema/properties';
 import { stays } from '../../db/schema/stays';
 import { PAYMENT_MODES } from '../../offers/vocabulary';
 import { cancel, type OrderDeps } from '../../orders/machine';
-import { orderStart, refundFor } from '../../orders/refunds';
+import {
+  type CancellationTerms,
+  cancellationTermsAt,
+  cancellationTermsSchema,
+  lateChargePercent,
+  orderStart,
+  refundFor,
+} from '../../orders/refunds';
 import {
   isFinalOrderStatus,
   type OrderStatus,
@@ -23,7 +30,8 @@ import { PENDING_TTL_SECONDS, type PendingState } from './vocabulary';
 
 // The `cancel_order` halves (35). The first half computes the refund from the rules snapshotted on
 // the Order and stores it with the card; the guest's tap recomputes it and cancels only when it is
-// still the amount the card showed. The policy text is shown, never used for the amount.
+// still the amount the card showed. The card shows terms built from the same rules; the policy
+// text is never used.
 // Lock order: pending row, then the machine's (Order, attempt, slot).
 
 /** The stored cancel draft: everything the cancel card shows. */
@@ -49,6 +57,8 @@ export const cancelOrderPayload = z.object({
   freeUntil: z.string().nullable(),
   /** The cutoff as 'YYYY-MM-DDTHH:mm' in the property's zone. */
   freeUntilLocal: z.string().nullable(),
+  /** Null on drafts stored before the terms existed. */
+  cancellation: cancellationTermsSchema.nullable().default(null),
 });
 export type CancelOrderDraft = z.infer<typeof cancelOrderPayload>;
 
@@ -142,6 +152,19 @@ function refundAt(row: Loaded, now: Date): Refund {
   };
 }
 
+/** The cancellation terms of the Order's current proposal at `now`. */
+function termsAt(row: Loaded, now: Date): CancellationTerms {
+  return cancellationTermsAt(
+    {
+      freeCancelHoursBefore: row.order.freeCancelHoursBefore,
+      lateChargePercent: lateChargePercent(row.order.refundPercentAfter),
+    },
+    orderStart(row.proposal, row.zone),
+    row.zone,
+    now,
+  );
+}
+
 /**
  * The first half: checks the Order may be cancelled, computes the refund and stores a pending
  * record bound to the space, valid for PENDING_TTL_SECONDS. Nothing changes until the tap.
@@ -172,6 +195,7 @@ export async function prepareCancel(
     currency: row.proposal.currency,
     cancellationPolicy: row.order.cancellationPolicy,
     ...refundAt(row, now),
+    cancellation: termsAt(row, now),
   };
   // The Order id stays in the payload: `order_id` belongs to create_order records.
   const pending = await insertPending(deps.db, {
@@ -205,7 +229,7 @@ export async function getPendingCancel(
 
 export type CancelCompletion =
   | { outcome: 'cancelled'; order: OrderSummary; replay: boolean }
-  /** The refund changed since the card was shown (the cutoff passed): show this draft instead. */
+  /** The refund or the terms changed since the card was shown (the cutoff passed): show this draft instead. */
   | { outcome: 'changed'; draft: CancelOrderDraft };
 
 type Step =
@@ -257,11 +281,17 @@ export async function completeCancel(
     if (refused) return refuse(refused);
 
     const refund = refundAt(current, now);
-    if (refund.refundMinor !== draft.refundMinor) {
+    const terms = termsAt(current, now);
+    // A pay-direct card said "free" before the cutoff; after it the provider may charge, so the
+    // guest is asked again, as for a changed refund.
+    const windowChanged =
+      draft.cancellation !== null && draft.cancellation.freeWindowPassed !== terms.freeWindowPassed;
+    if (refund.refundMinor !== draft.refundMinor || windowChanged) {
       const next: CancelOrderDraft = {
         ...draft,
         paymentStatus: current.order.paymentStatus,
         ...refund,
+        cancellation: terms,
       };
       // The next tap is compared with what the guest now sees, on a fresh card.
       await tx

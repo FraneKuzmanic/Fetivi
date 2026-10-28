@@ -707,7 +707,9 @@ input {
   gap: 0.5rem;
 }
 
+/* Positioned: a citation's preview opens across the turn's column. */
 .fetivi-turn {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;

@@ -302,14 +302,29 @@ export const pl: Messages = {
     refundPartial: 'Zwracamy {{amount}} ({{percent}} %)',
     refundFull: 'Bezpłatne anulowanie: zwracamy całe {{amount}}',
     refundNone: 'Według tych warunków teraz nic nie jest zwracane.',
-    refundNotPaid: 'Nic jeszcze nie zostało zapłacone, więc nie ma czego zwracać.',
-    refundDirect: 'Zapłacono bezpośrednio dostawcy, więc Fetivi niczego nie zwraca.',
+    refundNotPaid: 'Nic jeszcze nie zostało zapłacone, więc anulowanie nic nie kosztuje.',
+    cancelFree: 'Anulowanie jest bezpłatne.',
     freeUntil: 'Bezpłatne anulowanie do {{when}}',
     policy: 'Warunki anulowania',
     confirm: 'Anuluj rezerwację',
     keep: 'Zostaw',
     sending: 'Anulowanie…',
     cardShown: 'Anulowanie jest gotowe do sprawdzenia i potwierdzenia.',
+  },
+  cancelTerms: {
+    freeAnyTime: 'Anulowanie jest bezpłatne w każdej chwili.',
+    freeUntil: 'Bezpłatne anulowanie do {{when}}.',
+    directAfter:
+      'Później usługodawca może poprosić, by zapłacić mu bezpośrednio {{percent}} % ceny.',
+    directAfterFull: 'Później usługodawca może poprosić, by zapłacić mu bezpośrednio pełną cenę.',
+    directNow:
+      'Obowiązują warunki usługodawcy dotyczące późnego anulowania: może poprosić, by zapłacić mu bezpośrednio {{percent}} % ceny.',
+    directNowFull:
+      'Obowiązują warunki usługodawcy dotyczące późnego anulowania: może poprosić, by zapłacić mu bezpośrednio pełną cenę.',
+    onlineAfter: 'Później zwracamy {{percent}} % zapłaconej kwoty.',
+    onlineAfterNone: 'Później nic nie jest zwracane.',
+    onlineNow: 'Bezpłatne anulowanie się skończyło: zwracamy {{percent}} % zapłaconej kwoty.',
+    onlineNowNone: 'Bezpłatne anulowanie się skończyło: nic nie jest zwracane.',
   },
   respondOrder: {
     headingTime: 'Usługodawca proponuje inną godzinę',
@@ -418,7 +433,8 @@ export const pl: Messages = {
       'Nie udało się tu wczytać wyników z Ferryhopper. Odpowiedź Fetiviego powyżej nadal zawiera szczegóły.',
   },
   webResults: {
-    heading: 'Z internetu',
+    open: 'Źródło: {{site}}',
+    sources: 'Z internetu, niesprawdzone przez Fetivi',
     notChecked: 'Niesprawdzone przez Fetivi. Zanim wyruszysz, sprawdź na stronie.',
     opensInNewTab: 'otwiera się w nowej karcie',
     kind_tourist_board: 'Organizacja turystyczna',

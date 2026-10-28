@@ -54,7 +54,7 @@ export async function seedTrogirServices(
       description:
         'A full-day boat trip from Trogir harbour to the Blue Lagoon on Drvenik Veli and the fishing village of Maslinica on Šolta.\n\nSwimming stops, lunch on board and drinks are included. Bring a towel and sun cream.',
       cancellationPolicy:
-        'Free cancellation up to 24 hours before departure. After that, no refund.',
+        'Free cancellation up to 24 hours before departure. After that, the provider may charge the full price.',
       category: 'boat_trip',
       orderKind: 'booking',
       availabilityMode: 'allotment',
@@ -88,7 +88,8 @@ export async function seedTrogirServices(
       title: 'Private sunset cruise',
       description:
         'A private two-hour cruise along the Trogir riviera at sunset, for up to eight people.\n\nThe skipper picks the route on the day; a glass of local wine is included.',
-      cancellationPolicy: 'Free cancellation up to 48 hours before; after that 50 % is refunded.',
+      cancellationPolicy:
+        'Free cancellation up to 48 hours before; after that the provider may charge 50 % of the price.',
       category: 'boat_trip',
       orderKind: 'booking',
       availabilityMode: 'on_request',

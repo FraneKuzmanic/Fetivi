@@ -307,14 +307,31 @@ export const fr: Messages = {
     refundPartial: 'Vous récupérez {{amount}} ({{percent}} %)',
     refundFull: 'Annulation gratuite : vous récupérez la totalité, {{amount}}',
     refundNone: 'Selon ces conditions, rien n’est remboursé maintenant.',
-    refundNotPaid: 'Rien n’a encore été payé, il n’y a donc rien à rembourser.',
-    refundDirect: 'Vous avez payé directement le prestataire, Fetivi ne rembourse donc rien.',
+    refundNotPaid: 'Rien n’a encore été payé, l’annulation ne coûte donc rien.',
+    cancelFree: 'L’annulation est gratuite.',
     freeUntil: 'Annulation gratuite jusqu’au {{when}}',
     policy: 'Conditions d’annulation',
     confirm: 'Annuler la réservation',
     keep: 'La garder',
     sending: 'Annulation…',
     cardShown: 'Votre annulation est prête à être vérifiée et confirmée.',
+  },
+  cancelTerms: {
+    freeAnyTime: 'L’annulation est gratuite à tout moment.',
+    freeUntil: 'Annulation gratuite jusqu’au {{when}}.',
+    directAfter:
+      'Ensuite, le prestataire peut vous demander de lui payer directement {{percent}} % du prix.',
+    directAfterFull:
+      'Ensuite, le prestataire peut vous demander de lui payer directement le prix total.',
+    directNow:
+      'Les conditions d’annulation tardive du prestataire s’appliquent : il peut vous demander de lui payer directement {{percent}} % du prix.',
+    directNowFull:
+      'Les conditions d’annulation tardive du prestataire s’appliquent : il peut vous demander de lui payer directement le prix total.',
+    onlineAfter: 'Ensuite, {{percent}} % de ce que vous avez payé est remboursé.',
+    onlineAfterNone: 'Ensuite, rien n’est remboursé.',
+    onlineNow:
+      'L’annulation gratuite est terminée : {{percent}} % de ce que vous avez payé est remboursé.',
+    onlineNowNone: 'L’annulation gratuite est terminée : rien n’est remboursé.',
   },
   respondOrder: {
     headingTime: 'Le prestataire propose un autre horaire',
@@ -426,7 +443,8 @@ export const fr: Messages = {
       "Les résultats de Ferryhopper n'ont pas pu s'afficher ici. La réponse de Fetivi ci-dessus contient quand même les détails.",
   },
   webResults: {
-    heading: 'Sur le web',
+    open: 'Source : {{site}}',
+    sources: 'Sur le web, non vérifié par Fetivi',
     notChecked: "Non vérifié par Fetivi. Vérifiez sur le site avant d'y aller.",
     opensInNewTab: "s'ouvre dans un nouvel onglet",
     kind_tourist_board: 'Office de tourisme',

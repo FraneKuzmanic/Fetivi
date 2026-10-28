@@ -1364,81 +1364,91 @@
   color: var(--blue-700);
 }
 
-/* Web results: unchecked pages from allowlisted sites. Rows on a hairline, never place cards. */
+/* Web citations: a small badge after the sentence it supports, opening a plain preview. */
 
-.fv-web-results {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 0;
-  padding: 0.875rem 1rem 0.375rem;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
+.fv-cite {
+  position: relative;
+  margin-left: 0.25rem;
+  padding: 0 0.375rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 999px;
   background: var(--white);
-}
-
-.fv-web-results p {
-  margin: 0;
-}
-
-.fv-web-results-head {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.fv-web-results-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  margin: 0;
-  font-size: 1rem;
+  color: var(--blue-700);
+  font: inherit;
+  font-size: 0.75rem;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.5;
+  vertical-align: 0.1em;
+  cursor: pointer;
 }
 
-.fv-web-results-heading svg {
-  flex: none;
-  color: var(--blue-600);
+/* A finger-sized hit area around the small badge. */
+.fv-cite::after {
+  content: "";
+  position: absolute;
+  inset: -0.375rem -0.125rem;
 }
 
-.fv-web-results-note {
-  color: var(--gray-500);
-  font-size: 0.875rem;
-  line-height: 1.4;
+.fv-cite[aria-expanded="true"] {
+  border-color: var(--blue-600);
+  background: var(--sky-100);
 }
 
-.fv-web-results-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.fv-web-result {
+.fv-cite-pop {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.25rem;
-  padding: 0.625rem 0;
-  border-top: 1px solid var(--gray-200);
+  gap: 0.375rem;
+  max-width: 22rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: 0 0.25rem 1rem rgb(26 44 91 / 0.12);
+  color: var(--navy-900);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  white-space: normal;
   overflow-wrap: anywhere;
 }
 
-.fv-web-result-title {
+.fv-cite-pop-title {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.25rem;
   color: var(--blue-700);
   font-weight: 600;
   line-height: 1.4;
 }
 
-.fv-web-result-snippet {
+.fv-cite-pop-title svg {
+  flex: none;
+  margin-top: 0.15em;
+}
+
+.fv-cite-pop-snippet {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  color: var(--navy-900);
-  font-size: 0.9375rem;
-  line-height: 1.45;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.fv-cite-pop-note {
+  color: var(--gray-500);
+  font-size: 0.8125rem;
+}
+
+.fv-source-chip {
+  flex: none;
+  flex-wrap: nowrap;
+  color: var(--blue-700);
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .fv-source-chip {
@@ -1463,6 +1473,33 @@
 .fv-source-chip-host {
   font-weight: 600;
 }
+
+/* Sources of an answer that cited none: one row that scrolls sideways, never a list. */
+
+.fv-source-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-self: stretch;
+  min-width: 0;
+}
+
+.fv-source-row-label {
+  color: var(--gray-500);
+  font-size: 0.8125rem;
+}
+
+.fv-source-row-links {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-wrap: nowrap;
+  gap: 0.375rem;
+  overflow-x: auto;
+}
+
+.fv-source-row-links
 
 /* Events: the numbered list with its map */
 

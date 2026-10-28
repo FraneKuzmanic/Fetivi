@@ -276,10 +276,31 @@ describe('host instructions', () => {
     expect(INSTRUCTIONS).toContain('Never for local questions.');
   });
 
-  it('offers the message in words before the card and confirms it after', () => {
-    expect(INSTRUCTIONS).toContain('first write one short sentence offering it');
+  it('offers the message in words and confirms it after', () => {
+    expect(INSTRUCTIONS).toContain(
+      'write one short sentence offering it, then call draft_host_message',
+    );
     expect(INSTRUCTIONS).toContain('Once it is sent, confirm it in one short sentence.');
     expect(INSTRUCTIONS).toContain('Do not also call show_property_info for it.');
+  });
+});
+
+describe('answers in stream order, refunds and citations', () => {
+  it('keeps no rule that only existed because text was shown above cards', () => {
+    expect(INSTRUCTIONS).not.toContain('below your text');
+    expect(INSTRUCTIONS).not.toContain('after your text');
+    expect(INSTRUCTIONS).not.toContain('the card follows your text');
+  });
+
+  it('ties refund talk to paying online', () => {
+    expect(INSTRUCTIONS).toContain('Talk about a refund only for an order paid online');
+    expect(INSTRUCTIONS).toContain('never from the policy text');
+  });
+
+  it('cites web results by number, still as the web and not recommendations', () => {
+    expect(INSTRUCTIONS).toContain('[1] for the first result');
+    expect(INSTRUCTIONS).not.toContain('so do not repeat them');
+    expect(INSTRUCTIONS).toContain('never call results recommendations');
   });
 });
 

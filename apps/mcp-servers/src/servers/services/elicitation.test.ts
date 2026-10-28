@@ -1,8 +1,26 @@
 import { randomUUID } from 'node:crypto';
-import { type CreateOrderDraft, ORDER_DRAFT_META_KEY } from '@fetivi/domain';
+import {
+  type CancellationTerms,
+  type CancelOrderDraft,
+  type CreateOrderDraft,
+  ORDER_DRAFT_META_KEY,
+  type RespondOrderDraft,
+} from '@fetivi/domain';
 import { inputRequired } from '@modelcontextprotocol/server';
 import { describe, expect, it } from 'vitest';
+import { cancelMessage } from './cancel';
 import { confirmationMessage, contactSchemaFor, orderDraftMeta } from './elicitation';
+import { respondMessage } from './respond';
+import { termsSentence } from './terms';
+
+const terms: CancellationTerms = {
+  freeCancelHoursBefore: 24,
+  lateChargePercent: 50,
+  freeUntil: '2027-05-03T07:00:00.000Z',
+  freeUntilLocal: '2027-05-03T09:00',
+  freeWindowPassed: false,
+};
+const passed: CancellationTerms = { ...terms, freeWindowPassed: true };
 
 const draft: CreateOrderDraft = {
   offerId: randomUUID(),
@@ -20,6 +38,7 @@ const draft: CreateOrderDraft = {
   availabilityMode: 'allotment',
   cancellationPolicy: 'Free until 24 hours before.',
   contactFields: 'name_and_phone',
+  cancellation: terms,
 };
 
 describe('contactSchemaFor', () => {
@@ -69,13 +88,117 @@ describe('contactSchemaFor', () => {
 describe('confirmationMessage', () => {
   it('is built from the stored draft only', () => {
     expect(confirmationMessage(draft)).toBe(
-      'Book Blue Lagoon boat trip on 2027-05-04 at 09:00 for 2, 90.00 EUR total, paid directly to the provider? Cancellation policy: Free until 24 hours before.',
+      'Book Blue Lagoon boat trip on 2027-05-04 at 09:00 for 2, 90.00 EUR total, paid directly to the provider? Free cancellation until 2027-05-03 09:00; after that the provider may ask for 50 % of the price directly.',
     );
   });
 
   it('says a pay-online booking is charged only once confirmed', () => {
     expect(confirmationMessage({ ...draft, paymentMode: 'online' })).toBe(
-      'Book Blue Lagoon boat trip on 2027-05-04 at 09:00 for 2, 90.00 EUR total, paid online after you confirm (your card is charged only once the booking is confirmed)? Cancellation policy: Free until 24 hours before.',
+      'Book Blue Lagoon boat trip on 2027-05-04 at 09:00 for 2, 90.00 EUR total, paid online after you confirm (your card is charged only once the booking is confirmed)? Free cancellation until 2027-05-03 09:00; after that 50 % of what you paid is refunded.',
     );
+  });
+});
+
+describe('termsSentence', () => {
+  it('never says refund for a pay-direct order', () => {
+    for (const t of [terms, passed, { ...terms, lateChargePercent: 100 }]) {
+      expect(termsSentence(t, 'direct')).not.toMatch(/refund/i);
+    }
+    expect(termsSentence(passed, 'direct')).toBe(
+      "The provider's late-cancellation terms apply: they may ask for 50 % of the price directly.",
+    );
+    expect(termsSentence({ ...terms, lateChargePercent: 100 }, 'direct')).toContain(
+      'the full price',
+    );
+  });
+
+  it('speaks of refunds for an order paid online', () => {
+    expect(termsSentence(passed, 'online')).toBe(
+      'Free cancellation has ended: 50 % of what you paid is refunded.',
+    );
+    expect(termsSentence({ ...passed, lateChargePercent: 100 }, 'online')).toBe(
+      'Free cancellation has ended: nothing is refunded.',
+    );
+  });
+
+  it('is free at any time under a 0 % late charge, and empty without terms', () => {
+    expect(termsSentence({ ...terms, lateChargePercent: 0 }, 'direct')).toBe(
+      'Cancelling is free at any time.',
+    );
+    expect(termsSentence(null, 'online')).toBe('');
+  });
+});
+
+describe('cancelMessage', () => {
+  const cancel: CancelOrderDraft = {
+    orderId: randomUUID(),
+    proposalId: randomUUID(),
+    offerTitle: 'Private sunset cruise',
+    language: 'en',
+    date: '2027-05-04',
+    startsAtLocal: '2027-05-04T19:00',
+    quantity: 4,
+    paymentMode: 'direct',
+    paymentStatus: 'none',
+    priceMinor: 25000,
+    currency: 'EUR',
+    cancellationPolicy: 'Free until 48 hours before; after that 50 % is refunded.',
+    refundMinor: null,
+    refundPercent: null,
+    freeUntil: null,
+    freeUntilLocal: null,
+    cancellation: passed,
+  };
+
+  it('never mentions a refund for a pay-direct order, nor the policy text', () => {
+    const message = cancelMessage(cancel);
+    expect(message).not.toMatch(/refund/i);
+    expect(message).toBe(
+      "Cancel Private sunset cruise on 2027-05-04 at 19:00 for 4? It was paid directly to the provider. The provider's late-cancellation terms apply: they may ask for 50 % of the price directly.",
+    );
+  });
+
+  it('shows the refund of a captured online payment', () => {
+    expect(
+      cancelMessage({
+        ...cancel,
+        paymentMode: 'online',
+        paymentStatus: 'captured',
+        refundMinor: 12500,
+        refundPercent: 50,
+      }),
+    ).toContain('You get back 125.00 EUR (50 %).');
+  });
+
+  it('says an unpaid online order costs nothing to cancel', () => {
+    expect(cancelMessage({ ...cancel, paymentMode: 'online' })).toContain(
+      'Nothing was paid yet, so cancelling costs nothing.',
+    );
+  });
+});
+
+describe('respondMessage', () => {
+  it('states the terms for the new start without the policy text', () => {
+    const respond: RespondOrderDraft = {
+      orderId: randomUUID(),
+      proposalId: randomUUID(),
+      offerTitle: 'Private sunset cruise',
+      language: 'en',
+      proposer: 'provider_time',
+      date: '2027-05-05',
+      startsAtLocal: '2027-05-05T19:00',
+      quantity: 4,
+      priceMinor: 25000,
+      currency: 'EUR',
+      previous: { date: '2027-05-04', startsAtLocal: '2027-05-04T19:00', priceMinor: 25000 },
+      paymentMode: 'direct',
+      cancellationPolicy: 'after that 50 % is refunded',
+      respondBy: '2027-05-04T10:00:00.000Z',
+      respondByLocal: '2027-05-04T12:00',
+      cancellation: terms,
+    };
+    const message = respondMessage(respond);
+    expect(message).not.toMatch(/refund/i);
+    expect(message).toContain('Free cancellation until 2027-05-03 09:00');
   });
 });

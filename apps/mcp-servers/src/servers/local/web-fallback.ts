@@ -16,7 +16,7 @@ export const webFallbackTool = guestTool({
   config: {
     title: 'Web fallback search',
     description:
-      "Search trusted websites only (tourist boards, ferry operators, DHMZ, venues' own sites) when search_places, search_events or get_transport_notes returned nothing for the question; outside a destination it is the only local source. Pass topic keywords and a place name only. Results are unchecked web pages shown as links with their source: never present them as checked recommendations, never offer to book them.",
+      "Search trusted websites only (tourist boards, ferry operators, DHMZ, venues' own sites) when search_places, search_events or get_transport_notes returned nothing for the question; outside a destination it is the only local source. Pass topic keywords and a place name only. Results are unchecked web pages, numbered by their order: cite one as [1], [2] … right after the sentence it supports. Never present them as checked recommendations, never offer to book them.",
     scope: 'web_fallback:search',
     inputSchema: webFallbackInput,
     outputSchema: webFallbackOutput,

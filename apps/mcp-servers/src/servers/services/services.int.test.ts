@@ -330,6 +330,19 @@ describe('list_offers', () => {
   it('outside a destination shows only the host’s own', async () => {
     expect(await titles(outsider)).toEqual(['Outsider kayak']);
   });
+
+  it('gives the cancellation terms as structure, never the refunded share', async () => {
+    const { offers } = (await call(guest, 'list_offers', {})).structuredContent as {
+      offers: Record<string, unknown>[];
+    };
+    for (const o of offers) {
+      expect(o.cancellation).toEqual({
+        freeCancelHoursBefore: expect.any(Number),
+        lateChargePercent: expect.any(Number),
+      });
+      expect(o).not.toHaveProperty('refundPercentAfter');
+    }
+  });
 });
 
 describe('check_availability', () => {
@@ -407,8 +420,15 @@ describe('create_order', () => {
     expect(rows.map((r) => r.kind)).toContain('provider_confirmed');
 
     const mine = await call(guest, 'list_my_orders', {});
-    const list = (mine.structuredContent as { orders: { id: string; status: string }[] }).orders;
-    expect(list.find((o) => o.id === out.order.id)?.status).toBe('confirmed');
+    const list = (
+      mine.structuredContent as {
+        orders: { id: string; status: string; cancellation: { freeWindowPassed: boolean } }[];
+      }
+    ).orders;
+    expect(list.find((o) => o.id === out.order.id)).toMatchObject({
+      status: 'confirmed',
+      cancellation: { freeWindowPassed: false },
+    });
     const theirs = await call(neighbour, 'list_my_orders', {});
     expect((theirs.structuredContent as { orders: unknown[] }).orders).toEqual([]);
   });
@@ -576,6 +596,7 @@ describe('cancel_order', () => {
     cancellationPolicy: string;
     refundMinor: number | null;
     refundPercent: number | null;
+    cancellation: { freeWindowPassed: boolean } | null;
   };
   const cancelArgs = (orderId: string) => ({ orderId });
   const tap: Answer = { action: 'accept', content: {} };
@@ -656,7 +677,9 @@ describe('cancel_order', () => {
     const id = await booked();
     const { result, params, draft } = await asked(guest, id);
     expect(draft.refundMinor).toBeNull();
+    expect(draft.cancellation).toMatchObject({ freeWindowPassed: false });
     expect(params.message).toContain('paid directly to the provider');
+    expect(params.message).not.toMatch(/refund/i);
     const done = await resume(guest, cancelArgs(id), result.requestState, tap, asCancel);
     expect(done.structuredContent).toMatchObject({
       outcome: 'cancelled',

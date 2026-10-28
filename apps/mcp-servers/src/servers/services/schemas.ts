@@ -51,11 +51,25 @@ export const respondToOrderUpdateInput = z.object({
   orderId: z.uuid().describe('An order id from list_my_orders whose respondBy is set.'),
 });
 
+const freeCancelHoursBefore = z
+  .number()
+  .describe('Cancelling is free until this many hours before the start.');
+const lateChargePercent = z
+  .number()
+  .describe(
+    'Share of the price the guest loses when cancelling later. paymentMode direct: the provider may ask the guest to pay this share directly to them; nothing is ever refunded. paymentMode online: this share is kept and the rest refunded.',
+  );
+
 const guestOffer = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
-  cancellationPolicy: z.string(),
+  cancellationPolicy: z
+    .string()
+    .describe(
+      "The provider's own words. What cancelling costs comes from cancellation; never promise a refund from this text.",
+    ),
+  cancellation: z.object({ freeCancelHoursBefore, lateChargePercent }),
   category: z.enum(OFFER_CATEGORIES),
   orderKind: z.enum(ORDER_KINDS),
   availabilityMode: z.enum(AVAILABILITY_MODES),
@@ -95,7 +109,7 @@ const orderSummary = z.object({
     .number()
     .nullable()
     .describe(
-      'What was or will be refunded, in cents; null when nothing is refunded through Fetivi.',
+      'What was or will be refunded, in cents; null when nothing is refunded through Fetivi. Only for paymentMode online with a payment authorized or captured.',
     ),
   respondBy: z
     .string()
@@ -103,6 +117,18 @@ const orderSummary = z.object({
     .describe(
       'While set, the provider proposed new terms; call respond_to_order_update so the guest can accept or decline them by this time.',
     ),
+  cancellation: z
+    .object({
+      freeCancelHoursBefore,
+      lateChargePercent,
+      freeUntil: z.string().describe('When free cancellation ends, ISO instant.'),
+      freeUntilLocal: z
+        .string()
+        .describe('When free cancellation ends, local time at the property, YYYY-MM-DDTHH:mm.'),
+      freeWindowPassed: z.boolean().describe('True once free cancellation has ended.'),
+    })
+    .nullable()
+    .describe('What cancelling costs now. Null for a finished order.'),
 });
 
 export const listOffersOutput = z.object({ offers: z.array(guestOffer) });

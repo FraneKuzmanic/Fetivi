@@ -5,6 +5,7 @@ import {
   type ServerContext,
 } from '@modelcontextprotocol/server';
 import { z } from 'zod';
+import { termsSentence } from './terms';
 
 // The confirmation card of create_order (architecture §4.3). Everything shown comes from the
 // stored draft, never from model text. Form mode never asks for secrets: email, name and phone only.
@@ -44,7 +45,8 @@ export function confirmationMessage(draft: CreateOrderDraft): string {
     draft.paymentMode === 'direct'
       ? ', paid directly to the provider'
       : ', paid online after you confirm (your card is charged only once the booking is confirmed)';
-  return `Book ${draft.offerTitle} on ${when} for ${draft.quantity}${price}${paid}? Cancellation policy: ${draft.cancellationPolicy}`;
+  const terms = termsSentence(draft.cancellation, draft.paymentMode);
+  return `Book ${draft.offerTitle} on ${when} for ${draft.quantity}${price}${paid}? ${terms}`.trimEnd();
 }
 
 export function orderDraftMeta(pendingId: string, draft: CreateOrderDraft) {

@@ -6,6 +6,10 @@ export {
   CancelOrderCard,
   type CancelOrderLabels,
 } from './components/cancel-order-card/CancelOrderCard';
+export {
+  type CancellationTermsLabels,
+  cancellationTermsText,
+} from './components/cancellation-terms';
 export { FollowUpChips } from './components/chips/FollowUpChips';
 export { ChoiceCard, type ChoiceCardLabels } from './components/choice-card/ChoiceCard';
 export { radioMove } from './components/choice-card/radio';
@@ -35,7 +39,9 @@ export {
   RespondOrderCard,
   type RespondOrderLabels,
 } from './components/respond-order-card/RespondOrderCard';
-export { WebResults, type WebResultsLabels } from './components/source-chips/WebResults';
+export { type CitationLabels, CitedText } from './components/source-chips/CitedText';
+export { citesAny, uncitedText } from './components/source-chips/citations';
+export { SourceRow, type SourceRowLabels } from './components/source-chips/SourceRow';
 export { WeatherCard, type WeatherLabels } from './components/weather-card/WeatherCard';
 export { Mascot } from './Mascot';
 export { Wordmark } from './Wordmark';
