@@ -1,4 +1,11 @@
-import { CaretRight, CreditCard, Handshake, Plus, Storefront } from '@phosphor-icons/react';
+import {
+  CallBell,
+  CaretRight,
+  CreditCard,
+  Handshake,
+  Plus,
+  Storefront,
+} from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -63,7 +70,10 @@ export function ServicesPage() {
 
       <section className="today-section" aria-labelledby="own-services">
         <div className="section-head">
-          <h2 id="own-services">{t('services.yours')}</h2>
+          <h2 id="own-services" className="section-title">
+            <CallBell className="section-icon" aria-hidden="true" />
+            {t('services.yours')}
+          </h2>
           <p className="muted">{t('services.yoursIntro')}</p>
         </div>
         {offers === null && !error ? <p className="muted">{t('common:loading')}</p> : null}
@@ -112,18 +122,20 @@ export function ServicesPage() {
 
       <section className="today-section" aria-labelledby="local-providers">
         <div className="section-head">
-          <h2 id="local-providers">{t('services.local')}</h2>
+          <h2 id="local-providers" className="section-title">
+            <Handshake className="section-icon" aria-hidden="true" />
+            {t('services.local')}
+          </h2>
           <p className="muted">{t('services.localIntro')}</p>
         </div>
         <ul className="rows">
           <li>
-            <Link to="/services/providers" className="row-link attention-row">
-              <Handshake className="attention-icon" aria-hidden="true" />
-              <span className="block-text">
+            <Link to="/services/providers" className="row-link record-row">
+              <span className="block-text record-text">
                 <strong>{t('services.providersSeen')}</strong>
                 <span className="muted">{t('services.providersHint')}</span>
               </span>
-              <CaretRight className="row-caret" aria-hidden="true" />
+              <CaretRight className="row-caret record-caret" aria-hidden="true" />
             </Link>
           </li>
         </ul>

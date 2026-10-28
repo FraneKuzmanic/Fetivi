@@ -445,12 +445,6 @@ export function TodayPage() {
 
   return (
     <>
-      <div className="page-head">
-        <Link className="button primary" to="/stays/new">
-          <Plus aria-hidden="true" weight="bold" />
-          {t('registerStay')}
-        </Link>
-      </div>
       {error ? <p role="alert">{error}</p> : null}
       {data === null && !error ? <p className="muted">{tc('loading')}</p> : null}
 
@@ -517,15 +511,7 @@ export function TodayPage() {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState
-                    icon={SuitcaseRolling}
-                    title={t('noArrivals', { count: AHEAD_DAYS })}
-                    action={
-                      <Link className="button" to="/stays/new">
-                        {t('registerStay')}
-                      </Link>
-                    }
-                  >
+                  <EmptyState icon={SuitcaseRolling} title={t('noArrivals', { count: AHEAD_DAYS })}>
                     {t('noArrivalsBody')}
                   </EmptyState>
                 )}

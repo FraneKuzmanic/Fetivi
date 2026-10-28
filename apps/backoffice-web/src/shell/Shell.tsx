@@ -8,6 +8,7 @@ import {
   ClipboardText,
   DotsThreeOutline,
   GearSix,
+  Globe,
   Handshake,
   House,
   type Icon,
@@ -33,7 +34,6 @@ import { longDay, todayIso } from '../forms/datetime';
 import { onInboxChanged, onPushMessage } from '../host/inbox/inbox-events';
 import { currentLanguage, setLanguage } from '../i18n';
 import { LANGUAGE_NAMES } from '../i18n/languages';
-import { storeLanguage } from '../i18n/stored-language';
 import { useSession } from '../session';
 import { useAction } from '../useAction';
 import { Menu, type MenuItem } from './Menu';
@@ -358,7 +358,6 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
     void run(async () => {
       const next = await auth.setLanguage(language);
       setLanguage(language);
-      storeLanguage(language);
       setMe(next);
     });
   const current = currentLanguage();
@@ -374,21 +373,27 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
           },
         ]
       : []),
-    // Each language under its own name; the current one is checked, the other keeps the space.
-    ...BACKOFFICE_LANGUAGES.map((language, i) => ({
-      label: LANGUAGE_NAMES[language],
-      lang: language,
-      caption: i === 0 ? t('language') : undefined,
-      icon: (
-        <Check
-          aria-hidden="true"
-          weight="bold"
-          visibility={language === current ? undefined : 'hidden'}
-        />
-      ),
-      current: language === current,
-      onSelect: () => chooseLanguage(language),
-    })),
+    // The language: one item showing the current one; its submenu lists each under its own name,
+    // the current one checked.
+    {
+      label: LANGUAGE_NAMES[current],
+      lang: current,
+      name: t('languageCurrent', { language: LANGUAGE_NAMES[current] }),
+      icon: <Globe aria-hidden="true" />,
+      submenu: BACKOFFICE_LANGUAGES.map((language) => ({
+        label: LANGUAGE_NAMES[language],
+        lang: language,
+        icon: (
+          <Check
+            aria-hidden="true"
+            weight="bold"
+            visibility={language === current ? undefined : 'hidden'}
+          />
+        ),
+        current: language === current,
+        onSelect: () => chooseLanguage(language),
+      })),
+    },
     {
       label: t('signOut'),
       icon: <SignOut aria-hidden="true" />,

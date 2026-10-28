@@ -116,8 +116,14 @@ describe('host services', () => {
     const payments = el.querySelector('a[href="/settings/payments"]');
     expect(payments?.textContent).toContain('Card payments');
     expect(payments?.textContent).toContain('Not connected');
-    expect(el.querySelector('a[href="/services/providers"]')).not.toBeNull();
+    const providers = el.querySelector('a[href="/services/providers"]');
+    expect(providers).not.toBeNull();
     expect(el.querySelector('.mascot, img')).toBeNull();
+    // Both headings carry an icon; the providers row has only its caret.
+    expect(el.querySelector('#own-services svg.section-icon')).not.toBeNull();
+    expect(el.querySelector('#local-providers svg.section-icon')).not.toBeNull();
+    expect(providers?.querySelectorAll('svg')).toHaveLength(1);
+    expect(providers?.querySelector('.attention-icon')).toBeNull();
   });
 
   it('creates a service without a destination, and never offers live mode', async () => {

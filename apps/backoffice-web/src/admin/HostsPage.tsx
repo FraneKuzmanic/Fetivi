@@ -1,4 +1,4 @@
-import { DotsThree, Pause, Play, Trash, UsersThree } from '@phosphor-icons/react';
+import { DotsThree, Pause, Play, Trash, UserSwitch, UsersThree } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { admin, type HostSummary } from '../api';
@@ -19,12 +19,15 @@ export function hostStatus(h: HostSummary): [string, 'ok' | 'wait' | 'fail'] {
   return [i18next.t('admin:hosts.active'), 'ok'];
 }
 
-/** /admin/hosts: every host account, with acting as one and the rarer account actions. */
+/**
+ * /admin/hosts: every host account; acting as one and the rarer account actions sit under each
+ * row's ⋯.
+ */
 export function HostsPage() {
   const { t } = useTranslation(['admin', 'common', 'host']);
   const { setMe } = useSession();
   const confirm = useConfirm();
-  const { busy, error, run } = useAction();
+  const { error, run } = useAction();
   const [hosts, setHosts] = useState<HostSummary[] | null>(null);
   const [query, setQuery] = useState('');
 
@@ -127,19 +130,21 @@ export function HostsPage() {
                         <td className="nowrap wide-only">{formatDay(host.createdAt)}</td>
                         <td className="cell-actions">
                           <div className="actions">
-                            <button
-                              type="button"
-                              disabled={busy || host.suspended}
-                              onClick={() =>
-                                void run(async () => setMe(await admin.actAs(host.id)))
-                              }
-                            >
-                              {t('hosts.actAs')}
-                            </button>
                             <Menu
                               label={t('hosts.moreFor', { email: host.email })}
                               trigger={<DotsThree aria-hidden="true" weight="bold" />}
                               items={[
+                                // A suspended host cannot be acted as.
+                                ...(host.suspended
+                                  ? []
+                                  : [
+                                      {
+                                        label: t('hosts.actAs'),
+                                        icon: <UserSwitch aria-hidden="true" />,
+                                        onSelect: () =>
+                                          void run(async () => setMe(await admin.actAs(host.id))),
+                                      },
+                                    ]),
                                 host.suspended
                                   ? {
                                       label: t('hosts.lift'),

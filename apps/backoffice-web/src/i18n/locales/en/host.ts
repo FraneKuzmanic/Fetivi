@@ -31,7 +31,6 @@ export const host = {
     earlierWeeks: 'Earlier weeks',
     laterWeeks: 'Later weeks',
     bar: '{{name}}, {{unit}}, {{from}} to {{to}}, {{guests}}',
-    registerStay: 'Register a Stay',
     emptyTitle: 'Add your property to get started',
     addProperty: 'Add property',
     emptyBody: 'Describe your building once; Fetivi explains it to every guest in their language.',

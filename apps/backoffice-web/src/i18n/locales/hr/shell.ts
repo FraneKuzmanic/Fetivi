@@ -34,7 +34,7 @@ export const shell: Translation<typeof en> = {
   itemWithCount: '{{label}} ({{count}})',
   account: 'Račun',
   signedInAs: 'Prijavljeni ste kao',
-  language: 'Jezik',
+  languageCurrent: 'Jezik: {{language}}',
   signOut: 'Odjava',
   acting: 'Radite kao <strong>{{email}}</strong>. Svaka se promjena bilježi.',
   stopActing: 'Prekini',

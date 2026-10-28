@@ -2,7 +2,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { Menu } from './Menu';
+import { Menu, submenuSide } from './Menu';
 
 let root: Root | null = null;
 let picked: string[] = [];
@@ -133,5 +133,149 @@ describe('Menu', () => {
     await act(async () => items()[1]?.click());
     expect(picked).toEqual(['Archive']);
     expect(list()).toBeNull();
+  });
+});
+
+async function mountWithSubmenu() {
+  picked = [];
+  const container = document.createElement('div');
+  document.body.append(container);
+  root = createRoot(container);
+  const pick = (label: string) => () => picked.push(label);
+  await act(async () =>
+    root?.render(
+      <Menu
+        label="Account"
+        trigger="Me"
+        items={[
+          { label: 'Settings', onSelect: pick('Settings') },
+          {
+            label: 'English',
+            name: 'Language: English',
+            icon: <span />,
+            submenu: [
+              { label: 'English', current: true, onSelect: pick('English') },
+              { label: 'Hrvatski', lang: 'hr', current: false, onSelect: pick('Hrvatski') },
+            ],
+          },
+          { label: 'Sign out', onSelect: pick('Sign out') },
+        ]}
+      />,
+    ),
+  );
+}
+
+const menuButton = () => document.querySelector<HTMLButtonElement>('button[aria-label="Account"]');
+const parentItem = () =>
+  document.querySelector<HTMLButtonElement>('[role="menuitem"][aria-haspopup="menu"]');
+const submenu = () => document.querySelector('[data-submenu]');
+const radios = () => [...document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
+
+async function openToParent() {
+  await act(async () => menuButton()?.click());
+  await vi.waitFor(() => expect(focused()).toBe('Settings'));
+  await key('ArrowDown');
+  expect(document.activeElement).toBe(parentItem());
+}
+
+describe('Menu submenu', () => {
+  it('shows a closed parent item named for what it changes', async () => {
+    await mountWithSubmenu();
+    await act(async () => menuButton()?.click());
+    expect(parentItem()?.getAttribute('aria-expanded')).toBe('false');
+    expect(parentItem()?.getAttribute('aria-label')).toBe('Language: English');
+    expect(submenu()).toBeNull();
+  });
+
+  it('opens on ArrowRight and focuses the first option', async () => {
+    await mountWithSubmenu();
+    await openToParent();
+    await key('ArrowRight');
+    expect(submenu()).not.toBeNull();
+    expect(parentItem()?.getAttribute('aria-expanded')).toBe('true');
+    expect(parentItem()?.getAttribute('aria-controls')).toBe(submenu()?.id);
+    await vi.waitFor(() => expect(document.activeElement).toBe(radios()[0]));
+    expect(radios().map((r) => r.getAttribute('aria-checked'))).toEqual(['true', 'false']);
+  });
+
+  it('keeps the arrows, Home and End inside the submenu', async () => {
+    await mountWithSubmenu();
+    await openToParent();
+    await key('ArrowRight');
+    await vi.waitFor(() => expect(document.activeElement).toBe(radios()[0]));
+    await key('ArrowDown');
+    expect(document.activeElement).toBe(radios()[1]);
+    await key('ArrowDown');
+    expect(document.activeElement).toBe(radios()[0]);
+    await key('ArrowUp');
+    expect(document.activeElement).toBe(radios()[1]);
+    await key('Home');
+    expect(document.activeElement).toBe(radios()[0]);
+    await key('End');
+    expect(document.activeElement).toBe(radios()[1]);
+  });
+
+  it('goes back to the parent on ArrowLeft and Escape; a second Escape closes the menu', async () => {
+    await mountWithSubmenu();
+    await openToParent();
+    await key('ArrowRight');
+    await vi.waitFor(() => expect(document.activeElement).toBe(radios()[0]));
+    await key('ArrowLeft');
+    expect(submenu()).toBeNull();
+    expect(document.activeElement).toBe(parentItem());
+    expect(list()).not.toBeNull();
+    // Enter on a button is a click.
+    await act(async () => parentItem()?.click());
+    await vi.waitFor(() => expect(document.activeElement).toBe(radios()[0]));
+    await key('Escape');
+    expect(submenu()).toBeNull();
+    expect(list()).not.toBeNull();
+    expect(document.activeElement).toBe(parentItem());
+    await key('Escape');
+    expect(list()).toBeNull();
+    expect(document.activeElement).toBe(menuButton());
+  });
+
+  it('closes everything on Tab, back on its button', async () => {
+    await mountWithSubmenu();
+    await openToParent();
+    await key('ArrowRight');
+    await vi.waitFor(() => expect(document.activeElement).toBe(radios()[0]));
+    await key('Tab');
+    expect(list()).toBeNull();
+    expect(document.activeElement).toBe(menuButton());
+  });
+
+  it('leaves the submenu options out of the main list order', async () => {
+    await mountWithSubmenu();
+    await openToParent();
+    await key('ArrowDown');
+    expect(focused()).toBe('Sign out');
+  });
+
+  it('runs the chosen option, closes everything and returns to the button', async () => {
+    await mountWithSubmenu();
+    await openToParent();
+    await key('ArrowRight');
+    await vi.waitFor(() => expect(document.activeElement).toBe(radios()[0]));
+    await act(async () => radios()[1]?.click());
+    expect(picked).toEqual(['Hrvatski']);
+    expect(list()).toBeNull();
+    expect(document.activeElement).toBe(menuButton());
+  });
+
+  it('stays open on a press inside the submenu', async () => {
+    await mountWithSubmenu();
+    await openToParent();
+    await key('ArrowRight');
+    await pointerDown(radios()[1] ?? null);
+    expect(submenu()).not.toBeNull();
+    expect(list()).not.toBeNull();
+  });
+
+  it('opens beside the list where it fits, right first, else in place', () => {
+    expect(submenuSide({ left: 1000, right: 1208 }, 176, 1440)).toBe('right');
+    expect(submenuSide({ left: 1224, right: 1432 }, 176, 1440)).toBe('left');
+    expect(submenuSide({ left: 174, right: 382 }, 176, 390)).toBe('inline');
   });
 });

@@ -46,6 +46,10 @@ async function mount(path: string, signedIn: Me | null) {
       return json(current);
     }
     if (url === '/api/auth/login') return json({ error: 'invalid-credentials' }, 401);
+    if (url === '/api/auth/logout') {
+      current = null;
+      return new Response(null, { status: 204 });
+    }
     if (url === '/api/host/inbox')
       return json({ messages: [], unread: 0, orders: [], ordersWaiting: 0 });
     return new Response(null, { status: 404 });
@@ -110,6 +114,10 @@ describe('back-office language', () => {
     await mount('/', me('hr'));
     await vi.waitFor(() => expect(navText()).toContain('Danas'));
     await click(el.querySelector('.profile-button'));
+    const language = document.querySelector('[role="menu"] [aria-haspopup="menu"]');
+    expect(language?.getAttribute('aria-label')).toBe('Jezik: Hrvatski');
+    expect(language?.textContent).toBe('Hrvatski');
+    await click(language);
     const english = [...document.querySelectorAll('[role="menuitemradio"]')].find(
       (item) => item.textContent === 'English',
     );
@@ -124,19 +132,34 @@ describe('back-office language', () => {
     expect(document.documentElement.lang).toBe('en');
   });
 
-  it('switches the signed-out pages and sends the language with the login', async () => {
+  it('shows no language switch on the signed-out pages', async () => {
+    for (const path of ['/login', '/sign-up', '/forgot-password', '/reset-password?token=x']) {
+      await mount(path, null);
+      await vi.waitFor(() => expect(el.querySelector('h1')).not.toBeNull());
+      expect(el.querySelector('.language-switch')).toBeNull();
+      expect(el.querySelector('button[lang]')).toBeNull();
+      expect(el.textContent).not.toContain('Hrvatski');
+      act(() => root?.unmount());
+      document.body.innerHTML = '';
+    }
+  });
+
+  it("sends the browser's language with the login and ignores a stale stored choice", async () => {
+    localStorage.setItem('fetivi.language', 'hr');
     await mount('/login', null);
     await vi.waitFor(() => expect(el.querySelector('h1')?.textContent).toBe('Log in'));
-    const croatian = el.querySelector<HTMLButtonElement>('.language-switch [lang="hr"]');
-    await click(croatian);
-    expect(el.querySelector('h1')?.textContent).toBe('Prijava');
-    expect(croatian?.getAttribute('aria-pressed')).toBe('true');
-    expect(localStorage.getItem('fetivi.language')).toBe('hr');
-    expect(document.documentElement.lang).toBe('hr');
+    await logIn();
+    await vi.waitFor(() =>
+      expect(sent.at(-1)).toMatchObject({ url: '/api/auth/login', body: { language: 'en' } }),
+    );
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
 
-    await type('input[type="email"]', 'host@example.test');
-    await type('input[type="password"]', 'a long enough password');
-    await act(async () => el.querySelector('form')?.requestSubmit());
+    // A Croatian browser starts in Croatian.
+    setLanguage('hr');
+    await mount('/login', null);
+    await vi.waitFor(() => expect(el.querySelector('h1')?.textContent).toBe('Prijava'));
+    await logIn();
     await vi.waitFor(() =>
       expect(sent.at(-1)).toMatchObject({ url: '/api/auth/login', body: { language: 'hr' } }),
     );
@@ -146,4 +169,25 @@ describe('back-office language', () => {
       ),
     );
   });
+
+  it("returns to the browser's language on sign-out", async () => {
+    await mount('/', me('hr'));
+    await vi.waitFor(() => expect(navText()).toContain('Danas'));
+    expect(document.documentElement.lang).toBe('hr');
+    await click(el.querySelector('.profile-button'));
+    await click(
+      [...document.querySelectorAll('[role="menuitem"]')].find(
+        (item) => item.textContent === 'Odjava',
+      ),
+    );
+    await vi.waitFor(() => expect(el.querySelector('h1')?.textContent).toBe('Log in'));
+    expect(document.documentElement.lang).toBe('en');
+    expect(localStorage.getItem('fetivi.language')).toBeNull();
+  });
 });
+
+async function logIn() {
+  await type('input[type="email"]', 'host@example.test');
+  await type('input[type="password"]', 'a long enough password');
+  await act(async () => el.querySelector('form')?.requestSubmit());
+}

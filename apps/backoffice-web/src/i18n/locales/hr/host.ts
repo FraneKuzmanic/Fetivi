@@ -37,7 +37,6 @@ export const host: Translation<typeof en> = {
     earlierWeeks: 'Raniji tjedni',
     laterWeeks: 'Kasniji tjedni',
     bar: '{{name}}, {{unit}}, od {{from}} do {{to}}, {{guests}}',
-    registerStay: 'Upiši boravak',
     emptyTitle: 'Za početak dodajte svoj objekt',
     addProperty: 'Dodaj objekt',
     emptyBody: 'Opišite svoj objekt jednom; Fetivi ga objašnjava svakom gostu na njegovu jeziku.',

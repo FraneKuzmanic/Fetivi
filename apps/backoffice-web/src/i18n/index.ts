@@ -4,7 +4,6 @@ import { initReactI18next } from 'react-i18next';
 import { isBackofficeLanguage, navigatorLanguages, pickBrowserLanguage } from './browser-language';
 import { en } from './locales/en';
 import { hr } from './locales/hr';
-import { storedLanguage } from './stored-language';
 
 declare module 'i18next' {
   interface CustomTypeOptions {
@@ -15,8 +14,11 @@ declare module 'i18next' {
 
 export const locales = { en, hr };
 
-/** Before anyone signs in: the signed-out switch's last choice, else the browser's language. */
-const initial = storedLanguage() ?? pickBrowserLanguage(navigatorLanguages());
+/** The browser's language, which the signed-out pages speak. */
+export const browserLanguage = (): BackofficeLanguage => pickBrowserLanguage(navigatorLanguages());
+
+/** Before anyone signs in: the browser's language. */
+const initial = browserLanguage();
 
 // Synchronous init: bundled resources, so the first render (and tests) has strings.
 void i18next.use(initReactI18next).init({

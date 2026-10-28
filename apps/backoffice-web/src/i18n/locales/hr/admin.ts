@@ -28,8 +28,6 @@ export const admin: Translation<typeof en> = {
     check: 'Provjeri',
     attention: 'Traži vašu pažnju',
     allClear: 'Sve je riješeno. Ništa vas ne čeka.',
-    waiting: 'Čeka odobrenje',
-    allApprovals: 'Sva odobrenja',
     caughtUp: 'Sve je riješeno',
     newProperties: 'Novi objekti pojavljuju se ovdje dok ih ne odobrite.',
     latestOrders: 'Najnovije narudžbe',
@@ -555,10 +553,6 @@ export const admin: Translation<typeof en> = {
     chatLimit: 'Dnevno ograničenje razgovora po uređaju gosta',
     chatLimitMissing: 'Upišite dnevno ograničenje razgovora.',
     usage: 'Potrošnja Anthropica',
-    usageHintChecked:
-      'Procjena: tokeni koje Fetivi bilježi × Anthropicove objavljene cijene (provjereno {{date}}). Stvarni račun može se razlikovati. Dani i mjeseci su u UTC-u.',
-    usageHint:
-      'Procjena: tokeni koje Fetivi bilježi × Anthropicove objavljene cijene. Stvarni račun može se razlikovati. Dani i mjeseci su u UTC-u.',
     use: 'Namjena',
     today: 'Danas',
     month: 'Ovaj mjesec',

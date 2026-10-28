@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
-import type { AdminOverview, AdminPropertyRow, Me } from '../api';
+import type { AdminOverview, AdminPropertyRow, HostSummary, Me, PropertySummary } from '../api';
 import { longDay, todayIso } from '../forms/datetime';
 import { MoreActions } from './MoreActions';
 
@@ -55,8 +55,32 @@ const APPROVED: AdminPropertyRow = {
   approvedAt: '2026-10-25T10:00:00Z',
 };
 
+const ACTIVE_HOST: HostSummary = {
+  id: 'h1',
+  email: 'host@example.test',
+  emailVerified: true,
+  suspended: false,
+  createdAt: '2026-10-01T10:00:00Z',
+  propertyCount: 1,
+};
+const SUSPENDED_HOST: HostSummary = {
+  ...ACTIVE_HOST,
+  id: 'h2',
+  email: 'paused@example.test',
+  suspended: true,
+};
+
+const PROPERTY: PropertySummary = {
+  id: 'p1',
+  name: 'Villa Mare',
+  city: 'Trogir',
+  approved: true,
+  units: [{ id: 'u1', name: 'Apartment 1', hasQr: true, live: true }],
+};
+
 let root: Root | null = null;
 let el: HTMLElement;
+let calls: { url: string; method: string; body: unknown }[] = [];
 
 beforeAll(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -73,16 +97,25 @@ const json = (body: unknown) =>
   new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
 
 async function mount(path: string, me: Me) {
-  vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
+  calls = [];
+  vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
+    const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+    calls.push({ url, method: init?.method ?? 'GET', body });
     if (url === '/api/auth/me') return json(me);
     if (url === '/api/host/inbox')
       return json({ messages: [], unread: 0, orders: [], ordersWaiting: 0 });
     if (url === '/api/admin/overview') return json(OVERVIEW);
     if (url.startsWith('/api/admin/orders')) return json({ orders: [], total: 0 });
-    if (url === '/api/admin/properties?status=pending') return json({ properties: [WAITING] });
     if (url === '/api/admin/properties?status=all')
       return json({ properties: [WAITING, APPROVED] });
+    if (url === '/api/admin/hosts') return json({ hosts: [ACTIVE_HOST, SUSPENDED_HOST] });
+    if (url === '/api/admin/act-as') return json({ ...ADMIN_ME, actingAs: ACTIVE_HOST });
+    if (url === '/api/host/properties') return json({ properties: [PROPERTY] });
+    if (url === '/api/host/stays') return json({ stays: [] });
+    if (url === '/api/host/stay-proposals')
+      return json({ proposals: [], bookingLinks: { domain: 'booking.com', pending: [] } });
+    if (url === '/api/host/suggestions') return json({ suggestions: [] });
     return new Response(null, { status: 404 });
   });
   el = document.createElement('div');
@@ -122,6 +155,9 @@ describe('Shell header', () => {
     const labels = [...document.querySelectorAll('[role="menuitem"]')].map((i) => i.textContent);
     expect(labels).toContain('Sign out');
     expect(document.body.textContent).not.toContain('Log out');
+    // The language is one item opening a submenu, not a flat list of languages.
+    expect(document.querySelectorAll('[role="menu"] [aria-haspopup="menu"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[role="menuitemradio"]')).toHaveLength(0);
   });
 });
 
@@ -139,18 +175,57 @@ describe('Approvals', () => {
     expect(status?.textContent).toBe('Approved');
   });
 
-  it('lists only the waiting properties on admin Today, with a link to all approvals', async () => {
+  it('lists approvals under Needs your attention, with no separate approvals table', async () => {
     await mount('/', ADMIN_ME);
-    const section = await vi.waitFor(() => {
-      const s = el.querySelector('section[aria-labelledby="waiting-approvals"]');
-      expect(s?.querySelector('.data-table')).toBeTruthy();
+    const attention = await vi.waitFor(() => {
+      const s = el.querySelector('section[aria-labelledby="attention"]');
+      expect(s?.textContent).toContain('1 property waits for approval');
       return s as HTMLElement;
     });
-    expect(section.querySelector('h2')?.textContent).toBe('Waiting for approval');
-    const rows = [...section.querySelectorAll('.data-table tbody tr')];
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.textContent).toContain('Waiting');
-    expect(section.querySelector('a[href="/admin/approvals"]')?.textContent).toBe('All approvals');
+    expect(attention.querySelector('a[href="/admin/approvals"]')).not.toBeNull();
+    expect(el.querySelector('section[aria-labelledby="waiting-approvals"]')).toBeNull();
+    expect(el.textContent).not.toContain('Waiting for approval');
+    expect(calls.some((c) => c.url.startsWith('/api/admin/properties'))).toBe(false);
+  });
+});
+
+describe('Hosts', () => {
+  const menuFor = (email: string) =>
+    el.querySelector<HTMLButtonElement>(`button[aria-label="More for ${email}"]`);
+  const itemLabels = () =>
+    [...document.querySelectorAll('[role="menuitem"]')].map((i) => i.textContent);
+
+  it("puts Act as in each host's ⋯ menu", async () => {
+    await mount('/admin/hosts', ADMIN_ME);
+    await vi.waitFor(() => expect(el.querySelectorAll('.data-table tbody tr')).toHaveLength(2));
+    const buttons = [...el.querySelectorAll('.data-table button')].map((b) => b.textContent);
+    expect(buttons).not.toContain('Act as');
+
+    await act(async () => menuFor('paused@example.test')?.click());
+    expect(itemLabels()).toEqual(['Lift suspension', 'Delete']);
+    await act(async () => menuFor('paused@example.test')?.click());
+
+    await act(async () => menuFor('host@example.test')?.click());
+    expect(itemLabels()).toEqual(['Act as', 'Suspend', 'Delete']);
+    await act(async () => (document.querySelector('[role="menuitem"]') as HTMLElement).click());
+    await vi.waitFor(() =>
+      expect(calls).toContainEqual({
+        url: '/api/admin/act-as',
+        method: 'POST',
+        body: { hostId: 'h1' },
+      }),
+    );
+  });
+});
+
+describe('host Today', () => {
+  it('has no Register a Stay', async () => {
+    await mount('/', HOST_ME);
+    await vi.waitFor(() => expect(el.textContent).toContain('No arrivals in the next'));
+    const main = el.querySelector('main');
+    expect(main?.querySelector('a[href="/stays/new"]')).toBeNull();
+    const controls = [...(main?.querySelectorAll('a, button') ?? [])].map((c) => c.textContent);
+    expect(controls).not.toContain('Register a Stay');
   });
 });
 

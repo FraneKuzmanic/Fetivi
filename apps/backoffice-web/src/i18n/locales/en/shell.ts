@@ -32,7 +32,7 @@ export const shell = {
   itemWithCount: '{{label}} ({{count}})',
   account: 'Account',
   signedInAs: 'Signed in as',
-  language: 'Language',
+  languageCurrent: 'Language: {{language}}',
   signOut: 'Sign out',
   /** `<strong>` wraps the host's email. */
   acting: 'Acting as <strong>{{email}}</strong>. Every change is logged.',

@@ -136,8 +136,8 @@ describe('SettingsPage', () => {
       ['House manual import', '$0.00', '$0.06'],
       ['Total', '$0.50', '$12.36'],
     ]);
-    expect(el.textContent).toContain('An estimate');
-    expect(el.textContent).toContain('checked 28 Oct 2026');
+    expect(el.textContent).not.toContain('An estimate');
+    expect(el.textContent).not.toContain('UTC');
     expect(el.textContent).not.toMatch(/budget|remaining|credits/i);
   });
 

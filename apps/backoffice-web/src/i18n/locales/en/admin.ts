@@ -21,8 +21,6 @@ export const admin = {
     check: 'Check',
     attention: 'Needs your attention',
     allClear: 'All caught up. Nothing waits for you.',
-    waiting: 'Waiting for approval',
-    allApprovals: 'All approvals',
     caughtUp: 'All caught up',
     newProperties: 'New properties show up here until you approve them.',
     latestOrders: 'Latest orders',
@@ -522,10 +520,6 @@ export const admin = {
     chatLimit: 'Daily chat limit per guest device',
     chatLimitMissing: 'Enter a daily chat limit.',
     usage: 'Anthropic usage',
-    usageHintChecked:
-      "An estimate: the tokens Fetivi records × Anthropic's published prices (checked {{date}}). Your actual bill can differ. Days and months are in UTC.",
-    usageHint:
-      "An estimate: the tokens Fetivi records × Anthropic's published prices. Your actual bill can differ. Days and months are in UTC.",
     use: 'Use',
     today: 'Today',
     month: 'This month',

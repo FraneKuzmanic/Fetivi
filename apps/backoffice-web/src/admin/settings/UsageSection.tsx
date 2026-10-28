@@ -18,14 +18,6 @@ const usd = (amount: number) => {
     : format(amount);
 };
 
-const checkedOn = (date: string) =>
-  new Date(`${date}T00:00:00Z`).toLocaleDateString(localeOf(i18next.language), {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-
 /** Read-only estimate of Fetivi's Anthropic spend, today and this month, by use (52 AC 5). */
 export function UsageSection() {
   const { t } = useTranslation(['admin', 'common', 'host']);
@@ -38,14 +30,7 @@ export function UsageSection() {
   }, [run]);
 
   return (
-    <Section
-      title={t('settings.usage')}
-      description={
-        usage
-          ? t('settings.usageHintChecked', { date: checkedOn(usage.pricesCheckedOn) })
-          : t('settings.usageHint')
-      }
-    >
+    <Section title={t('settings.usage')}>
       {usage ? (
         <>
           <div className="table-frame">

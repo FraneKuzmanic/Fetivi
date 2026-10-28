@@ -8,21 +8,14 @@ import {
   Scales,
   SealCheck,
 } from '@phosphor-icons/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import {
-  type AdminOrderRow,
-  type AdminOverview,
-  type AdminPropertyRow,
-  admin,
-  adminOrders,
-} from '../api';
+import { type AdminOrderRow, type AdminOverview, admin, adminOrders } from '../api';
 import { i18next } from '../i18n';
 import { EmptyState } from '../shell/EmptyState';
 import { usePageTitle } from '../shell/PageTitle';
 import { useAction } from '../useAction';
-import { ApprovalsTable, approvalOrder } from './ApprovalsTable';
 import { OrdersTable } from './orders/OrdersTable';
 
 interface Attention {
@@ -86,33 +79,21 @@ export function adminAttention(o: AdminOverview): Attention[] {
   return items;
 }
 
-/** `/` for an admin: what waits, the properties waiting for approval, then the newest orders. */
+/** `/` for an admin: what waits, then the newest orders. */
 export function AdminTodayPage() {
   useTranslation('admin');
   const { t: tc } = useTranslation();
   const { error, run } = useAction();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [orders, setOrders] = useState<AdminOrderRow[] | null>(null);
-  const [waiting, setWaiting] = useState<AdminPropertyRow[]>([]);
-
-  const load = useCallback(
-    () =>
-      run(async () => {
-        const [o, list, pending] = await Promise.all([
-          admin.overview(),
-          adminOrders.list('active'),
-          admin.properties('pending'),
-        ]);
-        setOverview(o);
-        setOrders(list.orders.slice(0, 5));
-        setWaiting(pending.properties.sort(approvalOrder).slice(0, 5));
-      }),
-    [run],
-  );
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void run(async () => {
+      const [o, list] = await Promise.all([admin.overview(), adminOrders.list('active')]);
+      setOverview(o);
+      setOrders(list.orders.slice(0, 5));
+    });
+  }, [run]);
 
   const attention = overview ? adminAttention(overview) : [];
 
@@ -147,23 +128,6 @@ export function AdminTodayPage() {
                 <CheckCircle className="all-clear-icon" aria-hidden="true" weight="fill" />
                 {t('allClear')}
               </p>
-            )}
-          </section>
-
-          <section className="today-section" aria-labelledby="waiting-approvals">
-            <div className="section-title-row">
-              <h2 id="waiting-approvals" className="section-title">
-                <SealCheck className="section-icon" aria-hidden="true" />
-                {t('waiting')}
-              </h2>
-              <Link to="/admin/approvals">{t('allApprovals')}</Link>
-            </div>
-            {waiting.length > 0 ? (
-              <ApprovalsTable rows={waiting} onChanged={load} />
-            ) : (
-              <EmptyState icon={SealCheck} title={t('caughtUp')}>
-                {t('newProperties')}
-              </EmptyState>
             )}
           </section>
 
