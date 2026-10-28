@@ -23,6 +23,13 @@ describe('eventWhen', () => {
     expect(eventWhen('2027-07-10T21:00', '2027-07-10T23:00', 'en-GB')).toBe('Sat 10 Jul, 21:00');
   });
 
+  it('writes the hour as the language does, without a padded 12-hour clock', () => {
+    const when = (locale: string) =>
+      eventWhen('2027-07-10T08:00', '2027-07-10T10:00', locale).replace(/\s/g, ' ');
+    expect(when('en')).toBe('Sat, Jul 10, 8:00 AM');
+    expect(when('hr')).toMatch(/ 8:00$/);
+  });
+
   it('shows the date range of an event over several days', () => {
     // Intl puts thin spaces around the dash; compare with plain ones.
     expect(eventWhen('2027-07-01T20:00', '2027-08-31T23:00', 'en-GB').replace(/\s/g, ' ')).toBe(

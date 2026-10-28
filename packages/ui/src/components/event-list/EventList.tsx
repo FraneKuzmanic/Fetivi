@@ -21,7 +21,7 @@ export function eventWhen(startsAt: string, endsAt: string, locale: string): str
       weekday: 'short',
       day: 'numeric',
       month: 'short',
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
       timeZone: 'UTC',
     }).format(start);

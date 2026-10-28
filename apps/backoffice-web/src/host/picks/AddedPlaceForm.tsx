@@ -4,7 +4,7 @@ import { type FormEvent, useState } from 'react';
 import { ApiError, type HostAddedPlaceInput, type HostAddedView } from '../../api';
 import { SelectField, TextArea, TextField } from '../../forms/fields';
 import { PLACE_CATEGORY_LABELS } from '../../forms/labels';
-import { MapPicker } from '../../forms/MapPicker';
+import { MapPicker, NO_LOCATION } from '../../forms/MapPicker';
 import { useAction } from '../../useAction';
 
 /** Adds a place that is not in the catalog, or edits one the host added. */
@@ -37,9 +37,7 @@ export function AddedPlaceForm({
     event.preventDefault();
     void run(async () => {
       setOutside(false);
-      if (lat === null || lng === null) {
-        throw new Error('Place the pin on the map or enter the coordinates.');
-      }
+      if (lat === null || lng === null) throw new Error(NO_LOCATION);
       try {
         await onSubmit({
           name: name ?? '',

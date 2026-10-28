@@ -41,8 +41,8 @@ afterEach(() => {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
-function Harness({ required }: { required?: boolean }) {
-  const [value, setValue] = useState<MapPoint>({ lat: null, lng: null });
+function Harness({ required, initial }: { required?: boolean; initial?: MapPoint }) {
+  const [value, setValue] = useState<MapPoint>(initial ?? { lat: null, lng: null });
   return (
     <MapPicker
       label="Centre of the area"
@@ -57,7 +57,9 @@ function Harness({ required }: { required?: boolean }) {
   );
 }
 
-async function mount(options: { geocode?: () => Response; required?: boolean } = {}) {
+async function mount(
+  options: { geocode?: () => Response; required?: boolean; initial?: MapPoint } = {},
+) {
   calls = [];
   changes = [];
   vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
@@ -68,7 +70,7 @@ async function mount(options: { geocode?: () => Response; required?: boolean } =
   document.body.append(el);
   root = createRoot(el);
   await act(async () => {
-    root?.render(<Harness required={options.required} />);
+    root?.render(<Harness required={options.required} initial={options.initial} />);
   });
 }
 
@@ -134,13 +136,20 @@ describe('MapPicker', () => {
     expect(changes.at(-1)).toEqual({ lat: 43.5, lng: null });
   });
 
+  it('shows a stored point to six decimals, not the sixteen a map click gives', async () => {
+    await mount({ initial: { lat: 43.51689910888672, lng: 16.257335571579517 } });
+    await vi.waitFor(() => expect(hasField('Latitude')).toBe(true));
+    expect(input('Latitude').value).toBe('43.516899');
+    expect(input('Longitude').value).toBe('16.257336');
+  });
+
   it('asks for a point while a required one is missing', async () => {
     mapFails = false;
     await mount({ required: true });
-    expect(el.textContent).toContain('Place the pin or enter the coordinates.');
+    expect(el.textContent).toContain('Place the pin on the map or enter the coordinates.');
     await act(async () => button('Enter coordinates by hand')?.click());
     await type(input('Latitude'), '43.5');
     await type(input('Longitude'), '16.25');
-    expect(el.textContent).not.toContain('Place the pin or enter the coordinates.');
+    expect(el.textContent).not.toContain('Place the pin on the map or enter the coordinates.');
   });
 });

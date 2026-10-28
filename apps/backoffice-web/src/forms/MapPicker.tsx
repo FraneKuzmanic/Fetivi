@@ -18,10 +18,16 @@ type GeoJSONSource = InstanceType<MapLibre['GeoJSONSource']>;
 type LngLatBounds = [[number, number], [number, number]];
 
 /** Where the map opens before there is a pin: Trogir, the pilot. */
-export const START = { lat: 43.517, lng: 16.2514 };
+const START = { lat: 43.517, lng: 16.2514 };
 const DEBOUNCE_MS = 300;
 const PIN_COLOUR = '#0047ab';
 const NO_AREA = { type: 'FeatureCollection' as const, features: [] };
+
+/** Shown, and thrown by the form on submit, while a required point is missing. */
+export const NO_LOCATION = 'Place the pin on the map or enter the coordinates.';
+
+/** Six decimals is about 10 cm; a map click gives sixteen. */
+const coord = (n: number | null) => (n === null ? null : Number(n.toFixed(6)));
 
 /** Suggestions for `text` after a pause in typing; a slower, older answer never wins. */
 export function useGeoSearch(
@@ -255,7 +261,9 @@ export function MapPicker({
   const point = pointOf(value);
   const found = useGeoSearch(search ? text : '', search?.kind ?? 'address', point);
 
-  const pinMoved = (lat: number, lng: number) => {
+  const pinMoved = (rawLat: number, rawLng: number) => {
+    const lat = coord(rawLat) as number;
+    const lng = coord(rawLng) as number;
     onChange({ lat, lng });
     onPinMoved?.(lat, lng);
   };
@@ -297,7 +305,7 @@ export function MapPicker({
           onFail={() => setManual(true)}
         />
         {hint ? <small>{hint}</small> : null}
-        {required && !point ? <small>Place the pin or enter the coordinates.</small> : null}
+        {required && !point ? <small>{NO_LOCATION}</small> : null}
         <button type="button" className="link-button" onClick={() => setManual(!manual)}>
           {manual ? 'Hide coordinates' : 'Enter coordinates by hand'}
         </button>
@@ -306,7 +314,7 @@ export function MapPicker({
         <div className="field-row">
           <NumberField
             label="Latitude"
-            value={value.lat}
+            value={coord(value.lat)}
             min={-90}
             max={90}
             step="any"
@@ -314,7 +322,7 @@ export function MapPicker({
           />
           <NumberField
             label="Longitude"
-            value={value.lng}
+            value={coord(value.lng)}
             min={-180}
             max={180}
             step="any"

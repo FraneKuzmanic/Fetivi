@@ -46,7 +46,7 @@ import {
   PLACE_CATEGORY_LABELS,
   TRANSPORT_MODE_LABELS,
 } from '../../forms/labels';
-import { MapPicker } from '../../forms/MapPicker';
+import { MapPicker, NO_LOCATION } from '../../forms/MapPicker';
 import { type PageSection, SectionLayout } from '../../host/SectionLayout';
 import { TranslationChip } from '../../host/translations/TranslationChip';
 import { usePendingRefresh } from '../../host/translations/usePendingRefresh';
@@ -75,8 +75,6 @@ const coordsOf = (p: LatLng | null): Coords => ({ lat: p?.lat ?? null, lng: p?.l
 /** Both or neither; one alone is sent as is and the API refuses it. */
 const locationOf = (c: Coords): LatLng | null =>
   c.lat === null && c.lng === null ? null : ({ lat: c.lat, lng: c.lng } as LatLng);
-
-const NO_LOCATION = 'Place the pin on the map or enter the coordinates.';
 
 /** The record's point on the map; a picked search result also fills an empty address. */
 function LocationPicker({
