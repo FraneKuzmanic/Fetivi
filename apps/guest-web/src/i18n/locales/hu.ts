@@ -16,8 +16,8 @@ export const hu: Messages = {
     changeLanguage: 'Nyelv módosítása',
   },
   link: {
-    notFound: 'Ez a link nem működik. Olvasd be újra a QR-kódot az apartmanban.',
-    none: 'Nyisd meg a szállásadódtól kapott linket, vagy olvasd be a QR-kódot az apartmanban.',
+    notFound: 'Ez a link nem működik. Olvasd be újra a QR-kódot a szálláson.',
+    none: 'Nyisd meg a szállásadódtól kapott linket, vagy olvasd be a QR-kódot a szálláson.',
   },
   header: {
     aboutMe: 'Rólam',
@@ -32,7 +32,7 @@ export const hu: Messages = {
   },
   empty: {
     chat: 'Itt fogunk beszélgetni. Hamarosan itt leszek.',
-    guide: 'Itt jelenik majd meg az apartman és a környék útmutatója.',
+    guide: 'Itt jelenik majd meg a szállásod és a környék útmutatója.',
     trip: 'Itt jelennek majd meg az utazási terveid.',
   },
   chat: {
@@ -437,7 +437,7 @@ export const hu: Messages = {
     frameTitle: 'Kompjáratok a Ferryhoppertől',
     from: 'A Ferryhoppertől',
     unavailable:
-      'A Ferryhopper találatai itt nem töltődtek be. Fetivi fenti válaszában így is megvannak a részletek.',
+      'A Ferryhopper találatai itt nem töltődtek be. Fetivi válaszában így is megvannak a részletek.',
   },
   webResults: {
     open: 'Forrás: {{site}}',
@@ -511,9 +511,9 @@ export const hu: Messages = {
     savedEmpty: 'Még nincs mentett hely. Koppintson a Mentés gombra egy helykártyán a csevegésben.',
     picksEmpty: 'A házigazda kedvenc helyei hamarosan itt jelennek meg.',
     tipsHeading: 'Környékbeli tippek',
-    amenities: 'Az apartmanban',
+    amenities: 'A szálláson',
     parking: 'Parkolás',
-    group_stay: 'Az apartmanod',
+    group_stay: 'A szállásod',
     group_places: 'Helyek',
     group_help: 'Segítség',
   },
@@ -552,7 +552,7 @@ export const hu: Messages = {
     copied: 'Másolva',
     copyFailed: 'A másolás nem sikerült. A szöveg ki van jelölve, így saját maga is kimásolhatja.',
     call: 'Hívás: {{label}}',
-    noWifi: 'Ebben az apartmanban nincs Wi-Fi.',
+    noWifi: 'A szálláson nincs Wi-Fi.',
     releaseNote: 'Ezek az adatok ekkor jelennek meg: {{when}}.',
   },
   amenity: {

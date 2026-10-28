@@ -17,8 +17,8 @@ export const fr: Messages = {
     changeLanguage: 'Changer de langue',
   },
   link: {
-    notFound: "Ce lien ne fonctionne pas. Scannez à nouveau le code QR dans l'appartement.",
-    none: "Ouvrez le lien envoyé par votre hôte ou scannez le code QR dans l'appartement.",
+    notFound: 'Ce lien ne fonctionne pas. Scannez à nouveau le code QR dans votre logement.',
+    none: 'Ouvrez le lien envoyé par votre hôte ou scannez le code QR dans votre logement.',
   },
   header: {
     aboutMe: 'À propos de moi',
@@ -33,7 +33,7 @@ export const fr: Messages = {
   },
   empty: {
     chat: "C'est ici que nous discuterons. J'arrive bientôt.",
-    guide: "Le guide de l'appartement et des environs apparaîtra ici.",
+    guide: 'Le guide de votre séjour et des environs apparaîtra ici.',
     trip: 'Les projets de votre séjour apparaîtront ici.',
   },
   chat: {
@@ -444,7 +444,7 @@ export const fr: Messages = {
     frameTitle: 'Traversées en ferry de Ferryhopper',
     from: 'De Ferryhopper',
     unavailable:
-      "Les résultats de Ferryhopper n'ont pas pu s'afficher ici. La réponse de Fetivi ci-dessus contient quand même les détails.",
+      "Les résultats de Ferryhopper n'ont pas pu s'afficher ici. La réponse de Fetivi contient quand même les détails.",
   },
   webResults: {
     open: 'Source : {{site}}',
@@ -519,9 +519,9 @@ export const fr: Messages = {
       'Rien d’enregistré pour l’instant. Touchez Enregistrer sur une fiche de lieu dans le chat.',
     picksEmpty: 'Les adresses préférées de votre hôte apparaîtront bientôt ici.',
     tipsHeading: 'Conseils sur le quartier',
-    amenities: "Dans l'appartement",
+    amenities: 'Dans votre logement',
     parking: 'Stationnement',
-    group_stay: 'Votre appartement',
+    group_stay: 'Votre logement',
     group_places: 'Lieux',
     group_help: 'Aide',
   },
@@ -561,7 +561,7 @@ export const fr: Messages = {
     copyFailed:
       "La copie n'a pas marché. Le texte est sélectionné, vous pouvez le copier vous-même.",
     call: 'Appeler : {{label}}',
-    noWifi: "Cet appartement n'a pas de Wi-Fi.",
+    noWifi: "Il n'y a pas de Wi-Fi dans votre logement.",
     releaseNote: 'Ces infos apparaissent le {{when}}.',
   },
   amenity: {

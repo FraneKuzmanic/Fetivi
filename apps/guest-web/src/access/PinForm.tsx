@@ -5,6 +5,7 @@ import { type FormEvent, type Ref, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, enterPin, type Space } from '../api';
 import { LANGUAGE_NAMES } from '../i18n/languages';
+import { RecoveryRequest } from '../recovery/RecoveryRequest';
 import { FetiviStage } from './FetiviStage';
 
 /** 75 → "1:15". */
@@ -132,6 +133,14 @@ export function PinForm({
           {announcement}
         </p>
       </form>
+      {/* Turning to recovery hides the PIN error; a lockout still keeps Continue disabled. */}
+      <RecoveryRequest
+        slug={slug}
+        onOpen={() => {
+          setProblem(null);
+          setAnnouncement('');
+        }}
+      />
     </>
   );
 }

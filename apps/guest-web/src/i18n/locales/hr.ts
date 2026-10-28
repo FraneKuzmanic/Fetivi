@@ -16,8 +16,8 @@ export const hr: Messages = {
     changeLanguage: 'Promijeni jezik',
   },
   link: {
-    notFound: 'Ova poveznica ne radi. Ponovno skenirajte QR kod u apartmanu.',
-    none: 'Otvorite poveznicu koju vam je poslao domaćin ili skenirajte QR kod u apartmanu.',
+    notFound: 'Ova poveznica ne radi. Ponovno skenirajte QR kod u smještaju.',
+    none: 'Otvorite poveznicu koju vam je poslao domaćin ili skenirajte QR kod u smještaju.',
   },
   header: {
     aboutMe: 'O meni',
@@ -32,7 +32,7 @@ export const hr: Messages = {
   },
   empty: {
     chat: 'Ovdje ćemo razgovarati. Uskoro sam tu.',
-    guide: 'Ovdje će se pojaviti vodič kroz apartman i okolicu.',
+    guide: 'Ovdje će se pojaviti vodič kroz vaš boravak i okolicu.',
     trip: 'Ovdje će se pojaviti planovi vašeg putovanja.',
   },
   chat: {
@@ -291,7 +291,7 @@ export const hr: Messages = {
     linkSent: 'Poslano. Provjerite poštu; poveznica vrijedi 1 sat.',
     evaluationTitle: 'Pomozite poboljšati Fetivi',
     evaluation:
-      'Sačuvaj anonimnu kopiju ovog razgovora kako bi se Fetivi mogao ocijeniti i poboljšati.',
+      'Sačuvajte anonimnu kopiju ovog razgovora kako bi se Fetivi mogao ocijeniti i poboljšati.',
     deviceSignOut: 'Kad je ondje otvorite, ovaj se uređaj odjavljuje iz Fetivija.',
     needsEmail: 'Dostupno čim budem imao vašu e-adresu.',
   },
@@ -434,7 +434,7 @@ export const hr: Messages = {
     frameTitle: 'Rezultati trajekata s Ferryhoppera',
     from: 'Izvor: Ferryhopper',
     unavailable:
-      'Rezultati s Ferryhoppera ovdje se nisu mogli učitati. Fetivijev odgovor iznad i dalje sadrži pojedinosti.',
+      'Rezultati s Ferryhoppera ovdje se nisu mogli učitati. Fetivijev odgovor i dalje sadrži pojedinosti.',
   },
   webResults: {
     open: 'Izvor: {{site}}',
@@ -497,7 +497,7 @@ export const hr: Messages = {
     host_picks: 'Preporuke domaćina',
     contacts_emergency: 'Kontakti i hitni slučajevi',
     hint_arrival_access: 'Vrijeme prijave, kako ući, šifre vrata',
-    hint_wifi_essentials: 'Mreža, lozinka i što apartman ima',
+    hint_wifi_essentials: 'Mreža, lozinka i što vam je na raspolaganju',
     hint_house_rules_checkout: 'Vrijeme odjave i na što paziti',
     hint_how_tos: 'Kako stvari rade, uz fotografije domaćina',
     hint_saved_places: 'Mjesta koja ste spremili u chatu.',
@@ -507,9 +507,9 @@ export const hr: Messages = {
     savedEmpty: 'Još ništa nije spremljeno. Dodirnite Spremi na bilo kojoj kartici mjesta u chatu.',
     picksEmpty: 'Omiljena mjesta vašeg domaćina uskoro će se pojaviti ovdje.',
     tipsHeading: 'Savjeti za okolicu',
-    amenities: 'U apartmanu',
+    amenities: 'U smještaju',
     parking: 'Parkiranje',
-    group_stay: 'Vaš apartman',
+    group_stay: 'Vaš smještaj',
     group_places: 'Mjesta',
     group_help: 'Pomoć',
   },
@@ -548,7 +548,7 @@ export const hr: Messages = {
     copied: 'Kopirano',
     copyFailed: 'Kopiranje nije uspjelo. Tekst je označen pa ga možete sami kopirati.',
     call: 'Nazovi: {{label}}',
-    noWifi: 'Ovaj apartman nema Wi-Fi.',
+    noWifi: 'U ovom smještaju nema Wi-Fija.',
     releaseNote: 'Ovi podaci pojavit će se: {{when}}.',
   },
   amenity: {

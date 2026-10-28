@@ -367,6 +367,55 @@ describe('runRetention', () => {
     ]);
   });
 
+  it('keeps cited sources as their hosts, not raw markers', async () => {
+    const unit = await seedGuestUnit(db, { now: SEED });
+    await db.update(spaces).set({ evaluationOptInAt: SEED }).where(eq(spaces.id, unit.spaceId));
+    const [conversation] = await db
+      .insert(conversations)
+      .values({
+        spaceId: unit.spaceId,
+        systemPrompt: 'You are Fetivi.',
+        projection: {} as never,
+        createdAt: SEED,
+        updatedAt: SEED,
+      })
+      .returning();
+    if (!conversation) throw new Error('no conversation');
+    const result = (host: string) => ({
+      title: host,
+      snippet: '',
+      url: `https://${host}/`,
+      source: { host, kind: 'tourist_board' },
+    });
+    await db.insert(messages).values({
+      id: `${conversation.id}-1`,
+      conversationId: conversation.id,
+      seq: 1,
+      role: 'assistant',
+      parts: [
+        { type: 'text', text: 'Let me look.' },
+        {
+          type: 'data-component',
+          id: 'search',
+          data: {
+            name: 'web-results',
+            payload: { results: [result('www.visittrogir.hr'), result('split.gov.hr')] },
+          },
+        },
+        { type: 'text', text: 'Tours run daily [1]. Ferries too [2] [9].' },
+      ],
+      createdAt: SEED,
+    });
+
+    await runRetention(db, dueAt(unit));
+
+    const [kept] = await db.select().from(keptConversations);
+    expect(kept?.messages[0]?.parts).toEqual([
+      { type: 'text', text: 'Let me look.' },
+      { type: 'text', text: 'Tours run daily (visittrogir.hr). Ferries too (split.gov.hr).' },
+    ]);
+  });
+
   it('deletes an opted-in Space with no conversation without a kept row', async () => {
     const unit = await seedGuestUnit(db, { now: SEED });
     await db.update(spaces).set({ evaluationOptInAt: SEED }).where(eq(spaces.id, unit.spaceId));

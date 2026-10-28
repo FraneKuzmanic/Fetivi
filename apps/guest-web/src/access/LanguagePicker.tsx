@@ -6,7 +6,10 @@ import { navigatorLanguages, pickBrowserLanguage } from '../i18n/browser-languag
 import { LANGUAGE_NAMES } from '../i18n/languages';
 import { FetiviStage } from './FetiviStage';
 
-/** The seven languages in a fixed order, each under its own name; the phone's one is marked. */
+/**
+ * The seven languages in a fixed order, each under its own name. The phone's one carries a small
+ * caption, not the check: only the current language looks chosen.
+ */
 export function LanguageOptions({
   marked,
   markedNote,
@@ -30,15 +33,17 @@ export function LanguageOptions({
             aria-current={code === current ? 'true' : undefined}
             onClick={() => onPick(code)}
           >
-            <span lang={code}>{LANGUAGE_NAMES[code]}</span>
-            {(code === marked || code === current) && (
+            <span className="language-name">
+              <span lang={code}>{LANGUAGE_NAMES[code]}</span>
+              {code === marked && code !== current && markedNote && (
+                <span className="language-suggested" lang={i18n.language}>
+                  {markedNote}
+                </span>
+              )}
+            </span>
+            {code === current && (
               <span className="note">
                 <Check aria-hidden="true" weight="bold" />
-                {code === marked && markedNote && (
-                  <span className="visually-hidden" lang={i18n.language}>
-                    {markedNote}
-                  </span>
-                )}
               </span>
             )}
           </button>

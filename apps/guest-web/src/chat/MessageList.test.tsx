@@ -242,3 +242,61 @@ describe('MessageList web citations', () => {
     expect(html).not.toContain('fv-cite');
   });
 });
+
+describe('MessageList empty turns', () => {
+  const cancelCall = (output: unknown) => ({
+    type: 'tool-cancel_order',
+    toolCallId: 'call-cancel',
+    state: 'output-available',
+    input: { orderId: 'o-1' },
+    output,
+  });
+  const cancelCard = {
+    type: 'data-elicitation',
+    id: 'call-cancel',
+    data: {
+      toolCallId: 'call-cancel',
+      toolName: 'cancel_order',
+      key: 'confirm',
+      message: 'Cancel Blue Lagoon boat trip?',
+      requestedSchema: { type: 'object', properties: {} },
+      requestState: 'sealed.state',
+      draft: null,
+    },
+  };
+  const rows = (html: string) => html.match(/class="fetivi-row"/g)?.length ?? 0;
+
+  it('shows no turn after Keep it when Fetivi said nothing', () => {
+    const html = render(
+      answer([cancelCall({ outcome: 'not_cancelled', order: null }), cancelCard]),
+    );
+    expect(rows(html)).toBe(0);
+  });
+
+  it('shows no turn whose only card waits on an older answer', () => {
+    const tapped = cancelCall({ kind: 'guest-answer', action: 'cancel' });
+    const html = render([
+      ...answer([tapped, cancelCard]),
+      { id: 'u2', role: 'user', parts: [{ type: 'text', text: 'Thanks' }] },
+      { id: 'a2', role: 'assistant', parts: [{ type: 'text', text: 'You are welcome.' }] },
+    ]);
+    expect(rows(html)).toBe(1);
+    expect(html).toContain('You are welcome.');
+  });
+
+  it('shows no turn for blank text', () => {
+    expect(rows(render(answer([text(' \n ')])))).toBe(0);
+  });
+
+  it('shows the words Fetivi wrote after Keep it', () => {
+    const html = render(
+      answer([
+        cancelCall({ outcome: 'not_cancelled', order: null }),
+        cancelCard,
+        text('Your boat trip stays booked.'),
+      ]),
+    );
+    expect(rows(html)).toBe(1);
+    expect(html).toContain('Your boat trip stays booked.');
+  });
+});

@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { ApiError, checkLink } from '../api';
 import { setLanguage } from '../i18n';
-import { RecoveryRequest } from '../recovery/RecoveryRequest';
 import { entryDecision, storedLanguage, storeLanguage, useSpace } from '../space';
 import { IntroStep } from './IntroStep';
 import { LanguagePicker } from './LanguagePicker';
@@ -62,19 +61,16 @@ export function AccessPage() {
           }}
         />
       ) : (
-        <>
-          <PinForm
-            slug={slug}
-            language={language}
-            headingRef={heading}
-            onEntered={(space) => {
-              setSpace(space);
-              navigate('/chat', { replace: true });
-            }}
-            onChangeLanguage={() => setStep('language')}
-          />
-          <RecoveryRequest slug={slug} />
-        </>
+        <PinForm
+          slug={slug}
+          language={language}
+          headingRef={heading}
+          onEntered={(space) => {
+            setSpace(space);
+            navigate('/chat', { replace: true });
+          }}
+          onChangeLanguage={() => setStep('language')}
+        />
       )}
     </main>
   );

@@ -16,8 +16,8 @@ export const it: Messages = {
     changeLanguage: 'Cambia lingua',
   },
   link: {
-    notFound: "Questo link non funziona. Scansiona di nuovo il codice QR nell'appartamento.",
-    none: "Apri il link che ti ha inviato il tuo host o scansiona il codice QR nell'appartamento.",
+    notFound: 'Questo link non funziona. Scansiona di nuovo il codice QR nel tuo alloggio.',
+    none: 'Apri il link che ti ha inviato il tuo host o scansiona il codice QR nel tuo alloggio.',
   },
   header: {
     aboutMe: 'Su di me',
@@ -32,7 +32,7 @@ export const it: Messages = {
   },
   empty: {
     chat: 'Qui chatteremo. Arrivo presto.',
-    guide: "Qui comparirà la guida all'appartamento e alla zona.",
+    guide: 'Qui comparirà la guida al tuo soggiorno e alla zona.',
     trip: 'Qui compariranno i piani del tuo viaggio.',
   },
   chat: {
@@ -442,7 +442,7 @@ export const it: Messages = {
     frameTitle: 'Risultati dei traghetti da Ferryhopper',
     from: 'Da Ferryhopper',
     unavailable:
-      'Non è stato possibile caricare qui i risultati di Ferryhopper. La risposta di Fetivi qui sopra contiene comunque i dettagli.',
+      'Non è stato possibile caricare qui i risultati di Ferryhopper. La risposta di Fetivi contiene comunque i dettagli.',
   },
   webResults: {
     open: 'Fonte: {{site}}',
@@ -515,9 +515,9 @@ export const it: Messages = {
     savedEmpty: 'Ancora niente di salvato. Toccate Salva su una scheda in chat.',
     picksEmpty: "I posti preferiti dell'host compariranno presto qui.",
     tipsHeading: 'Consigli sul quartiere',
-    amenities: "Nell'appartamento",
+    amenities: "Nell'alloggio",
     parking: 'Parcheggio',
-    group_stay: 'Il tuo appartamento',
+    group_stay: 'Il tuo alloggio',
     group_places: 'Luoghi',
     group_help: 'Aiuto',
   },
@@ -556,7 +556,7 @@ export const it: Messages = {
     copied: 'Copiato',
     copyFailed: 'La copia non è riuscita. Il testo è selezionato, potete copiarlo voi.',
     call: 'Chiama {{label}}',
-    noWifi: 'Questo appartamento non ha il Wi-Fi.',
+    noWifi: 'Nel tuo alloggio non c’è il Wi-Fi.',
     releaseNote: 'Questi dettagli compaiono il {{when}}.',
   },
   amenity: {

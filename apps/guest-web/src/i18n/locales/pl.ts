@@ -16,8 +16,8 @@ export const pl: Messages = {
     changeLanguage: 'Zmień język',
   },
   link: {
-    notFound: 'Ten link nie działa. Zeskanuj ponownie kod QR w apartamencie.',
-    none: 'Otwórz link od gospodarza albo zeskanuj kod QR w apartamencie.',
+    notFound: 'Ten link nie działa. Zeskanuj ponownie kod QR w miejscu pobytu.',
+    none: 'Otwórz link od gospodarza albo zeskanuj kod QR w miejscu pobytu.',
   },
   header: {
     aboutMe: 'O mnie',
@@ -32,7 +32,7 @@ export const pl: Messages = {
   },
   empty: {
     chat: 'Tu będziemy rozmawiać. Wkrótce się pojawię.',
-    guide: 'Tu pojawi się przewodnik po apartamencie i okolicy.',
+    guide: 'Tu pojawi się przewodnik po twoim pobycie i okolicy.',
     trip: 'Tu pojawią się plany Twojej podróży.',
   },
   chat: {
@@ -210,7 +210,7 @@ export const pl: Messages = {
     order_reminder: 'Przypomnienie: {{offer}} jest jutro, {{date}}.',
     arrival_details: 'Informacje o przyjeździe czekają w Przewodniku: jak wejść, Wi-Fi i reszta.',
     checkout_reminder: 'Przypominamy, że wymeldowanie jest jutro. Kroki znajdziesz w Przewodniku.',
-    checkoutBy: 'Prosimy o opuszczenie apartamentu do {{checkoutTime}}.',
+    checkoutBy: 'Prosimy o opuszczenie obiektu do {{checkoutTime}}.',
     review:
       'Jeśli chcesz podzielić się wrażeniami z pobytu, możesz zostawić opinię na {{platform}}.',
     weather_warning:
@@ -434,7 +434,7 @@ export const pl: Messages = {
     frameTitle: 'Wyniki promów z Ferryhopper',
     from: 'Z Ferryhopper',
     unavailable:
-      'Nie udało się tu wczytać wyników z Ferryhopper. Odpowiedź Fetiviego powyżej nadal zawiera szczegóły.',
+      'Nie udało się tu wczytać wyników z Ferryhopper. Odpowiedź Fetiviego nadal zawiera szczegóły.',
   },
   webResults: {
     open: 'Źródło: {{site}}',
@@ -507,9 +507,9 @@ export const pl: Messages = {
     savedEmpty: 'Nic jeszcze nie zapisano. Dotknij Zapisz na dowolnej karcie miejsca na czacie.',
     picksEmpty: 'Ulubione miejsca gospodarza wkrótce pojawią się tutaj.',
     tipsHeading: 'Wskazówki o okolicy',
-    amenities: 'W apartamencie',
+    amenities: 'W obiekcie',
     parking: 'Parking',
-    group_stay: 'Twój apartament',
+    group_stay: 'Twoje zakwaterowanie',
     group_places: 'Miejsca',
     group_help: 'Pomoc',
   },
@@ -549,7 +549,7 @@ export const pl: Messages = {
     copyFailed:
       'Kopiowanie nie zadziałało. Tekst jest zaznaczony, możesz go skopiować samodzielnie.',
     call: 'Zadzwoń: {{label}}',
-    noWifi: 'Ten apartament nie ma Wi-Fi.',
+    noWifi: 'W obiekcie nie ma Wi-Fi.',
     releaseNote: 'Te informacje pojawią się: {{when}}.',
   },
   amenity: {

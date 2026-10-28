@@ -125,7 +125,7 @@ describe('RecoveryRequest', () => {
 
   it.each([
     [400, 'Enter an email address, like name@example.com.'],
-    [404, "This link doesn't work. Scan the QR code in the apartment again."],
+    [404, "This link doesn't work. Scan the QR code at your accommodation again."],
     [500, 'No connection. Check your internet and try again.'],
   ])('says what went wrong on a %i', async (status, message) => {
     server({ '/api/access/abc/recovery': () => json({ error: 'x' }, status) });
@@ -134,6 +134,39 @@ describe('RecoveryRequest', () => {
     type(host.querySelector('input[name="email"]') as HTMLInputElement, 'ana@example.test');
     await act(async () => sendButton()?.click());
     expect(host.querySelector('.message')?.textContent).toBe(message);
+  });
+
+  it('tells the PIN step when it opens', async () => {
+    server({});
+    const onOpen = vi.fn();
+    await mount(<RecoveryRequest slug="abc" onOpen={onOpen} />, '/u/abc');
+    await act(async () => button('Move your chat here')?.click());
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it('rests the field and arrow once sent, so it cannot send twice', async () => {
+    const calls = server({});
+    await mount(<RecoveryRequest slug="abc" />, '/u/abc');
+    await act(async () => button('Move your chat here')?.click());
+    const input = host.querySelector('input[name="email"]') as HTMLInputElement;
+    type(input, 'ana@example.test');
+    await act(async () => sendButton()?.click());
+    expect(input.disabled).toBe(true);
+    expect(sendButton()?.disabled).toBe(true);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('keeps the field open for another try after an error', async () => {
+    const calls = server({ '/api/access/abc/recovery': () => json({ error: 'x' }, 500) });
+    await mount(<RecoveryRequest slug="abc" />, '/u/abc');
+    await act(async () => button('Move your chat here')?.click());
+    const input = host.querySelector('input[name="email"]') as HTMLInputElement;
+    type(input, 'ana@example.test');
+    await act(async () => sendButton()?.click());
+    expect(input.disabled).toBe(false);
+    expect(sendButton()?.disabled).toBe(false);
+    await act(async () => sendButton()?.click());
+    expect(calls).toHaveLength(2);
   });
 });
 

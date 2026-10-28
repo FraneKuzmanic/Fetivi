@@ -93,8 +93,16 @@ function webResultsOf(data: unknown): WebResult[] | null {
  * Web results never show in place: text after a search cites them with `[n]` badges. An answer
  * that cited none shows one row of their sources at the end, once it has finished, so it never
  * appears and then vanishes when the first badge streams in.
+ *
+ * Only what shows is a segment: blank text and an open card outside the newest answer (it acts
+ * only there) are left out, so a turn with nothing to show gets no row, not a lone mascot.
  */
-function segmentsOf(message: UIMessage, busy: boolean, finished: boolean): Segment[] {
+function segmentsOf(
+  message: UIMessage,
+  busy: boolean,
+  finished: boolean,
+  latest: boolean,
+): Segment[] {
   const segments: Segment[] = [];
   const chips: Segment[] = [];
   let run: TextSegment | null = null;
@@ -108,7 +116,7 @@ function segmentsOf(message: UIMessage, busy: boolean, finished: boolean): Segme
   );
   for (const [index, part] of message.parts.entries()) {
     if (part.type === 'text') {
-      if (!part.text) continue;
+      if (!part.text.trim()) continue;
       if (run)
         run.text = `${run.text}
 ${part.text}`;
@@ -120,7 +128,7 @@ ${part.text}`;
     }
     if (isElicitationPart(part)) {
       const card = cardOf(message, part, busy);
-      if (card) show(card);
+      if (card && (card.state !== 'open' || latest)) show(card);
     } else if (isComponentPart(part)) {
       const segment = { key: part.id ?? `part-${index}`, data: part.data };
       const found = webResultsOf(part.data);
@@ -270,12 +278,13 @@ export function MessageList({
       );
     }
     const streaming = isBusy(status) && i === messages.length - 1;
-    const segments = segmentsOf(m, isBusy(status), !streaming);
+    // An open card acts only on the newest answer while the guest can reply.
+    const latest = interactive && i === messages.length - 1;
+    const segments = segmentsOf(m, isBusy(status), !streaming, latest);
     if (segments.length === 0) return null;
     const previous = messages[i - 1];
     // A host reply in between starts a new run, so Fetivi's mascot shows again.
     const firstOfRun = previous?.role !== 'assistant' || inboxAfter(previous.id).length > 0;
-    const latest = interactive && i === messages.length - 1;
     // Once an answer holds a confirmation card, its starts are history: a pick there would
     // cancel the card, and after the tap its places left are out of date.
     const pickerLive = latest && !m.parts.some(isElicitationPart);
@@ -290,8 +299,6 @@ export function MessageList({
           <div className="fetivi-turn">
             {segments.map((segment) => {
               if ('card' in segment) {
-                // An open card acts only on the newest answer while the guest can reply.
-                if (segment.state === 'open' && !latest) return null;
                 if (isCancelOrderCard(segment.card)) {
                   return (
                     <CancelOrderPart

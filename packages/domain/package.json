@@ -33,7 +33,8 @@
     "./settings-vocabulary": "./src/settings/vocabulary.ts",
     "./metrics-vocabulary": "./src/metrics/vocabulary.ts",
     "./space-vocabulary": "./src/spaces/vocabulary.ts",
-    "./geocode-vocabulary": "./src/geocode/vocabulary.ts"
+    "./geocode-vocabulary": "./src/geocode/vocabulary.ts",
+    "./citations": "./src/conversations/citations.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

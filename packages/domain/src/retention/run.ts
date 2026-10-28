@@ -1,5 +1,6 @@
 import { and, asc, eq, gt, inArray, lte, or } from 'drizzle-orm';
 import { DateTime } from 'luxon';
+import { keptTextParts } from '../conversations/citations';
 import type { Db } from '../db/client';
 import { conversations, messages } from '../db/schema/conversations';
 import { offers, providers } from '../db/schema/offers';
@@ -168,8 +169,9 @@ function retainSpace(db: Db, spaceId: string, now: Date): Promise<SpaceOutcome> 
             language: space.language,
             startedAt: conversation.createdAt,
             // Text parts only: tool and card parts carry About me, contact details and Orders.
+            // Citation markers read as the cited hosts, since the results stay behind.
             messages: chat.flatMap((m): KeptMessage[] => {
-              const parts = m.parts.filter((p) => p.type === 'text');
+              const parts = keptTextParts(m.parts);
               if (parts.length === 0) return [];
               return [
                 {

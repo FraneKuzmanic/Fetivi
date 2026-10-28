@@ -1,7 +1,7 @@
 import {
   DeviceMobile,
   EnvelopeSimple,
-  GraduationCap,
+  HandHeart,
   type Icon,
   SignOut,
   Translate,
@@ -168,7 +168,7 @@ export function SettingsPage() {
       </section>
 
       <section className="settings-section" aria-labelledby="settings-evaluation">
-        <SettingsHeading id="settings-evaluation" icon={GraduationCap}>
+        <SettingsHeading id="settings-evaluation" icon={HandHeart}>
           {t('settings.evaluationTitle')}
         </SettingsHeading>
         <label className="settings-switch">

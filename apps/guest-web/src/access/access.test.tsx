@@ -5,7 +5,7 @@ import type { Space } from '../api';
 import { i18next, setLanguage } from '../i18n';
 import { LANGUAGE_NAMES } from '../i18n/languages';
 import { entryDecision, guardDecision, type SpaceState } from '../space';
-import { LanguagePicker } from './LanguagePicker';
+import { LanguageOptions, LanguagePicker } from './LanguagePicker';
 import { NoLinkPage } from './NoLinkPage';
 import { formatWait, PinForm, pinMessage } from './PinForm';
 
@@ -39,6 +39,23 @@ describe('LanguagePicker', () => {
     const html = renderToString(<LanguagePicker browserLanguages={['es']} onPick={() => {}} />);
     const marked = optionButtons(html).filter((b) => b.includes('data-suggested="true"'));
     expect(marked[0]).toContain('lang="en"');
+  });
+
+  it('captions the suggested tile without making it look chosen', () => {
+    const html = renderToString(<LanguagePicker browserLanguages={['de-AT']} onPick={() => {}} />);
+    const marked = optionButtons(html).filter((b) => b.includes('data-suggested="true"'));
+    expect(marked[0]).toMatch(/<span class="language-suggested"[^>]*>Your phone&#x27;s language</);
+    expect(marked[0]).not.toContain('visually-hidden');
+    expect(marked[0]).not.toContain('aria-current');
+    expect(marked[0]).not.toContain('<svg');
+  });
+
+  it('keeps the check on the current language in Settings', () => {
+    const html = renderToString(<LanguageOptions current="hr" onPick={() => {}} />);
+    const current = optionButtons(html).filter((b) => b.includes('aria-current="true"'));
+    expect(current).toHaveLength(1);
+    expect(current[0]).toContain('lang="hr"');
+    expect(current[0]).toContain('<svg');
   });
 });
 

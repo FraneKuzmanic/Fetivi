@@ -14,8 +14,8 @@ export const en = {
     changeLanguage: 'Change language',
   },
   link: {
-    notFound: "This link doesn't work. Scan the QR code in the apartment again.",
-    none: 'Open the link your host sent you, or scan the QR code in the apartment.',
+    notFound: "This link doesn't work. Scan the QR code at your accommodation again.",
+    none: 'Open the link your host sent you, or scan the QR code at your accommodation.',
   },
   header: {
     aboutMe: 'About me',
@@ -30,7 +30,7 @@ export const en = {
   },
   empty: {
     chat: "This is where we'll chat. I'll be here soon.",
-    guide: 'Your guide to the apartment and the area will appear here.',
+    guide: 'Your guide to your stay and the area will appear here.',
     trip: 'Your trip plans will appear here.',
   },
   chat: {
@@ -430,8 +430,7 @@ export const en = {
   mcpApps: {
     frameTitle: 'Ferry results from Ferryhopper',
     from: 'From Ferryhopper',
-    unavailable:
-      "Ferryhopper's results couldn't load here. Fetivi's answer above still has the details.",
+    unavailable: "Ferryhopper's results couldn't load here. Fetivi's answer still has the details.",
   },
   webResults: {
     open: 'Source: {{site}}',
@@ -494,7 +493,7 @@ export const en = {
     host_picks: "Host's top picks",
     contacts_emergency: 'Contacts and emergency',
     hint_arrival_access: 'Check-in time, how to get in, door codes',
-    hint_wifi_essentials: 'Network, password and what the apartment has',
+    hint_wifi_essentials: "Network, password and what's provided",
     hint_house_rules_checkout: 'Checkout time and what to keep in mind',
     hint_how_tos: 'How things work, with photos from your host',
     hint_saved_places: "Places you've saved in chat.",
@@ -504,9 +503,9 @@ export const en = {
     savedEmpty: 'Nothing saved yet. Tap Save on any place card in the chat.',
     picksEmpty: "Your host's favourite places will appear here soon.",
     tipsHeading: 'Neighbourhood tips',
-    amenities: 'In the apartment',
+    amenities: 'At your accommodation',
     parking: 'Parking',
-    group_stay: 'Your apartment',
+    group_stay: 'Your accommodation',
     group_places: 'Places',
     group_help: 'Help',
   },
@@ -545,7 +544,7 @@ export const en = {
     copied: 'Copied',
     copyFailed: "Copying didn't work. The text is selected, so you can copy it yourself.",
     call: 'Call {{label}}',
-    noWifi: 'This apartment has no Wi-Fi.',
+    noWifi: "There's no Wi-Fi at your accommodation.",
     releaseNote: 'These details appear on {{when}}.',
   },
   amenity: {

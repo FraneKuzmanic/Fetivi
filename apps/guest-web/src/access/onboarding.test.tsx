@@ -25,12 +25,14 @@ afterEach(() => {
   setLanguage('en');
 });
 
-/** A phone set to German; the unit link works. */
-async function mount() {
+/** A phone set to German; the unit link works. `post` answers the PIN and recovery calls. */
+async function mount(post = () => new Response(null, { status: 204 })) {
   vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['de-DE']);
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => new Response(null, { status: 204 })),
+    vi.fn(async (_url: string, init?: RequestInit) =>
+      init?.method === 'POST' ? post() : new Response(null, { status: 204 }),
+    ),
   );
   host = document.createElement('div');
   document.body.append(host);
@@ -67,5 +69,34 @@ describe('onboarding language', () => {
     const suggested = host.querySelector('[data-suggested="true"]');
     expect(suggested?.textContent).toContain('Deutsch');
     expect(host.querySelectorAll('[data-suggested="true"]')).toHaveLength(1);
+  });
+});
+
+describe('onboarding PIN', () => {
+  it('drops the wrong-PIN message once the guest opens recovery', async () => {
+    await mount(
+      () =>
+        new Response(JSON.stringify({ error: 'wrong_pin' }), {
+          status: 401,
+          headers: { 'content-type': 'application/json' },
+        }),
+    );
+    await act(async () => host.querySelector<HTMLButtonElement>('.onboarding-button')?.click());
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('button:has(> .language-name > [lang="en"])')?.click(),
+    );
+    const pin = host.querySelector('#pin') as HTMLInputElement;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(
+        pin,
+        '123456',
+      );
+      pin.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => (host.querySelector('.pin-form') as HTMLFormElement).requestSubmit());
+    expect(host.querySelector('#pin-message')?.textContent).not.toBe('');
+    await act(async () => host.querySelector<HTMLButtonElement>('.recovery-ask')?.click());
+    expect(host.querySelector('#pin-message')?.textContent).toBe('');
+    expect(host.querySelector('.pin-form [role="status"]')?.textContent).toBe('');
   });
 });

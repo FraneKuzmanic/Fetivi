@@ -22,9 +22,10 @@ function problemOf(error: unknown): Problem {
 
 /**
  * Under the PIN: a guest who used Fetivi on another phone asks for a link by email. The answer
- * is the same whether or not the email belongs to a Space here.
+ * is the same whether or not the email belongs to a Space here. `onOpen` lets the PIN step clear
+ * its own error once the guest turns to this instead.
  */
-export function RecoveryRequest({ slug }: { slug: string }) {
+export function RecoveryRequest({ slug, onOpen }: { slug: string; onOpen?: () => void }) {
   const { t } = useTranslation();
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -61,7 +62,14 @@ export function RecoveryRequest({ slug }: { slug: string }) {
 
   if (!open) {
     return (
-      <button type="button" className="text-button recovery-ask" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className="text-button recovery-ask"
+        onClick={() => {
+          setOpen(true);
+          onOpen?.();
+        }}
+      >
         <EnvelopeSimple aria-hidden="true" />
         {t('recovery.ask')}
       </button>
@@ -87,16 +95,15 @@ export function RecoveryRequest({ slug }: { slug: string }) {
           value={email}
           aria-invalid={problem === 'invalid'}
           aria-describedby={problem ? messageId : undefined}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            setSent(false);
-          }}
+          // Once sent, the field rests so a second tap cannot send it again by accident.
+          disabled={sent}
+          onChange={(e) => setEmail(e.target.value)}
         />
         <button
           type="submit"
           className="recovery-submit"
           aria-label={t('recovery.send')}
-          disabled={busy}
+          disabled={busy || sent}
         >
           <ArrowRight aria-hidden="true" weight="bold" />
         </button>
