@@ -20,8 +20,6 @@ export const pl: Messages = {
     none: 'Otwórz link od gospodarza albo zeskanuj kod QR w apartamencie.',
   },
   header: {
-    language: 'Język',
-    chooseLanguage: 'Wybierz język',
     aboutMe: 'O mnie',
     settings: 'Ustawienia',
   },
@@ -40,7 +38,7 @@ export const pl: Messages = {
   chat: {
     title: 'Czat',
     welcome:
-      'Bok! Jestem Fetivi, asystent AI na czas Twojego pobytu. Pytaj mnie o wszystko, co dotyczy apartamentu lub okolicy.',
+      'Bok! Jestem Fetivi, asystent AI na czas Twojego pobytu. Pytaj mnie o wszystko, co dotyczy zakwaterowania lub okolicy.',
     you: 'Ty',
     fetivi: 'Fetivi',
     typing: 'Fetivi pisze…',
@@ -49,10 +47,13 @@ export const pl: Messages = {
     send: 'Wyślij',
     startersLabel: 'Pomysły na początek',
     starterWifi: 'Jakie jest hasło do Wi-Fi?',
-    starterTimes: 'Kiedy jest zameldowanie i wymeldowanie?',
-    starterAccess: 'Jak mam wejść?',
-    starterRules: 'Jakie są zasady domu?',
-    starterAround: 'Co ciekawego można robić w okolicy?',
+    starterEat: 'Gdzie w pobliżu można dobrze zjeść?',
+    starterEvents: 'Co się dzieje, kiedy tu jesteśmy?',
+    starterWeather: 'Jaka będzie jutro pogoda?',
+    starterBoat: 'Czy mogę zarezerwować rejs łodzią?',
+    starterFerry: 'Czy jest prom ze Splitu na Hvar?',
+    starterPlan: 'Zaplanuj nam dzień wycieczki',
+    starterHost: 'Chcę napisać do gospodarza',
     tripTitle: 'Opowiedz mi o swojej podróży',
     tripBody: 'Kto podróżuje i co lubicie? Zapamiętam to. Możesz to pominąć.',
     tripStart: 'Zaczynajmy',
@@ -69,8 +70,10 @@ export const pl: Messages = {
   },
   aboutMe: {
     title: 'O mnie',
-    intro: 'Oto o czym pamiętam w związku z Twoją podróżą. Możesz wszystko zmienić lub usunąć.',
-    empty: 'Nie opowiedziałeś mi jeszcze o swojej podróży.',
+    intro:
+      'Dzięki tym odpowiedziom mogę proponować miejsca, plany i usługi dopasowane do Ciebie. Możesz w każdej chwili coś uzupełnić lub zmienić, a to, co powiesz mi na czacie, też się tu pojawi.',
+    empty:
+      'Opowiedz mi trochę o swojej podróży, a zaproponuję miejsca, plany i usługi dopasowane do Ciebie. To, o czym wspomnisz na czacie, też się tu pojawi.',
     start: 'Opowiedz mi o swojej podróży',
     change: 'Zmień',
     notSet: 'Jeszcze nie podano',
@@ -82,9 +85,8 @@ export const pl: Messages = {
     interestsTitle: 'Co lubisz?',
     paceTitle: 'Jakie tempo Ci odpowiada?',
     budgetTitle: 'Jaki budżet?',
+    transportTitle: 'Jak będziesz się przemieszczać?',
     needsTitle: 'Czy mam o czymś pamiętać?',
-    needsNote:
-      'Zapisane tylko dlatego, że to wybierasz. Używam tego do dopasowania propozycji; usuwane 30 dni po wymeldowaniu.',
     pickOne: 'Wybierz jedno',
     pickAny: 'Wybierz dowolne',
     step: 'Pytanie {{current}} z {{total}}',
@@ -123,11 +125,14 @@ export const pl: Messages = {
     mid: 'Średnio',
     treat: 'Pozwolimy sobie',
   },
+  transport: {
+    car: 'Samochodem',
+    scooter_bike: 'Skuterem lub rowerem',
+    foot_transit: 'Pieszo i komunikacją miejską',
+  },
   need: {
-    gluten_free: 'Bez glutenu (celiakia)',
+    gluten_free: 'Bezglutenowe',
     food_allergy: 'Alergia pokarmowa',
-    halal: 'Halal',
-    kosher: 'Koszerne',
     step_free: 'Bez schodów / wózek',
     limited_mobility: 'Ograniczona mobilność',
   },
@@ -270,12 +275,14 @@ export const pl: Messages = {
   },
   settings: {
     title: 'Ustawienia',
+    languageTitle: 'Język',
     emailTitle: 'E-mail',
     confirmed: 'Potwierdzony',
     waiting: 'Czeka na Twoje potwierdzenie',
     resend: 'Wyślij ponownie link potwierdzający',
     resent: 'Wysłano. Sprawdź skrzynkę.',
-    noEmail: 'Poproszę o Twój e-mail, gdy coś zarezerwujesz albo poprosisz o informacje.',
+    noEmail:
+      'Poproszę o Twój e-mail tylko wtedy, gdy coś zarezerwujesz albo zechcesz dostawać e-mailem informacje o rezerwacjach i odpowiedzi gospodarza.',
     tips: 'Jedna lokalna wskazówka dziennie e-mailem',
     deviceTitle: 'Otwórz na innym urządzeniu',
     deviceIntro:
@@ -283,12 +290,9 @@ export const pl: Messages = {
     sendLink: 'Wyślij mi link',
     linkSent: 'Wysłano. Sprawdź skrzynkę; link działa przez 1 godzinę.',
     evaluationTitle: 'Pomóż ulepszyć Fetivi',
-    evaluation: 'Zachowaj moją rozmowę do badań nad Fetivi',
+    evaluation: 'Zachowaj anonimową kopię tego czatu, aby pomóc ocenić i ulepszyć Fetivi.',
     deviceSignOut: 'Gdy go tam otworzysz, to urządzenie wyloguje się z Fetivi.',
     needsEmail: 'Dostępne, gdy będę mieć Twój e-mail.',
-    evaluationOff: 'Wyłączone: Twój czat zostanie usunięty 30 dni po wymeldowaniu.',
-    evaluationOn:
-      'Włączone: kopia bez Twojego e-maila i preferencji jest przechowywana na potrzeby badania uniwersyteckiego o Fetivi.',
   },
   cancelOrder: {
     heading: 'Anulować tę rezerwację?',
@@ -402,8 +406,7 @@ export const pl: Messages = {
     answerTerms: 'Odpowiedz na nowe warunki',
     actionFailed: 'Nie udało się. Rezerwacja mogła się zmienić, oto jak wygląda teraz.',
     empty:
-      'Tutaj pojawią się Twoje dni i rezerwacje. Napisz mi na czacie, co chcesz robić, a zaplanuję to lub zarezerwuję razem z Tobą.',
-    emptyAction: 'Zaplanuj z Fetivi',
+      'Tutaj pojawią się Twoje plany i rezerwacje. Napisz mi na czacie, co chcesz robić, a zaplanuję to lub zarezerwuję razem z Tobą.',
     nothingBooked: 'Nic jeszcze nie zarezerwowano',
   },
   mcpApps: {
@@ -459,7 +462,8 @@ export const pl: Messages = {
   },
   guide: {
     sectionsLabel: 'Części przewodnika',
-    greeting: 'Witamy w {{name}}! Tu jest wszystko na pobyt: wejście, Wi-Fi, zasady domu i więcej.',
+    greeting:
+      'Witamy w {{name}}! To Twój przewodnik po pobycie: wejście, Wi-Fi, zasady domu, miejsca w pobliżu i do kogo dzwonić. Dotknij tematu, aby go otworzyć.',
     back: 'Przewodnik',
     loadError: 'Nie udało mi się wczytać przewodnika. Sprawdź połączenie i spróbuj ponownie.',
     retry: 'Spróbuj ponownie',
@@ -474,11 +478,11 @@ export const pl: Messages = {
     hint_wifi_essentials: 'Sieć, hasło i wyposażenie',
     hint_house_rules_checkout: 'Godzina wymeldowania i o czym pamiętać',
     hint_how_tos: 'Jak wszystko działa, ze zdjęciami gospodarza',
-    hint_saved_places: 'Miejsca zapisane na czacie',
+    hint_saved_places: 'Miejsca zapisane na czacie.',
     hint_host_picks: 'Ulubione miejsca gospodarza w pobliżu',
-    hint_contacts_emergency: 'Numer alarmowy 112 i gospodarz',
+    hint_contacts_emergency: '112 w nagłych wypadkach, gospodarz we wszystkich sprawach pobytu',
     nothingYet: 'Gospodarz nie dodał tu jeszcze niczego.',
-    savedEmpty: 'Tu pojawią się miejsca zapisane na czacie. Dotknij Zapisz na karcie miejsca.',
+    savedEmpty: 'Nic jeszcze nie zapisano. Dotknij Zapisz na dowolnej karcie miejsca na czacie.',
     picksEmpty: 'Ulubione miejsca gospodarza wkrótce pojawią się tutaj.',
     tipsHeading: 'Wskazówki o okolicy',
     amenities: 'W apartamencie',
@@ -570,7 +574,7 @@ export const pl: Messages = {
   },
   intro: {
     title: 'Bok! Jestem Fetivi.',
-    body: 'Jestem asystentem AI na czas Twojego pobytu. Znam apartament i miasto i pomogę Ci poczuć się tu jak w domu.',
+    body: 'Jestem asystentem AI na czas Twojego pobytu. Znam Twoje zakwaterowanie i okolicę i pomogę Ci poczuć się tu jak w domu.',
     start: 'Zaczynamy',
   },
 };

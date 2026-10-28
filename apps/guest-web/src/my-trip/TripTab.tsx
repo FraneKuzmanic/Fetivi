@@ -1,7 +1,5 @@
-import { ChatCircleText } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
 import { MascotSays } from '../shell/Mascot';
 import { useSpace } from '../space';
 import { OrdersSection } from './orders/OrdersSection';
@@ -29,16 +27,12 @@ export function TripTab() {
 
   return (
     <section className="trip-tab" aria-labelledby="tab-title">
-      <h1 id="tab-title" ref={heading} tabIndex={-1}>
+      <h1 id="tab-title" ref={heading} tabIndex={-1} className="visually-hidden">
         {t('tabs.trip')}
       </h1>
       {empty.plan && empty.orders && !closed && (
         <div className="trip-welcome">
           <MascotSays>{t('trip.empty')}</MascotSays>
-          <Link to="/chat" className="button trip-welcome-action">
-            <ChatCircleText aria-hidden="true" weight="bold" />
-            {t('trip.emptyAction')}
-          </Link>
         </div>
       )}
       <PlanSection onEmpty={planEmpty} />

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { aboutMe as aboutMeTable } from '../db/schema/about-me';
 import { spaces } from '../db/schema/spaces';
@@ -27,7 +27,7 @@ describe('about me store', () => {
 
   it('merges model updates and never touches needs', async () => {
     const spaceId = await seedSpace();
-    await replaceAboutMe(testDb.db, spaceId, { ...EMPTY_ABOUT_ME, needs: ['halal'] }, NOW);
+    await replaceAboutMe(testDb.db, spaceId, { ...EMPTY_ABOUT_ME, needs: ['food_allergy'] }, NOW);
     await updateAboutMe(
       testDb.db,
       spaceId,
@@ -45,14 +45,15 @@ describe('about me store', () => {
       interests: ['beaches', 'food'],
       pace: 'easy',
       budget: null,
-      needs: ['halal'],
+      transport: null,
+      needs: ['food_allergy'],
     });
     expect(await getAboutMe(testDb.db, spaceId)).toEqual(after);
   });
 
   it('ignores a needs key forced through a cast', async () => {
     const spaceId = await seedSpace();
-    const forced = { addInterests: ['food'], needs: ['halal'] } as AboutMePatch;
+    const forced = { addInterests: ['food'], needs: ['food_allergy'] } as AboutMePatch;
     const after = await updateAboutMe(testDb.db, spaceId, forced, NOW);
     expect(after.needs).toEqual([]);
     expect(after.interests).toEqual(['food']);
@@ -73,6 +74,7 @@ describe('about me store', () => {
         interests: ['slow', 'beaches', 'slow'],
         pace: 'mixed',
         budget: 'treat',
+        transport: 'car',
         needs: ['step_free', 'gluten_free'],
       },
       NOW,
@@ -82,8 +84,33 @@ describe('about me store', () => {
       interests: ['beaches', 'slow'],
       pace: 'mixed',
       budget: 'treat',
+      transport: 'car',
       needs: ['gluten_free', 'step_free'],
     });
+    expect(await getAboutMe(testDb.db, spaceId)).toEqual(after);
+  });
+
+  it('sets transport through a model update and clears it with null', async () => {
+    const spaceId = await seedSpace();
+    await updateAboutMe(testDb.db, spaceId, { pace: 'easy' }, NOW);
+    expect(
+      (await updateAboutMe(testDb.db, spaceId, { transport: 'foot_transit' }, NOW)).transport,
+    ).toBe('foot_transit');
+    expect((await updateAboutMe(testDb.db, spaceId, { pace: 'full' }, NOW)).transport).toBe(
+      'foot_transit',
+    );
+    const cleared = await updateAboutMe(testDb.db, spaceId, { transport: null }, NOW);
+    expect(cleared.transport).toBeNull();
+    expect(cleared.pace).toBe('full');
+  });
+
+  it('reads needs no longer offered as absent', async () => {
+    const spaceId = await seedSpace();
+    await replaceAboutMe(testDb.db, spaceId, { ...EMPTY_ABOUT_ME, needs: ['step_free'] }, NOW);
+    await testDb.db.execute(
+      sql`UPDATE about_me SET needs = '{halal,step_free}' WHERE space_id = ${spaceId}`,
+    );
+    expect((await getAboutMe(testDb.db, spaceId)).needs).toEqual(['step_free']);
   });
 
   it('allows only removals when asked', async () => {
@@ -93,7 +120,8 @@ describe('about me store', () => {
       interests: ['food', 'nature'],
       pace: 'full',
       budget: null,
-      needs: ['kosher', 'step_free'],
+      transport: 'car',
+      needs: ['food_allergy', 'step_free'],
     };
     await replaceAboutMe(testDb.db, spaceId, full, NOW);
     const removals = { removalsOnly: true };
@@ -101,14 +129,21 @@ describe('about me store', () => {
       { ...full, interests: ['food', 'nature', 'nightlife'] },
       { ...full, budget: 'mid' },
       { ...full, party: 'couple' },
-      { ...full, needs: ['kosher', 'step_free', 'halal'] },
+      { ...full, transport: 'foot_transit' },
+      { ...full, needs: ['food_allergy', 'step_free', 'gluten_free'] },
     ] satisfies AboutMe[]) {
       await expect(replaceAboutMe(testDb.db, spaceId, blocked, NOW, removals)).rejects.toThrow(
         AboutMeRuleError,
       );
       expect(await getAboutMe(testDb.db, spaceId)).toEqual(full);
     }
-    const reduced: AboutMe = { ...full, interests: ['nature'], pace: null, needs: ['kosher'] };
+    const reduced: AboutMe = {
+      ...full,
+      interests: ['nature'],
+      pace: null,
+      transport: null,
+      needs: ['food_allergy'],
+    };
     expect(await replaceAboutMe(testDb.db, spaceId, reduced, NOW, removals)).toEqual(reduced);
   });
 

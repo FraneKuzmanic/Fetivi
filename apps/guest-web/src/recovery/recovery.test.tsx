@@ -84,19 +84,43 @@ const type = (el: HTMLInputElement, value: string) =>
     el.dispatchEvent(new Event('input', { bubbles: true }));
   });
 
+const sendButton = () => host.querySelector<HTMLButtonElement>('button[aria-label="Send link"]');
+
 describe('RecoveryRequest', () => {
+  it('opens into only an email field with its send arrow inside', async () => {
+    server({});
+    await mount(<RecoveryRequest slug="abc" />, '/u/abc');
+    await act(async () => button('Move your chat here')?.click());
+    expect(host.textContent).not.toContain('Move your chat here');
+    const form = host.querySelector('form') as HTMLFormElement;
+    expect(form.querySelectorAll('input')).toHaveLength(1);
+    expect(form.querySelectorAll('button')).toHaveLength(1);
+    expect(form.querySelector('.recovery-field input[name="email"]')).not.toBeNull();
+    expect(form.querySelector('.recovery-field button[type="submit"]')).toBe(sendButton());
+    expect(document.activeElement).toBe(form.querySelector('input'));
+  });
+
   it('sends the email for the unit and always shows the same message', async () => {
     const calls = server({});
     await mount(<RecoveryRequest slug="abc" />, '/u/abc');
     await act(async () => button('Move your chat here')?.click());
     type(host.querySelector('input[name="email"]') as HTMLInputElement, 'ana@example.test');
-    await act(async () => button('Send link')?.click());
+    await act(async () => sendButton()?.click());
     expect(calls).toEqual([
       { url: '/api/access/abc/recovery', method: 'POST', body: { email: 'ana@example.test' } },
     ]);
     expect(host.querySelector('[role="status"]')?.textContent).toBe(
       "If this email is linked to a Fetivi here, I've sent a link. It works for 1 hour.",
     );
+  });
+
+  it('sends on Enter too', async () => {
+    const calls = server({});
+    await mount(<RecoveryRequest slug="abc" />, '/u/abc');
+    await act(async () => button('Move your chat here')?.click());
+    type(host.querySelector('input[name="email"]') as HTMLInputElement, 'ana@example.test');
+    await act(async () => (host.querySelector('form') as HTMLFormElement).requestSubmit());
+    expect(calls).toHaveLength(1);
   });
 
   it.each([
@@ -108,7 +132,7 @@ describe('RecoveryRequest', () => {
     await mount(<RecoveryRequest slug="abc" />, '/u/abc');
     await act(async () => button('Move your chat here')?.click());
     type(host.querySelector('input[name="email"]') as HTMLInputElement, 'ana@example.test');
-    await act(async () => button('Send link')?.click());
+    await act(async () => sendButton()?.click());
     expect(host.querySelector('.message')?.textContent).toBe(message);
   });
 });

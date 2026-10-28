@@ -6,7 +6,7 @@ import { EMPTY_ABOUT_ME, INTERESTS } from './vocabulary';
 describe('aboutMeFit', () => {
   it('is null with no interests', () => {
     expect(aboutMeFit(EMPTY_ABOUT_ME)).toBeNull();
-    expect(aboutMeFit({ ...EMPTY_ABOUT_ME, party: 'family', needs: ['halal'] })).toBeNull();
+    expect(aboutMeFit({ ...EMPTY_ABOUT_ME, party: 'family', needs: ['step_free'] })).toBeNull();
   });
 
   it('takes the strongest pull per category, not the sum', () => {

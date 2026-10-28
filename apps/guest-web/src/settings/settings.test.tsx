@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+
+import i18next from 'i18next';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
@@ -6,7 +8,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Space } from '../api';
 import { EmailProvider } from '../email/EmailProvider';
 import type { EmailState } from '../email/email-api';
-import { locales } from '../i18n';
+import { locales, setLanguage } from '../i18n';
 import { SpaceProvider } from '../space';
 import { SettingsPage } from './SettingsPage';
 
@@ -22,6 +24,7 @@ afterEach(() => {
   root = null;
   document.body.innerHTML = '';
   vi.unstubAllGlobals();
+  setLanguage('en');
 });
 
 const SPACE: Space = {
@@ -77,18 +80,33 @@ const checkbox = (text: string) =>
     .find((l) => l.textContent?.includes(text))
     ?.querySelector<HTMLInputElement>('input[type="checkbox"]') ?? null;
 const tipsBox = () => checkbox('One local tip a day');
-const evaluationBox = () => checkbox('Keep my conversation');
+const evaluationBox = () => checkbox('Keep an anonymous copy');
 
 const button = (text: string) =>
   [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(text));
 
 describe('SettingsPage', () => {
+  it('opens with the language, marks the current one, and switching saves it on the space', async () => {
+    const calls = server({ email: null, verified: false, tips: false });
+    await mount();
+    const first = host.querySelector('.settings-section');
+    expect(first?.querySelector('h2')?.textContent).toBe('Language');
+    expect(first?.querySelectorAll('.language-option')).toHaveLength(7);
+    expect(first?.querySelector('[aria-current="true"]')?.textContent).toBe('English');
+    await act(async () => button('Deutsch')?.click());
+    expect(calls.find((c) => c.url === '/api/space')).toEqual({
+      url: '/api/space',
+      method: 'PATCH',
+      body: { language: 'de' },
+    });
+    expect(i18next.language).toBe('de');
+    expect(host.querySelector('[aria-current="true"]')?.textContent).toBe('Deutsch');
+  });
+
   it('without an email: explains when it is asked, offers no input and no link', async () => {
     server({ email: null, verified: false, tips: false });
     await mount();
-    expect(host.textContent).toContain(
-      "I'll ask for your email when you book something or ask for updates.",
-    );
+    expect(host.textContent).toContain(locales.en.settings.noEmail);
     expect(host.querySelector('input[type="email"]')).toBeNull();
     expect(tipsBox()).toBeNull();
     expect(button('Email me a link')?.disabled).toBe(true);
@@ -137,7 +155,12 @@ describe('SettingsPage', () => {
   it('evaluation opt-in: off by default, saves on the space, also after checkout', async () => {
     const calls = server({ email: null, verified: false, tips: false });
     await mount({ ...SPACE, closed: true });
-    expect(host.textContent).toContain('your chat is deleted 30 days after checkout');
+    // One line carries the purpose: no extra notes, and no mention of a university.
+    expect(evaluationBox()?.closest('label')?.textContent).toBe(
+      'Keep an anonymous copy of this chat to help evaluate and improve Fetivi.',
+    );
+    expect(evaluationBox()?.hasAttribute('aria-describedby')).toBe(false);
+    expect(host.textContent?.toLowerCase()).not.toContain('university');
     expect(evaluationBox()?.checked).toBe(false);
     await act(async () => evaluationBox()?.click());
     expect(calls.find((c) => c.url === '/api/space')).toMatchObject({

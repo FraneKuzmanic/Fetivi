@@ -43,8 +43,8 @@ export function GuideTab() {
   }, []);
 
   return (
-    <section className="guide" aria-labelledby="tab-title">
-      <h1 id="tab-title" ref={heading} tabIndex={-1}>
+    <section className="guide guide-home" aria-labelledby="tab-title">
+      <h1 id="tab-title" ref={heading} tabIndex={-1} className="visually-hidden">
         {t('tabs.guide')}
       </h1>
       <UnitGate state={state} reload={reload}>

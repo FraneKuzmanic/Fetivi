@@ -139,10 +139,24 @@ describe('trip tools', () => {
   it("shows needs the guest saved and keeps them through the model's updates", async () => {
     const a = await seedOpen();
     const token = await tokenFor(a.spaceId);
-    await replaceAboutMe(t.db, a.spaceId, { ...EMPTY_ABOUT_ME, needs: ['halal'] }, new Date());
-    expect(aboutMeOf(await call(token, 'get_about_me'))).toMatchObject({ needs: ['halal'] });
+    await replaceAboutMe(t.db, a.spaceId, { ...EMPTY_ABOUT_ME, needs: ['step_free'] }, new Date());
+    expect(aboutMeOf(await call(token, 'get_about_me'))).toMatchObject({ needs: ['step_free'] });
     const updated = await call(token, 'update_about_me', { addInterests: ['food'] });
-    expect(aboutMeOf(updated)).toMatchObject({ interests: ['food'], needs: ['halal'] });
+    expect(aboutMeOf(updated)).toMatchObject({ interests: ['food'], needs: ['step_free'] });
+  });
+
+  it('saves how they get around and clears it with null', async () => {
+    const a = await seedOpen();
+    const token = await tokenFor(a.spaceId);
+    const saved = await call(token, 'update_about_me', { transport: 'scooter_bike' });
+    expect(saved.isError).toBeFalsy();
+    expect(aboutMeOf(await call(token, 'get_about_me'))).toMatchObject({
+      transport: 'scooter_bike',
+    });
+    expect((await call(token, 'update_about_me', { transport: 'plane' })).isError).toBe(true);
+    const cleared = await call(token, 'update_about_me', { transport: null });
+    expect(aboutMeOf(cleared)).toMatchObject({ transport: null });
+    expect((await getAboutMe(t.db, a.spaceId)).transport).toBeNull();
   });
 
   it("never reads another Space's About me", async () => {

@@ -9,7 +9,6 @@ import { InboxProvider, useInbox } from '../inbox/InboxProvider';
 import { TripTab } from '../my-trip/TripTab';
 import { PushProvider } from '../push/AlertOffer';
 import { EmptyTab, type Tab } from './EmptyTab';
-import { LanguageMenu } from './LanguageMenu';
 import { TabBar } from './TabBar';
 
 /** Header, the tab's content (or a page such as About me), then the tab bar: DOM order matches top-to-bottom. */
@@ -51,7 +50,6 @@ function ShellLayout({
               <GearSix aria-hidden="true" />
               <span className="visually-hidden">{t('header.settings')}</span>
             </NavLink>
-            <LanguageMenu />
           </div>
         </div>
       </header>

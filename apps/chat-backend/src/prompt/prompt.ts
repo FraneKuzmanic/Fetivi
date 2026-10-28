@@ -11,6 +11,7 @@ import {
   type PartyShape,
   type SkyCode,
   type StayPhase,
+  type Transport,
   type WarningType,
   type WeatherReport,
 } from '@fetivi/domain';
@@ -118,6 +119,7 @@ export const ABOUT_ME_EN: {
   interests: Record<Interest, string>;
   pace: Record<Pace, string>;
   budget: Record<Budget, string>;
+  transport: Record<Transport, string>;
   needs: Record<Need, string>;
 } = {
   party: {
@@ -140,11 +142,14 @@ export const ABOUT_ME_EN: {
   },
   pace: { easy: 'take it easy', mixed: 'a bit of both', full: 'pack the days' },
   budget: { simple: 'keep it simple', mid: 'mid-range', treat: 'happy to treat themselves' },
+  transport: {
+    car: 'by car',
+    scooter_bike: 'by scooter or bike',
+    foot_transit: 'on foot and by public transport',
+  },
   needs: {
-    gluten_free: 'gluten-free (coeliac)',
+    gluten_free: 'gluten-free',
     food_allergy: 'a food allergy',
-    halal: 'halal food',
-    kosher: 'kosher food',
     step_free: 'step-free access or a wheelchair',
     limited_mobility: 'limited mobility',
   },
@@ -168,6 +173,7 @@ export function aboutMeNote(aboutMe: AboutMe, previous: string | null): string |
   }
   if (aboutMe.pace) parts.push(`pace: ${en.pace[aboutMe.pace]}`);
   if (aboutMe.budget) parts.push(`budget: ${en.budget[aboutMe.budget]}`);
+  if (aboutMe.transport) parts.push(`getting around: ${en.transport[aboutMe.transport]}`);
   const head =
     "About me (what the guests chose to share; use it to tailor suggestions, don't recite it):";
   const body = parts.length ? ` ${parts.join('; ')}.` : '';

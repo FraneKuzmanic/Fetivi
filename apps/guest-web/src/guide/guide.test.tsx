@@ -173,7 +173,10 @@ describe('Guide index', () => {
       '/guide/contacts',
     ]);
     expect(links[0]?.textContent).toContain('Arrival and access');
+    // The title is for screen readers; Fetivi's greeting says what the screen is for.
     expect(host.querySelectorAll('h1')).toHaveLength(1);
+    expect(host.querySelector('h1')?.className).toBe('visually-hidden');
+    expect(host.querySelector('.mascot-says')?.textContent).toContain('Tap a topic to open it.');
   });
 
   it('offers a retry when the unit cannot be loaded', async () => {
@@ -307,12 +310,17 @@ describe('Saved places and top picks', () => {
     expect(host.querySelector('.fv-carousel')).not.toBeNull();
   });
 
-  it('explains how to save when nothing is saved', async () => {
+  it('says under the title what the page holds, and a plain line when nothing is saved', async () => {
     stubApi(unit(false), []);
     await mount('/guide/saved');
     await vi.waitFor(() =>
-      expect(host.textContent).toContain('Places you save in the chat appear here.'),
+      expect(host.textContent).toContain('Nothing saved yet. Tap Save on any place card'),
     );
+    expect(host.querySelector('h1')?.textContent).toBe('Saved places');
+    expect(host.querySelector('.guide-header-hint')?.textContent).toBe(
+      "Places you've saved in chat.",
+    );
+    expect(host.querySelector('.mascot-says')).toBeNull();
   });
 
   it("shows the empty state for the host's picks", async () => {

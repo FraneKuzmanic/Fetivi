@@ -12,7 +12,7 @@ export const tripTools: readonly GuestToolSpec[] = [
     config: {
       title: 'About me',
       description:
-        'What the guests chose to share about their trip: who is travelling, interests, pace, budget feel, and needs they added themselves. Use it to tailor suggestions.',
+        'What the guests chose to share about their trip: who is travelling, interests, pace, budget feel, how they get around, and needs they added themselves. Use it to tailor suggestions.',
       scope: 'about_me:read',
       inputSchema: getAboutMeInput,
       outputSchema: aboutMeResult,
@@ -34,11 +34,11 @@ export const tripTools: readonly GuestToolSpec[] = [
     config: {
       title: 'Save a preference',
       description:
-        'Save an ordinary preference the guest mentions in conversation (who is travelling, interests, pace, budget feel) without asking or announcing it. Never for health, diet for medical or religious reasons, religion or accessibility: those are saved only by the guest in About me.',
+        'Save an ordinary preference the guest mentions in conversation (who is travelling, interests, pace, budget feel, how they get around) without asking or announcing it. Never for health, diet for medical or religious reasons, religion or accessibility: those are saved only by the guest in About me.',
       scope: 'about_me:write',
       inputSchema: updateAboutMeInput,
       outputSchema: aboutMeResult,
-      // It overwrites single values (party, pace, budget).
+      // It overwrites single values (party, pace, budget, transport).
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,

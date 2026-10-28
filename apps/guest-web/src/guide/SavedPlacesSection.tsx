@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { placeLabels } from '../chat/render/labels';
 import { SavedPlacesProvider, useSavedPlaces } from '../chat/render/SavedPlaces';
-import { MascotSays } from '../shell/Mascot';
 import { getSavedPlaceCards } from './guide-api';
 
 type Cards =
@@ -45,14 +44,14 @@ export function SavedPlacesSection({ closed }: { closed: boolean }) {
   if (cards.status === 'error') {
     return (
       <div className="guide-error">
-        <MascotSays>{t('guide.loadError')}</MascotSays>
+        <p>{t('guide.loadError')}</p>
         <button type="button" className="button" onClick={load}>
           {t('guide.retry')}
         </button>
       </div>
     );
   }
-  if (cards.places.length === 0) return <MascotSays>{t('guide.savedEmpty')}</MascotSays>;
+  if (cards.places.length === 0) return <p>{t('guide.savedEmpty')}</p>;
   return (
     <SavedPlacesProvider closed={closed}>
       <Carousel places={cards.places} />

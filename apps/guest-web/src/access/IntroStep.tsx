@@ -14,7 +14,7 @@ export function IntroStep({
   const { t } = useTranslation();
   return (
     <>
-      <FetiviStage size="large">
+      <FetiviStage>
         <h1 ref={headingRef} tabIndex={-1}>
           {t('intro.title')}
         </h1>

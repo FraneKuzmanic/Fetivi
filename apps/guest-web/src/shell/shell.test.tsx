@@ -31,7 +31,9 @@ describe('Shell', () => {
     expect(html).toContain('My trip');
     expect(html.indexOf('<header')).toBeLessThan(html.indexOf('<main'));
     expect(html.indexOf('<main')).toBeLessThan(html.indexOf('<nav'));
-    expect(html).toContain('aria-haspopup="dialog"');
+    // The language lives in Settings, not in the header.
+    expect(html).not.toContain('aria-haspopup="dialog"');
+    expect(html).not.toContain('language-button');
     expect(html).toMatch(
       /<a [^>]*href="\/about-me"[^>]*>.*?<span class="visually-hidden">About me<\/span><\/a>/,
     );
@@ -63,6 +65,6 @@ describe('Shell', () => {
     const html = render('/trip');
     expect(html).toContain('Meine Reise');
     expect(html).toContain('Reiseführer');
-    expect(html).toContain('<span lang="de">Deutsch</span>');
+    expect(html).not.toContain('Deutsch');
   });
 });

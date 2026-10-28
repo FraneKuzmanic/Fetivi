@@ -20,8 +20,6 @@ export const hr: Messages = {
     none: 'Otvorite poveznicu koju vam je poslao domaćin ili skenirajte QR kod u apartmanu.',
   },
   header: {
-    language: 'Jezik',
-    chooseLanguage: 'Odaberite jezik',
     aboutMe: 'O meni',
     settings: 'Postavke',
   },
@@ -40,7 +38,7 @@ export const hr: Messages = {
   chat: {
     title: 'Razgovor',
     welcome:
-      'Bok! Ja sam Fetivi, AI asistent za vaš boravak. Pitajte me bilo što o apartmanu ili okolici.',
+      'Bok! Ja sam Fetivi, AI asistent za vaš boravak. Pitajte me bilo što o smještaju ili okolici.',
     you: 'Vi',
     fetivi: 'Fetivi',
     typing: 'Fetivi piše…',
@@ -49,10 +47,13 @@ export const hr: Messages = {
     send: 'Pošalji',
     startersLabel: 'Ideje za početak',
     starterWifi: 'Koja je lozinka za Wi-Fi?',
-    starterTimes: 'Kada su prijava i odjava?',
-    starterAccess: 'Kako da uđem?',
-    starterRules: 'Koja su kućna pravila?',
-    starterAround: 'Što se zanimljivo može raditi u blizini?',
+    starterEat: 'Gdje se u blizini može dobro jesti?',
+    starterEvents: 'Što se događa dok smo ovdje?',
+    starterWeather: 'Kakvo će vrijeme biti sutra?',
+    starterBoat: 'Mogu li rezervirati izlet brodom?',
+    starterFerry: 'Ima li trajekt od Splita do Hvara?',
+    starterPlan: 'Isplaniraj nam jedan dan izleta',
+    starterHost: 'Želim poslati poruku domaćinu',
     tripTitle: 'Recite mi nešto o svom putovanju',
     tripBody: 'Tko putuje i što volite? Zapamtit ću to. Ovo možete preskočiti.',
     tripStart: 'Krenimo',
@@ -69,8 +70,10 @@ export const hr: Messages = {
   },
   aboutMe: {
     title: 'O meni',
-    intro: 'Ovo pamtim za vaše putovanje. Bilo što možete promijeniti ili ukloniti.',
-    empty: 'Još mi niste ništa rekli o svom putovanju.',
+    intro:
+      'Ovi mi odgovori pomažu predložiti mjesta, planove i usluge koji vam odgovaraju. Bilo što možete dopuniti ili promijeniti kad god želite, a ono što mi kažete u chatu pojavit će se i ovdje.',
+    empty:
+      'Recite mi ponešto o svom putovanju i predložit ću vam mjesta, planove i usluge koji vam odgovaraju. Ono što spomenete u chatu pojavit će se i ovdje.',
     start: 'Recite mi o svom putovanju',
     change: 'Promijeni',
     notSet: 'Još nije postavljeno',
@@ -82,9 +85,8 @@ export const hr: Messages = {
     interestsTitle: 'Što volite?',
     paceTitle: 'Koji vam tempo odgovara?',
     budgetTitle: 'Kakav budžet?',
+    transportTitle: 'Kako ćete se kretati?',
     needsTitle: 'Trebam li nešto imati na umu?',
-    needsNote:
-      'Sprema se samo kad vi to dodirnete. Koristim to za prijedloge; briše se 30 dana nakon odjave.',
     pickOne: 'Odaberite jedno',
     pickAny: 'Odaberite koliko želite',
     step: 'Pitanje {{current}} od {{total}}',
@@ -123,11 +125,14 @@ export const hr: Messages = {
     mid: 'Srednje',
     treat: 'Počastit ćemo se',
   },
+  transport: {
+    car: 'Automobilom',
+    scooter_bike: 'Skuterom ili biciklom',
+    foot_transit: 'Pješice i javnim prijevozom',
+  },
   need: {
-    gluten_free: 'Bez glutena (celijakija)',
+    gluten_free: 'Bez glutena',
     food_allergy: 'Alergija na hranu',
-    halal: 'Halal',
-    kosher: 'Košer',
     step_free: 'Bez stepenica / invalidska kolica',
     limited_mobility: 'Smanjena pokretljivost',
   },
@@ -268,12 +273,14 @@ export const hr: Messages = {
   },
   settings: {
     title: 'Postavke',
+    languageTitle: 'Jezik',
     emailTitle: 'E-pošta',
     confirmed: 'Potvrđeno',
     waiting: 'Čeka vašu potvrdu',
     resend: 'Ponovno pošalji poveznicu za potvrdu',
     resent: 'Poslano. Provjerite poštu.',
-    noEmail: 'Vašu e-poštu tražit ću kad nešto rezervirate ili zatražite novosti.',
+    noEmail:
+      'Vašu e-poštu tražit ću samo kad nešto rezervirate ili ako želite novosti o rezervacijama i odgovore domaćina e-poštom.',
     tips: 'Jedan lokalni savjet dnevno e-poštom',
     deviceTitle: 'Otvori na drugom uređaju',
     deviceIntro:
@@ -281,12 +288,10 @@ export const hr: Messages = {
     sendLink: 'Pošalji mi poveznicu',
     linkSent: 'Poslano. Provjerite poštu; poveznica vrijedi 1 sat.',
     evaluationTitle: 'Pomozite poboljšati Fetivi',
-    evaluation: 'Sačuvaj moj razgovor za istraživanje o Fetiviju',
+    evaluation:
+      'Sačuvaj anonimnu kopiju ovog razgovora kako bi se Fetivi mogao ocijeniti i poboljšati.',
     deviceSignOut: 'Kad je ondje otvorite, ovaj se uređaj odjavljuje iz Fetivija.',
     needsEmail: 'Dostupno čim budem imao vašu e-adresu.',
-    evaluationOff: 'Isključeno: vaš se razgovor briše 30 dana nakon odjave.',
-    evaluationOn:
-      'Uključeno: kopija bez vaše e-adrese i postavki čuva se za sveučilišno istraživanje o Fetiviju.',
   },
   cancelOrder: {
     heading: 'Otkazati ovu rezervaciju?',
@@ -401,8 +406,7 @@ export const hr: Messages = {
     answerTerms: 'Odgovori na nove uvjete',
     actionFailed: 'To nije uspjelo. Rezervacija se možda promijenila, evo kako sada stoji.',
     empty:
-      'Ovdje će se pojaviti vaši dani i rezervacije. Recite mi u chatu što biste voljeli raditi, a ja ću to isplanirati ili rezervirati s vama.',
-    emptyAction: 'Planirajte s Fetivijem',
+      'Ovdje će se pojaviti vaši planovi i rezervacije. Recite mi u chatu što biste voljeli raditi, a ja ću to isplanirati ili rezervirati s vama.',
     nothingBooked: 'Još ništa nije rezervirano',
   },
   mcpApps: {
@@ -459,7 +463,7 @@ export const hr: Messages = {
   guide: {
     sectionsLabel: 'Dijelovi vodiča',
     greeting:
-      'Dobro došli u {{name}}! Ovdje je sve za vaš boravak: ulazak, Wi-Fi, kućni red i više.',
+      'Dobro došli u {{name}}! Ovo je vaš vodič kroz boravak: ulazak, Wi-Fi, kućni red, mjesta u blizini i koga nazvati. Dodirnite temu da je otvorite.',
     back: 'Vodič',
     loadError: 'Nisam mogao učitati vodič. Provjerite vezu i pokušajte ponovno.',
     retry: 'Pokušaj ponovno',
@@ -474,12 +478,11 @@ export const hr: Messages = {
     hint_wifi_essentials: 'Mreža, lozinka i što apartman ima',
     hint_house_rules_checkout: 'Vrijeme odjave i na što paziti',
     hint_how_tos: 'Kako stvari rade, uz fotografije domaćina',
-    hint_saved_places: 'Mjesta koja ste spremili u chatu',
+    hint_saved_places: 'Mjesta koja ste spremili u chatu.',
     hint_host_picks: 'Mjesta u blizini koja domaćin voli',
-    hint_contacts_emergency: 'Broj za hitne slučajeve 112 i vaš domaćin',
+    hint_contacts_emergency: '112 za hitne slučajeve, domaćin za sve oko boravka',
     nothingYet: 'Domaćin ovdje još nije ništa dodao.',
-    savedEmpty:
-      'Ovdje se pojavljuju mjesta koja spremite u chatu. Dodirnite Spremi na kartici mjesta.',
+    savedEmpty: 'Još ništa nije spremljeno. Dodirnite Spremi na bilo kojoj kartici mjesta u chatu.',
     picksEmpty: 'Omiljena mjesta vašeg domaćina uskoro će se pojaviti ovdje.',
     tipsHeading: 'Savjeti za okolicu',
     amenities: 'U apartmanu',
@@ -570,7 +573,7 @@ export const hr: Messages = {
   },
   intro: {
     title: 'Bok! Ja sam Fetivi.',
-    body: 'Ja sam AI asistent za vaš boravak. Poznajem apartman i grad i pomoći ću vam da se ovdje osjećate kao doma.',
+    body: 'Ja sam AI asistent za vaš boravak. Poznajem vaš smještaj i okolicu i pomoći ću vam da se ovdje osjećate kao doma.',
     start: 'Idemo',
   },
 };

@@ -18,8 +18,6 @@ export const en = {
     none: 'Open the link your host sent you, or scan the QR code in the apartment.',
   },
   header: {
-    language: 'Language',
-    chooseLanguage: 'Choose a language',
     aboutMe: 'About me',
     settings: 'Settings',
   },
@@ -38,7 +36,7 @@ export const en = {
   chat: {
     title: 'Chat',
     welcome:
-      "Bok! I'm Fetivi, the AI assistant for your stay. Ask me anything about the apartment or the area.",
+      "Bok! I'm Fetivi, the AI assistant for your stay. Ask me anything about your accommodation or the area.",
     you: 'You',
     fetivi: 'Fetivi',
     typing: 'Fetivi is typing…',
@@ -47,10 +45,13 @@ export const en = {
     send: 'Send',
     startersLabel: 'Ideas to start with',
     starterWifi: "What's the Wi-Fi password?",
-    starterTimes: 'When are check-in and checkout?',
-    starterAccess: 'How do I get in?',
-    starterRules: 'What are the house rules?',
-    starterAround: "What's good to do around here?",
+    starterEat: 'Where can we eat well nearby?',
+    starterEvents: "What's on while we're here?",
+    starterWeather: "What's the weather like tomorrow?",
+    starterBoat: 'Can I book a boat trip?',
+    starterFerry: 'Is there a ferry from Split to Hvar?',
+    starterPlan: 'Plan a day out for us',
+    starterHost: "I'd like to message my host",
     tripTitle: 'Tell me about your trip',
     tripBody: "Who's travelling and what do you enjoy? I'll keep it in mind. You can skip this.",
     tripStart: "Let's go",
@@ -67,8 +68,10 @@ export const en = {
   },
   aboutMe: {
     title: 'About me',
-    intro: "Here's what I keep in mind for your trip. Change or remove anything.",
-    empty: "You haven't told me about your trip yet.",
+    intro:
+      'These answers help me suggest places, plans and services that fit you. Fill in or change anything any time, and what you tell me in chat shows up here too.',
+    empty:
+      "Tell me a little about your trip and I'll suggest places, plans and services that fit you. What you mention in chat shows up here too.",
     start: 'Tell me about your trip',
     change: 'Change',
     notSet: 'Not set yet',
@@ -80,9 +83,8 @@ export const en = {
     interestsTitle: 'What do you enjoy?',
     paceTitle: 'What pace suits you?',
     budgetTitle: 'Budget feel?',
+    transportTitle: 'How are you getting around?',
     needsTitle: 'Anything I should keep in mind?',
-    needsNote:
-      "Saved only because you tap it. I use it to tailor suggestions; it's deleted 30 days after checkout.",
     pickOne: 'Pick one',
     pickAny: 'Pick any',
     step: 'Question {{current}} of {{total}}',
@@ -121,11 +123,14 @@ export const en = {
     mid: 'Mid-range',
     treat: 'Treat ourselves',
   },
+  transport: {
+    car: 'Car',
+    scooter_bike: 'Scooter or bike',
+    foot_transit: 'On foot and public transport',
+  },
   need: {
-    gluten_free: 'Gluten-free (coeliac)',
+    gluten_free: 'Gluten-free',
     food_allergy: 'Food allergy',
-    halal: 'Halal',
-    kosher: 'Kosher',
     step_free: 'Step-free / wheelchair',
     limited_mobility: 'Limited mobility',
   },
@@ -267,12 +272,14 @@ export const en = {
   },
   settings: {
     title: 'Settings',
+    languageTitle: 'Language',
     emailTitle: 'Email',
     confirmed: 'Confirmed',
     waiting: 'Waiting for you to confirm',
     resend: 'Send the confirmation link again',
     resent: 'Sent. Check your inbox.',
-    noEmail: "I'll ask for your email when you book something or ask for updates.",
+    noEmail:
+      "I'll only ask for your email when you book something, or if you'd like booking news and your host's replies by email.",
     tips: 'One local tip a day by email',
     deviceTitle: 'Open on another device',
     deviceIntro:
@@ -280,12 +287,9 @@ export const en = {
     sendLink: 'Email me a link',
     linkSent: 'Sent. Check your inbox; the link works for 1 hour.',
     evaluationTitle: 'Help improve Fetivi',
-    evaluation: 'Keep my conversation to help research Fetivi',
+    evaluation: 'Keep an anonymous copy of this chat to help evaluate and improve Fetivi.',
     deviceSignOut: 'When you open it there, this device signs out of Fetivi.',
     needsEmail: 'Available once I have your email.',
-    evaluationOff: 'Off: your chat is deleted 30 days after checkout.',
-    evaluationOn:
-      'On: a copy without your email or preferences is kept for a university study of Fetivi.',
   },
   cancelOrder: {
     heading: 'Cancel this booking?',
@@ -399,8 +403,7 @@ export const en = {
     answerTerms: 'Answer the new terms',
     actionFailed: "That didn't work. The booking may have changed, so here's how it stands now.",
     empty:
-      "Your days and bookings will show up here. Tell me in Chat what you'd like to do, and I'll plan it or book it with you.",
-    emptyAction: 'Plan with Fetivi',
+      "Your plans and bookings will show up here. Tell me in Chat what you'd like to do, and I'll plan it or book it with you.",
     nothingBooked: 'Nothing booked yet',
   },
   mcpApps: {
@@ -457,7 +460,7 @@ export const en = {
   guide: {
     sectionsLabel: 'Guide sections',
     greeting:
-      'Welcome to {{name}}! Everything for your stay is here: getting in, Wi-Fi, house rules and more.',
+      'Welcome to {{name}}! This is your guide to the stay: getting in, Wi-Fi, house rules, places nearby and who to call. Tap a topic to open it.',
     back: 'Guide',
     loadError: "I couldn't load your guide. Check your connection and try again.",
     retry: 'Try again',
@@ -472,11 +475,11 @@ export const en = {
     hint_wifi_essentials: 'Network, password and what the apartment has',
     hint_house_rules_checkout: 'Checkout time and what to keep in mind',
     hint_how_tos: 'How things work, with photos from your host',
-    hint_saved_places: 'Places you saved in the chat',
+    hint_saved_places: "Places you've saved in chat.",
     hint_host_picks: 'Places your host loves nearby',
-    hint_contacts_emergency: 'Emergency number 112 and your host',
+    hint_contacts_emergency: '112 for emergencies, your host for anything about the stay',
     nothingYet: "Your host hasn't added anything here yet.",
-    savedEmpty: 'Places you save in the chat appear here. Tap Save on any place card.',
+    savedEmpty: 'Nothing saved yet. Tap Save on any place card in the chat.',
     picksEmpty: "Your host's favourite places will appear here soon.",
     tipsHeading: 'Neighbourhood tips',
     amenities: 'In the apartment',
@@ -567,7 +570,7 @@ export const en = {
   },
   intro: {
     title: "Bok! I'm Fetivi.",
-    body: "I'm the AI assistant for your stay. I know the apartment and the town, and I'll help you feel at home here.",
+    body: "I'm the AI assistant for your stay. I know your accommodation and the area around it, and I'll help you feel at home here.",
     start: "Let's go",
   },
 } as const;

@@ -274,11 +274,11 @@ How many messages a Space may send Fetivi in one day of the property's time zone
 _Avoid_: rate limit, quota
 
 **About me**:
-What a Space's guests chose to share about their trip — who is travelling, interests, pace, budget feel and Needs — kept per Space, always visible to them, and changeable and removable by them. Fetivi may save the ordinary preferences it hears in the Conversation; it never saves a Need.
+What a Space's guests chose to share about their trip — who is travelling, interests, pace, budget feel, how they get around and Needs — kept per Space, always visible to them, and changeable and removable by them. Fetivi may save the ordinary preferences it hears in the Conversation; it never saves a Need.
 _Avoid_: profile, preferences, persona
 
 **Need**:
-A special-category About me item (diet for health or religious reasons, accessibility). Stored only when the guest taps it in themselves; a Need Fetivi only heard about is used in that Conversation and never saved.
+A special-category About me item (diet for health reasons such as gluten-free or an allergy, accessibility). Stored only when the guest taps it in themselves; a Need Fetivi only heard about is used in that Conversation and never saved.
 _Avoid_: restriction, requirement
 
 **Saved place**:

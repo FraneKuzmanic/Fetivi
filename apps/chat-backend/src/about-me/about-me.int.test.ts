@@ -30,6 +30,7 @@ const FULL: AboutMe = {
   interests: ['nature', 'beaches'],
   pace: 'easy',
   budget: 'mid',
+  transport: 'car',
   needs: ['step_free', 'gluten_free'],
 };
 const CANONICAL: AboutMe = {
@@ -70,6 +71,9 @@ describe('About me endpoints', () => {
     for (const body of [
       { ...FULL, special: true },
       { ...FULL, interests: ['halal'] },
+      { ...FULL, needs: ['halal'] },
+      { ...FULL, transport: 'plane' },
+      { ...FULL, transport: undefined },
       { ...FULL, name: 'Ana' },
     ]) {
       const response = await put(body, cookie);

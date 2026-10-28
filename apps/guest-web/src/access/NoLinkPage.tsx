@@ -13,7 +13,7 @@ export function NoLinkPage({ reason = 'none' }: { reason?: keyof typeof MESSAGE 
   return (
     <main className="onboarding">
       <h1 className="visually-hidden">Fetivi</h1>
-      <FetiviStage size="large">
+      <FetiviStage>
         <p>{t(MESSAGE[reason])}</p>
       </FetiviStage>
     </main>

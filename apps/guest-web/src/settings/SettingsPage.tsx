@@ -1,29 +1,31 @@
 import {
-  Archive,
   DeviceMobile,
   EnvelopeSimple,
   GraduationCap,
   type Icon,
   SignOut,
-  Trash,
+  Translate,
 } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LanguageOptions } from '../access/LanguagePicker';
 import { setKeepForEvaluation } from '../api';
 import { useEmail } from '../email/EmailProvider';
 import { resendVerification, setTips } from '../email/email-api';
+import { isLanguage } from '../i18n/browser-language';
 import { requestRecovery } from '../recovery/recovery-api';
 import { useSpace } from '../space';
 
 type RequestStatus = 'idle' | 'busy' | 'sent' | 'failed';
 
 /**
- * The Space's email, how to open it on another device, and the evaluation opt-in. The email is
+ * The interface language, the Space's email, how to open it on another device, and the evaluation opt-in. The email is
  * shown, never asked for here: it is asked at booking or with the update offer.
  */
 export function SettingsPage() {
-  const { t } = useTranslation();
-  const { state: space, setSpace } = useSpace();
+  const { t, i18n } = useTranslation();
+  const { state: space, setSpace, changeLanguage } = useSpace();
+  const language = isLanguage(i18n.language) ? i18n.language : 'en';
   const closed = space.status === 'ready' ? space.space.closed : true;
   const keep = space.status === 'ready' && space.space.keepForEvaluation;
   const { state, set } = useEmail();
@@ -74,6 +76,13 @@ export function SettingsPage() {
       <h1 id="tab-title" ref={heading} tabIndex={-1}>
         {t('settings.title')}
       </h1>
+
+      <section className="settings-section" aria-labelledby="settings-language">
+        <SettingsHeading id="settings-language" icon={Translate}>
+          {t('settings.languageTitle')}
+        </SettingsHeading>
+        <LanguageOptions current={language} onPick={(next) => void changeLanguage(next)} />
+      </section>
 
       <section className="settings-section" aria-labelledby="settings-email">
         <SettingsHeading id="settings-email" icon={EnvelopeSimple}>
@@ -169,20 +178,9 @@ export function SettingsPage() {
             role="switch"
             checked={keep}
             aria-checked={keep}
-            aria-describedby="settings-evaluation-note"
             onChange={(e) => toggleKeep(e.target.checked)}
           />
         </label>
-        <ul id="settings-evaluation-note" className="settings-facts">
-          <li className="settings-fact">
-            <Trash aria-hidden="true" />
-            {t('settings.evaluationOff')}
-          </li>
-          <li className="settings-fact">
-            <Archive aria-hidden="true" />
-            {t('settings.evaluationOn')}
-          </li>
-        </ul>
         <p className="status" role="status">
           {keepFailed ? t('error.network') : ''}
         </p>

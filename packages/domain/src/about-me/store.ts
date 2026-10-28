@@ -18,12 +18,16 @@ export class AboutMeRuleError extends Error {
   }
 }
 
+/** Rows may still hold codes NEEDS dropped (the stored enum keeps them); they read as absent. */
+const isNeed = (c: string): c is Need => (NEEDS as readonly string[]).includes(c);
+
 const toAboutMe = (row: AboutMeRow): AboutMe => ({
   party: row.party,
   interests: row.interests,
   pace: row.pace,
   budget: row.budget,
-  needs: row.needs,
+  transport: row.transport,
+  needs: row.needs.filter(isNeed),
 });
 
 /** Deduplicated, in vocabulary order. */
@@ -66,6 +70,7 @@ async function writeAboutMe(
         interests: canonicalInterests(next.interests),
         pace: next.pace,
         budget: next.budget,
+        transport: next.transport,
         needs: canonicalNeeds(next.needs),
         updatedAt: now,
       })
@@ -97,6 +102,7 @@ export async function updateAboutMe(
       interests,
       pace: patch.pace === undefined ? current.pace : patch.pace,
       budget: patch.budget === undefined ? current.budget : patch.budget,
+      transport: patch.transport === undefined ? current.transport : patch.transport,
       needs: current.needs,
     };
   });
@@ -122,6 +128,7 @@ export async function replaceAboutMe(
         keptOrCleared(current.party, next.party) &&
         keptOrCleared(current.pace, next.pace) &&
         keptOrCleared(current.budget, next.budget) &&
+        keptOrCleared(current.transport, next.transport) &&
         subset(current.interests, next.interests) &&
         subset(current.needs, next.needs);
       if (!ok) throw new AboutMeRuleError('read-only');
@@ -131,6 +138,7 @@ export async function replaceAboutMe(
       interests: next.interests,
       pace: next.pace,
       budget: next.budget,
+      transport: next.transport,
       needs: next.needs,
     };
   });

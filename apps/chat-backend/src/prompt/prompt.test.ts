@@ -7,6 +7,7 @@ import {
   NEEDS,
   PACES,
   PARTY_SHAPES,
+  TRANSPORTS,
 } from '@fetivi/domain';
 import { sampleWeatherReport } from '@fetivi/domain/testing';
 import { describe, expect, it } from 'vitest';
@@ -215,6 +216,7 @@ describe('aboutMeNote', () => {
     interests: ['beaches', 'food'],
     pace: 'easy',
     budget: 'mid',
+    transport: 'car',
     needs: ['gluten_free'],
   };
 
@@ -224,7 +226,7 @@ describe('aboutMeNote', () => {
 
   it('describes everything saved in one paragraph', () => {
     expect(aboutMeNote(full, null)).toBe(
-      "About me (what the guests chose to share; use it to tailor suggestions, don't recite it): travelling as a family with children; they enjoy beaches and swimming, food and wine; pace: take it easy; budget: mid-range. Needs they added themselves: gluten-free (coeliac).",
+      "About me (what the guests chose to share; use it to tailor suggestions, don't recite it): travelling as a family with children; they enjoy beaches and swimming, food and wine; pace: take it easy; budget: mid-range; getting around: by car. Needs they added themselves: gluten-free.",
     );
   });
 
@@ -246,6 +248,7 @@ describe('aboutMeNote', () => {
       interests: INTERESTS,
       pace: PACES,
       budget: BUDGETS,
+      transport: TRANSPORTS,
       needs: NEEDS,
     } as const;
     for (const [field, codes] of Object.entries(vocabularies)) {

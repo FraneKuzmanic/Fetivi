@@ -6,6 +6,7 @@ import {
   NEEDS,
   PACES,
   PARTY_SHAPES,
+  TRANSPORTS,
 } from '@fetivi/domain/about-me-vocabulary';
 import { GUEST_LANGUAGES } from '@fetivi/domain/vocabulary';
 import { radioMove } from '@fetivi/ui';
@@ -46,6 +47,7 @@ const FULL: AboutMe = {
   interests: ['beaches', 'food'],
   pace: 'easy',
   budget: 'mid',
+  transport: 'car',
   needs: ['gluten_free'],
 };
 const en = locales.en;
@@ -108,19 +110,20 @@ describe('ChoiceGroup', () => {
 });
 
 describe('TripFlow', () => {
-  it('asks the five questions in order with their codes', () => {
+  it('asks the six questions in order with their codes', () => {
     expect(STEPS.map((s) => [s.field, s.title, s.codes])).toEqual([
       ['party', 'aboutMe.partyTitle', PARTY_SHAPES],
       ['interests', 'aboutMe.interestsTitle', INTERESTS],
       ['pace', 'aboutMe.paceTitle', PACES],
       ['budget', 'aboutMe.budgetTitle', BUDGETS],
+      ['transport', 'aboutMe.transportTitle', TRANSPORTS],
       ['needs', 'aboutMe.needsTitle', NEEDS],
     ]);
   });
 
   it('opens on who is travelling, with Skip and Next but no Back', () => {
     const out = render(<TripFlow initial={EMPTY_ABOUT_ME} onFinish={() => {}} />);
-    expect(out).toContain('Question 1 of 5');
+    expect(out).toContain('Question 1 of 6');
     expect(out).toContain(html(en.aboutMe.partyTitle));
     const labels = PARTY_SHAPES.map((c) => out.indexOf(html(en.party[c])));
     expect(labels.every((i) => i > -1)).toBe(true);
@@ -128,7 +131,6 @@ describe('TripFlow', () => {
     expect(out).toContain('>Skip<');
     expect(out).toContain('>Next<');
     expect(out).not.toContain('>Back<');
-    expect(out).not.toContain(html(en.aboutMe.needsNote));
   });
 
   it('preselects what is saved', () => {
@@ -136,14 +138,26 @@ describe('TripFlow', () => {
     expect(out).toMatch(/aria-checked="true"[^>]*>.*Family with kids/);
   });
 
-  it('ends on needs under the one-line note, with Back and Done', () => {
+  it('asks how they get around as one choice', () => {
     const out = render(<TripFlow initial={FULL} startStep={4} onFinish={() => {}} />);
-    expect(out).toContain('Question 5 of 5');
+    expect(out).toContain('Question 5 of 6');
+    expect(out).toContain(html(en.aboutMe.transportTitle));
+    expect(out).toContain('role="radiogroup"');
+    for (const code of TRANSPORTS) expect(out).toContain(html(en.transport[code]));
+    expect(out).toMatch(/aria-checked="true"[^>]*>(<svg.*?<\/svg>)?Car</);
+  });
+
+  it('ends on needs without a note, with Back and Done', () => {
+    const out = render(<TripFlow initial={FULL} startStep={5} onFinish={() => {}} />);
+    expect(out).toContain('Question 6 of 6');
     expect(out).toContain(html(en.aboutMe.needsTitle));
-    expect(out).toContain(html(en.aboutMe.needsNote));
+    expect(out).not.toContain('needs-note');
     expect(out).toContain('>Back<');
     expect(out).toContain('>Done<');
-    expect(out).toMatch(/aria-pressed="true"[^>]*>.*Gluten-free \(coeliac\)/);
+    expect(out).toMatch(/aria-pressed="true"[^>]*>(<svg.*?<\/svg>)?Gluten-free</);
+    expect(out).not.toContain('Halal');
+    expect(out).not.toContain('Kosher');
+    expect(out.match(/aria-pressed=/g)).toHaveLength(NEEDS.length);
   });
 });
 
@@ -157,13 +171,17 @@ describe('AboutMePage', () => {
       en.interest.food,
       en.pace.easy,
       en.budget.mid,
+      en.transport.car,
       en.need.gluten_free,
     ]) {
       expect(out).toContain(html(label));
       expect(out).toContain(`aria-label="Remove ${html(label)}"`);
     }
-    expect(out.match(/>Change</g)).toHaveLength(5);
-    expect(out).toContain(html(en.aboutMe.needsNote));
+    expect(out.match(/>Change</g)).toHaveLength(6);
+    expect(out).not.toContain('needs-note');
+    expect(out.indexOf(html(en.transport.car))).toBeGreaterThan(
+      out.indexOf(html(en.aboutMe.transportTitle)),
+    );
     expect(out).not.toContain(html(en.aboutMe.closedNote));
   });
 
@@ -187,10 +205,15 @@ describe('AboutMePage', () => {
   it('invites the guest to start when nothing is saved', () => {
     const out = render(<AboutMePage initial={EMPTY_ABOUT_ME} />);
     expect(out).toContain(html(en.aboutMe.empty));
-    expect(out.match(new RegExp(`>${html(en.aboutMe.notSet)}<`, 'g'))).toHaveLength(5);
+    expect(out.match(new RegExp(`>${html(en.aboutMe.notSet)}<`, 'g'))).toHaveLength(6);
     expect(out).toContain(`>${html(en.aboutMe.start)}<`);
     expect(out).not.toContain('aria-label="Remove');
-    expect(out.match(/>Change</g)).toHaveLength(5);
+    expect(out.match(/>Change</g)).toHaveLength(6);
+  });
+
+  it('keeps its title for screen readers only', () => {
+    const out = render(<AboutMePage initial={FULL} />);
+    expect(out).toMatch(/<h1 id="tab-title" tabindex="-1" class="visually-hidden">About me<\/h1>/);
   });
 
   it('has its title in every guest language', () => {

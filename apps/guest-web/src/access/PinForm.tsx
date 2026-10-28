@@ -118,12 +118,6 @@ export function PinForm({
           aria-describedby="pin-message"
           onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
         />
-        <p id="pin-message" className="message">
-          {pinMessage(t, problem, waitLeft)}
-        </p>
-        <p className="visually-hidden" role="status">
-          {announcement}
-        </p>
         <button
           type="submit"
           className="button block onboarding-button"
@@ -131,6 +125,12 @@ export function PinForm({
         >
           {t('pin.submit')}
         </button>
+        <p id="pin-message" className="message">
+          {pinMessage(t, problem, waitLeft)}
+        </p>
+        <p className="visually-hidden" role="status">
+          {announcement}
+        </p>
       </form>
     </>
   );

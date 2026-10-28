@@ -10,6 +10,7 @@ import {
   PLAN_LIMITS,
   PLAN_TIME,
   type Plan,
+  TRANSPORTS,
 } from '@fetivi/domain';
 import { z } from 'zod';
 
@@ -17,6 +18,7 @@ const party = z.enum(PARTY_SHAPES);
 const interest = z.enum(INTERESTS);
 const pace = z.enum(PACES);
 const budget = z.enum(BUDGETS);
+const transport = z.enum(TRANSPORTS);
 
 export const getAboutMeInput = z.strictObject({});
 
@@ -27,6 +29,10 @@ export const updateAboutMeInput = z.strictObject({
   removeInterests: z.array(interest).max(INTERESTS.length).optional(),
   pace: pace.nullable().optional().describe('The pace they like; null clears it.'),
   budget: budget.nullable().optional().describe('Their budget feel; null clears it.'),
+  transport: transport
+    .nullable()
+    .optional()
+    .describe('How they get around: car, scooter_bike or foot_transit; null clears it.'),
 });
 
 const aboutMeOutput = z.object({
@@ -34,6 +40,7 @@ const aboutMeOutput = z.object({
   interests: z.array(interest),
   pace: pace.nullable(),
   budget: budget.nullable(),
+  transport: transport.nullable(),
   needs: z.array(z.enum(NEEDS)),
 });
 export const aboutMeResult = z.object({ aboutMe: aboutMeOutput });

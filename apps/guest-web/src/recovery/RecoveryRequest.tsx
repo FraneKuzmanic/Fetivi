@@ -1,4 +1,4 @@
-import { EnvelopeSimple } from '@phosphor-icons/react';
+import { ArrowRight, EnvelopeSimple } from '@phosphor-icons/react';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '../api';
@@ -68,37 +68,47 @@ export function RecoveryRequest({ slug }: { slug: string }) {
     );
   }
 
+  // Open, only the email field is left, with its send arrow inside it; Enter sends too.
   const messageId = `${id}-message`;
   return (
     <form className="email-form recovery-form" onSubmit={submit} noValidate>
-      <p className="settings-note">{t('recovery.ask')}</p>
-      <label htmlFor={`${id}-email`}>{t('recovery.label')}</label>
-      <input
-        ref={input}
-        id={`${id}-email`}
-        className="email-input"
-        name="email"
-        type="email"
-        autoComplete="email"
-        value={email}
-        aria-invalid={problem === 'invalid'}
-        aria-describedby={problem ? messageId : undefined}
-        onChange={(e) => {
-          setEmail(e.target.value);
-          setSent(false);
-        }}
-      />
+      <label htmlFor={`${id}-email`} className="visually-hidden">
+        {t('recovery.label')}
+      </label>
+      <div className="recovery-field">
+        <input
+          ref={input}
+          id={`${id}-email`}
+          className="email-input"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder={t('recovery.label')}
+          value={email}
+          aria-invalid={problem === 'invalid'}
+          aria-describedby={problem ? messageId : undefined}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setSent(false);
+          }}
+        />
+        <button
+          type="submit"
+          className="recovery-submit"
+          aria-label={t('recovery.send')}
+          disabled={busy}
+        >
+          <ArrowRight aria-hidden="true" weight="bold" />
+        </button>
+      </div>
       {problem && (
         <p id={messageId} className="message">
           {t(PROBLEM_KEYS[problem])}
         </p>
       )}
       <p className="status" role="status">
-        {sent ? t('recovery.sent') : ''}
+        {busy ? t('recovery.sending') : sent ? t('recovery.sent') : ''}
       </p>
-      <button type="submit" className="button" disabled={busy}>
-        {t(busy ? 'recovery.sending' : 'recovery.send')}
-      </button>
     </form>
   );
 }

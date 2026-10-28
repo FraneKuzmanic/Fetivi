@@ -58,6 +58,7 @@ export async function privateValuesOf(
     ...aboutMe.interests,
     aboutMe.pace,
     aboutMe.budget,
+    aboutMe.transport,
     ...aboutMe.needs,
   ].filter((c): c is NonNullable<typeof c> => c !== null);
   const secrets = [

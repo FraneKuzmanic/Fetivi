@@ -455,7 +455,7 @@ const putAboutMe = (t: ChatTestApp, cookie: string, body: Record<string, unknown
     'PUT',
     t.app,
     '/api/about-me',
-    { party: null, interests: [], pace: null, budget: null, needs: [], ...body },
+    { party: null, interests: [], pace: null, budget: null, transport: null, needs: [], ...body },
     { cookie },
   );
 

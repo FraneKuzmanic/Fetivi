@@ -19,8 +19,8 @@ export const INTEREST_CATEGORIES: Record<Interest, CategoryWeights> = {
 
 /**
  * The ranking signal from About me: per category, the strongest pull of any interest. Null with no
- * interests. Party, pace, budget and needs don't rank (the catalog has no such data); they reach the
- * model through the About me note.
+ * interests. Party, pace, budget, transport and needs don't rank (the catalog has no such data);
+ * they reach the model through the About me note.
  */
 export function aboutMeFit(a: AboutMe): AboutMeFit | null {
   if (a.interests.length === 0) return null;

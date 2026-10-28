@@ -147,7 +147,7 @@ describe('My trip → Plan', () => {
     expect(host.querySelector('.trip-empty')?.textContent).toBe('Nothing booked yet');
   });
 
-  it('has Fetivi speak once, with the way to Chat, when nothing is planned or booked', async () => {
+  it('has Fetivi speak once about plans, under a title only screen readers get, when nothing is planned or booked', async () => {
     stubApi(() => json(planOf([])));
     await mount();
     await vi.waitFor(() => expect(host.textContent).toContain("Tell me in Chat what you'd like"));
@@ -157,7 +157,10 @@ describe('My trip → Plan', () => {
       'Nothing planned yet',
       'Nothing booked yet',
     ]);
-    expect(host.querySelector('a[href="/chat"]')?.textContent).toBe('Plan with Fetivi');
+    expect(host.textContent).toContain('Your plans and bookings will show up here.');
+    expect(host.querySelector('a[href="/chat"]')).toBeNull();
+    expect(host.querySelector('h1')?.className).toBe('visually-hidden');
+    expect(host.querySelector('h1')?.textContent).toBe('My trip');
   });
 
   it('offers a retry when offline', async () => {

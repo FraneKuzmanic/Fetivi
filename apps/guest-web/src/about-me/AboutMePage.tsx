@@ -148,7 +148,7 @@ export function AboutMePage({ initial }: { initial?: AboutMe }) {
 
   return (
     <section className="about-me" aria-labelledby="tab-title">
-      <h1 id="tab-title" ref={heading} tabIndex={-1}>
+      <h1 id="tab-title" ref={heading} tabIndex={-1} className="visually-hidden">
         {t('aboutMe.title')}
       </h1>
       {body}
@@ -197,7 +197,6 @@ function FieldSection({
           </button>
         )}
       </div>
-      {step.field === 'needs' && <p className="needs-note">{t('aboutMe.needsNote')}</p>}
       {editing ? (
         <ChoiceGroup
           labelId={titleId}

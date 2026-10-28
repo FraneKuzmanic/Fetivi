@@ -20,8 +20,6 @@ export const hu: Messages = {
     none: 'Nyisd meg a szállásadódtól kapott linket, vagy olvasd be a QR-kódot az apartmanban.',
   },
   header: {
-    language: 'Nyelv',
-    chooseLanguage: 'Válassz nyelvet',
     aboutMe: 'Rólam',
     settings: 'Beállítások',
   },
@@ -40,7 +38,7 @@ export const hu: Messages = {
   chat: {
     title: 'Csevegés',
     welcome:
-      'Bok! Fetivi vagyok, az AI-asszisztensed az itt-tartózkodásod alatt. Kérdezz bármit az apartmanról vagy a környékről.',
+      'Bok! Fetivi vagyok, az AI-asszisztensed az itt-tartózkodásod alatt. Kérdezz bármit a szállásodról vagy a környékről.',
     you: 'Te',
     fetivi: 'Fetivi',
     typing: 'Fetivi ír…',
@@ -49,10 +47,13 @@ export const hu: Messages = {
     send: 'Küldés',
     startersLabel: 'Ötletek a kezdéshez',
     starterWifi: 'Mi a Wi-Fi jelszava?',
-    starterTimes: 'Mikor van a bejelentkezés és a kijelentkezés?',
-    starterAccess: 'Hogyan jutok be?',
-    starterRules: 'Mi a házirend?',
-    starterAround: 'Mit érdemes csinálni a környéken?',
+    starterEat: 'Hol lehet a közelben jól enni?',
+    starterEvents: 'Milyen programok lesznek, amíg itt vagyunk?',
+    starterWeather: 'Milyen idő lesz holnap?',
+    starterBoat: 'Foglalhatok egy hajókirándulást?',
+    starterFerry: 'Van komp Splitből Hvarra?',
+    starterPlan: 'Tervezz nekünk egy kirándulós napot',
+    starterHost: 'Üzenni szeretnék a szállásadónak',
     tripTitle: 'Mesélj az utazásodról',
     tripBody: 'Kik utaznak, és mit szerettek? Megjegyzem. Ezt át is ugorhatod.',
     tripStart: 'Kezdjük',
@@ -69,8 +70,10 @@ export const hu: Messages = {
   },
   aboutMe: {
     title: 'Rólam',
-    intro: 'Ezt tartom szem előtt az utazásodhoz. Bármit módosíthatsz vagy törölhetsz.',
-    empty: 'Még nem meséltél az utazásodról.',
+    intro:
+      'Ezek a válaszok segítenek, hogy hozzád illő helyeket, programokat és szolgáltatásokat ajánljak. Bármikor kiegészíthetsz vagy módosíthatsz bármit, és amit a csevegésben mondasz, az is itt jelenik meg.',
+    empty:
+      'Mesélj egy kicsit az utazásodról, és hozzád illő helyeket, programokat és szolgáltatásokat ajánlok. Amit a csevegésben említesz, az is itt jelenik meg.',
     start: 'Mesélj az utazásodról',
     change: 'Módosítás',
     notSet: 'Még nincs megadva',
@@ -82,9 +85,8 @@ export const hu: Messages = {
     interestsTitle: 'Mit szeretsz?',
     paceTitle: 'Milyen tempó illik hozzád?',
     budgetTitle: 'Milyen költségvetés?',
+    transportTitle: 'Hogyan közlekedsz?',
     needsTitle: 'Van valami, amire figyelnem kell?',
-    needsNote:
-      'Csak azért mentem, mert te koppintasz rá. A javaslatokhoz használom; a kijelentkezés után 30 nappal törlődik.',
     pickOne: 'Válassz egyet',
     pickAny: 'Válassz bármennyit',
     step: '{{current}}. kérdés / {{total}}',
@@ -123,11 +125,14 @@ export const hu: Messages = {
     mid: 'Középkategória',
     treat: 'Megengedünk magunknak valamit',
   },
+  transport: {
+    car: 'Autóval',
+    scooter_bike: 'Robogóval vagy biciklivel',
+    foot_transit: 'Gyalog és tömegközlekedéssel',
+  },
   need: {
-    gluten_free: 'Gluténmentes (cöliákia)',
+    gluten_free: 'Gluténmentes',
     food_allergy: 'Ételallergia',
-    halal: 'Halal',
-    kosher: 'Kóser',
     step_free: 'Lépcsőmentes / kerekesszék',
     limited_mobility: 'Korlátozott mozgás',
   },
@@ -271,12 +276,14 @@ export const hu: Messages = {
   },
   settings: {
     title: 'Beállítások',
+    languageTitle: 'Nyelv',
     emailTitle: 'E-mail',
     confirmed: 'Megerősítve',
     waiting: 'A megerősítésedre vár',
     resend: 'Megerősítő link újraküldése',
     resent: 'Elküldve. Nézd meg a postafiókod.',
-    noEmail: 'Akkor kérem el az e-mail-címed, amikor foglalsz valamit, vagy híreket kérsz.',
+    noEmail:
+      'Csak akkor kérem el az e-mail-címed, ha foglalsz valamit, vagy ha e-mailben szeretnél foglalási híreket és a szállásadó válaszait.',
     tips: 'Napi egy helyi tipp e-mailben',
     deviceTitle: 'Megnyitás másik eszközön',
     deviceIntro:
@@ -284,12 +291,10 @@ export const hu: Messages = {
     sendLink: 'Küldj egy linket',
     linkSent: 'Elküldve. Nézd meg a postafiókod; a link 1 óráig érvényes.',
     evaluationTitle: 'Segíts jobbá tenni a Fetivit',
-    evaluation: 'A beszélgetésem megőrzése a Fetivi kutatásához',
+    evaluation:
+      'A csevegés névtelen másolatának megőrzése a Fetivi értékeléséhez és fejlesztéséhez.',
     deviceSignOut: 'Amikor ott megnyitod, ez az eszköz kijelentkezik a Fetiviből.',
     needsEmail: 'Akkor érhető el, ha már megvan az e-mail-címed.',
-    evaluationOff: 'Ki: a csevegésed a kijelentkezés után 30 nappal törlődik.',
-    evaluationOn:
-      'Be: egy másolatot az e-mail-címed és a beállításaid nélkül megőrzünk a Fetivit vizsgáló egyetemi kutatáshoz.',
   },
   cancelOrder: {
     heading: 'Lemondja ezt a foglalást?',
@@ -403,8 +408,7 @@ export const hu: Messages = {
     answerTerms: 'Válasz az új feltételekre',
     actionFailed: 'Ez nem sikerült. Lehet, hogy a foglalás megváltozott; így áll most.',
     empty:
-      'Itt jelennek majd meg a napjaid és a foglalásaid. Írd meg a csevegésben, mit szeretnél csinálni, és megtervezem vagy lefoglalom veled.',
-    emptyAction: 'Tervezz Fetivivel',
+      'Itt jelennek majd meg a terveid és a foglalásaid. Írd meg a csevegésben, mit szeretnél csinálni, és megtervezem vagy lefoglalom veled.',
     nothingBooked: 'Még nincs foglalás',
   },
   mcpApps: {
@@ -461,7 +465,7 @@ export const hu: Messages = {
   guide: {
     sectionsLabel: 'Az útmutató részei',
     greeting:
-      'Üdvözöljük: {{name}}! Itt minden megvan a tartózkodáshoz: bejutás, Wi-Fi, házirend és más.',
+      'Üdvözöljük: {{name}}! Ez az útmutató a tartózkodáshoz: bejutás, Wi-Fi, házirend, közeli helyek és kit hívjon. Koppintson egy témára a megnyitáshoz.',
     back: 'Útmutató',
     loadError: 'Nem sikerült betölteni az útmutatót. Ellenőrizze a kapcsolatot, és próbálja újra.',
     retry: 'Újra',
@@ -476,12 +480,12 @@ export const hu: Messages = {
     hint_wifi_essentials: 'Hálózat, jelszó és felszereltség',
     hint_house_rules_checkout: 'Távozás ideje és amire figyelni kell',
     hint_how_tos: 'Hogyan működnek a dolgok, a házigazda fotóival',
-    hint_saved_places: 'A csevegésben mentett helyek',
+    hint_saved_places: 'A csevegésben mentett helyek.',
     hint_host_picks: 'A házigazda kedvenc helyei a közelben',
-    hint_contacts_emergency: 'A 112-es segélyhívó és a házigazda',
+    hint_contacts_emergency:
+      '112 vészhelyzetben, a házigazda mindenben, ami a szállással kapcsolatos',
     nothingYet: 'A házigazda még nem adott hozzá ide semmit.',
-    savedEmpty:
-      'Itt jelennek meg a csevegésben mentett helyek. Koppintson a Mentés gombra egy helykártyán.',
+    savedEmpty: 'Még nincs mentett hely. Koppintson a Mentés gombra egy helykártyán a csevegésben.',
     picksEmpty: 'A házigazda kedvenc helyei hamarosan itt jelennek meg.',
     tipsHeading: 'Környékbeli tippek',
     amenities: 'Az apartmanban',
@@ -572,7 +576,7 @@ export const hu: Messages = {
   },
   intro: {
     title: 'Bok! Fetivi vagyok.',
-    body: 'Én vagyok az AI-asszisztensed az itt-tartózkodásod alatt. Ismerem az apartmant és a várost, és segítek, hogy otthon érezd magad.',
+    body: 'Én vagyok az AI-asszisztensed az itt-tartózkodásod alatt. Ismerem a szállásodat és a környékét, és segítek, hogy otthon érezd magad.',
     start: 'Kezdjük',
   },
 };

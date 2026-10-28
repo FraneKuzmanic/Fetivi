@@ -10,6 +10,8 @@ import {
   PARTY_SHAPES,
   type Pace,
   type PartyShape,
+  TRANSPORTS,
+  type Transport,
 } from '@fetivi/domain/about-me-vocabulary';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,12 +22,13 @@ import { ChoiceGroup } from './ChoiceGroup';
 
 type Field = keyof AboutMe;
 
-/** The About me fields in display order: the flow's five questions and the page's sections. */
+/** The About me fields in display order: the flow's six questions and the page's sections. */
 export const STEPS = [
   { field: 'party', title: 'aboutMe.partyTitle', labels: 'party', codes: PARTY_SHAPES },
   { field: 'interests', title: 'aboutMe.interestsTitle', labels: 'interest', codes: INTERESTS },
   { field: 'pace', title: 'aboutMe.paceTitle', labels: 'pace', codes: PACES },
   { field: 'budget', title: 'aboutMe.budgetTitle', labels: 'budget', codes: BUDGETS },
+  { field: 'transport', title: 'aboutMe.transportTitle', labels: 'transport', codes: TRANSPORTS },
   { field: 'needs', title: 'aboutMe.needsTitle', labels: 'need', codes: NEEDS },
 ] as const satisfies readonly {
   field: Field;
@@ -40,6 +43,7 @@ type LabelKey =
   | `interest.${Interest}`
   | `pace.${Pace}`
   | `budget.${Budget}`
+  | `transport.${Transport}`
   | `need.${Need}`;
 
 /** The i18n key of one code's label; the locale sections are keyed by the vocabulary codes. */
@@ -64,7 +68,7 @@ export function withValues(aboutMe: AboutMe, field: Field, codes: string[]): Abo
 
 type Load = { status: 'loading' } | { status: 'offline' } | { status: 'ready'; saved: AboutMe };
 
-/** The tap-only "Tell me about your trip" flow: five questions, each skippable; saves after every step. */
+/** The tap-only "Tell me about your trip" flow: six questions, each skippable; saves after every step. */
 export function TripFlow({
   onFinish,
   initial,
@@ -74,7 +78,7 @@ export function TripFlow({
   onFinish: (aboutMe: AboutMe) => void;
   /** Tests start from a known value; the app loads it. */
   initial?: AboutMe;
-  /** Tests open a given question (0–4). */
+  /** Tests open a given question (0–5). */
   startStep?: number;
 }) {
   const { t } = useTranslation();
@@ -175,7 +179,6 @@ export function TripFlow({
       <h2 id={titleId} ref={heading} tabIndex={-1}>
         {t(step.title)}
       </h2>
-      {step.field === 'needs' && <p className="needs-note">{t('aboutMe.needsNote')}</p>}
       <p className="trip-flow-hint">{t(multiple ? 'aboutMe.pickAny' : 'aboutMe.pickOne')}</p>
       <ChoiceGroup
         labelId={titleId}

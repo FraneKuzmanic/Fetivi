@@ -41,17 +41,20 @@ const msg = (id: string, role: 'user' | 'assistant', text: string): UIMessage =>
 
 const STARTERS = [
   "What's the Wi-Fi password?",
-  'When are check-in and checkout?',
-  'How do I get in?',
-  'What are the house rules?',
-  "What's good to do around here?",
+  'Where can we eat well nearby?',
+  "What's on while we're here?",
+  "What's the weather like tomorrow?",
+  'Can I book a boat trip?',
+  'Is there a ferry from Split to Hvar?',
+  'Plan a day out for us',
+  "I'd like to message my host",
 ];
 
 // renderToString escapes apostrophes and quotes.
 const html = (text: string) => text.replaceAll("'", '&#x27;').replaceAll('"', '&quot;');
 
 describe('ChatView', () => {
-  it('opens with the welcome, five starter questions in order and the trip card', () => {
+  it('opens with the welcome, eight starter questions in order and the trip card', () => {
     const out = render([]);
     expect(out).toContain(html(locales.en.chat.welcome));
     expect(out).toContain('the AI assistant');

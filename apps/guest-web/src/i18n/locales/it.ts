@@ -20,8 +20,6 @@ export const it: Messages = {
     none: "Apri il link che ti ha inviato il tuo host o scansiona il codice QR nell'appartamento.",
   },
   header: {
-    language: 'Lingua',
-    chooseLanguage: 'Scegli una lingua',
     aboutMe: 'Su di me',
     settings: 'Impostazioni',
   },
@@ -40,7 +38,7 @@ export const it: Messages = {
   chat: {
     title: 'Chat',
     welcome:
-      "Bok! Sono Fetivi, l'assistente AI per il tuo soggiorno. Chiedimi qualsiasi cosa sull'appartamento o sulla zona.",
+      "Bok! Sono Fetivi, l'assistente AI per il tuo soggiorno. Chiedimi qualsiasi cosa sul tuo alloggio o sulla zona.",
     you: 'Tu',
     fetivi: 'Fetivi',
     typing: 'Fetivi sta scrivendo…',
@@ -49,10 +47,13 @@ export const it: Messages = {
     send: 'Invia',
     startersLabel: 'Idee per iniziare',
     starterWifi: 'Qual è la password del Wi-Fi?',
-    starterTimes: 'Quando sono il check-in e il check-out?',
-    starterAccess: 'Come faccio a entrare?',
-    starterRules: 'Quali sono le regole della casa?',
-    starterAround: "Cosa c'è di bello da fare qui intorno?",
+    starterEat: 'Dove si mangia bene qui vicino?',
+    starterEvents: "Cosa c'è da fare mentre siamo qui?",
+    starterWeather: 'Che tempo farà domani?',
+    starterBoat: 'Posso prenotare una gita in barca?',
+    starterFerry: "C'è un traghetto da Spalato a Hvar?",
+    starterPlan: 'Organizzaci una giornata fuori',
+    starterHost: "Vorrei scrivere all'host",
     tripTitle: 'Raccontami del tuo viaggio',
     tripBody: 'Chi viaggia e cosa ti piace? Lo terrò a mente. Puoi saltare questo passaggio.',
     tripStart: 'Iniziamo',
@@ -69,8 +70,10 @@ export const it: Messages = {
   },
   aboutMe: {
     title: 'Su di me',
-    intro: 'Ecco cosa tengo a mente per il tuo viaggio. Puoi cambiare o togliere qualsiasi cosa.',
-    empty: 'Non mi hai ancora parlato del tuo viaggio.',
+    intro:
+      'Queste risposte mi aiutano a suggerirti posti, programmi e servizi adatti a te. Puoi completare o cambiare tutto quando vuoi, e quello che mi dici in chat compare anche qui.',
+    empty:
+      'Raccontami qualcosa del tuo viaggio e ti suggerirò posti, programmi e servizi adatti a te. Quello che mi dici in chat compare anche qui.',
     start: 'Raccontami del tuo viaggio',
     change: 'Cambia',
     notSet: 'Non ancora indicato',
@@ -82,9 +85,8 @@ export const it: Messages = {
     interestsTitle: 'Cosa ti piace?',
     paceTitle: 'Che ritmo preferisci?',
     budgetTitle: 'Che budget?',
+    transportTitle: 'Come ti sposti?',
     needsTitle: 'C’è qualcosa che devo tenere a mente?',
-    needsNote:
-      'Salvato solo perché lo tocchi tu. Lo uso per adattare i consigli; viene cancellato 30 giorni dopo il check-out.',
     pickOne: 'Scegline uno',
     pickAny: 'Scegli quanti vuoi',
     step: 'Domanda {{current}} di {{total}}',
@@ -123,11 +125,14 @@ export const it: Messages = {
     mid: 'Medio',
     treat: 'Ci concediamo qualcosa',
   },
+  transport: {
+    car: 'In auto',
+    scooter_bike: 'In scooter o in bici',
+    foot_transit: 'A piedi e con i mezzi pubblici',
+  },
   need: {
-    gluten_free: 'Senza glutine (celiachia)',
+    gluten_free: 'Senza glutine',
     food_allergy: 'Allergia alimentare',
-    halal: 'Halal',
-    kosher: 'Kosher',
     step_free: 'Senza gradini / sedia a rotelle',
     limited_mobility: 'Mobilità ridotta',
   },
@@ -272,12 +277,14 @@ export const it: Messages = {
   },
   settings: {
     title: 'Impostazioni',
+    languageTitle: 'Lingua',
     emailTitle: 'Email',
     confirmed: 'Confermata',
     waiting: 'In attesa della tua conferma',
     resend: 'Invia di nuovo il link di conferma',
     resent: 'Inviato. Controlla la posta.',
-    noEmail: 'Ti chiederò la tua email quando prenoti qualcosa o chiedi aggiornamenti.',
+    noEmail:
+      "Ti chiederò l'email solo quando prenoti qualcosa, o se vuoi ricevere per email novità sulle prenotazioni e le risposte del tuo host.",
     tips: 'Un consiglio locale al giorno via email',
     deviceTitle: 'Apri su un altro dispositivo',
     deviceIntro:
@@ -285,12 +292,10 @@ export const it: Messages = {
     sendLink: 'Mandami un link',
     linkSent: 'Inviato. Controlla la posta; il link vale 1 ora.',
     evaluationTitle: 'Aiuta a migliorare Fetivi',
-    evaluation: 'Conserva la mia conversazione per la ricerca su Fetivi',
+    evaluation:
+      'Conserva una copia anonima di questa chat per aiutare a valutare e migliorare Fetivi.',
     deviceSignOut: 'Quando lo apri lì, questo dispositivo esce da Fetivi.',
     needsEmail: 'Disponibile quando avrò la tua email.',
-    evaluationOff: 'Disattivato: la tua chat viene eliminata 30 giorni dopo il check-out.',
-    evaluationOn:
-      'Attivato: una copia senza la tua email né le tue preferenze viene conservata per uno studio universitario su Fetivi.',
   },
   cancelOrder: {
     heading: 'Annullare questa prenotazione?',
@@ -406,8 +411,7 @@ export const it: Messages = {
     answerTerms: 'Rispondi alle nuove condizioni',
     actionFailed: "Non ha funzionato. La prenotazione potrebbe essere cambiata: ecco com'è adesso.",
     empty:
-      'Qui compariranno le tue giornate e le tue prenotazioni. Dimmi in chat cosa ti piacerebbe fare e lo pianifico o lo prenoto con te.',
-    emptyAction: 'Pianifica con Fetivi',
+      'Qui compariranno i tuoi programmi e le tue prenotazioni. Dimmi in chat cosa ti piacerebbe fare e lo pianifico o lo prenoto con te.',
     nothingBooked: 'Ancora nessuna prenotazione',
   },
   mcpApps: {
@@ -464,7 +468,7 @@ export const it: Messages = {
   guide: {
     sectionsLabel: 'Sezioni della guida',
     greeting:
-      'Benvenuti a {{name}}! Qui trovate tutto per il soggiorno: arrivo, Wi-Fi, regole della casa e altro.',
+      'Benvenuti a {{name}}! Questa è la vostra guida al soggiorno: arrivo, Wi-Fi, regole della casa, posti vicini e chi chiamare. Toccate un argomento per aprirlo.',
     back: 'Guida',
     loadError: 'Non sono riuscito a caricare la guida. Controllate la connessione e riprovate.',
     retry: 'Riprova',
@@ -479,11 +483,11 @@ export const it: Messages = {
     hint_wifi_essentials: 'Rete, password e dotazioni',
     hint_house_rules_checkout: 'Orario di partenza e cosa ricordare',
     hint_how_tos: "Come funzionano le cose, con le foto dell'host",
-    hint_saved_places: 'Luoghi salvati nella chat',
+    hint_saved_places: 'Luoghi che avete salvato in chat.',
     hint_host_picks: "Posti vicini che l'host ama",
-    hint_contacts_emergency: "Numero d'emergenza 112 e il vostro host",
+    hint_contacts_emergency: "112 per le emergenze, l'host per tutto ciò che riguarda il soggiorno",
     nothingYet: "L'host non ha ancora aggiunto nulla qui.",
-    savedEmpty: 'Qui compaiono i luoghi che salvate nella chat. Toccate Salva su una scheda.',
+    savedEmpty: 'Ancora niente di salvato. Toccate Salva su una scheda in chat.',
     picksEmpty: "I posti preferiti dell'host compariranno presto qui.",
     tipsHeading: 'Consigli sul quartiere',
     amenities: "Nell'appartamento",
@@ -574,7 +578,7 @@ export const it: Messages = {
   },
   intro: {
     title: 'Bok! Sono Fetivi.',
-    body: "Sono l'assistente AI per il tuo soggiorno. Conosco l'appartamento e la città e ti aiuterò a sentirti a casa.",
+    body: "Sono l'assistente AI per il tuo soggiorno. Conosco il tuo alloggio e la zona intorno, e ti aiuterò a sentirti a casa.",
     start: 'Andiamo',
   },
 };
