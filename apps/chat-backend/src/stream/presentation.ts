@@ -1,11 +1,14 @@
 import { GAP_TOOL_NAME, type GuestProjection } from '@fetivi/domain';
 import { choiceCard, followUpChips, PROPERTY_INFO_TOPICS, propertyInfo } from '@fetivi/ui/payloads';
 import {
+  getToolName,
+  isToolUIPart,
   type PrepareStepFunction,
   type StepResult,
   type StopCondition,
   type ToolSet,
   tool,
+  type UIMessage,
 } from 'ai';
 import { z } from 'zod';
 
@@ -83,3 +86,30 @@ export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, mess
   const dropChips = call?.role === 'assistant' && result?.role === 'tool';
   return { toolChoice: 'none', ...(dropChips ? { messages: messages.slice(0, -2) } : {}) };
 };
+
+const isChips = (part: UIMessage['parts'][number]) =>
+  isToolUIPart(part) && getToolName(part) === 'suggest_replies';
+
+/**
+ * A stored answer resent to the model with its chips call after its last text, as if both came
+ * in one response. Rescued turns are stored chips-then-text (the guard writes the words after
+ * the chips); resent in that order they teach the model to call chips first, until the guard
+ * step has nothing it may say and ends empty (ticket 60). Only the request changes: what is
+ * stored and streamed keeps its order. A message without text, and every other part, stay as
+ * they are. Pure, so the cached history prefix stays the same from turn to turn.
+ */
+export function chipsAfterText(message: UIMessage): UIMessage {
+  if (message.role !== 'assistant') return message;
+  const last = message.parts.findLastIndex((p) => p.type === 'text' && p.text.trim().length > 0);
+  if (last < 0) return message;
+  const moved = message.parts.slice(0, last).filter(isChips);
+  if (moved.length === 0) return message;
+  return {
+    ...message,
+    parts: [
+      ...message.parts.slice(0, last + 1).filter((p) => !isChips(p)),
+      ...moved,
+      ...message.parts.slice(last + 1),
+    ],
+  };
+}

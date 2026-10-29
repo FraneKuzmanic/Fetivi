@@ -715,6 +715,42 @@ describe('Recommendation components', () => {
     expect(prompt).not.toContain('data-component');
     expect(prompt).not.toContain('follow-up-chips');
   });
+
+  it('resends a rescued answer with its chips after its text', async () => {
+    const model = mockModel([
+      callStep('search_places', { category: 'restaurant', date: '2027-07-12' }),
+      callStep('suggest_replies', { replies: ['Show me on a map'] }),
+      textStep('Try Konoba Mala tonight.'),
+      textStep('You are welcome.'),
+    ]);
+    const { t, cookie, space } = await setup(model);
+    await seedRestaurants(t);
+
+    readStream(await send(t, cookie, 'Where should we eat tonight?'));
+    expect(model.doStreamCalls).toHaveLength(3);
+    // Stored as streamed: the chips came before the words.
+    const types = (await stored(t, space.space.id)).rows.at(-1)?.parts.map((p) => p.type) ?? [];
+    expect(types.indexOf('tool-suggest_replies')).toBeLessThan(types.indexOf('text'));
+
+    readStream(await send(t, cookie, 'Thanks'));
+    const prompt = model.doStreamCalls[3]?.prompt ?? [];
+    const content = (i: number) =>
+      (prompt[i]?.content ?? []) as { type: string; text?: string; toolName?: string }[];
+    const at = prompt.findIndex(
+      (m) =>
+        m.role === 'assistant' &&
+        content(prompt.indexOf(m)).some((c) => c.text === 'Try Konoba Mala tonight.'),
+    );
+    expect(content(at).map((c) => [c.type, c.toolName])).toEqual([
+      ['text', undefined],
+      ['tool-call', 'suggest_replies'],
+    ]);
+    expect(prompt[at + 1]?.role).toBe('tool');
+    expect(content(at + 1)).toContainEqual(
+      expect.objectContaining({ type: 'tool-result', toolName: 'suggest_replies' }),
+    );
+    expect(JSON.stringify(prompt.slice(0, at))).not.toContain('"toolName":"suggest_replies"');
+  });
 });
 
 describe.each(['mcp', 'inprocess'] as const)('Property info card (%s)', (transport) => {

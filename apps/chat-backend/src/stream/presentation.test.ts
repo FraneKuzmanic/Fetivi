@@ -1,6 +1,11 @@
-import type { StepResult, ToolSet } from 'ai';
+import { convertToModelMessages, type StepResult, type ToolSet, type UIMessage } from 'ai';
 import { describe, expect, it } from 'vitest';
-import { endsWithPresentation, presentationTools, textAfterSilentChips } from './presentation';
+import {
+  chipsAfterText,
+  endsWithPresentation,
+  presentationTools,
+  textAfterSilentChips,
+} from './presentation';
 
 /** A step with these calls ('!' marks an invalid one); it has text unless `silent`. */
 const step = (...names: string[]) => stepWith('Some text.', names);
@@ -112,5 +117,95 @@ describe('presentationTools', () => {
     };
     expect(schema.safeParse({ question: 'Which?', options: ['a'] }).success).toBe(false);
     expect(schema.safeParse({ question: 'Which?', options: ['a', 'b'] }).success).toBe(true);
+  });
+});
+
+describe('chipsAfterText', () => {
+  const ss = { type: 'step-start' };
+  const text = (t: string) => ({ type: 'text', text: t });
+  const tool = (name: string, input: unknown = {}) => ({
+    type: `tool-${name}`,
+    toolCallId: `call-${name}`,
+    state: 'output-available',
+    input,
+    output: { shown: true },
+  });
+  const card = (name: string) => ({
+    type: 'data-component',
+    id: `card-${name}`,
+    data: { name, payload: {} },
+  });
+  const search = tool('search_places', { category: 'restaurant' });
+  const chips = tool('suggest_replies', { replies: ['Thanks'] });
+  const askChoice = tool('ask_choice', { question: 'Which?', options: ['a', 'b'] });
+  const answer = (...parts: unknown[]) =>
+    ({ id: 'a1', role: 'assistant', parts }) as unknown as UIMessage;
+  const user = { id: 'u1', role: 'user', parts: [text('Where should we eat?')] } as UIMessage;
+
+  it('moves chips shown before the text to right after it', () => {
+    const input = answer(
+      ss,
+      search,
+      card('place-carousel'),
+      ss,
+      chips,
+      card('follow-up-chips'),
+      ss,
+      text('Try Konoba Mala.'),
+    );
+    const copy = structuredClone(input);
+    expect(chipsAfterText(input)).toEqual(
+      answer(
+        ss,
+        search,
+        card('place-carousel'),
+        ss,
+        card('follow-up-chips'),
+        ss,
+        text('Try Konoba Mala.'),
+        chips,
+      ),
+    );
+    expect(input).toEqual(copy);
+  });
+
+  it('leaves text-then-chips, chips-only and user messages as they are', () => {
+    const ordered = answer(ss, search, ss, text('Try Konoba Mala.'), chips);
+    expect(chipsAfterText(ordered)).toBe(ordered);
+    const chipsOnly = answer(ss, search, ss, chips);
+    expect(chipsAfterText(chipsOnly)).toBe(chipsOnly);
+    // Whitespace is no answer, like the guard's own check.
+    const blank = answer(ss, search, ss, chips, ss, text('  '));
+    expect(chipsAfterText(blank)).toBe(blank);
+    expect(chipsAfterText(user)).toBe(user);
+  });
+
+  it('never moves a choice card', () => {
+    const choiceFirst = answer(ss, search, ss, askChoice, text('Pick one.'));
+    expect(chipsAfterText(choiceFirst)).toBe(choiceFirst);
+    expect(chipsAfterText(answer(ss, chips, ss, text('Hi.'), askChoice))).toEqual(
+      answer(ss, ss, text('Hi.'), chips, askChoice),
+    );
+  });
+
+  it('keeps every tool call followed by its result in the model request', async () => {
+    const messages = await convertToModelMessages([
+      user,
+      chipsAfterText(answer(ss, search, ss, chips, ss, text('Try Konoba Mala.'))),
+    ]);
+    expect(messages.map((m) => m.role)).toEqual(['user', 'assistant', 'tool', 'assistant', 'tool']);
+    const content = (i: number) => messages[i]?.content as { type: string; toolCallId?: string }[];
+    expect(content(3).map((c) => c.type)).toEqual(['text', 'tool-call']);
+    messages.forEach((m, i) => {
+      if (m.role !== 'assistant') return;
+      const calls = content(i).filter((c) => c.type === 'tool-call');
+      if (calls.length === 0) return;
+      expect(messages[i + 1]?.role).toBe('tool');
+      expect(
+        content(i + 1)
+          .filter((c) => c.type === 'tool-result')
+          .map((c) => c.toolCallId),
+      ).toEqual(calls.map((c) => c.toolCallId));
+    });
   });
 });

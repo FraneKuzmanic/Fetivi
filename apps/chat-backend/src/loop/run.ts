@@ -23,7 +23,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { CHAT_PROVIDER_OPTIONS, MAX_OUTPUT_TOKENS, MAX_STEPS } from '../chat/model';
 import type { FirstPartyListed } from '../mcp/tools';
 import { componentFor, withComponentParts } from '../stream/parts';
-import { endsWithPresentation, textAfterSilentChips } from '../stream/presentation';
+import { chipsAfterText, endsWithPresentation, textAfterSilentChips } from '../stream/presentation';
 import type { TurnTools } from '../tools/registry';
 import type { GuestAnswer, Outcome, PausedCall } from './elicitation';
 import { inputUsage } from './usage';
@@ -161,8 +161,9 @@ export function createLoop(
 
   /** One streamText run; false when the model failed. */
   async function segment(): Promise<boolean> {
+    // Resent with each answer's chips after its text; `current` itself keeps stream order.
     const messages = await convertToModelMessages(
-      current.parts.length > 0 ? [...history, current] : history,
+      (current.parts.length > 0 ? [...history, current] : history).map(chipsAfterText),
       { tools: deps.tools },
     );
     let outcome = { status: 'unknown' } as UIMessageStreamOutcome;
