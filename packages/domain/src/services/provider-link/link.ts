@@ -6,7 +6,12 @@ import { orderProposals, orders } from '../../db/schema/orders';
 import { properties, units } from '../../db/schema/properties';
 import { stays } from '../../db/schema/stays';
 import { type GuestFields, guestFieldsFor } from '../../notifications/provider/compose';
-import { PROVIDER_DEFAULTS, type PriceUnit, type ProviderLanguage } from '../../offers/vocabulary';
+import {
+  PROVIDER_DEFAULTS,
+  PROVIDER_LANGUAGES,
+  type PriceUnit,
+  type ProviderLanguage,
+} from '../../offers/vocabulary';
 import { type OrderDeps, OrderRuleError, type TransitionOutcome } from '../../orders/machine';
 import {
   type ProposedTerms,
@@ -116,7 +121,21 @@ export interface ProviderLinkView {
   stayTo: CivilDate;
   /** New terms must carry a price: a request-kind Order, or a pay-online one without a price. */
   needsPrice: boolean;
+  /**
+   * The guest's note, null once the Order is final (it may hold personal details, like `guest`).
+   * Show the translation only when `translatedTo` is the language shown, the original below it.
+   */
+  guestNote: GuestNoteView | null;
 }
+
+export interface GuestNoteView {
+  text: string;
+  translation: string | null;
+  translatedTo: ProviderLanguage | null;
+}
+
+const isProviderLanguage = (value: string | null): value is ProviderLanguage =>
+  value !== null && (PROVIDER_LANGUAGES as readonly string[]).includes(value);
 
 /** What the Provider page shows: the current proposal and the actions open on it. */
 export function providerLinkView(found: FoundProviderOrder): ProviderLinkView {
@@ -157,6 +176,18 @@ export function providerLinkView(found: FoundProviderOrder): ProviderLinkView {
     stayFrom: found.stay.checkIn,
     stayTo: found.stay.checkout,
     needsPrice: requestKind || (order.paymentMode === 'online' && proposal.priceMinor === null),
+    guestNote:
+      final || !order.guestNote
+        ? null
+        : {
+            text: order.guestNote,
+            translation: isProviderLanguage(order.guestNoteTranslatedTo)
+              ? order.guestNoteTranslation
+              : null,
+            translatedTo: isProviderLanguage(order.guestNoteTranslatedTo)
+              ? order.guestNoteTranslatedTo
+              : null,
+          },
   };
 }
 

@@ -234,6 +234,8 @@ export const it: Messages = {
       'Domani, {{date}}, il tuo programma è ancora libero. Che ne dici di {{offer}}{{distance}}? Chiedimi e ti racconto di più.',
     tipDistance: ' (a {{km}} km)',
     tipVenue: ', presso {{venueName}}',
+    freeCancellationEnded:
+      'È stata accettata dopo la fine della cancellazione gratuita, quindi cancellarla non è più gratis.',
   },
   push: {
     offer: 'Avvisami su questo telefono',
@@ -335,6 +337,9 @@ export const it: Messages = {
       'La cancellazione gratuita è terminata: la cancellazione costa il {{percent}} % del prezzo.',
     chargeNowFull:
       'La cancellazione gratuita è terminata: la cancellazione costa il prezzo intero.',
+    freeUntilProviderAccepts:
+      'Puoi cancellare gratis finché il fornitore non accetta la tua richiesta.',
+    freeUntilHostAccepts: 'Puoi cancellare gratis finché il tuo host non accetta la tua richiesta.',
   },
   respondOrder: {
     headingTime: 'Il fornitore propone un altro orario',
@@ -416,6 +421,17 @@ export const it: Messages = {
     confirmOnline: 'Continua al pagamento',
     checkoutClosed:
       'Il tempo per pagare è scaduto. Lo stato della prenotazione è in Il mio viaggio.',
+    details: 'Dettagli per questa prenotazione',
+    detailsHint: 'Luogo di ritiro, bagagli, tutto quello che deve sapere.',
+    detailsCount: '{{count}} / {{max}}',
+    time: 'Orario',
+    timeHint: 'Quando ti farebbe comodo.',
+    invalidTime: 'Inserisci un orario, ad esempio 07:30.',
+    warningsHeading: 'Prima di confermare',
+    warnCheckout: 'È il giorno del check-out: devi lasciare l’alloggio entro le {{time}}.',
+    warnCheckoutDay: 'È il giorno del check-out.',
+    warnWeather: '{{level}} del DHMZ: {{event}}',
+    yourNote: 'La tua nota',
   },
   trip: {
     plan: 'Piano',

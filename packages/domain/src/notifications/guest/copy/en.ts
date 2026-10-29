@@ -123,6 +123,8 @@ export const en: GuestCopy = {
     'Sea conditions may disrupt sailings on line {{lines}} ({{offer}}, {{date}}). Check with {{operator}} before you go: {{operatorUrl}}',
   orderStands:
     "Your booking stays as it is unless the provider cancels it. If they do, I'll tell you straight away.",
+  freeCancellationEnded:
+    'Your request was accepted after the free cancellation window, so cancelling it is no longer free.',
   sourceLine: 'Source: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Please leave by {{checkoutTime}}.',
   reviewLine: "If you'd like to share how your stay went, you can leave a review on {{platform}}.",

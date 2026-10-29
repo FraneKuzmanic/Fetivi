@@ -35,7 +35,25 @@ export interface ProviderConfirmedInput {
   quantity: number;
   priceUnit: PriceUnit;
   guest: GuestFields;
+  /** The guest's note, translated into `language` when it was written in another. */
+  note: GuestNoteLines | null;
   link: string;
+}
+
+export interface GuestNoteLines {
+  text: string;
+  translation: string | null;
+}
+
+/** The note in the reader's language, the guest's own words below when translated. */
+export function guestNoteLines(
+  note: GuestNoteLines | null,
+  labels: { note: string; original: string },
+): string[] {
+  if (!note) return [];
+  return note.translation
+    ? [`${labels.note}: ${note.translation}`, `${labels.original}: ${note.text}`]
+    : [`${labels.note}: ${note.text}`];
 }
 
 const STRINGS = {
@@ -59,6 +77,8 @@ const STRINGS = {
     },
     guestName: 'Gost',
     guestPhone: 'Telefon gosta',
+    note: 'Napomena gosta',
+    original: 'Izvorno',
     action: 'Otvorite poveznicu za potvrdu primitka ili ako ne možete izvršiti narudžbu.',
     request: {
       subject: 'Novi upit',
@@ -88,6 +108,8 @@ const STRINGS = {
     },
     guestName: 'Guest',
     guestPhone: 'Guest phone',
+    note: 'Guest note',
+    original: 'Original',
     action: "Open the link to acknowledge it, or to tell us you can't fulfil it.",
     request: {
       subject: 'New request',
@@ -164,6 +186,7 @@ function compose(
     ...extra,
     ...(input.guest.name ? [`${s.guestName}: ${input.guest.name}`] : []),
     ...(input.guest.phone ? [`${s.guestPhone}: ${input.guest.phone}`] : []),
+    ...guestNoteLines(input.note, s),
     '',
     action,
     input.link,

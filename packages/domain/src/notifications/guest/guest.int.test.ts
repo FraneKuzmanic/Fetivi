@@ -17,7 +17,7 @@ import { spaces } from '../../db/schema/spaces';
 import { stays } from '../../db/schema/stays';
 import { INBOX_PART_TYPE } from '../../handoff/vocabulary';
 import { createMemoryMailer, type Mailer, type MailMessage } from '../../mail';
-import { createOrder } from '../../orders/machine';
+import { confirm, createOrder } from '../../orders/machine';
 import { loadGuestProjection } from '../../projection/load';
 import type { GuestLanguage } from '../../property/vocabulary';
 import { confirmHeldOrder } from '../../services/adapters';
@@ -35,6 +35,7 @@ import { tipsUnsubscribeToken } from '../../tips/unsubscribe';
 import type { DailyTipFacts } from '../../tips/vocabulary';
 import { deliverGuestNotification, type GuestNotifyDeps } from './deliver';
 import type { GuestNotifyJobData } from './enqueue';
+import { loadGuestNotice } from './load';
 import { createMemoryPushSender, pushState, recordPushOffer, savePushSubscription } from './push';
 import { dueStayNotices } from './reminders';
 import { isEmailSuppressed, suppressEmail } from './suppressions';
@@ -311,6 +312,54 @@ describe('deliverGuestNotification: Order kinds', () => {
       .from(pushSubscriptions)
       .where(eq(pushSubscriptions.spaceId, g.spaceId));
     expect(left.map((s) => s.endpoint)).toEqual([other]);
+  });
+});
+
+describe('order_confirmed after a request', () => {
+  /** A pay-direct on-request Order on `date`, 24 h free then half, accepted by the Provider now. */
+  async function acceptedRequest(g: SeededGuestUnit, date: string) {
+    const provider = await seedProvider(testDb.db);
+    const { offerId } = await seedOrderableOffer(testDb.db, {
+      providerId: provider.id,
+      availabilityMode: 'on_request',
+    });
+    await testDb.db
+      .update(offers)
+      .set({ freeCancelHoursBefore: 24, refundPercentAfter: 50 })
+      .where(eq(offers.id, offerId));
+    const orderDeps = { db: testDb.db, queue: noopQueue, now: () => NOW };
+    const { order } = await createOrder(orderDeps, {
+      spaceId: g.spaceId,
+      offerId,
+      date,
+      quantity: 1,
+      contact: { email: 'ana@example.test' },
+    });
+    const ref = { orderId: order.id, proposalId: order.currentProposalId as string };
+    await confirm(orderDeps, { ...ref, trigger: 'provider_link' });
+    return ref;
+  }
+  const factsOf = async (ref: { orderId: string; proposalId: string }) =>
+    (await loadGuestNotice(testDb.db, { kind: 'order_confirmed', ...ref }, NOW))?.facts;
+
+  it('tells the guest cancelling is no longer free when accepted after the cutoff', async () => {
+    const g = await guest();
+    // No start time: the cutoff is 24 h before midnight of DAY, already past at NOW.
+    const ref = await acceptedRequest(g, DAY);
+    expect((await factsOf(ref))?.freeCancellationEnded).toBe(true);
+    const { deps: d, mailer } = deps();
+    await deliverGuestNotification(d, { kind: 'order_confirmed', ...ref });
+    expect(mailer.sent[0]?.text).toContain('cancelling it is no longer free');
+    const [notice] = await inboxNotices(g.spaceId);
+    expect(notice).toMatchObject({ notification: 'order_confirmed', freeCancellationEnded: true });
+  });
+
+  it('says nothing when accepted before the cutoff, or for an instant booking', async () => {
+    const g = await guest();
+    expect((await factsOf(await acceptedRequest(g, '2027-05-03')))?.freeCancellationEnded).toBe(
+      false,
+    );
+    expect((await factsOf(await confirmedOrder(g)))?.freeCancellationEnded).toBe(false);
   });
 });
 

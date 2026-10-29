@@ -56,6 +56,7 @@ async function placeOrder(spaceId: string, offerId: string, date: string) {
     spaceId,
     offerScope,
     contact: { email: 'guest@example.test', name: 'Ana' },
+    details: { note: null, time: null },
   });
 }
 

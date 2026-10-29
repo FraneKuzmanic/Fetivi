@@ -91,6 +91,24 @@ describe('system text', () => {
     expect(INSTRUCTIONS).not.toContain('menu');
   });
 
+  it('states the total and every warning before the booking card', () => {
+    expect(INSTRUCTIONS).toContain(
+      'say in your reply the total price (or that the provider names it) and every warning it returned for that start',
+    );
+    expect(INSTRUCTIONS).toContain(
+      'If weatherChecked is false, say the weather warnings could not be checked.',
+    );
+    expect(INSTRUCTIONS).toContain(
+      'gather what list_offers says it needs before create_order, without asking again for anything the guest already said',
+    );
+  });
+
+  it('says a request is free to cancel until it is accepted', () => {
+    expect(INSTRUCTIONS).toContain(
+      'cancelling it is free until the provider or host accepts it, even when freeUntil has passed',
+    );
+  });
+
   it('asks the model to note a missing property fact for the host (44)', () => {
     expect(INSTRUCTIONS).toContain('also call note_missing_info with the closest topic');
   });

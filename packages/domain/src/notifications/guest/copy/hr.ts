@@ -124,6 +124,8 @@ export const hr: GuestCopy = {
     'Stanje mora može poremetiti plovidbu na liniji {{lines}} ({{offer}}, {{date}}). Prije polaska provjerite kod prijevoznika {{operator}}: {{operatorUrl}}',
   orderStands:
     'Vaša rezervacija ostaje kakva jest, osim ako je pružatelj otkaže. Ako je otkaže, odmah ću vam javiti.',
+  freeCancellationEnded:
+    'Vaš je zahtjev prihvaćen nakon isteka besplatnog otkazivanja, pa otkazivanje više nije besplatno.',
   sourceLine: 'Izvor: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Molimo napustite smještaj do {{checkoutTime}}.',
   reviewLine: 'Ako želite podijeliti kako vam je bilo, recenziju možete ostaviti na {{platform}}.',

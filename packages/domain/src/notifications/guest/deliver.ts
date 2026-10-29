@@ -67,6 +67,8 @@ export function noticeInboxData(notice: GuestNotice, now: Date) {
     safety: facts.safety,
     /** Daily tips: the picked record, worded by the guest app. */
     tip: facts.tip,
+    /** order_confirmed: accepted after the free window; the guest app adds its line. */
+    freeCancellationEnded: facts.freeCancellationEnded,
     at: now.toISOString(),
   };
 }

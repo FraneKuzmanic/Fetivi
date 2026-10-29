@@ -131,6 +131,8 @@ describe('respond_to_order_update', () => {
       paymentMode: 'direct',
       respondBy: '2027-05-02T10:00:00.000Z',
       respondByLocal: '2027-05-02T12:00',
+      // Accepting confirms the Order: the card shows the terms after acceptance.
+      cancellation: { awaitingAcceptance: null, freeUntilLocal: '2027-05-04T10:00' },
     });
   });
 

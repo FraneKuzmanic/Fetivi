@@ -678,6 +678,39 @@
   cursor: progress;
 }
 
+/* Before you confirm: a tinted strip, the level in the words and repeated by the edge. */
+.fv-confirm-warnings {
+  padding: 0.5rem 0.75rem;
+  border-left: 4px solid var(--warn-yellow);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--warn-yellow) 10%, var(--white));
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.fv-confirm-warnings-heading {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.fv-confirm-warnings ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fv-confirm-warnings li[data-level="orange"],
+.fv-confirm-warnings li[data-level="red"] {
+  font-weight: 600;
+}
+
+.fv-receipt-note {
+  white-space: pre-wrap;
+}
+
 .fv-confirm-sending {
   margin: 0;
   color: var(--blue-700);
@@ -1162,10 +1195,14 @@
 
 /* Weather card */
 
-.fv-weather {
+.fv-weather,
+.fv-confirm-warnings {
   --warn-yellow: #e8b400;
   --warn-orange: #e07000;
   --warn-red: #c62828;
+}
+
+.fv-weather {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;

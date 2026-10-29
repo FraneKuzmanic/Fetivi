@@ -56,6 +56,22 @@ export function orderChip(order: HostOrderView): { label: string; tone: string }
   return { label: t('inProgress'), tone: 'neutral' };
 }
 
+/** In the host's language when a translation into it exists, with the guest's own words below. */
+function GuestNote({ note }: { note: NonNullable<HostOrderView['guestNote']> }) {
+  const translated = note.translatedTo === i18next.language ? note.translation : null;
+  return (
+    <p className="order-card-note">
+      <span className="muted">{t('guestNote')}: </span>
+      {translated ?? note.text}
+      {translated ? (
+        <span className="muted order-card-note-original">
+          {t('original')}: {note.text}
+        </span>
+      ) : null}
+    </p>
+  );
+}
+
 const applied = (action: OrderAction): string =>
   ({
     acknowledge: t('appliedAcknowledge'),
@@ -139,6 +155,7 @@ export function OrderCard({
           {order.guest.phone ? <a href={`tel:${order.guest.phone}`}>{order.guest.phone}</a> : null}
         </p>
       ) : null}
+      {order.guestNote ? <GuestNote note={order.guestNote} /> : null}
       {order.respondBy ? (
         <p className="order-card-due">
           {t('answerBy', {

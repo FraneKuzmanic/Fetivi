@@ -15,6 +15,7 @@ import {
 import {
   createTestDatabase,
   type SeededGuestUnit,
+  scriptedHandoffTranslator,
   seedGuestUnit,
   seedOrderableOffer,
   seedProvider,
@@ -98,6 +99,7 @@ describe('order-notify job', () => {
       now: () => NOW,
       providerLink: { secret: 'jobs-test-secret-that-is-long-enough-00', baseUrl: 'http://x.test' },
       webOrigin: 'http://admin.test',
+      handoffTranslator: scriptedHandoffTranslator([null]),
     });
     const ref = { orderId: order.id, proposalId };
     await job.handler({ ...ref, kind: 'provider_confirmed' });
@@ -150,6 +152,7 @@ describe('order-notify job', () => {
       now: () => NOW,
       providerLink: { secret: 'jobs-test-secret-that-is-long-enough-00', baseUrl: 'http://x.test' },
       webOrigin: 'http://admin.test',
+      handoffTranslator: scriptedHandoffTranslator([null]),
     });
     await job.handler({ ...ref, kind: 'provider_request' });
     await job.handler({ ...ref, kind: 'provider_request' });

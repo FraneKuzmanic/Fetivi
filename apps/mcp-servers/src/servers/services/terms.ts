@@ -15,6 +15,9 @@ export function termsSentence(
   if (!terms) return '';
   const late = terms.lateChargePercent;
   if (late === 0) return 'Cancelling is free at any time.';
+  if (terms.awaitingAcceptance) {
+    return `Cancelling is free until the ${terms.awaitingAcceptance} accepts your request.`;
+  }
   const share = late === 100 ? 'the full price' : `${late} % of the price`;
   if (mode === 'direct') {
     return terms.freeWindowPassed

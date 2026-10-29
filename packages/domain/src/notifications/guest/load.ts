@@ -4,10 +4,11 @@ import type { Executor } from '../../db/client';
 import { calendarEvents, calendarFeeds } from '../../db/schema/calendar';
 import { handoffMessages } from '../../db/schema/handoff';
 import { offers, offerTranslations } from '../../db/schema/offers';
-import { orderProposals, orders } from '../../db/schema/orders';
+import { orderEvents, orderProposals, orders } from '../../db/schema/orders';
 import { properties, units } from '../../db/schema/properties';
 import { spaces } from '../../db/schema/spaces';
 import { stays } from '../../db/schema/stays';
+import { cancellationTermsAt, lateChargePercent, orderStart } from '../../orders/refunds';
 import type { GuestLanguage } from '../../property/vocabulary';
 import { endOfCivilDay, toLocalDateTime } from '../../time';
 import type { GuestNoticeFacts } from './compose';
@@ -39,6 +40,7 @@ const NO_FACTS: GuestNoticeFacts = {
   reviewPlatform: null,
   safety: null,
   tip: null,
+  freeCancellationEnded: false,
 };
 
 interface Base {
@@ -132,6 +134,9 @@ async function loadOrderBase(
         status: orders.status,
         currentProposalId: orders.currentProposalId,
         guestEmail: orders.guestEmail,
+        availabilityMode: orders.availabilityMode,
+        freeCancelHoursBefore: orders.freeCancelHoursBefore,
+        refundPercentAfter: orders.refundPercentAfter,
       },
       proposal: { date: orderProposals.date, startsAt: orderProposals.startsAt },
       sourceTitle: offers.title,
@@ -174,8 +179,47 @@ async function loadOrderBase(
       startTime: row.proposal.startsAt
         ? toLocalDateTime(row.proposal.startsAt, row.zone).slice(11)
         : null,
+      freeCancellationEnded:
+        data.kind === 'order_confirmed' &&
+        row.order.availabilityMode === 'on_request' &&
+        (await acceptedAfterCutoff(db, data.orderId, data.proposalId, row, now)),
     },
   };
+}
+
+/**
+ * A request is free to cancel until accepted (ADR 0028); accepted after its cutoff, it is not
+ * free from that moment, and the guest is told so. Under no late charge it stays free.
+ */
+async function acceptedAfterCutoff(
+  db: Executor,
+  orderId: string,
+  proposalId: string,
+  row: {
+    order: { freeCancelHoursBefore: number; refundPercentAfter: number };
+    proposal: { date: string; startsAt: Date | null };
+    zone: string;
+  },
+  now: Date,
+): Promise<boolean> {
+  const late = lateChargePercent(row.order.refundPercentAfter);
+  if (late === 0) return false;
+  const [confirmed] = await db
+    .select({ at: sql<Date | null>`max(${orderEvents.createdAt})`.mapWith(orderEvents.createdAt) })
+    .from(orderEvents)
+    .where(
+      and(
+        eq(orderEvents.orderId, orderId),
+        eq(orderEvents.proposalId, proposalId),
+        eq(orderEvents.toStatus, 'confirmed'),
+      ),
+    );
+  return cancellationTermsAt(
+    { freeCancelHoursBefore: row.order.freeCancelHoursBefore, lateChargePercent: late },
+    orderStart(row.proposal, row.zone),
+    row.zone,
+    confirmed?.at ?? now,
+  ).freeWindowPassed;
 }
 
 /**

@@ -2,7 +2,12 @@ import { DateTime } from 'luxon';
 import type { PriceUnit } from '../../offers/vocabulary';
 import type { BackofficeLanguage } from '../../property/vocabulary';
 import type { CivilDate } from '../../time';
-import { formatCivilDate, type GuestFields } from '../provider/compose';
+import {
+  formatCivilDate,
+  type GuestFields,
+  type GuestNoteLines,
+  guestNoteLines,
+} from '../provider/compose';
 import { HOST_COPY } from './copy';
 
 // The host's email about an Order on one of their own services (38), in the host's back-office
@@ -18,6 +23,8 @@ export interface HostOrderEmailInput {
   quantity: number;
   priceUnit: PriceUnit;
   guest: GuestFields;
+  /** The guest's note, translated into `language` when it was written in another. */
+  note: GuestNoteLines | null;
   /** 'YYYY-MM-DDTHH:mm' in the property's zone; requests only. */
   respondBy: string | null;
   /** The Order's total; null for a request-kind Order before the host names it. */
@@ -59,6 +66,7 @@ export function composeHostOrderEmail(input: HostOrderEmailInput): {
       ...price,
       ...(input.guest.name ? [`${o.guest}: ${input.guest.name}`] : []),
       ...(input.guest.phone ? [`${o.guestPhone}: ${input.guest.phone}`] : []),
+      ...guestNoteLines(input.note, o),
       '',
       request
         ? o.respond(input.inboxUrl)

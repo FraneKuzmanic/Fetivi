@@ -66,6 +66,11 @@ export const orders = pgTable(
     guestEmail: text('guest_email').notNull(),
     guestName: text('guest_name'),
     guestPhone: text('guest_phone'),
+    /** What the guest asked for in their own words (pickup, luggage…); shown to the Provider and the host, translated. */
+    guestNote: text('guest_note'),
+    guestNoteTranslation: text('guest_note_translation'),
+    /** The language of the translation: the Provider's or the host's ('hr' | 'en'). */
+    guestNoteTranslatedTo: text('guest_note_translated_to'),
     /** The Provider system's reservation reference, set on confirmation. */
     providerExternalRef: text('provider_external_ref'),
     /** Hex SHA-256 of the per-order Provider link token (issued by ticket 15). */
@@ -92,6 +97,10 @@ export const orders = pgTable(
     index('orders_offer_idx').on(t.offerId),
     check('orders_quantity_check', sql`${t.quantity} between 1 and 999`),
     check('orders_payment_check', sql`${t.paymentMode} = 'online' or ${t.paymentStatus} = 'none'`),
+    check(
+      'orders_guest_note_check',
+      sql`${t.guestNote} is null or char_length(${t.guestNote}) between 1 and 500`,
+    ),
   ],
 );
 

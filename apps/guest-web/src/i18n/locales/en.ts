@@ -230,6 +230,8 @@ export const en = {
       "Tomorrow, {{date}}, is still free in your plan. How about {{offer}}{{distance}}? Ask me and I'll tell you more.",
     tipDistance: ' ({{km}} km away)',
     tipVenue: ', at {{venueName}}',
+    freeCancellationEnded:
+      'It was accepted after the free cancellation window, so cancelling it is no longer free.',
   },
   push: {
     offer: 'Alert me on this phone',
@@ -326,6 +328,8 @@ export const en = {
     chargeAfterFull: 'After that, cancelling costs the full price.',
     chargeNow: 'Free cancellation has ended: cancelling costs {{percent}} % of the price.',
     chargeNowFull: 'Free cancellation has ended: cancelling costs the full price.',
+    freeUntilProviderAccepts: 'Free to cancel until the provider accepts your request.',
+    freeUntilHostAccepts: 'Free to cancel until your host accepts your request.',
   },
   respondOrder: {
     headingTime: 'The provider suggests another time',
@@ -406,6 +410,17 @@ export const en = {
       "Next you'll pay on Stripe's secure page. Your card is only charged once the booking is confirmed.",
     confirmOnline: 'Continue to payment',
     checkoutClosed: "This payment window has closed. Check My trip for the booking's status.",
+    details: 'Details for this booking',
+    detailsHint: 'Pickup place, luggage, anything they need to know.',
+    detailsCount: '{{count}} / {{max}}',
+    time: 'Time',
+    timeHint: 'When you would like it.',
+    invalidTime: 'Enter a time, like 07:30.',
+    warningsHeading: 'Before you confirm',
+    warnCheckout: 'This is your checkout day: you need to be out by {{time}}.',
+    warnCheckoutDay: 'This is your checkout day.',
+    warnWeather: '{{level}} from DHMZ: {{event}}',
+    yourNote: 'Your note',
   },
   trip: {
     plan: 'Plan',

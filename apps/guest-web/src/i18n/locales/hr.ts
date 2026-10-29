@@ -231,6 +231,8 @@ export const hr: Messages = {
       'Sutra, {{date}}, u vašem planu još nema ničega. Što kažete na {{offer}}{{distance}}? Pitajte me i reći ću vam više.',
     tipDistance: ' ({{km}} km od vas)',
     tipVenue: ', mjesto: {{venueName}}',
+    freeCancellationEnded:
+      'Prihvaćeno je nakon isteka besplatnog otkazivanja, pa otkazivanje više nije besplatno.',
   },
   push: {
     offer: 'Obavijesti me na ovom mobitelu',
@@ -328,6 +330,9 @@ export const hr: Messages = {
     chargeAfterFull: 'Nakon toga otkazivanje košta punu cijenu.',
     chargeNow: 'Besplatno otkazivanje je isteklo: otkazivanje košta {{percent}} % cijene.',
     chargeNowFull: 'Besplatno otkazivanje je isteklo: otkazivanje košta punu cijenu.',
+    freeUntilProviderAccepts:
+      'Otkazivanje je besplatno dok pružatelj usluge ne prihvati vaš zahtjev.',
+    freeUntilHostAccepts: 'Otkazivanje je besplatno dok vaš domaćin ne prihvati vaš zahtjev.',
   },
   respondOrder: {
     headingTime: 'Pružatelj predlaže drugo vrijeme',
@@ -409,6 +414,17 @@ export const hr: Messages = {
     confirmOnline: 'Nastavi na plaćanje',
     checkoutClosed:
       'Vrijeme za plaćanje je isteklo. Stanje rezervacije pogledajte u Mojem putovanju.',
+    details: 'Detalji za ovu rezervaciju',
+    detailsHint: 'Mjesto preuzimanja, prtljaga, sve što trebaju znati.',
+    detailsCount: '{{count}} / {{max}}',
+    time: 'Vrijeme',
+    timeHint: 'Kada vam odgovara.',
+    invalidTime: 'Upišite vrijeme, npr. 07:30.',
+    warningsHeading: 'Prije nego potvrdite',
+    warnCheckout: 'Ovo je dan vaše odjave: smještaj trebate napustiti do {{time}}.',
+    warnCheckoutDay: 'Ovo je dan vaše odjave.',
+    warnWeather: '{{level}} DHMZ-a: {{event}}',
+    yourNote: 'Vaša napomena',
   },
   trip: {
     plan: 'Plan',

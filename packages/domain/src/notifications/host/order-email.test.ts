@@ -10,6 +10,7 @@ const base: HostOrderEmailInput = {
   quantity: 2,
   priceUnit: 'person',
   guest: {},
+  note: null,
   respondBy: '2027-05-01T12:30',
   priceMinor: 5000,
   currency: 'EUR',
@@ -18,6 +19,24 @@ const base: HostOrderEmailInput = {
 };
 
 describe('composeHostOrderEmail', () => {
+  it('shows the guest note in the host language with the original below', () => {
+    const translated = composeHostOrderEmail({
+      ...base,
+      language: 'hr',
+      note: { text: 'Split airport, 4 suitcases', translation: 'Zračna luka Split, 4 kofera' },
+    }).text;
+    expect(translated).toContain(
+      'Napomena gosta: Zračna luka Split, 4 kofera\nIzvorno: Split airport, 4 suitcases',
+    );
+    const own = composeHostOrderEmail({
+      ...base,
+      note: { text: 'Split airport', translation: null },
+    }).text;
+    expect(own).toContain('Guest note: Split airport');
+    expect(own).not.toContain('Original');
+    expect(composeHostOrderEmail(base).text).not.toContain('Guest note');
+  });
+
   it('asks for an answer by the deadline in the inbox', () => {
     const { subject, text } = composeHostOrderEmail(base);
     expect(subject).toBe('New request: Airport transfer');

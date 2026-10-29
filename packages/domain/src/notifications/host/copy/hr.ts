@@ -61,6 +61,8 @@ export const hr: HostCopy = {
     price: 'Cijena',
     guest: 'Gost',
     guestPhone: 'Telefon gosta',
+    note: 'Napomena gosta',
+    original: 'Izvorno',
     quantity: {
       person: 'Broj osoba',
       group: 'Broj osoba',

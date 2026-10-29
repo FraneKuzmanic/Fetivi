@@ -74,6 +74,7 @@ async function placeOnlineOrder() {
     spaceId: space.space.id,
     offerScope: scope,
     contact: { email: 'guest@example.test', name: 'Ana' },
+    details: { note: null, time: null },
   });
   return { cookie, orderId: order.id };
 }

@@ -130,6 +130,8 @@ export const pl: GuestCopy = {
     'Warunki na morzu mogą zakłócić rejsy na linii {{lines}} ({{offer}}, {{date}}). Przed wyjazdem sprawdź u przewoźnika {{operator}}: {{operatorUrl}}',
   orderStands:
     'Twoja rezerwacja pozostaje bez zmian, chyba że usługodawca ją odwoła. Jeśli tak się stanie, od razu dam Ci znać.',
+  freeCancellationEnded:
+    'Twoja prośba została przyjęta po upływie czasu na bezpłatne odwołanie, więc odwołanie nie jest już bezpłatne.',
   sourceLine: 'Źródło: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Prosimy o opuszczenie apartamentu do {{checkoutTime}}.',
   reviewLine:

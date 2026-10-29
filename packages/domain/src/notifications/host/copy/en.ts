@@ -45,6 +45,8 @@ export const en: HostCopy = {
     price: 'Price',
     guest: 'Guest',
     guestPhone: 'Guest phone',
+    note: 'Guest note',
+    original: 'Original',
     // A per-group price is flat and its quantity is the party size, so both count people.
     quantity: {
       person: 'People',

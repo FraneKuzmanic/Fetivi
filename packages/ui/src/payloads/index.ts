@@ -133,7 +133,23 @@ const cancellationTerms = z.object({
   freeUntil: z.string(),
   freeUntilLocal: z.string(),
   freeWindowPassed: z.boolean(),
+  /** Set while a request is not yet accepted: free to cancel until then. Defaults for older payloads. */
+  awaitingAcceptance: z.enum(['provider', 'host']).nullable().default(null),
 });
+
+/** What the guest should hear before deciding on an order, worded by the guest app. */
+const orderWarningPayload = z.discriminatedUnion('kind', [
+  /** 'HH:mm', or null when the host set no checkout time. */
+  z.object({ kind: z.literal('checkout_day'), checkoutTime: z.string().nullable() }),
+  z.object({
+    kind: z.literal('weather'),
+    level: z.enum(WARNING_LEVELS),
+    type: z.enum(WARNING_TYPES),
+    event: z.string(),
+    onset: z.string(),
+    expires: z.string(),
+  }),
+]);
 
 /** One Order as the guest sees it: the receipt in chat and in My trip. */
 export const orderSummary = z.object({
@@ -159,6 +175,8 @@ export const orderSummary = z.object({
   respondBy: z.string().nullable().default(null),
   /** Defaults so payloads stored before 57 still parse. */
   cancellation: cancellationTerms.nullable().default(null),
+  /** The guest's note, as written. Defaults so payloads stored before 62 still parse. */
+  note: z.string().nullable().default(null),
 });
 
 export const receiptCard = z.object({ order: orderSummary });
@@ -318,6 +336,11 @@ export const orderDraft = z.object({
   contactFields: z.enum(CONTACT_FIELDS),
   /** Defaults so drafts stored before 57 still parse; null shows no terms line. */
   cancellation: cancellationTerms.nullable().default(null),
+  /** The model's draft of the guest note; the guest edits it on the card. Defaults for older drafts. */
+  note: z.string().nullable().default(null),
+  /** 'HH:mm' the guest asked for; only for an Offer whose start has no time. */
+  requestedTime: z.string().nullable().default(null),
+  warnings: z.array(orderWarningPayload).default([]),
 });
 
 /** The stored send_host_message draft the host message card shows; the guest may edit the text. */
@@ -505,6 +528,8 @@ export const inboxItem = z.discriminatedUnion('kind', [
     reviewUrl: z.string().url().nullable().default(null),
     safety: safetyFacts.nullable().default(null),
     tip: tipFacts.nullable().default(null),
+    /** order_confirmed: accepted after the free cancellation window. Defaults for older notices. */
+    freeCancellationEnded: z.boolean().default(false),
     at: z.string(),
   }),
 ]);
@@ -515,6 +540,7 @@ export type ComponentPart = z.infer<typeof componentPart>;
 export type AvailabilityPickerPayload = z.infer<typeof availabilityPicker>;
 export type OrderSummaryPayload = z.infer<typeof orderSummary>;
 export type CancellationTermsPayload = z.infer<typeof cancellationTerms>;
+export type OrderWarningPayload = z.infer<typeof orderWarningPayload>;
 export type OrderDraft = z.infer<typeof orderDraft>;
 export type ElicitationPayload = z.infer<typeof elicitationPayload>;
 export type HostMessageDraftPayload = z.infer<typeof hostMessageDraft>;

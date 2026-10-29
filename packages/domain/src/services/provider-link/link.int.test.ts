@@ -64,7 +64,7 @@ afterAll(async () => {
 });
 
 /** A confirmed allotment Order on a Provider Offer that shares only the guest's name. */
-async function confirmedOrder() {
+async function confirmedOrder(guestNote?: string) {
   const provider = await seedProvider(testDb.db);
   const { offerId, slotId } = await seedOrderableOffer(testDb.db, {
     providerId: provider.id,
@@ -82,6 +82,7 @@ async function confirmedOrder() {
     quantity: 2,
     contact: { email: 'guest@example.test', name: 'Ana', phone: '+385 91 000 0000' },
     hold: { expiresAt: HOLD_UNTIL },
+    guestNote,
   });
   const ref = { orderId: order.id, proposalId: order.currentProposalId as string };
   await confirmHeldOrder(deps(), ref);
@@ -161,6 +162,28 @@ describe('the page view', () => {
       actions: ['acknowledge', 'cannot_fulfil'],
     });
     expect(view.guest.phone).toBeUndefined();
+    expect(view.guestNote).toBeNull();
+  });
+
+  it('carries the guest note with its stored translation, hidden once final', async () => {
+    const { ref } = await confirmedOrder('Two child seats');
+    await testDb.db
+      .update(orders)
+      .set({ guestNoteTranslation: 'Dvije dječje sjedalice', guestNoteTranslatedTo: 'hr' })
+      .where(eq(orders.id, ref.orderId));
+    const token = await issueProviderLink(testDb.db, SECRET, ref.orderId);
+    const view = async () => {
+      const found = await findOrderByLinkToken(testDb.db, token);
+      if (!found) throw new Error('not found');
+      return providerLinkView(found);
+    };
+    expect((await view()).guestNote).toEqual({
+      text: 'Two child seats',
+      translation: 'Dvije dječje sjedalice',
+      translatedTo: 'hr',
+    });
+    await cancel(deps(), { ...ref, trigger: 'guest' });
+    expect((await view()).guestNote).toBeNull();
   });
 
   it('is closed with no actions once the Order is final', async () => {

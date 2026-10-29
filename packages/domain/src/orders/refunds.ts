@@ -1,5 +1,7 @@
 import { z } from 'zod';
+import type { AvailabilityMode } from '../offers/vocabulary';
 import { type CivilDate, startOfCivilDay, toLocalDateTime } from '../time';
+import type { OrderStatus } from './vocabulary';
 
 /** The structured part of a cancellation policy, snapshotted on the Order. */
 export interface RefundRule {
@@ -48,7 +50,14 @@ export interface CancellationTerms extends LateChargeRule {
   /** 'YYYY-MM-DDTHH:mm' in the property's zone. */
   freeUntilLocal: string;
   freeWindowPassed: boolean;
+  /**
+   * Set while an on-request Order is not yet accepted: cancelling is free until the provider or
+   * host accepts; `freeUntil` applies only after that.
+   */
+  awaitingAcceptance: AcceptingParty | null;
 }
+
+export type AcceptingParty = 'provider' | 'host';
 
 /** Stored on card drafts; mirrored by the UI payloads. */
 export const cancellationTermsSchema = z.object({
@@ -57,6 +66,7 @@ export const cancellationTermsSchema = z.object({
   freeUntil: z.string(),
   freeUntilLocal: z.string(),
   freeWindowPassed: z.boolean(),
+  awaitingAcceptance: z.enum(['provider', 'host']).nullable().default(null),
 });
 
 /**
@@ -71,6 +81,7 @@ export function cancellationTermsAt(
   start: Date,
   zone: string,
   now: Date,
+  awaitingAcceptance: AcceptingParty | null = null,
 ): CancellationTerms {
   const cutoff = new Date(start.getTime() - policy.freeCancelHoursBefore * HOUR_MS);
   return {
@@ -78,7 +89,24 @@ export function cancellationTermsAt(
     lateChargePercent: policy.lateChargePercent,
     freeUntil: cutoff.toISOString(),
     freeUntilLocal: toLocalDateTime(cutoff, zone),
-    // Cancelling exactly at the cutoff is still free.
-    freeWindowPassed: now.getTime() > cutoff.getTime(),
+    // Cancelling exactly at the cutoff is still free; a request not yet accepted always is.
+    freeWindowPassed: awaitingAcceptance === null && now.getTime() > cutoff.getTime(),
+    awaitingAcceptance,
   };
+}
+
+const AWAITING_STATUSES: readonly OrderStatus[] = [
+  'awaiting_confirmation',
+  'confirming',
+  'pending_provider',
+];
+
+/** Who has yet to accept an on-request Order, or null once accepted (or for an instant booking). */
+export function awaitingAcceptanceOf(
+  order: { availabilityMode: AvailabilityMode; status: OrderStatus },
+  owner: AcceptingParty,
+): AcceptingParty | null {
+  return order.availabilityMode === 'on_request' && AWAITING_STATUSES.includes(order.status)
+    ? owner
+    : null;
 }

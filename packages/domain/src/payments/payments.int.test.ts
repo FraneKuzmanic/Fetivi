@@ -549,7 +549,9 @@ describe('booking a pay-online Offer in chat', () => {
     expect(
       (await availabilityFor(deps(), ctx, { offerId: onRequest.offerId, date: DAY, quantity: 1 }))
         .starts,
-    ).toEqual([{ slotId: null, startsAt: null, startsAtLocal: null, remaining: null }]);
+    ).toEqual([
+      { slotId: null, startsAt: null, startsAtLocal: null, remaining: null, warnings: [] },
+    ]);
     const ready = await onlineOffer();
     const result = await availabilityFor(deps(), ctx, {
       offerId: ready.offerId,
@@ -575,6 +577,7 @@ describe('booking a pay-online Offer in chat', () => {
       spaceId: guest.spaceId,
       offerScope: scope(),
       contact: { email: 'guest@example.test', name: 'Ana' },
+      details: { note: null, time: null },
     });
     expect(order).toMatchObject({
       status: 'confirming',
@@ -676,6 +679,7 @@ describe("a host's own pay-online Offer (38)", () => {
       pendingId,
       ...hostScope,
       contact: { email: 'guest@example.test', name: 'Ana' },
+      details: { note: null, time: null },
     });
     expect((await orderOf(order.id)).commissionBp).toBe(0);
     const [attempt] = await testDb.db
@@ -779,6 +783,7 @@ describe('disconnecting a host account', () => {
       pendingId,
       ...hostScope,
       contact: { email: 'guest@example.test', name: 'Ana' },
+      details: { note: null, time: null },
     });
 
     await expect(disconnectHostPayments(onboarding, host.hostId)).rejects.toEqual(

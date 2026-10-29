@@ -9,7 +9,9 @@ import {
   PAYMENT_MODES,
   PRICE_UNITS,
 } from '../../offers/vocabulary';
+import { GUEST_NOTE_MAX } from '../../orders/guest-note';
 import { cancellationTermsSchema } from '../../orders/refunds';
+import { orderWarningSchema } from '../../orders/warnings';
 import { GUEST_LANGUAGES } from '../../property/vocabulary';
 import type { CancelOrderDraft } from './cancel-order';
 import type { RespondOrderDraft } from './respond-order';
@@ -39,6 +41,12 @@ export const createOrderPayload = z.object({
   contactFields: z.enum(CONTACT_FIELDS),
   /** Null on drafts stored before the terms existed. */
   cancellation: cancellationTermsSchema.nullable().default(null),
+  /** The model's draft of the guest note; the guest edits it on the card. */
+  note: z.string().max(GUEST_NOTE_MAX).nullable().default(null),
+  /** 'HH:mm' in the property's zone; only for an on-request Offer, whose start has no time. */
+  requestedTime: z.string().nullable().default(null),
+  /** What the guest should hear before deciding: a checkout clash, a DHMZ warning. */
+  warnings: z.array(orderWarningSchema).default([]),
 });
 export type CreateOrderDraft = z.infer<typeof createOrderPayload>;
 

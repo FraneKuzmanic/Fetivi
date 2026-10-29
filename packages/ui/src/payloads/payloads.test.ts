@@ -127,6 +127,7 @@ const ORDER: OrderSummaryPayload = {
   refundMinor: null,
   respondBy: null,
   cancellation: null,
+  note: null,
 };
 
 const ELICITATION: ElicitationPayload = {
@@ -164,6 +165,9 @@ const ELICITATION: ElicitationPayload = {
     cancellationPolicy: 'Free cancellation up to 24 hours before.',
     contactFields: 'name',
     cancellation: null,
+    note: null,
+    requestedTime: null,
+    warnings: [],
   },
 };
 
@@ -261,6 +265,7 @@ describe('elicitation', () => {
         freeUntil: '2026-10-21T07:00:00.000Z',
         freeUntilLocal: '2026-10-21T09:00',
         freeWindowPassed: true,
+        awaitingAcceptance: null,
       },
     };
     const card = {
@@ -287,6 +292,60 @@ describe('elicitation', () => {
     );
     const { cancellation: __, ...order } = ORDER;
     expect(receiptCard.parse({ order }).order.cancellation).toBe(null);
+  });
+
+  it('still takes drafts and orders stored before the guest note, with empty details', () => {
+    const {
+      note: _,
+      requestedTime: __,
+      warnings: ___,
+      ...stored
+    } = ELICITATION.draft as NonNullable<ElicitationPayload['draft']>;
+    expect(elicitationPayload.parse({ ...ELICITATION, draft: stored }).draft).toMatchObject({
+      note: null,
+      requestedTime: null,
+      warnings: [],
+    });
+    const { note: ____, ...order } = ORDER;
+    expect(receiptCard.parse({ order }).order.note).toBe(null);
+    const terms = {
+      freeCancelHoursBefore: 24,
+      lateChargePercent: 50,
+      freeUntil: '2026-10-21T07:00:00.000Z',
+      freeUntilLocal: '2026-10-21T09:00',
+      freeWindowPassed: false,
+    };
+    expect(
+      receiptCard.parse({ order: { ...ORDER, cancellation: terms } }).order.cancellation
+        ?.awaitingAcceptance,
+    ).toBe(null);
+  });
+
+  it('round-trips the note, the requested time and the warnings', () => {
+    const draft = {
+      ...(ELICITATION.draft as NonNullable<ElicitationPayload['draft']>),
+      note: 'Split airport, 4 big suitcases',
+      requestedTime: '07:00',
+      warnings: [
+        { kind: 'checkout_day' as const, checkoutTime: '10:00' },
+        {
+          kind: 'weather' as const,
+          level: 'yellow' as const,
+          type: 'wind' as const,
+          event: 'Strong wind',
+          onset: '2026-10-21T14:00:00.000Z',
+          expires: '2026-10-21T22:00:00.000Z',
+        },
+      ],
+    };
+    expect(elicitationPayload.parse({ ...ELICITATION, draft }).draft).toEqual(draft);
+    expect(
+      elicitationPayload.safeParse({
+        ...ELICITATION,
+        draft: { ...draft, warnings: [{ kind: 'weather', level: 'pink' }] },
+      }).success,
+    ).toBe(false);
+    expect(receiptCard.parse({ order: { ...ORDER, note: 'Gate 2' } }).order.note).toBe('Gate 2');
   });
 
   it('refuses a missing state, a non-object schema or a broken draft', () => {
@@ -381,6 +440,7 @@ describe('inbox item', () => {
             reviewPlatform: 'airbnb',
             safety: null,
             tip: null,
+            freeCancellationEnded: true,
           },
         },
         now,

@@ -233,6 +233,8 @@ export const pl: Messages = {
       'Jutro, {{date}}, masz jeszcze wolne w planie. Może {{offer}}{{distance}}? Zapytaj mnie, a powiem ci więcej.',
     tipDistance: ' ({{km}} km stąd)',
     tipVenue: ', miejsce: {{venueName}}',
+    freeCancellationEnded:
+      'Prośba została przyjęta po upływie bezpłatnego anulowania, więc anulowanie nie jest już bezpłatne.',
   },
   push: {
     offer: 'Powiadamiaj mnie na tym telefonie',
@@ -329,6 +331,10 @@ export const pl: Messages = {
     chargeAfterFull: 'Później anulowanie kosztuje pełną cenę.',
     chargeNow: 'Bezpłatne anulowanie się skończyło: anulowanie kosztuje {{percent}} % ceny.',
     chargeNowFull: 'Bezpłatne anulowanie się skończyło: anulowanie kosztuje pełną cenę.',
+    freeUntilProviderAccepts:
+      'Możesz anulować bezpłatnie, dopóki usługodawca nie przyjmie twojej prośby.',
+    freeUntilHostAccepts:
+      'Możesz anulować bezpłatnie, dopóki twój gospodarz nie przyjmie twojej prośby.',
   },
   respondOrder: {
     headingTime: 'Usługodawca proponuje inną godzinę',
@@ -409,6 +415,17 @@ export const pl: Messages = {
       'Następnie zapłacisz na bezpiecznej stronie Stripe. Karta zostanie obciążona dopiero po potwierdzeniu rezerwacji.',
     confirmOnline: 'Przejdź do płatności',
     checkoutClosed: 'Czas na płatność minął. Stan rezerwacji sprawdzisz w zakładce Moja podróż.',
+    details: 'Szczegóły tej rezerwacji',
+    detailsHint: 'Miejsce odbioru, bagaż, wszystko, co powinien wiedzieć.',
+    detailsCount: '{{count}} / {{max}}',
+    time: 'Godzina',
+    timeHint: 'Kiedy ci pasuje.',
+    invalidTime: 'Wpisz godzinę, np. 07:30.',
+    warningsHeading: 'Zanim potwierdzisz',
+    warnCheckout: 'To dzień twojego wymeldowania: musisz opuścić kwaterę do {{time}}.',
+    warnCheckoutDay: 'To dzień twojego wymeldowania.',
+    warnWeather: '{{level}} od DHMZ: {{event}}',
+    yourNote: 'Twoja notatka',
   },
   trip: {
     plan: 'Plan',

@@ -50,6 +50,8 @@ const STRINGS = {
     },
     guestName: 'Gost',
     guestPhone: 'Telefon gosta',
+    note: 'Napomena gosta',
+    original: 'Izvorno',
     price: 'Cijena',
     status: {
       waiting: (at: string) => `Čeka vaš odgovor do ${at}`,
@@ -118,6 +120,8 @@ const STRINGS = {
     },
     guestName: 'Guest',
     guestPhone: 'Guest phone',
+    note: 'Guest note',
+    original: 'Original',
     price: 'Price',
     status: {
       waiting: (at: string) => `Waiting for your answer by ${at}`,
@@ -202,6 +206,8 @@ dl div{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border
 dl div:first-child{border-top:0}
 dt{color:var(--gray-500)}
 dd{margin:0;text-align:right;font-weight:600;overflow-wrap:anywhere}
+dl div.note{flex-direction:column;gap:4px}
+dl div.note dd{text-align:left;font-weight:400;white-space:pre-wrap}
 form{display:flex;flex-direction:column;gap:12px;margin:0}
 button,.button{display:flex;align-items:center;justify-content:center;width:100%;min-height:var(--tap);
 padding:10px 16px;border:1px solid var(--blue-600);border-radius:8px;font:inherit;font-weight:600;
@@ -283,8 +289,19 @@ function summary(view: ProviderLinkView, lang: ProviderLanguage): string {
     ...(view.guest.name ? [[s.guestName, view.guest.name] as [string, string]] : []),
     ...(view.guest.phone ? [[s.guestPhone, view.guest.phone] as [string, string]] : []),
   ];
-  return `<dl>${rows
-    .map(([term, value]) => `<div><dt>${term}</dt><dd>${escapeHtml(value)}</dd></div>`)
+  // The guest's words, translated into the page's language when a translation exists, the original below.
+  const note = view.guestNote;
+  const translated = note?.translatedTo === lang ? note.translation : null;
+  const notes: [string, string][] = note
+    ? [
+        [s.note, translated ?? note.text],
+        ...(translated ? [[s.original, note.text] as [string, string]] : []),
+      ]
+    : [];
+  const row = ([term, value]: [string, string], cls = '') =>
+    `<div${cls}><dt>${term}</dt><dd>${escapeHtml(value)}</dd></div>`;
+  return `<dl>${rows.map((r) => row(r)).join('')}${notes
+    .map((r) => row(r, ' class="note"'))
     .join('')}</dl>`;
 }
 

@@ -5,7 +5,7 @@ import { allotmentSlots, offers, providers } from '../../db/schema/offers';
 import { orderEvents, orders, paymentAttempts } from '../../db/schema/orders';
 import { pendingActions } from '../../db/schema/pending-actions';
 import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../../jobs/queue';
-import { createOrder, type OrderDeps } from '../../orders/machine';
+import { confirm, createOrder, type OrderDeps } from '../../orders/machine';
 import type { OrderPaymentJobData } from '../../payments/enqueue';
 import { applyStripeEvent, parseStripeEvent } from '../../payments/events';
 import { type PaymentDeps, runPaymentJob } from '../../payments/jobs';
@@ -400,6 +400,7 @@ describe('cancel_order on other Orders', () => {
       freeUntil: CUTOFF.toISOString(),
       freeUntilLocal: '2027-05-03T09:00',
       freeWindowPassed: false,
+      awaitingAcceptance: null,
     });
 
     clock = new Date(CUTOFF.getTime() + MINUTE);
@@ -507,5 +508,61 @@ describe('cancel_order on other Orders', () => {
 
     expect((await (await guestCancels(orderId)).tap()).outcome).toBe('cancelled');
     expect(await codeOf(prepareCancel(deps(), ctx(), { orderId }))).toBe('not-cancellable');
+  });
+});
+
+describe('cancel_order on a request awaiting acceptance', () => {
+  /** A pay-direct on-request Order of a Provider, 24 h free then half, waiting for the answer. */
+  async function request() {
+    clock = NOW;
+    const provider = await seedProvider(testDb.db);
+    const { offerId } = await seedOrderableOffer(testDb.db, {
+      providerId: provider.id,
+      availabilityMode: 'on_request',
+    });
+    await testDb.db
+      .update(offers)
+      .set({ freeCancelHoursBefore: 24, refundPercentAfter: 50 })
+      .where(eq(offers.id, offerId));
+    const { order } = await createOrder(deps(), {
+      spaceId: guest.spaceId,
+      offerId,
+      date: DAY,
+      quantity: 1,
+      contact: { email: 'guest@example.test' },
+    });
+    expect(order.status).toBe('pending_provider');
+    return order;
+  }
+  // The start is unknown, so the cutoff is 24 h before midnight of DAY: long passed by now.
+  const AFTER_CUTOFF = new Date('2027-05-03T08:00:00Z');
+
+  it('is free after the cutoff while the provider has not accepted', async () => {
+    const order = await request();
+    clock = AFTER_CUTOFF;
+    const { draft, tap } = await guestCancels(order.id);
+    expect(draft.cancellation).toMatchObject({
+      awaitingAcceptance: 'provider',
+      freeWindowPassed: false,
+    });
+    expect(await tap()).toMatchObject({ outcome: 'cancelled', order: { status: 'cancelled' } });
+    clock = NOW;
+  });
+
+  it('re-asks when the provider accepts after the cutoff between card and tap', async () => {
+    const order = await request();
+    clock = AFTER_CUTOFF;
+    const { tap } = await guestCancels(order.id);
+    await confirm(deps(), {
+      orderId: order.id,
+      proposalId: order.currentProposalId as string,
+      trigger: 'provider_link',
+    });
+    expect(await tap()).toMatchObject({
+      outcome: 'changed',
+      draft: { cancellation: { awaitingAcceptance: null, freeWindowPassed: true } },
+    });
+    expect((await orderOf(order.id)).status).toBe('confirmed');
+    clock = NOW;
   });
 });

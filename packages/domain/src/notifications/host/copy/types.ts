@@ -49,6 +49,9 @@ export interface HostCopy {
     price: string;
     guest: string;
     guestPhone: string;
+    note: string;
+    /** Above the guest's own words when the note is translated. */
+    original: string;
     /** The quantity's label per price unit; the value is the bare number. */
     quantity: Record<PriceUnit, string>;
     respond: (url: string) => string;

@@ -1,4 +1,10 @@
-import { type ContactFields, type CreateOrderDraft, ORDER_DRAFT_META_KEY } from '@fetivi/domain';
+import {
+  type ContactFields,
+  type CreateOrderDraft,
+  GUEST_NOTE_MAX,
+  ORDER_DRAFT_META_KEY,
+  type OrderWarning,
+} from '@fetivi/domain';
 import {
   CLIENT_CAPABILITIES_META_KEY,
   type McpServer,
@@ -8,7 +14,8 @@ import { z } from 'zod';
 import { termsSentence } from './terms';
 
 // The confirmation card of create_order (architecture §4.3). Everything shown comes from the
-// stored draft, never from model text. Form mode never asks for secrets: email, name and phone only.
+// stored draft, never from model text. Form mode never asks for secrets: email, name, phone, the
+// guest's note and wished time only.
 
 /** The guest's answer: email always, plus the contact fields the Offer configures. */
 export function contactSchemaFor(fields: ContactFields) {
@@ -32,13 +39,40 @@ export function contactSchemaFor(fields: ContactFields) {
   }
 }
 
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/**
+ * The whole card answer: the contact fields, the guest's note for every Offer, and the wished
+ * time for an Offer whose start has no time. Both details are optional and prefilled from the
+ * draft; a field the guest cleared is absent, so the Order gets none.
+ */
+export function orderFormFor(draft: CreateOrderDraft) {
+  const note = z
+    .string()
+    .trim()
+    .max(GUEST_NOTE_MAX)
+    .optional()
+    .describe('Details')
+    .meta(draft.note ? { default: draft.note } : {});
+  const contact = contactSchemaFor(draft.contactFields);
+  if (draft.startsAt !== null) return contact.extend({ note });
+  // A refine, not .regex, for the same reason as the phone rule.
+  const time = z
+    .string()
+    .trim()
+    .optional()
+    .refine((v) => v === undefined || v === '' || HHMM.test(v), 'A time')
+    .describe('Time')
+    .meta(draft.requestedTime ? { default: draft.requestedTime } : {});
+  return contact.extend({ note, time });
+}
+
 const money = (minor: number, currency: string) => `${(minor / 100).toFixed(2)} ${currency}`;
 
 /** An English one-liner from the stored draft; ticket 17's card localises from `_meta`. */
 export function confirmationMessage(draft: CreateOrderDraft): string {
-  const when = draft.startsAtLocal
-    ? `${draft.date} at ${draft.startsAtLocal.slice(11)}`
-    : draft.date;
+  const time = draft.startsAtLocal?.slice(11) ?? draft.requestedTime;
+  const when = time ? `${draft.date} at ${time}` : draft.date;
   const price =
     draft.priceMinor === null ? '' : `, ${money(draft.priceMinor, draft.currency)} total`;
   const paid =
@@ -47,7 +81,18 @@ export function confirmationMessage(draft: CreateOrderDraft): string {
       : ', paid online after you confirm (your card is charged only once the booking is confirmed)';
   // Nothing is paid before the guest confirms, so no refund wording yet.
   const terms = termsSentence(draft.cancellation, draft.paymentMode, false);
-  return `Book ${draft.offerTitle} on ${when} for ${draft.quantity}${price}${paid}? ${terms}`.trimEnd();
+  const note = draft.note ? ` Note: "${draft.note}".` : '';
+  const warnings = draft.warnings.map((w) => ` ${warningSentence(w)}`).join('');
+  return `Book ${draft.offerTitle} on ${when} for ${draft.quantity}${price}${paid}? ${terms}${note}${warnings}`.trimEnd();
+}
+
+function warningSentence(warning: OrderWarning): string {
+  if (warning.kind === 'checkout_day') {
+    return warning.checkoutTime
+      ? `Heads-up: it is your checkout day (checkout ${warning.checkoutTime}).`
+      : 'Heads-up: it is your checkout day.';
+  }
+  return `DHMZ ${warning.level} warning: ${warning.event}.`;
 }
 
 export function orderDraftMeta(pendingId: string, draft: CreateOrderDraft) {

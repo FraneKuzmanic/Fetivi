@@ -12,8 +12,10 @@ import {
   type SpaceContext,
 } from '@fetivi/domain';
 import {
+  fixedWeatherSource,
   publishOffer,
   type SeededGuestUnit,
+  sampleWeatherReport,
   seedDestination,
   seedGuestUnit,
   seedOrderableOffer,
@@ -150,7 +152,12 @@ async function refused(run: Promise<{ isError?: unknown }>): Promise<boolean> {
 const errorText = (r: unknown) => (r as { content: { text: string }[] }).content[0]?.text;
 
 beforeAll(async () => {
-  t = await createTestServer({ listen: true, now: () => clock });
+  // A yellow wind warning on the first booking day, for the outdoor Offers.
+  t = await createTestServer({
+    listen: true,
+    now: () => clock,
+    weather: fixedWeatherSource(() => sampleWeatherReport(day)),
+  });
   const db = t.db;
   const destinationId = await seedDestination(db);
   guest = await seedGuestUnit(db, { now: clock });
@@ -382,6 +389,72 @@ describe('check_availability', () => {
   });
 });
 
+describe('check_availability warnings', () => {
+  it('a boat trip on a day with a DHMZ wind warning carries it, with the total', async () => {
+    const result = await call(guest, 'check_availability', {
+      offerId: offer.boat,
+      date: day,
+      quantity: 2,
+    });
+    const out = result.structuredContent as {
+      totalMinor: number | null;
+      weatherChecked: boolean | null;
+      starts: { warnings: { kind: string; level?: string; type?: string }[] }[];
+    };
+    expect(out.weatherChecked).toBe(true);
+    expect(out.starts[0]?.warnings).toEqual([
+      expect.objectContaining({ kind: 'weather', level: 'yellow', type: 'wind' }),
+    ]);
+  });
+});
+
+describe("create_order with the guest's details", () => {
+  it('the card carries note and time; the answer is what the order gets', async () => {
+    const args = {
+      offerId: offer.sunset,
+      date: day,
+      quantity: 2,
+      time: '07:00',
+      note: 'From the marina, 4 big suitcases',
+    };
+    const asked = await firstHalf(guest, args);
+    const params = asked.inputRequests.confirm?.params as {
+      requestedSchema: { properties: Record<string, { default?: string }>; required: string[] };
+      _meta: Record<string, { note: string; requestedTime: string; cancellation: unknown }>;
+    };
+    expect(params.requestedSchema.properties.note?.default).toBe(args.note);
+    expect(params.requestedSchema.properties.time?.default).toBe('07:00');
+    expect(params.requestedSchema.required).not.toContain('note');
+    expect(params._meta['app.fetivi/order-draft']).toMatchObject({
+      note: args.note,
+      requestedTime: '07:00',
+      cancellation: { awaitingAcceptance: 'provider' },
+    });
+
+    const done = await resume(guest, args, asked.requestState, {
+      action: 'accept',
+      content: { ...CONTACT, note: 'From the marina, 4 suitcases and a pram', time: '07:30' },
+    });
+    const out = done.structuredContent as {
+      outcome: string;
+      order: { id: string; note: string; startsAtLocal: string };
+    };
+    expect(out.outcome).toBe('ordered');
+    expect(out.order.note).toBe('From the marina, 4 suitcases and a pram');
+    expect(out.order.startsAtLocal).toBe(`${day}T07:30`);
+  });
+
+  it('a cleared note and time give an order without either', async () => {
+    const args = { offerId: offer.sunset, date: day, quantity: 1, time: '08:00', note: 'Hi' };
+    const asked = await firstHalf(guest, args);
+    const done = await resume(guest, args, asked.requestState, accept);
+    const out = done.structuredContent as {
+      order: { note: string | null; startsAtLocal: string | null };
+    };
+    expect(out.order).toMatchObject({ note: null, startsAtLocal: null });
+  });
+});
+
 describe('create_order', () => {
   it('first half stores one pending record and asks for confirmation; accept orders it', async () => {
     const before = (await pendingOf(guest)).length;
@@ -396,8 +469,10 @@ describe('create_order', () => {
     expect(Object.keys(params.requestedSchema.properties).sort()).toEqual([
       'email',
       'name',
+      'note',
       'phone',
     ]);
+    expect(params.requestedSchema.required.sort()).toEqual(['email', 'name', 'phone']);
     expect(params.message).toContain('[en] Blue Lagoon boat trip');
     const draft = params._meta['app.fetivi/order-draft'];
     expect(draft?.quantity).toBe(2);

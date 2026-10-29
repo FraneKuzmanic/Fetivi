@@ -693,6 +693,12 @@ export interface HostOrderView {
   stayTo: string;
   /** New terms must carry a price. */
   needsPrice: boolean;
+  /** The guest's own words, with a translation when one was made; null once the Order is final. */
+  guestNote: {
+    text: string;
+    translation: string | null;
+    translatedTo: 'hr' | 'en' | null;
+  } | null;
 }
 
 export interface HostOrder extends HostOrderView {

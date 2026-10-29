@@ -124,6 +124,8 @@ export const it: GuestCopy = {
     'Le condizioni del mare potrebbero disturbare le corse sulla linea {{lines}} ({{offer}}, {{date}}). Prima di partire verifica con {{operator}}: {{operatorUrl}}',
   orderStands:
     'La tua prenotazione resta valida, a meno che il fornitore non la cancelli. Se succede, te lo dico subito.',
+  freeCancellationEnded:
+    'La tua richiesta è stata accettata dopo la scadenza della cancellazione gratuita, quindi annullarla non è più gratuito.',
   sourceLine: 'Fonte: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Ti chiediamo di lasciare l’alloggio entro le {{checkoutTime}}.',
   reviewLine:

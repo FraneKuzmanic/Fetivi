@@ -86,7 +86,12 @@ async function onRequest(
 async function book(offerId: string) {
   clock = NOW;
   const { pendingId } = await prepareOrder(deps(), ctx(), { offerId, date: DAY, quantity: 2 });
-  const { order } = await completeOrder(deps(), { pendingId, ...ctx(), contact: CONTACT });
+  const { order } = await completeOrder(deps(), {
+    pendingId,
+    ...ctx(),
+    contact: CONTACT,
+    details: { note: null, time: null },
+  });
   const found = await getOrder(testDb.db, order.id);
   if (!found) throw new Error('no order');
   return found;

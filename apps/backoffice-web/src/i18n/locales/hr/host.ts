@@ -473,6 +473,8 @@ export const host: Translation<typeof en> = {
       'Narudžba će se otkazati, gost će biti obaviješten, a sve što je platio vraća mu se u cijelosti.',
     priceToName: 'Cijenu određujete vi',
     answerBy: 'Odgovorite do {{day}}, {{time}}',
+    guestNote: 'Napomena gosta',
+    original: 'Izvorno',
     suggestHint: 'Gost dobiva vaš prijedlog i može ga prihvatiti ili odbiti.',
     priceHint: 'Upišite ukupnu cijenu ove narudžbe. Gost je može prihvatiti ili odbiti.',
     date: 'Datum',

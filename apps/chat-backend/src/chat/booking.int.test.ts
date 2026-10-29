@@ -15,6 +15,7 @@ import {
 } from '@fetivi/domain';
 import {
   publishOffer,
+  scriptedHandoffTranslator,
   seedDestination,
   seedGuestUnit,
   seedOrderableOffer,
@@ -174,6 +175,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
     expect(Object.keys(card?.data.requestedSchema.properties ?? {}).sort()).toEqual([
       'email',
       'name',
+      'note',
       'phone',
     ]);
     expect(card?.data.requestState.length).toBeGreaterThan(20);
@@ -241,6 +243,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
           baseUrl: 'http://x.test',
         },
         webOrigin: 'http://admin.test',
+        handoffTranslator: scriptedHandoffTranslator([null]),
       },
       notify?.data as { orderId: string; proposalId: string; kind: 'provider_confirmed' },
     );

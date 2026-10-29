@@ -26,6 +26,7 @@ import { PAYMENT_LOCALES } from '../payments/vocabulary';
 import { allotmentAdapter, restoreSeats } from '../services/adapters/allotment';
 import { AdapterError } from '../services/adapters/interface';
 import { type CivilDate, endOfCivilDay, toLocalDateTime } from '../time';
+import { GUEST_NOTE_MAX } from './guest-note';
 import { responseDueAt } from './response-window';
 import {
   enqueueAdapterCancel,
@@ -113,6 +114,8 @@ export interface CreateOrderInput extends GuestConfirmInput {
   slotId?: string;
   quantity: number;
   contact: { email: string; name?: string; phone?: string };
+  /** The guest's note, already cleaned (`cleanGuestNote`). */
+  guestNote?: string;
 }
 
 export interface ActionInput {
@@ -583,6 +586,9 @@ export async function createOrder(
 ): Promise<{ order: OrderRow; created: boolean }> {
   const email = input.contact.email.trim();
   if (!isQuantity(input.quantity) || email === '') throw new OrderRuleError('invalid-input');
+  if (input.guestNote !== undefined && input.guestNote.length > GUEST_NOTE_MAX) {
+    throw new OrderRuleError('invalid-input');
+  }
   return deps.db.transaction(async (tx) => {
     const existing = async () => {
       if (!input.id) return undefined;
@@ -646,6 +652,7 @@ export async function createOrder(
         guestEmail: email,
         guestName: input.contact.name,
         guestPhone: input.contact.phone,
+        guestNote: input.guestNote ?? null,
         cancellationPolicy: offer.cancellationPolicy,
         freeCancelHoursBefore: offer.freeCancelHoursBefore,
         refundPercentAfter: offer.refundPercentAfter,

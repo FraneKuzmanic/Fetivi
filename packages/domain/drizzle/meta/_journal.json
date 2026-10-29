@@ -421,6 +421,13 @@
       "when": 1793246003812,
       "tag": "0059_search_embeddings",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1793255756291,
+      "tag": "0060_order_guest_note",
+      "breakpoints": true
     }
   ]
 }

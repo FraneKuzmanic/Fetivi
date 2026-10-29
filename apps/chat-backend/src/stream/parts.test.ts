@@ -174,6 +174,7 @@ const ORDER = {
   refundMinor: null,
   respondBy: null,
   cancellation: null,
+  note: null,
 };
 
 describe('booking components', () => {

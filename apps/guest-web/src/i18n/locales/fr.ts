@@ -237,6 +237,8 @@ export const fr: Messages = {
       'Demain, {{date}}, votre programme est encore libre. Pourquoi pas {{offer}}{{distance}} ? Demandez-moi, je vous en dirai plus.',
     tipDistance: ' (à {{km}} km)',
     tipVenue: ', à {{venueName}}',
+    freeCancellationEnded:
+      'Elle a été acceptée après la fin de l’annulation gratuite : l’annuler n’est donc plus gratuit.',
   },
   push: {
     offer: 'M’avertir sur ce téléphone',
@@ -336,6 +338,9 @@ export const fr: Messages = {
     chargeAfterFull: 'Ensuite, l’annulation coûte le prix total.',
     chargeNow: 'L’annulation gratuite est terminée : l’annulation coûte {{percent}} % du prix.',
     chargeNowFull: 'L’annulation gratuite est terminée : l’annulation coûte le prix total.',
+    freeUntilProviderAccepts:
+      'Annulation gratuite tant que le prestataire n’a pas accepté votre demande.',
+    freeUntilHostAccepts: 'Annulation gratuite tant que votre hôte n’a pas accepté votre demande.',
   },
   respondOrder: {
     headingTime: 'Le prestataire propose un autre horaire',
@@ -417,6 +422,17 @@ export const fr: Messages = {
     confirmOnline: 'Continuer vers le paiement',
     checkoutClosed:
       'Le délai de paiement est écoulé. Retrouvez l’état de la réservation dans Mon séjour.',
+    details: 'Détails de cette réservation',
+    detailsHint: 'Lieu de prise en charge, bagages, tout ce qu’il doit savoir.',
+    detailsCount: '{{count}} / {{max}}',
+    time: 'Heure',
+    timeHint: 'Quand cela vous convient.',
+    invalidTime: 'Saisissez une heure, par exemple 07:30.',
+    warningsHeading: 'Avant de confirmer',
+    warnCheckout: 'C’est votre jour de départ : vous devez libérer le logement avant {{time}}.',
+    warnCheckoutDay: 'C’est votre jour de départ.',
+    warnWeather: '{{level}} du DHMZ : {{event}}',
+    yourNote: 'Votre note',
   },
   trip: {
     plan: 'Plan',

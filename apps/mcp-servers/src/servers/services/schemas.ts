@@ -2,11 +2,13 @@ import {
   AVAILABILITY_MODES,
   type Availability,
   CONTACT_FIELDS,
+  GUEST_NOTE_MAX,
   type GuestOffer,
   OFFER_CATEGORIES,
   ORDER_KINDS,
   ORDER_STATUSES,
   type OrderSummary,
+  orderWarningSchema,
   PAYMENT_MODES,
   PAYMENT_STATUSES,
   PRICE_UNITS,
@@ -24,6 +26,7 @@ const quantity = z
   .min(1)
   .max(99)
   .describe('People, or items for a per-item price, or 1 for a per-group price.');
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 
 export const listOffersInput = z.object({
   category: z.enum(OFFER_CATEGORIES).optional(),
@@ -33,6 +36,9 @@ export const checkAvailabilityInput = z.object({
   offerId: z.uuid(),
   date: civilDate,
   quantity,
+  time: hhmm
+    .optional()
+    .describe("The guest's wished start, HH:mm, for an offer whose starts have no time."),
 });
 export const listMyOrdersInput = z.object({});
 export const createOrderInput = z.object({
@@ -43,6 +49,19 @@ export const createOrderInput = z.object({
     .uuid()
     .optional()
     .describe('slotId from check_availability; required when the day has more than one start.'),
+  time: hhmm
+    .optional()
+    .describe(
+      'For an offer whose start has no time: the time the guest asked for, HH:mm. The guest can change it on the card.',
+    ),
+  note: z
+    .string()
+    .trim()
+    .max(GUEST_NOTE_MAX)
+    .optional()
+    .describe(
+      "What the provider needs to know, from the conversation, in the guest's words: pickup place and destination, luggage, handover, group. The guest can edit it on the card.",
+    ),
 });
 export const cancelOrderInput = z.object({
   orderId: z.uuid().describe('An order id from list_my_orders.'),
@@ -126,9 +145,16 @@ const orderSummary = z.object({
         .string()
         .describe('When free cancellation ends, local time at the property, YYYY-MM-DDTHH:mm.'),
       freeWindowPassed: z.boolean().describe('True once free cancellation has ended.'),
+      awaitingAcceptance: z
+        .enum(['provider', 'host'])
+        .nullable()
+        .describe(
+          'While set, cancelling is free until the provider or host accepts; freeUntil applies after that.',
+        ),
     })
     .nullable()
     .describe('What cancelling costs now. Null for a finished order.'),
+  note: z.string().nullable().describe("The guest's note on the order."),
 });
 
 export const listOffersOutput = z.object({ offers: z.array(guestOffer) });
@@ -136,6 +162,17 @@ export const checkAvailabilityOutput = z.object({
   offerId: z.string(),
   date: z.string(),
   quantity: z.number(),
+  totalMinor: z
+    .number()
+    .nullable()
+    .describe('The total for quantity in cents; null when the provider names the price.'),
+  currency: z.string(),
+  weatherChecked: z
+    .boolean()
+    .nullable()
+    .describe(
+      'False: DHMZ warnings could not be checked; never say there are none. Null: not an outdoor offer.',
+    ),
   starts: z.array(
     z.object({
       slotId: z.string().nullable(),
@@ -145,6 +182,11 @@ export const checkAvailabilityOutput = z.object({
         .nullable()
         .describe('Local time at the property, YYYY-MM-DDTHH:mm; use it with the guest.'),
       remaining: z.number().nullable(),
+      warnings: z
+        .array(orderWarningSchema)
+        .describe(
+          'Say each one to the guest before create_order: checkout_day = it clashes with checkout at checkoutTime; weather = a DHMZ warning of that level on the day.',
+        ),
     }),
   ),
 });

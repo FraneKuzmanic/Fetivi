@@ -127,6 +127,8 @@ export const hu: GuestCopy = {
     'A tengeri viszonyok megzavarhatják a járatokat a(z) {{lines}} vonalon ({{offer}}, {{date}}). Indulás előtt érdeklődj itt: {{operator}}, {{operatorUrl}}',
   orderStands:
     'A foglalásod érvényes marad, hacsak a szolgáltató le nem mondja. Ha mégis, azonnal szólok.',
+  freeCancellationEnded:
+    'A kérésedet az ingyenes lemondási határidő után fogadták el, így a lemondás már nem ingyenes.',
   sourceLine: 'Forrás: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Kérjük, {{checkoutTime}}-ig hagyd el a szállást.',
   reviewLine:

@@ -2,7 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { allotmentSlots } from '../../db/schema/offers';
-import { inventoryHolds, orders } from '../../db/schema/orders';
+import { inventoryHolds, orderProposals, orders } from '../../db/schema/orders';
 import { pendingActions } from '../../db/schema/pending-actions';
 import { spaces } from '../../db/schema/spaces';
 import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../../jobs/queue';
@@ -12,12 +12,14 @@ import {
   createTestDatabase,
   publishOffer,
   type SeededGuestUnit,
+  sampleWeatherReport,
   seedDestination,
   seedGuestUnit,
   seedOrderableOffer,
   seedProvider,
   type TestDatabase,
 } from '../../testing';
+import { fromLocalDateTime } from '../../time';
 import {
   availabilityFor,
   completeOrder,
@@ -108,8 +110,16 @@ describe('availabilityFor', () => {
     const { offerId, slotId } = await allotment();
     const result = await availabilityFor(deps(), ctx(), { offerId, date: DAY, quantity: 2 });
     expect(result.starts).toEqual([
-      { slotId, startsAt: AT_09.toISOString(), startsAtLocal: '2027-05-04T09:00', remaining: 4 },
+      {
+        slotId,
+        startsAt: AT_09.toISOString(),
+        startsAtLocal: '2027-05-04T09:00',
+        remaining: 4,
+        warnings: [],
+      },
     ]);
+    // A tour is outdoors; with no weather source the warnings were not checked.
+    expect(result).toMatchObject({ totalMinor: 5000, currency: 'EUR', weatherChecked: false });
   });
 
   it('drops starts that have passed', async () => {
@@ -234,7 +244,12 @@ describe('completeOrder', () => {
     return { ...offer, pendingId };
   }
   const complete = (pendingId: string, g: SeededGuestUnit = guest) =>
-    completeOrder(deps(), { pendingId, ...ctx(g), contact: CONTACT });
+    completeOrder(deps(), {
+      pendingId,
+      ...ctx(g),
+      contact: CONTACT,
+      details: { note: null, time: null },
+    });
 
   it('creates one confirmed Order with only the configured contact fields', async () => {
     const { offerId, slotId, pendingId } = await prepared();
@@ -283,7 +298,12 @@ describe('completeOrder', () => {
     expect((await space())?.email).toBeNull();
 
     const first = await prepare();
-    await completeOrder(deps(), { pendingId: first, ...ctx(g), contact: CONTACT });
+    await completeOrder(deps(), {
+      pendingId: first,
+      ...ctx(g),
+      contact: CONTACT,
+      details: { note: null, time: null },
+    });
     const after = await space();
     expect(after).toMatchObject({
       email: 'guest@example.test',
@@ -297,7 +317,12 @@ describe('completeOrder', () => {
     // A replay writes nothing.
     const later = new Date(clock.getTime() + 60_000);
     clock = later;
-    await completeOrder(deps(), { pendingId: first, ...ctx(g), contact: CONTACT });
+    await completeOrder(deps(), {
+      pendingId: first,
+      ...ctx(g),
+      contact: CONTACT,
+      details: { note: null, time: null },
+    });
     expect((await space())?.updatedAt).toEqual(after?.updatedAt);
 
     // The same address typed differently is the same address: still verified, no new link.
@@ -306,6 +331,7 @@ describe('completeOrder', () => {
       pendingId: again,
       ...ctx(g),
       contact: { ...CONTACT, email: 'Guest@Example.test' },
+      details: { note: null, time: null },
     });
     expect(await space()).toMatchObject({ email: 'guest@example.test', emailVerifiedAt: NOW });
     expect(await verifyJobs()).toBe(1);
@@ -316,6 +342,7 @@ describe('completeOrder', () => {
       pendingId: second,
       ...ctx(g),
       contact: { ...CONTACT, email: 'other@example.test' },
+      details: { note: null, time: null },
     });
     expect(await space()).toMatchObject({
       email: 'other@example.test',
@@ -389,7 +416,12 @@ describe('completeOrder', () => {
   it('a missing configured contact field is refused without consuming', async () => {
     const { pendingId } = await prepared({ contactFields: 'phone' });
     const code = await codeOf(
-      completeOrder(deps(), { pendingId, ...ctx(), contact: { email: 'a@b.test', name: 'Ana' } }),
+      completeOrder(deps(), {
+        pendingId,
+        ...ctx(),
+        contact: { email: 'a@b.test', name: 'Ana' },
+        details: { note: null, time: null },
+      }),
     );
     expect(code).toBe('invalid-input');
     expect((await pendingRow(pendingId))?.state).toBe('pending');
@@ -447,5 +479,260 @@ describe('listSpaceOrders', () => {
       sql`select count(*)::int as n from orders where space_id = ${guest.spaceId}`,
     );
     expect(list).toHaveLength(rows[0]?.n ?? -1);
+  });
+});
+
+describe('guest details, warnings and requests free until accepted', () => {
+  const CHECKOUT = '2027-05-06';
+  const NO_DETAILS = { note: null, time: null };
+
+  async function onRequest(
+    options: { host?: boolean; category?: 'transfer' | 'boat_trip' | 'tasting' } = {},
+  ) {
+    const provider = options.host ? undefined : await seedProvider(testDb.db);
+    const { offerId } = await seedOrderableOffer(testDb.db, {
+      ...(provider ? { providerId: provider.id, destinationId } : { hostId: guest.hostId }),
+      availabilityMode: 'on_request',
+      category: options.category ?? 'transfer',
+      contactFields: 'name',
+    });
+    await publishOffer(testDb.db, offerId);
+    return offerId;
+  }
+  const proposalOf = async (orderId: string) =>
+    (await testDb.db.select().from(orderProposals).where(eq(orderProposals.orderId, orderId)))[0];
+  const orderRow = async (orderId: string) =>
+    (await testDb.db.select().from(orders).where(eq(orders.id, orderId)))[0];
+
+  it('drafts the note and time, free until the provider accepts even past the cutoff', async () => {
+    const offerId = await onRequest();
+    // 08:00 local the day before: the cutoff for 07:00 tomorrow (24 h) has just passed.
+    clock = fromLocalDateTime('2027-05-03T08:00', 'Europe/Zagreb');
+    try {
+      const { draft } = await prepareOrder(deps(), ctx(), {
+        offerId,
+        date: DAY,
+        quantity: 4,
+        time: '07:00',
+        note: '  Split airport, 4 big suitcases ',
+      });
+      expect(draft).toMatchObject({
+        startsAt: null,
+        requestedTime: '07:00',
+        note: 'Split airport, 4 big suitcases',
+        warnings: [],
+        cancellation: {
+          awaitingAcceptance: 'provider',
+          freeWindowPassed: false,
+          freeUntilLocal: '2027-05-03T07:00',
+        },
+      });
+    } finally {
+      clock = NOW;
+    }
+  });
+
+  it('names the host for the host’s own on-request Offer', async () => {
+    const offerId = await onRequest({ host: true });
+    const { draft } = await prepareOrder(deps(), ctx(), { offerId, date: DAY, quantity: 1 });
+    expect(draft.cancellation?.awaitingAcceptance).toBe('host');
+  });
+
+  it('creates the Order from the guest’s edited note and time', async () => {
+    const offerId = await onRequest();
+    const { pendingId } = await prepareOrder(deps(), ctx(), {
+      offerId,
+      date: DAY,
+      quantity: 4,
+      time: '07:00',
+      note: 'Split airport',
+    });
+    const { order } = await completeOrder(deps(), {
+      pendingId,
+      ...ctx(),
+      contact: CONTACT,
+      details: { note: 'edited', time: '08:15' },
+    });
+    expect(order).toMatchObject({ note: 'edited', startsAtLocal: '2027-05-04T08:15' });
+    expect((await proposalOf(order.id))?.startsAt).toEqual(
+      fromLocalDateTime('2027-05-04T08:15', 'Europe/Zagreb'),
+    );
+    expect((await orderRow(order.id))?.guestNote).toBe('edited');
+  });
+
+  it('takes no note and no time when the guest cleared them', async () => {
+    const offerId = await onRequest();
+    const { pendingId } = await prepareOrder(deps(), ctx(), {
+      offerId,
+      date: DAY,
+      quantity: 1,
+      time: '07:00',
+      note: 'x',
+    });
+    const { order } = await completeOrder(deps(), {
+      pendingId,
+      ...ctx(),
+      contact: CONTACT,
+      details: NO_DETAILS,
+    });
+    expect(order).toMatchObject({ note: null, startsAt: null });
+    expect((await orderRow(order.id))?.guestNote).toBeNull();
+  });
+
+  it('refuses a long note, a bad time and a time already past', async () => {
+    const offerId = await onRequest();
+    const at = (input: { note?: string; time?: string }) =>
+      codeOf(prepareOrder(deps(), ctx(), { offerId, date: DAY, quantity: 1, ...input }));
+    expect(await at({ note: 'a'.repeat(500) })).toBe('ok');
+    expect(await at({ note: 'a'.repeat(501) })).toBe('invalid-input');
+    expect(await at({ time: '25:00' })).toBe('invalid-input');
+    expect(await at({ time: '7:00' })).toBe('invalid-input');
+    clock = fromLocalDateTime('2027-05-04T10:00', 'Europe/Zagreb');
+    try {
+      expect(await at({ time: '09:00' })).toBe('start-passed');
+    } finally {
+      clock = NOW;
+    }
+
+    const { pendingId } = await prepareOrder(deps(), ctx(), { offerId, date: DAY, quantity: 1 });
+    expect(
+      await codeOf(
+        completeOrder(deps(), {
+          pendingId,
+          ...ctx(),
+          contact: CONTACT,
+          details: { note: 'a'.repeat(501), time: null },
+        }),
+      ),
+    ).toBe('invalid-input');
+    expect(
+      await codeOf(
+        completeOrder(deps(), {
+          pendingId,
+          ...ctx(),
+          contact: CONTACT,
+          details: { note: null, time: '24:00' },
+        }),
+      ),
+    ).toBe('invalid-input');
+    // A time that passes between the card and the tap releases the record.
+    clock = fromLocalDateTime('2027-05-04T09:25', 'Europe/Zagreb');
+    try {
+      const late = await prepareOrder(deps(), ctx(), { offerId, date: DAY, quantity: 1 });
+      clock = fromLocalDateTime('2027-05-04T09:31', 'Europe/Zagreb');
+      expect(
+        await codeOf(
+          completeOrder(deps(), {
+            pendingId: late.pendingId,
+            ...ctx(),
+            contact: CONTACT,
+            details: { note: null, time: '09:30' },
+          }),
+        ),
+      ).toBe('start-passed');
+      expect((await pendingRow(late.pendingId))?.state).toBe('released');
+    } finally {
+      clock = NOW;
+    }
+  });
+
+  it('ignores a time for a slot, which keeps its own start', async () => {
+    const { offerId, slotId } = await allotment();
+    const { draft, pendingId } = await prepareOrder(deps(), ctx(), {
+      offerId,
+      date: DAY,
+      quantity: 1,
+      time: '15:00',
+    });
+    expect(draft).toMatchObject({ slotId, requestedTime: null, startsAtLocal: '2027-05-04T09:00' });
+    expect(draft.cancellation?.awaitingAcceptance).toBeNull();
+    const { order } = await completeOrder(deps(), {
+      pendingId,
+      ...ctx(),
+      contact: CONTACT,
+      details: { note: null, time: '15:00' },
+    });
+    expect(order.startsAtLocal).toBe('2027-05-04T09:00');
+  });
+
+  it('warns of checkout and DHMZ wind on checkout day, with the total', async () => {
+    const provider = await seedProvider(testDb.db);
+    const { offerId } = await seedOrderableOffer(testDb.db, {
+      providerId: provider.id,
+      destinationId,
+      availabilityMode: 'allotment',
+      startsAt: fromLocalDateTime(`${CHECKOUT}T09:00`, 'Europe/Zagreb'),
+      category: 'boat_trip',
+      priceMinor: 4500,
+    });
+    await publishOffer(testDb.db, offerId);
+    const report = sampleWeatherReport(CHECKOUT);
+    const weather = { warnings: async () => report.warnings };
+    const result = await availabilityFor({ ...deps(), weather }, ctx(), {
+      offerId,
+      date: CHECKOUT,
+      quantity: 2,
+    });
+    expect(result).toMatchObject({ totalMinor: 9000, currency: 'EUR', weatherChecked: true });
+    expect(result.starts[0]?.warnings).toEqual([
+      { kind: 'checkout_day', checkoutTime: '10:00' },
+      expect.objectContaining({ kind: 'weather', level: 'yellow', type: 'wind' }),
+    ]);
+
+    const { draft } = await prepareOrder({ ...deps(), weather }, ctx(), {
+      offerId,
+      date: CHECKOUT,
+      quantity: 2,
+    });
+    expect(draft.warnings).toEqual(result.starts[0]?.warnings);
+  });
+
+  it('says the weather was not checked when the source fails', async () => {
+    const offerId = await onRequest({ category: 'boat_trip' });
+    const weather = {
+      warnings: async () => {
+        throw new Error('feed down');
+      },
+    };
+    const result = await availabilityFor({ ...deps(), weather }, ctx(), {
+      offerId,
+      date: DAY,
+      quantity: 1,
+    });
+    expect(result.weatherChecked).toBe(false);
+    const indoor = await onRequest({ category: 'tasting' });
+    expect(
+      (
+        await availabilityFor({ ...deps(), weather }, ctx(), {
+          offerId: indoor,
+          date: DAY,
+          quantity: 1,
+        })
+      ).weatherChecked,
+    ).toBeNull();
+  });
+
+  it('lists the note as written, and drops the awaiting rule once confirmed', async () => {
+    const offerId = await onRequest();
+    const { pendingId } = await prepareOrder(deps(), ctx(), { offerId, date: DAY, quantity: 1 });
+    const { order } = await completeOrder(deps(), {
+      pendingId,
+      ...ctx(),
+      contact: CONTACT,
+      details: { note: 'Ring at the gate', time: null },
+    });
+    const listed = (await listSpaceOrders(testDb.db, guest.spaceId, 'de', NOW)).find(
+      (o) => o.id === order.id,
+    );
+    expect(listed).toMatchObject({
+      note: 'Ring at the gate',
+      status: 'pending_provider',
+      cancellation: { awaitingAcceptance: 'provider' },
+    });
+    await testDb.db.update(orders).set({ status: 'confirmed' }).where(eq(orders.id, order.id));
+    const confirmed = (await listSpaceOrders(testDb.db, guest.spaceId, 'de', NOW)).find(
+      (o) => o.id === order.id,
+    );
+    expect(confirmed?.cancellation?.awaitingAcceptance).toBeNull();
   });
 });

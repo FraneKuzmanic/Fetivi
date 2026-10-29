@@ -7,7 +7,7 @@ import { properties, units } from '../../db/schema/properties';
 import { stays } from '../../db/schema/stays';
 import { PAYMENT_MODES } from '../../offers/vocabulary';
 import { cancel, guestConfirm, type OrderDeps } from '../../orders/machine';
-import { cancellationTermsSchema } from '../../orders/refunds';
+import { cancellationTermsAt, cancellationTermsSchema, orderStart } from '../../orders/refunds';
 import { NEW_TERMS_PROPOSERS } from '../../orders/vocabulary';
 import { CHECKOUT_HOLD_MINUTES } from '../../payments/vocabulary';
 import { GUEST_LANGUAGES, type GuestLanguage } from '../../property/vocabulary';
@@ -147,8 +147,11 @@ export async function prepareRespond(
     cancellationPolicy: order.cancellationPolicy,
     respondBy: proposal.cardExpiresAt.toISOString(),
     respondByLocal: toLocalDateTime(proposal.cardExpiresAt, zone),
-    // The summary reads the current (new) proposal, so the cutoff follows the new start.
-    cancellation: summary.cancellation,
+    // The cutoff follows the new start. Accepting confirms the Order, so the card shows the
+    // terms after acceptance, never "free until accepted".
+    cancellation:
+      summary.cancellation &&
+      cancellationTermsAt(summary.cancellation, orderStart(proposal, zone), zone, now),
   };
   const ttl = Math.min(
     now.getTime() + PENDING_TTL_SECONDS * 1000,

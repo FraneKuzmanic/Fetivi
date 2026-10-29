@@ -28,6 +28,8 @@ export interface GuestNoticeFacts {
   safety: SafetyAlertFacts | null;
   /** Daily tips: the picked catalog record, as it was at pick time. */
   tip: DailyTipFacts | null;
+  /** order_confirmed: a request accepted after its cutoff, so cancelling is no longer free. */
+  freeCancellationEnded: boolean;
 }
 
 function fill(template: string, values: Record<string, string>): string {
@@ -119,6 +121,9 @@ export function composeGuestEmail(
   }
   if (kind === 'ferry_disruption' && safety?.source === 'Jadrolinija' && safety.affected.orderId) {
     lines.push('', copy.orderStands);
+  }
+  if (kind === 'order_confirmed' && facts.freeCancellationEnded) {
+    lines.push('', copy.freeCancellationEnded);
   }
   lines.push('', `${copy.openApp}: ${guestOrigin}${NOTICE_PATHS[kind]}`);
   if (kind === 'checkout_reminder' && facts.reviewPlatform) {

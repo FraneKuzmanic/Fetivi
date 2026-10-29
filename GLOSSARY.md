@@ -177,8 +177,12 @@ The structured part of an Offer's cancellation policy, snapshotted on the Order:
 _Avoid_: Refund policy
 
 **Cancellation terms**:
-What cancelling costs as the guest and the model are told it, built from the Refund rule: free until a number of hours before the start, then a late charge (the share of the price the guest loses). A refund is mentioned only for an Order paid online with a payment authorized or captured; for an Order paid directly to the Provider, the Provider may ask for the late charge directly, and nothing is ever refunded.
+What cancelling costs as the guest and the model are told it, built from the Refund rule: free until a number of hours before the start, then a late charge (the share of the price the guest loses). A refund is mentioned only for an Order paid online with a payment authorized or captured; for an Order paid directly to the Provider, the Provider may ask for the late charge directly, and nothing is ever refunded. An on-request Order is free to cancel until it is accepted.
 _Avoid_: Refund policy, cancellation policy (the Provider's own text)
+
+**Guest note**:
+What the guest asked for in their own words (pickup, luggage, handover), up to 500 characters, sent with the Order and shown to the Provider or host translated into their language with the original below. For an on-request Offer the guest's requested time travels with it, as the first proposal's start.
+_Avoid_: comment, remark
 
 **Reconciliation finding**:
 One disagreement between Fetivi and Stripe or a hold, found by the reconciliation job: what it was, and what was done about it.

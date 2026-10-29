@@ -127,6 +127,8 @@ export const fr: GuestCopy = {
     'L’état de la mer peut perturber les traversées sur la ligne {{lines}} ({{offer}}, {{date}}). Renseignez-vous auprès de {{operator}} avant de partir : {{operatorUrl}}',
   orderStands:
     'Votre réservation reste valable, sauf si le prestataire l’annule. Dans ce cas, je vous préviens tout de suite.',
+  freeCancellationEnded:
+    'Votre demande a été acceptée après la fin de l’annulation gratuite : l’annuler n’est donc plus gratuit.',
   sourceLine: 'Source : {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Merci de libérer le logement avant {{checkoutTime}}.',
   reviewLine:

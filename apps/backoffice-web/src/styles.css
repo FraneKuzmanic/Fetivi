@@ -2402,6 +2402,16 @@ button.chip-button:hover {
   font-weight: 500;
 }
 
+.order-card-note {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.order-card-note-original {
+  display: block;
+  margin-top: 2px;
+}
+
 .order-card-form {
   display: flex;
   flex-direction: column;

@@ -43,6 +43,7 @@ async function placeOrder(spaceId: string, offerId: string, date: string, quanti
     spaceId,
     offerScope: scope,
     contact: { email: 'guest@example.test', name: 'Ana' },
+    details: { note: null, time: null },
   });
 }
 

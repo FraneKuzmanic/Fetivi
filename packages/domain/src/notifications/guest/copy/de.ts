@@ -133,6 +133,8 @@ export const de: GuestCopy = {
     'Der Seegang kann Fahrten auf der Linie {{lines}} stören ({{offer}}, {{date}}). Fragen Sie vor der Abfahrt bei {{operator}} nach: {{operatorUrl}}',
   orderStands:
     'Ihre Buchung bleibt bestehen, solange der Anbieter sie nicht storniert. Falls doch, sage ich Ihnen sofort Bescheid.',
+  freeCancellationEnded:
+    'Ihre Anfrage wurde nach Ablauf der kostenlosen Stornierungsfrist angenommen, daher ist eine Stornierung nicht mehr kostenlos.',
   sourceLine: 'Quelle: {{source}}, {{sourceUrl}}',
   checkoutTimeLine: 'Bitte verlassen Sie die Unterkunft bis {{checkoutTime}} Uhr.',
   reviewLine:

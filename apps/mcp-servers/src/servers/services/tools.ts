@@ -36,7 +36,7 @@ export const createOrderSpec: GuestToolSpec = guestTool({
   config: {
     title: 'Order',
     description:
-      'Book an offer for the guest. The guest confirms in the app, giving their email and the contact details the provider needs; nothing is booked until they tap Confirm. Never say an order is booked without an `ordered` outcome. Pass slotId from check_availability when the day has more than one start.',
+      "Book an offer for the guest. The guest confirms in the app, giving their email and the contact details the provider needs; nothing is booked until they tap Confirm. Never say an order is booked without an `ordered` outcome. Pass slotId from check_availability when the day has more than one start. Pass the guest's details as note (in their words, at most 500 characters) and, for an offer whose start has no time, the time they asked for; the guest checks and can edit both on the card. An on_request order is free to withdraw until the provider or host accepts it. For a transfer, purchase, tour or boat trip on request, first gather what list_offers says it needs. In the text of the same response, before this call, tell the guest the total price (or that the provider names it) and every warning check_availability returned; the card does not replace that.",
     scope: 'orders:create',
     inputSchema: createOrderInput,
     outputSchema: createOrderOutput,
@@ -106,7 +106,7 @@ export const servicesTools: readonly GuestToolSpec[] = [
     config: {
       title: 'List offers',
       description:
-        "Services the guest can arrange through Fetivi: boat trips, tours, tastings, transfers, rentals and more, with price, the cancellation terms (cancellation) and the contact details the provider needs. Filter by category, or by a place's id from search_places. Offers with availabilityMode allotment or on_request can be booked in chat; an on_request one waits for the provider's answer within a response window, and the provider may propose a new time or price. paymentMode online ones are paid on a secure page after the guest confirms. Refunds exist only for paymentMode online: for direct, cancelling is free until the free window ends, after that the provider may ask the guest to pay lateChargePercent of the price directly to them.",
+        "Services the guest can arrange through Fetivi: boat trips, tours, tastings, transfers, rentals and more, with price, the cancellation terms (cancellation) and the contact details the provider needs. Filter by category, or by a place's id from search_places. Offers with availabilityMode allotment or on_request can be booked in chat; an on_request one waits for the provider's answer within a response window, and the provider may propose a new time or price. paymentMode online ones are paid on a secure page after the guest confirms. Refunds exist only for paymentMode online: for direct, cancelling is free until the free window ends, after that the provider may ask the guest to pay lateChargePercent of the price directly to them. Before create_order for an on_request offer, gather what the provider needs unless the guest already said it, and never ask again for what they said: for category transfer the pickup time, from where to where, how many people and how much luggage; for orderKind purchase the quantity and when and where to hand it over; for category tour or boat_trip the time and the group. Put the time in create_order's time and the rest in its note.",
       scope: 'offers:read',
       inputSchema: listOffersInput,
       outputSchema: listOffersOutput,
@@ -122,16 +122,16 @@ export const servicesTools: readonly GuestToolSpec[] = [
     config: {
       title: 'Check availability',
       description:
-        'The start times of an offer on a day of the stay that still have room for the party, with local times and places left. Call it before create_order and let the guest pick a start.',
+        'The start times of an offer on a day of the stay that still have room for the party, with local times and places left. Call it before create_order and let the guest pick a start. Each start carries warnings (a clash with checkout, a DHMZ weather warning) and the response the total price; for an offer whose start has no time, pass time when the guest named one.',
       scope: 'offers:read',
       inputSchema: checkAvailabilityInput,
       outputSchema: checkAvailabilityOutput,
       annotations: { ...readOnly, openWorldHint: true },
     },
     listed: scoped('offers:read'),
-    handler(args, identity, { db, now }) {
+    handler(args, identity, { db, now, weather }) {
       const ctx = { spaceId: identity.spaceId, offerScope: offerScope(identity) };
-      return refusing(() => availabilityFor({ db, now }, ctx, args));
+      return refusing(() => availabilityFor({ db, now, weather }, ctx, args));
     },
   }),
   guestTool({

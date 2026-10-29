@@ -10,6 +10,8 @@ export interface ReceiptLabels {
   status: string;
   payment: string;
   reference: string;
+  /** The guest's note, shown as they wrote it. */
+  note: string;
   dateTime: (date: string, startsAtLocal: string | null) => string;
   price: (priceMinor: number | null, currency: string) => string;
   orderStatus: (status: OrderStatus) => string;
@@ -108,6 +110,12 @@ export function ReceiptCard({
           <dt>{labels.total}</dt>
           <dd>{labels.price(order.priceMinor, order.currency)}</dd>
         </div>
+        {order.note && (
+          <div>
+            <dt>{labels.note}</dt>
+            <dd className="fv-receipt-note">{order.note}</dd>
+          </div>
+        )}
         <div>
           <dt>{labels.reference}</dt>
           <dd>{order.id.slice(0, 8).toUpperCase()}</dd>

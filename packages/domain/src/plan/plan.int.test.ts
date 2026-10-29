@@ -121,6 +121,7 @@ async function placeOrder(ctx: PlanContext, day: string) {
     spaceId: ctx.spaceId,
     offerScope: ctx.offerScope,
     contact: { email: 'guest@example.test', name: 'Ana' },
+    details: { note: null, time: null },
   });
   return { order, offerId: boat.offerId };
 }

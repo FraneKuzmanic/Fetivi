@@ -442,6 +442,8 @@ export const host = {
       'It will be cancelled, the guest is told, and anything they paid is refunded in full.',
     priceToName: 'Price to name',
     answerBy: 'Answer by {{day}}, {{time}}',
+    guestNote: 'Guest note',
+    original: 'Original',
     suggestHint: 'The guest gets your suggestion and can accept or decline it.',
     priceHint: 'Enter the total price for this order. The guest can accept or decline it.',
     date: 'Date',

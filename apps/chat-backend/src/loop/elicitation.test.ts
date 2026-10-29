@@ -33,6 +33,9 @@ const DRAFT = {
   cancellationPolicy: 'Free cancellation up to 24 hours before.',
   contactFields: 'name',
   cancellation: null,
+  note: null,
+  requestedTime: null,
+  warnings: [],
 };
 
 const SCHEMA = {

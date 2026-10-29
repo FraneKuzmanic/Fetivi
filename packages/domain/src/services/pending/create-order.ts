@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import type { Executor } from '../../db/client';
 import { offers, offerTranslations } from '../../db/schema/offers';
@@ -10,20 +10,25 @@ import { spaces } from '../../db/schema/spaces';
 import { stays } from '../../db/schema/stays';
 import { type GuestOffer, type GuestOfferScope, getGuestOffer } from '../../offers/guest';
 import type { PaymentMode, PriceUnit } from '../../offers/vocabulary';
+import { cleanGuestNote, GUEST_NOTE_MAX } from '../../orders/guest-note';
 import { createOrder, getOrder, type OrderDeps, OrderRuleError } from '../../orders/machine';
 import {
+  awaitingAcceptanceOf,
   type CancellationTerms,
   cancellationTermsAt,
   lateChargePercent,
   orderStart,
 } from '../../orders/refunds';
 import { isFinalOrderStatus, type OrderStatus, type PaymentStatus } from '../../orders/vocabulary';
+import { isOutdoorCategory, type OrderWarning, orderWarnings } from '../../orders/warnings';
 import { checkoutOpen } from '../../payments/checkout';
 import { merchantAcceptsCards } from '../../payments/merchant';
 import { CHECKOUT_HOLD_MINUTES } from '../../payments/vocabulary';
 import type { GuestLanguage } from '../../property/vocabulary';
 import { optInSpaceEmail } from '../../spaces/email';
-import { toLocalDateTime } from '../../time';
+import { fromLocalDateTime, InvalidTimeInputError, toLocalDateTime } from '../../time';
+import { weatherPlaceOf } from '../../weather/place';
+import type { WeatherSource, WeatherWarning } from '../../weather/source';
 import { AdapterError, adapterFor, confirmHeldOrder } from '../adapters';
 import {
   type CreateOrderDraft,
@@ -37,7 +42,7 @@ import { ORDER_HOLD_MINUTES, PENDING_TTL_SECONDS, type PendingState } from './vo
 // The `create_order` halves of the approved-action binding (architecture §4.3). The first half
 // stores a pending record and nothing else; the guest's tap completes exactly that record, once.
 // Model-sent parameters never reach `completeOrder`: it reads the stored draft and the guest's
-// contact answers only. Lock order: pending row, then the machine's (Offer, then slot).
+// card answers only (contact, note, time). Lock order: pending row, then the machine's (Offer, then slot).
 
 export type ServiceRuleCode =
   | 'offer-not-visible'
@@ -72,12 +77,19 @@ export interface AvailabilityStart {
   /** 'YYYY-MM-DDTHH:mm' in the property's zone. */
   startsAtLocal: string | null;
   remaining: number | null;
+  /** What the guest should hear before deciding on this start. */
+  warnings: OrderWarning[];
 }
 
 export interface Availability {
   offerId: string;
   date: string;
   quantity: number;
+  /** The total for `quantity` in cents; null when the provider names the price. */
+  totalMinor: number | null;
+  currency: string;
+  /** False: DHMZ warnings could not be checked. Null: not an outdoor Offer. */
+  weatherChecked: boolean | null;
   /** Starts that are still ahead and have room for `quantity`. */
   starts: AvailabilityStart[];
 }
@@ -86,6 +98,15 @@ export interface AvailabilityInput {
   offerId: string;
   date: string;
   quantity: number;
+  /** 'HH:mm': the guest's wished start, for an Offer whose starts have no time. */
+  time?: string;
+}
+
+/** What availability and the first half read; without `weather` no DHMZ warning is checked. */
+export interface AvailabilityDeps {
+  db: Executor;
+  now: () => Date;
+  weather?: Pick<WeatherSource, 'warnings'>;
 }
 
 export interface OrderSummary {
@@ -112,9 +133,12 @@ export interface OrderSummary {
   respondBy: string | null;
   /** What cancelling costs now; null once the Order is final. */
   cancellation: CancellationTerms | null;
+  /** The guest's note, as written. */
+  note: string | null;
 }
 
 const CIVIL_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const isQuantity = (n: number) => Number.isInteger(n) && n >= 1 && n <= 999;
 const todayIn = (now: Date, zone: string) =>
   DateTime.fromJSDate(now, { zone }).toISODate() as string;
@@ -126,6 +150,9 @@ async function stayContext(db: Executor, spaceId: string) {
       checkIn: stays.checkIn,
       checkout: stays.checkout,
       zone: properties.timezone,
+      propertyId: properties.id,
+      // The unit's own checkout time, else the property's (a null unit field inherits).
+      checkoutTime: sql<string | null>`coalesce(${units.checkoutTime}, ${properties.checkoutTime})`,
     })
     .from(spaces)
     .innerJoin(stays, eq(stays.id, spaces.stayId))
@@ -133,15 +160,63 @@ async function stayContext(db: Executor, spaceId: string) {
     .innerJoin(properties, eq(properties.id, units.propertyId))
     .where(eq(spaces.id, spaceId));
   if (!row) throw new ServiceRuleError('not-found');
-  return row;
+  return { ...row, checkoutTime: row.checkoutTime?.slice(0, 5) ?? null };
+}
+
+/** The guest's wished 'HH:mm' on `date` in `zone`; a bad or non-existent time is invalid input. */
+function requestedStart(date: string, time: string, zone: string): Date {
+  if (!HHMM.test(time)) throw new ServiceRuleError('invalid-input');
+  try {
+    return fromLocalDateTime(`${date}T${time}`, zone);
+  } catch (error) {
+    if (error instanceof InvalidTimeInputError) throw new ServiceRuleError('invalid-input');
+    throw error;
+  }
+}
+
+/** DHMZ warnings for an outdoor Offer, read once per call; null when they could not be checked. */
+async function weatherFor(
+  deps: AvailabilityDeps,
+  offer: GuestOffer,
+  stay: { propertyId: string },
+  language: GuestLanguage,
+): Promise<{ weather: WeatherWarning[] | null; weatherChecked: boolean | null }> {
+  if (!isOutdoorCategory(offer.category)) return { weather: null, weatherChecked: null };
+  if (!deps.weather) return { weather: null, weatherChecked: false };
+  try {
+    const place = await weatherPlaceOf(deps.db, stay.propertyId);
+    const weather = place
+      ? await deps.weather.warnings(place, language === 'hr' ? 'hr' : 'en', deps.now())
+      : null;
+    return { weather, weatherChecked: weather !== null };
+  } catch {
+    // A feed failure never blocks an order; the model is told the weather was not checked.
+    return { weather: null, weatherChecked: false };
+  }
+}
+
+function warningsAt(
+  stay: { checkout: string; checkoutTime: string | null; zone: string },
+  offer: GuestOffer,
+  date: string,
+  start: Date | null,
+  weather: WeatherWarning[] | null,
+  now: Date,
+): OrderWarning[] {
+  return orderWarnings({
+    date,
+    start,
+    zone: stay.zone,
+    now,
+    checkout: stay.checkout,
+    checkoutTime: stay.checkoutTime,
+    category: offer.category,
+    weather,
+  });
 }
 
 /** The checks both halves share, and every start of the day (passed ones included). */
-async function startsOf(
-  deps: { db: Executor; now: () => Date },
-  ctx: ServiceContext,
-  input: AvailabilityInput,
-) {
+async function startsOf(deps: AvailabilityDeps, ctx: ServiceContext, input: AvailabilityInput) {
   const offer = await getGuestOffer(deps.db, ctx.offerScope, input.offerId);
   if (!offer) throw new ServiceRuleError('offer-not-visible');
   const stay = await stayContext(deps.db, ctx.spaceId);
@@ -187,16 +262,35 @@ async function startsOf(
 
 /** The starts of an Offer on a day of the Stay with room for `quantity`. */
 export async function availabilityFor(
-  deps: { db: Executor; now: () => Date },
+  deps: AvailabilityDeps,
   ctx: ServiceContext,
   input: AvailabilityInput,
 ): Promise<Availability> {
-  const { offer, starts } = await startsOf(deps, ctx, input);
+  const { offer, stay, starts } = await startsOf(deps, ctx, input);
+  const requested =
+    input.time === undefined ? null : requestedStart(input.date, input.time, stay.zone);
+  const { weather, weatherChecked } = await weatherFor(deps, offer, stay, ctx.offerScope.language);
+  const now = deps.now();
   return {
     offerId: offer.id,
     date: input.date,
     quantity: input.quantity,
-    starts: starts.filter((s) => !s.passed).map(({ passed: _, ...s }) => s),
+    totalMinor: totalPrice(offer, input.quantity),
+    currency: offer.currency,
+    weatherChecked,
+    starts: starts
+      .filter((s) => !s.passed)
+      .map(({ passed: _, ...s }) => ({
+        ...s,
+        warnings: warningsAt(
+          stay,
+          offer,
+          input.date,
+          s.startsAt ? new Date(s.startsAt) : requested,
+          weather,
+          now,
+        ),
+      })),
   };
 }
 
@@ -210,10 +304,12 @@ function totalPrice(offer: GuestOffer, quantity: number): number | null {
  * PENDING_TTL_SECONDS. No other side effect: nothing is held until the guest's tap.
  */
 export async function prepareOrder(
-  deps: { db: Executor; now: () => Date },
+  deps: AvailabilityDeps,
   ctx: ServiceContext,
-  input: AvailabilityInput & { slotId?: string },
+  input: AvailabilityInput & { slotId?: string; note?: string },
 ): Promise<{ pendingId: string; draft: CreateOrderDraft }> {
+  const note = cleanGuestNote(input.note);
+  if (note && note.length > GUEST_NOTE_MAX) throw new ServiceRuleError('invalid-input');
   const { offer, stay, starts } = await startsOf(deps, ctx, input);
   let start: (typeof starts)[number] | undefined;
   if (input.slotId !== undefined) {
@@ -229,6 +325,12 @@ export async function prepareOrder(
   if (!start) throw new ServiceRuleError('no-availability');
 
   const now = deps.now();
+  // A start with a time (a slot) ignores the guest's wish; one without takes it.
+  const requestedTime = start.startsAt === null && input.time !== undefined ? input.time : null;
+  const requested = requestedTime ? requestedStart(input.date, requestedTime, stay.zone) : null;
+  if (requested && requested <= now) throw new ServiceRuleError('start-passed');
+  const knownStart = start.startsAt ? new Date(start.startsAt) : requested;
+  const { weather } = await weatherFor(deps, offer, stay, ctx.offerScope.language);
   const draft: CreateOrderDraft = {
     offerId: offer.id,
     offerTitle: offer.title,
@@ -247,13 +349,14 @@ export async function prepareOrder(
     contactFields: offer.contactFields,
     cancellation: cancellationTermsAt(
       offer.cancellation,
-      orderStart(
-        { date: input.date, startsAt: start.startsAt ? new Date(start.startsAt) : null },
-        stay.zone,
-      ),
+      orderStart({ date: input.date, startsAt: knownStart }, stay.zone),
       stay.zone,
       now,
+      offer.availabilityMode === 'on_request' ? offer.owner : null,
     ),
+    note,
+    requestedTime,
+    warnings: warningsAt(stay, offer, input.date, knownStart, weather, now),
   };
   const row = await insertPending(deps.db, {
     kind: 'create_order',
@@ -331,7 +434,14 @@ type Completion =
  */
 export async function completeOrder(
   deps: OrderDeps,
-  input: { pendingId: string; spaceId: string; offerScope: GuestOfferScope; contact: GuestContact },
+  input: {
+    pendingId: string;
+    spaceId: string;
+    offerScope: GuestOfferScope;
+    contact: GuestContact;
+    /** The guest's card answer: a field they cleared is null, and the Order gets none. */
+    details: { note: string | null; time: string | null };
+  },
 ): Promise<{ order: OrderSummary; replay: boolean }> {
   // Failures are returned from the transaction, not thrown, so a release is not rolled back.
   const result = await deps.db.transaction(async (tx): Promise<Completion> => {
@@ -361,6 +471,22 @@ export async function completeOrder(
     }
     const contact = contactFor(draft, input.contact);
     if (!contact) return { ok: false, code: 'invalid-input' };
+    const note = cleanGuestNote(input.details.note);
+    if (note && note.length > GUEST_NOTE_MAX) return { ok: false, code: 'invalid-input' };
+    // A slot keeps its start; a start-less (on-request) Offer takes the guest's time, if any.
+    let startsAt = draft.startsAt ? new Date(draft.startsAt) : undefined;
+    if (!draft.startsAt && input.details.time) {
+      try {
+        startsAt = requestedStart(draft.date, input.details.time, zone);
+      } catch (error) {
+        if (error instanceof ServiceRuleError) return { ok: false, code: error.code };
+        throw error;
+      }
+      if (startsAt <= now) {
+        await markPending(tx, row.id, 'released', now);
+        return { ok: false, code: 'start-passed' };
+      }
+    }
     // The scope can change between the halves (the Offer unpublished, the host's opt-out).
     if (!(await getGuestOffer(tx, input.offerScope, draft.offerId))) {
       await markPending(tx, row.id, 'released', now);
@@ -375,9 +501,10 @@ export async function completeOrder(
           offerId: draft.offerId,
           date: draft.date,
           slotId: draft.slotId ?? undefined,
-          startsAt: draft.startsAt ? new Date(draft.startsAt) : undefined,
+          startsAt,
           quantity: draft.quantity,
           contact,
+          guestNote: note ?? undefined,
           // A pay-online hold lasts as long as its Checkout Session, and expires with it.
           hold: {
             expiresAt: new Date(
@@ -460,6 +587,7 @@ async function summaries(
       sourceTitle: offers.title,
       title: offerTranslations.title,
       zone: properties.timezone,
+      hostId: offers.hostId,
     })
     .from(orders)
     .innerJoin(orderProposals, eq(orderProposals.id, orders.currentProposalId))
@@ -478,7 +606,7 @@ async function summaries(
     .innerJoin(properties, eq(properties.id, units.propertyId))
     .where(and(eq(orders.spaceId, spaceId), orderId ? eq(orders.id, orderId) : undefined))
     .orderBy(desc(orders.createdAt), desc(orders.id));
-  return rows.map(({ order, proposal, attempt, sourceTitle, title, zone }) => ({
+  return rows.map(({ order, proposal, attempt, sourceTitle, title, zone, hostId }) => ({
     id: order.id,
     offerId: order.offerId,
     offerTitle: title ?? sourceTitle,
@@ -509,7 +637,9 @@ async function summaries(
           orderStart(proposal, zone),
           zone,
           now,
+          awaitingAcceptanceOf(order, hostId ? 'host' : 'provider'),
         ),
+    note: order.guestNote,
   }));
 }
 

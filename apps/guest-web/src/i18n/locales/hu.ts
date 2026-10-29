@@ -234,6 +234,8 @@ export const hu: Messages = {
       'Holnap, {{date}}, még üres a terved. Mit szólnál ehhez: {{offer}}{{distance}}? Kérdezz, és elmondok többet.',
     tipDistance: ' ({{km}} km-re)',
     tipVenue: ', helyszín: {{venueName}}',
+    freeCancellationEnded:
+      'Az ingyenes lemondási idő lejárta után fogadták el, ezért a lemondás már nem ingyenes.',
   },
   push: {
     offer: 'Értesíts ezen a telefonon',
@@ -332,6 +334,9 @@ export const hu: Messages = {
     chargeAfterFull: 'Ezután a lemondás a teljes árba kerül.',
     chargeNow: 'Az ingyenes lemondás lejárt: a lemondás az ár {{percent}} %-ába kerül.',
     chargeNowFull: 'Az ingyenes lemondás lejárt: a lemondás a teljes árba kerül.',
+    freeUntilProviderAccepts:
+      'Ingyenesen lemondható, amíg a szolgáltató el nem fogadja a kérésedet.',
+    freeUntilHostAccepts: 'Ingyenesen lemondható, amíg a szállásadód el nem fogadja a kérésedet.',
   },
   respondOrder: {
     headingTime: 'A szolgáltató másik időpontot javasol',
@@ -412,6 +417,17 @@ export const hu: Messages = {
       'Ezután a Stripe biztonságos oldalán fizetsz. A kártyádat csak akkor terheljük meg, ha a foglalás visszaigazolást kapott.',
     confirmOnline: 'Tovább a fizetéshez',
     checkoutClosed: 'A fizetési idő lejárt. A foglalás állapotát az Utazásom részben látod.',
+    details: 'A foglalás részletei',
+    detailsHint: 'Felvétel helye, csomagok, minden, amit tudnia kell.',
+    detailsCount: '{{count}} / {{max}}',
+    time: 'Időpont',
+    timeHint: 'Mikor lenne jó neked.',
+    invalidTime: 'Adj meg egy időpontot, például 07:30.',
+    warningsHeading: 'Mielőtt megerősíted',
+    warnCheckout: 'Ez a kijelentkezésed napja: {{time}}-ig el kell hagynod a szállást.',
+    warnCheckoutDay: 'Ez a kijelentkezésed napja.',
+    warnWeather: '{{level}} a DHMZ-től: {{event}}',
+    yourNote: 'A megjegyzésed',
   },
   trip: {
     plan: 'Terv',

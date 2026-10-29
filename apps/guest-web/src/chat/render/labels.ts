@@ -120,6 +120,12 @@ function cancelTermsLabels(t: TFunction, language: string): CancellationTermsLab
   return {
     freeAnyTime: t('cancelTerms.freeAnyTime'),
     freeUntil: (when) => t('cancelTerms.freeUntil', { when }),
+    freeUntilAccepted: (who) =>
+      t(
+        who === 'host'
+          ? 'cancelTerms.freeUntilHostAccepts'
+          : 'cancelTerms.freeUntilProviderAccepts',
+      ),
     directAfter: (percent) => t('cancelTerms.directAfter', { percent }),
     directAfterFull: t('cancelTerms.directAfterFull'),
     directNow: (percent) => t('cancelTerms.directNow', { percent }),
@@ -162,6 +168,21 @@ export function confirmationLabels(t: TFunction, language: string): Confirmation
     confirmOnline: t('order.confirmOnline'),
     cancel: t('order.cancel'),
     sending: t('order.sending'),
+    detailsField: t('order.details'),
+    detailsHint: t('order.detailsHint'),
+    detailsCount: (count, max) => t('order.detailsCount', { count, max }),
+    timeField: t('order.time'),
+    timeHint: t('order.timeHint'),
+    invalidTime: t('order.invalidTime'),
+    warnings: {
+      heading: t('order.warningsHeading'),
+      checkoutDay: (time) =>
+        time
+          ? t('order.warnCheckout', { time: f.time(`2000-01-01T${time}`) })
+          : t('order.warnCheckoutDay'),
+      weather: (level, event) =>
+        t('order.warnWeather', { level: t(`weather.level_${level}`), event }),
+    },
   };
 }
 
@@ -244,6 +265,7 @@ export function receiptLabels(t: TFunction, language: string): ReceiptLabels {
     status: t('order.orderStatus'),
     payment: t('order.payment'),
     reference: t('order.reference'),
+    note: t('order.yourNote'),
     dateTime: f.dateTime,
     price: f.price,
     orderStatus: (status) => t(ORDER_STATUS_KEYS[status]),
@@ -519,12 +541,14 @@ export function noticeText(t: TFunction, language: string, notice: Notice): Noti
   }
   const f = orderFormat(t, language);
   const { date, startTime, checkoutTime } = notice;
+  const text = t(NOTICE_KEYS[notice.notification], {
+    offer: notice.offerTitle ?? '',
+    date: date ? f.dateTime(date, startTime ? `${date}T${startTime}` : null) : '',
+  });
   return {
     safety: null,
-    text: t(NOTICE_KEYS[notice.notification], {
-      offer: notice.offerTitle ?? '',
-      date: date ? f.dateTime(date, startTime ? `${date}T${startTime}` : null) : '',
-    }),
+    // A request accepted after its free window: the guest hears that cancelling now costs.
+    text: notice.freeCancellationEnded ? `${text} ${t('notice.freeCancellationEnded')}` : text,
     checkoutBy: checkoutTime
       ? t('notice.checkoutBy', { checkoutTime: f.time(`2000-01-01T${checkoutTime}`) })
       : null,

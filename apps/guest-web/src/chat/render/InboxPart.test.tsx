@@ -30,6 +30,7 @@ const notice = (notification: Notice['notification'], safety: Safety): InboxItem
   reviewUrl: null,
   safety,
   tip: null,
+  freeCancellationEnded: false,
   at: '2026-10-14T10:00:00Z',
 });
 
@@ -165,5 +166,22 @@ describe('InboxPart daily tips', () => {
 
   it('shows nothing for a tip notice without its facts', () => {
     expect(html({ ...(tipNotice({}) as Notice), tip: null })).toBe('');
+  });
+});
+
+describe('InboxPart order notices', () => {
+  const confirmed = (freeCancellationEnded: boolean): InboxItem => ({
+    ...(notice('order_confirmed', warning()) as Notice),
+    safety: null,
+    offerTitle: 'Olive oil',
+    date: '2026-10-15',
+    freeCancellationEnded,
+  });
+
+  it('says cancelling is no longer free when the request was accepted after its window', () => {
+    expect(html(confirmed(true))).toContain(
+      'It was accepted after the free cancellation window, so cancelling it is no longer free.',
+    );
+    expect(html(confirmed(false))).not.toContain('no longer free');
   });
 });

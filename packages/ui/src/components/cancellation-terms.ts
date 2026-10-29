@@ -6,6 +6,8 @@ export interface CancellationTermsLabels {
   /** No late charge: cancelling never costs anything. */
   freeAnyTime: string;
   freeUntil: (when: string) => string;
+  /** A request not yet accepted: free to cancel until the provider or the host says yes. */
+  freeUntilAccepted: (who: 'provider' | 'host') => string;
   /** Pay-direct, before the cutoff: what the provider may ask for afterwards. */
   directAfter: (percent: number) => string;
   directAfterFull: string;
@@ -42,6 +44,7 @@ export function cancellationTermsText(
   if (!terms) return null;
   const late = terms.lateChargePercent;
   if (late === 0) return labels.freeAnyTime;
+  if (terms.awaitingAcceptance) return labels.freeUntilAccepted(terms.awaitingAcceptance);
   const until = labels.freeUntil(
     labels.dateTime(terms.freeUntilLocal.slice(0, 10), terms.freeUntilLocal),
   );

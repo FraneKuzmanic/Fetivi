@@ -17,7 +17,7 @@ export type CardAnswer = {
 
 /**
  * An Order confirmation card from its stored part. The payload is checked again; the form holds
- * the server's fields (email, name and phone only). Without a draft nothing can be shown, so
+ * the server's fields (email, name and phone, plus the note and the wished time when asked). Without a draft nothing can be shown, so
  * nothing renders and the next message cancels the call.
  */
 export function ConfirmationPart({
@@ -41,6 +41,10 @@ export function ConfirmationPart({
     name,
     required: required.includes(name),
   }));
+  const details = {
+    note: 'note' in requestedSchema.properties,
+    time: 'time' in requestedSchema.properties,
+  };
   return (
     <ConfirmationCard
       draft={draft}
@@ -50,6 +54,7 @@ export function ConfirmationPart({
       onCancel={() => onAnswer({ toolName, toolCallId, action: 'cancel' })}
       labels={confirmationLabels(t, i18n.language)}
       initialValues={initialValues}
+      details={details}
     />
   );
 }

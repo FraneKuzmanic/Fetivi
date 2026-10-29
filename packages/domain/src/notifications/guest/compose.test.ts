@@ -18,6 +18,7 @@ const ORDER: GuestNoticeFacts = {
   reviewPlatform: null,
   safety: null,
   tip: null,
+  freeCancellationEnded: false,
 };
 const STAY: GuestNoticeFacts = {
   offerTitle: null,
@@ -27,6 +28,7 @@ const STAY: GuestNoticeFacts = {
   reviewPlatform: null,
   safety: null,
   tip: null,
+  freeCancellationEnded: false,
 };
 
 const ZONE = 'Europe/Zagreb';
@@ -76,6 +78,25 @@ describe('composeGuestEmail', () => {
     expect(subject).toBe('Confirmed: Kayak tour, Tue 14 Jul at 09:30');
     expect(text).toContain('Kayak tour on Tue 14 Jul at 09:30 is confirmed.');
     expect(text).toContain(`Open Fetivi: ${ORIGIN}/trip`);
+  });
+
+  it('says a request accepted after its free window is no longer free to cancel', () => {
+    const late = composeGuestEmail(
+      'order_confirmed',
+      { ...ORDER, freeCancellationEnded: true },
+      'en',
+      ORIGIN,
+    ).text;
+    expect(late).toContain('so cancelling it is no longer free.');
+    expect(late).not.toMatch(/refund/i);
+    expect(composeGuestEmail('order_confirmed', ORDER, 'en', ORIGIN).text).not.toContain(
+      'no longer free',
+    );
+    // Only the confirmation carries it.
+    expect(
+      composeGuestEmail('order_reminder', { ...ORDER, freeCancellationEnded: true }, 'en', ORIGIN)
+        .text,
+    ).not.toContain('no longer free');
   });
 
   it('leaves the time out when the Offer has none', () => {

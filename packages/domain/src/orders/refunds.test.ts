@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { cancellationTermsAt, lateChargePercent, orderStart, refundFor } from './refunds';
+import {
+  awaitingAcceptanceOf,
+  cancellationTermsAt,
+  lateChargePercent,
+  orderStart,
+  refundFor,
+} from './refunds';
+import { ORDER_STATUSES } from './vocabulary';
 
 const startsAt = new Date('2026-10-25T16:00:00Z');
 const cutoff = new Date('2026-10-24T16:00:00Z');
@@ -83,6 +90,7 @@ describe('cancellationTermsAt', () => {
       freeUntil: '2026-10-24T16:00:00.000Z',
       freeUntilLocal: '2026-10-24T18:00',
       freeWindowPassed: false,
+      awaitingAcceptance: null,
     });
   });
 
@@ -107,6 +115,31 @@ describe('cancellationTermsAt', () => {
       cancellationTermsAt({ ...policy, lateChargePercent: 100 }, startsAt, 'UTC', at(1))
         .lateChargePercent,
     ).toBe(100);
+  });
+
+  it('stays free after the cutoff while a request awaits acceptance', () => {
+    expect(cancellationTermsAt(policy, startsAt, 'Europe/Zagreb', at(1), 'host')).toMatchObject({
+      freeWindowPassed: false,
+      awaitingAcceptance: 'host',
+      freeUntil: '2026-10-24T16:00:00.000Z',
+    });
+  });
+});
+
+describe('awaitingAcceptanceOf', () => {
+  it('names the owner while an on-request Order is not yet accepted', () => {
+    const awaiting = new Set(['awaiting_confirmation', 'confirming', 'pending_provider']);
+    for (const status of ORDER_STATUSES) {
+      expect(awaitingAcceptanceOf({ availabilityMode: 'on_request', status }, 'provider')).toBe(
+        awaiting.has(status) ? 'provider' : null,
+      );
+    }
+  });
+
+  it('is null for instant bookings', () => {
+    for (const status of ORDER_STATUSES) {
+      expect(awaitingAcceptanceOf({ availabilityMode: 'allotment', status }, 'host')).toBeNull();
+    }
   });
 });
 

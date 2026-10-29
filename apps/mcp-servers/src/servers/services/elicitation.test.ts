@@ -9,7 +9,7 @@ import {
 import { inputRequired } from '@modelcontextprotocol/server';
 import { describe, expect, it } from 'vitest';
 import { cancelMessage } from './cancel';
-import { confirmationMessage, contactSchemaFor, orderDraftMeta } from './elicitation';
+import { confirmationMessage, contactSchemaFor, orderDraftMeta, orderFormFor } from './elicitation';
 import { respondMessage } from './respond';
 import { termsSentence } from './terms';
 
@@ -19,6 +19,7 @@ const terms: CancellationTerms = {
   freeUntil: '2027-05-03T07:00:00.000Z',
   freeUntilLocal: '2027-05-03T09:00',
   freeWindowPassed: false,
+  awaitingAcceptance: null,
 };
 const passed: CancellationTerms = { ...terms, freeWindowPassed: true };
 
@@ -39,6 +40,9 @@ const draft: CreateOrderDraft = {
   cancellationPolicy: 'Free until 24 hours before.',
   contactFields: 'name_and_phone',
   cancellation: terms,
+  note: null,
+  requestedTime: null,
+  warnings: [],
 };
 
 describe('contactSchemaFor', () => {
@@ -85,7 +89,105 @@ describe('contactSchemaFor', () => {
   });
 });
 
+describe('orderFormFor', () => {
+  const onRequest: CreateOrderDraft = {
+    ...draft,
+    slotId: null,
+    startsAt: null,
+    startsAtLocal: null,
+    availabilityMode: 'on_request',
+    contactFields: 'name',
+    note: 'From Trogir to Split airport, 4 big suitcases',
+    requestedTime: '07:00',
+  };
+  const wire = (d: CreateOrderDraft) =>
+    (
+      inputRequired.elicit({
+        message: confirmationMessage(d),
+        requestedSchema: orderFormFor(d),
+        _meta: orderDraftMeta('p-1', d),
+      }).params as {
+        requestedSchema: {
+          properties: Record<string, { default?: string; maxLength?: number }>;
+          required?: string[];
+        };
+      }
+    ).requestedSchema;
+
+  it('has a note for every draft and a time only for a start without a time', () => {
+    expect(Object.keys(orderFormFor(draft).shape).sort()).toEqual([
+      'email',
+      'name',
+      'note',
+      'phone',
+    ]);
+    expect(Object.keys(orderFormFor(onRequest).shape).sort()).toEqual([
+      'email',
+      'name',
+      'note',
+      'time',
+    ]);
+  });
+
+  it('prefills note and time from the draft and never requires them', () => {
+    const schema = wire(onRequest);
+    expect(schema.properties.note).toMatchObject({
+      default: onRequest.note,
+      maxLength: 500,
+    });
+    expect(schema.properties.time).toMatchObject({ default: '07:00' });
+    expect(schema.required?.sort()).toEqual(['email', 'name']);
+    expect(wire(draft).properties.note?.default).toBeUndefined();
+  });
+
+  it('checks the answer: a cleared detail is absent, a bad time or a long note fails', () => {
+    const form = orderFormFor(onRequest);
+    expect(form.safeParse({ email: 'a@b.test', name: 'Ana' }).data).toEqual({
+      email: 'a@b.test',
+      name: 'Ana',
+    });
+    expect(
+      form.safeParse({ email: 'a@b.test', name: 'Ana', note: ' Gate 2 ', time: '07:30' }).data,
+    ).toEqual({ email: 'a@b.test', name: 'Ana', note: 'Gate 2', time: '07:30' });
+    for (const time of ['24:00', '7:00', '07:60']) {
+      expect(form.safeParse({ email: 'a@b.test', name: 'Ana', time }).success).toBe(false);
+    }
+    expect(form.safeParse({ email: 'a@b.test', name: 'Ana', note: 'x'.repeat(500) }).success).toBe(
+      true,
+    );
+    expect(form.safeParse({ email: 'a@b.test', name: 'Ana', note: 'x'.repeat(501) }).success).toBe(
+      false,
+    );
+  });
+});
+
 describe('confirmationMessage', () => {
+  it('names the requested time, the note and every warning', () => {
+    const message = confirmationMessage({
+      ...draft,
+      slotId: null,
+      startsAt: null,
+      startsAtLocal: null,
+      requestedTime: '07:00',
+      note: '4 big suitcases',
+      warnings: [
+        { kind: 'checkout_day', checkoutTime: '10:00' },
+        {
+          kind: 'weather',
+          level: 'yellow',
+          type: 'wind',
+          event: 'Strong wind',
+          onset: '2027-05-04T06:00:00.000Z',
+          expires: '2027-05-04T20:00:00.000Z',
+        },
+      ],
+    });
+    expect(message).toContain('on 2027-05-04 at 07:00');
+    expect(message).toContain('Note: "4 big suitcases".');
+    expect(message).toContain('Heads-up: it is your checkout day (checkout 10:00).');
+    expect(message).toContain('DHMZ yellow warning: Strong wind.');
+  });
+
   it('is built from the stored draft only', () => {
     expect(confirmationMessage(draft)).toBe(
       'Book Blue Lagoon boat trip on 2027-05-04 at 09:00 for 2, 90.00 EUR total, paid directly to the provider? Free cancellation until 2027-05-03 09:00; after that the provider may ask for 50 % of the price directly.',
@@ -135,6 +237,15 @@ describe('termsSentence', () => {
       'Cancelling is free at any time.',
     );
     expect(termsSentence(null, 'online', true)).toBe('');
+  });
+
+  it('is free until the provider or host accepts a request, even past the cutoff', () => {
+    expect(termsSentence({ ...passed, awaitingAcceptance: 'host' }, 'direct', false)).toBe(
+      'Cancelling is free until the host accepts your request.',
+    );
+    expect(termsSentence({ ...terms, awaitingAcceptance: 'provider' }, 'online', false)).toBe(
+      'Cancelling is free until the provider accepts your request.',
+    );
   });
 });
 

@@ -15,7 +15,7 @@ import { type InputRequiredResult, inputRequired } from '@modelcontextprotocol/s
 import type { z } from 'zod';
 import type { StateCodec } from '../request-state';
 import { ClaimMismatchError, GuestToolError, type ToolDeps } from '../tool';
-import { confirmationMessage, contactSchemaFor, orderDraftMeta } from './elicitation';
+import { confirmationMessage, orderDraftMeta, orderFormFor } from './elicitation';
 import type { createOrderInput, createOrderOutput } from './schemas';
 
 export type CreateOrderOutput = z.infer<typeof createOrderOutput>;
@@ -79,7 +79,7 @@ async function ask(
     inputRequests: {
       [CONFIRM_KEY]: inputRequired.elicit({
         message: confirmationMessage(draft),
-        requestedSchema: contactSchemaFor(draft.contactFields),
+        requestedSchema: orderFormFor(draft),
         _meta: orderDraftMeta(pendingId, draft),
       }),
     },
@@ -96,7 +96,7 @@ export async function prepareCreateOrder(
 ): Promise<InputRequiredResult> {
   const ctx = { spaceId: identity.spaceId, offerScope: offerScope(identity) };
   const { pendingId, draft } = await refusing(() =>
-    prepareOrder({ db: deps.db, now: deps.now }, ctx, args),
+    prepareOrder({ db: deps.db, now: deps.now, weather: deps.weather }, ctx, args),
   );
   return ask(codec, pendingId, draft);
 }
@@ -127,7 +127,7 @@ export async function answerCreateOrder(
   }
   const parsed =
     answer.action === 'accept' && answer.content !== undefined
-      ? contactSchemaFor(pending.draft.contactFields).safeParse(answer.content)
+      ? orderFormFor(pending.draft).safeParse(answer.content)
       : undefined;
   if (!parsed?.success) {
     // A missing or invalid answer gets the same card again, only while the record is open.
@@ -139,10 +139,21 @@ export async function answerCreateOrder(
     }
     return ask(codec, pendingId, pending.draft);
   }
+  // The answer is the truth for the details: a field the guest cleared means none.
+  const { note, time, ...contact } = parsed.data as typeof parsed.data & {
+    note?: string;
+    time?: string;
+  };
   const { order } = await refusing(() =>
     completeOrder(
       { db, queue, now },
-      { pendingId, spaceId, offerScope: offerScope(identity), contact: parsed.data },
+      {
+        pendingId,
+        spaceId,
+        offerScope: offerScope(identity),
+        contact,
+        details: { note: note || null, time: time || null },
+      },
     ),
   );
   return { outcome: 'ordered' as const, order };

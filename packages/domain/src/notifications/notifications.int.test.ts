@@ -9,7 +9,7 @@ import { createJobQueue, ensureQueues, type JobQueue } from '../jobs/queue';
 import { createMemoryMailer, type Mailer } from '../mail';
 import { cancel, confirm, createOrder, type OrderDeps } from '../orders/machine';
 import { confirmHeldOrder } from '../services/adapters';
-import { createTestDatabase, type TestDatabase } from '../testing';
+import { createTestDatabase, scriptedHandoffTranslator, type TestDatabase } from '../testing';
 import {
   type SeededGuestUnit,
   seedGuestUnit,
@@ -32,12 +32,16 @@ const HOLD_UNTIL = new Date('2027-05-01T10:30:00Z');
 const BASE_URL = 'https://host.fetivi.test';
 
 const orderDeps = (): OrderDeps => ({ db: testDb.db, queue, now: () => NOW });
-const notifyDeps = (mailer: Mailer): NotifyDeps => ({
+const notifyDeps = (
+  mailer: Mailer,
+  handoffTranslator: NotifyDeps['handoffTranslator'] = scriptedHandoffTranslator([null]),
+): NotifyDeps => ({
   db: testDb.db,
   mailer,
   now: () => NOW,
   providerLink: { secret: 'notify-test-secret-that-is-long-enough-0', baseUrl: BASE_URL },
   webOrigin: 'https://admin.fetivi.test',
+  handoffTranslator,
 });
 /** Without the back-office origin: admin alerts then carry no link. */
 const alertDeps = (mailer: Mailer) => ({ db: testDb.db, mailer, now: () => NOW });
@@ -58,7 +62,9 @@ afterAll(async () => {
 });
 
 /** A confirmed allotment Order; Provider-owned unless `host` is set. */
-async function confirmedOrder(options: { language?: 'hr' | 'en'; host?: boolean } = {}) {
+async function confirmedOrder(
+  options: { language?: 'hr' | 'en'; host?: boolean; guestNote?: string } = {},
+) {
   const provider = await seedProvider(testDb.db, { language: options.language });
   const { offerId, slotId } = await seedOrderableOffer(testDb.db, {
     ...(options.host ? { hostId: unit.hostId } : { providerId: provider.id }),
@@ -76,6 +82,7 @@ async function confirmedOrder(options: { language?: 'hr' | 'en'; host?: boolean 
     quantity: 2,
     contact: { email: 'ana@example.test', name: 'Ana Horvat', phone: '+385 91 000 0000' },
     hold: { expiresAt: HOLD_UNTIL },
+    guestNote: options.guestNote,
   });
   const ref = { orderId: order.id, proposalId: order.currentProposalId as string };
   await confirmHeldOrder(orderDeps(), ref);
@@ -104,6 +111,25 @@ describe('the Provider email', () => {
 
     expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('already_sent');
     expect(mailer.sent).toHaveLength(1);
+  });
+
+  it("carries the guest note translated into the Provider's language, the original below", async () => {
+    const { job } = await confirmedOrder({ guestNote: 'Two child seats, please' });
+    const translator = scriptedHandoffTranslator(['Dvije dječje sjedalice, molim']);
+    const mailer = createMemoryMailer();
+    expect(await sendProviderNotification(notifyDeps(mailer, translator), job)).toBe('sent');
+    expect(mailer.sent[0]?.text).toContain(
+      'Napomena gosta: Dvije dječje sjedalice, molim\nIzvorno: Two child seats, please',
+    );
+    expect(translator.calls).toEqual([{ text: 'Two child seats, please', to: 'hr' }]);
+  });
+
+  it('still sends the note in the original when translation fails', async () => {
+    const { job } = await confirmedOrder({ guestNote: 'Ring at the gate' });
+    const mailer = createMemoryMailer();
+    expect(await sendProviderNotification(notifyDeps(mailer), job)).toBe('sent');
+    expect(mailer.sent[0]?.text).toContain('Napomena gosta: Ring at the gate');
+    expect(mailer.sent[0]?.text).not.toContain('Izvorno');
   });
 
   it("is written in the Provider's language", async () => {

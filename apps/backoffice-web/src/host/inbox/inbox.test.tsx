@@ -94,6 +94,7 @@ const ASKED: HostOrder = {
   stayFrom: '2026-10-24',
   stayTo: '2026-10-30',
   needsPrice: false,
+  guestNote: null,
   offerId: 'f1',
   createdAt: '2026-10-25T08:00:00.000Z',
   waiting: true,
@@ -305,6 +306,33 @@ describe('host inbox', () => {
       action: 'accept',
       proposalId: 'p1',
     });
+  });
+
+  it("shows the guest's note in the host's language with the original under it", async () => {
+    orders = [
+      {
+        ...ASKED,
+        guestNote: {
+          text: 'Preuzimanje u marini, 4 velika kofera',
+          translation: 'Pickup at the marina, 4 big suitcases',
+          translatedTo: 'en',
+        },
+      },
+      {
+        ...ASKED,
+        orderId: 'o2',
+        proposalId: 'p2',
+        guestNote: { text: 'Gate 2', translation: 'Vrata 2', translatedTo: 'hr' },
+      },
+    ];
+    stubApi([]);
+    await mount();
+    await vi.waitFor(() => expect(host.querySelectorAll('.order-card-note')).toHaveLength(2));
+    const [first, second] = [...host.querySelectorAll('.order-card-note')];
+    expect(first?.textContent).toBe(
+      'Guest note: Pickup at the marina, 4 big suitcasesOriginal: Preuzimanje u marini, 4 velika kofera',
+    );
+    expect(second?.textContent).toBe('Guest note: Gate 2');
   });
 
   it('says the Order changed when the answer is stale', async () => {

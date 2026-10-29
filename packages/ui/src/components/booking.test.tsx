@@ -81,6 +81,9 @@ const DRAFT: OrderDraft = {
   cancellationPolicy: 'Free cancellation up to 24 hours before.',
   contactFields: 'name_and_phone',
   cancellation: TERMS,
+  note: null,
+  requestedTime: null,
+  warnings: [],
 };
 
 const CARD: ConfirmationCardLabels = {
@@ -104,6 +107,20 @@ const CARD: ConfirmationCardLabels = {
   confirmOnline: 'Continue to payment',
   cancel: 'Cancel',
   sending: 'Booking…',
+  detailsField: 'Details for this booking',
+  detailsHint: 'Pickup place, luggage, anything they should know.',
+  detailsCount: (n, max) => `${n} / ${max}`,
+  timeField: 'Time',
+  timeHint: 'When you would like it.',
+  invalidTime: 'Enter a time like 07:30.',
+  warnings: {
+    heading: 'Before you confirm',
+    checkoutDay: (time) =>
+      time
+        ? `This is your checkout day: you need to be out by ${time}.`
+        : 'This is your checkout day.',
+    weather: (level, event) => `${level} from DHMZ: ${event}`,
+  },
 };
 
 const FIELDS = [
@@ -367,6 +384,130 @@ const STARTS = [
   { slotId: null, startsAtLocal: null, remaining: 3 },
 ];
 
+describe('ConfirmationCard details and warnings', () => {
+  /** Blue Lagoon on the checkout day, with a yellow wind warning. */
+  const BLUE_LAGOON: OrderDraft = {
+    ...DRAFT,
+    warnings: [
+      { kind: 'checkout_day', checkoutTime: '10:00' },
+      {
+        kind: 'weather',
+        level: 'yellow',
+        type: 'wind',
+        event: 'Strong wind',
+        onset: '2026-10-22T05:00:00.000Z',
+        expires: '2026-10-22T20:00:00.000Z',
+      },
+    ],
+  };
+  /** A transfer on request: no start time, so the guest gives one. */
+  const TRANSFER: OrderDraft = {
+    ...DRAFT,
+    offerTitle: 'Transfer to Split airport',
+    slotId: null,
+    startsAt: null,
+    startsAtLocal: null,
+    availabilityMode: 'on_request',
+    priceMinor: null,
+    note: 'From Trogir, 4 big suitcases',
+    requestedTime: '07:00',
+    cancellation: { ...TERMS, freeWindowPassed: true, awaitingAcceptance: 'provider' },
+  };
+  const textarea = () => host.querySelector<HTMLTextAreaElement>('textarea[name="note"]');
+  const typeArea = (el: HTMLTextAreaElement, value: string) =>
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+      setter?.call(el, value);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  const detailed = (
+    draft: OrderDraft,
+    details: { note: boolean; time: boolean },
+    onConfirm = vi.fn(),
+  ) =>
+    mount(
+      <ConfirmationCard
+        draft={draft}
+        fields={FIELDS}
+        state="open"
+        onConfirm={onConfirm}
+        onCancel={vi.fn()}
+        labels={CARD}
+        initialValues={{ email: 'a@b.test', name: 'Ana', phone: '+385 91 000' }}
+        details={details}
+      />,
+    );
+
+  it('shows the warnings above the facts, in words', () => {
+    detailed(BLUE_LAGOON, { note: true, time: false });
+    const block = host.querySelector('.fv-confirm-warnings');
+    expect(block?.getAttribute('role')).toBe('note');
+    expect(block?.textContent).toContain('Before you confirm');
+    expect(block?.textContent).toContain('This is your checkout day: you need to be out by 10:00.');
+    expect(block?.textContent).toContain('yellow from DHMZ: Strong wind');
+    expect(
+      block?.compareDocumentPosition(host.querySelector('.fv-confirm-facts') as Node) ?? 0,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    detailed(DRAFT, { note: true, time: false });
+    expect(host.querySelector('.fv-confirm-warnings')).toBeNull();
+  });
+
+  it('prefills the note and time, sends what the guest edited', () => {
+    const onConfirm = vi.fn();
+    detailed(TRANSFER, { note: true, time: true }, onConfirm);
+    expect(textarea()?.value).toBe('From Trogir, 4 big suitcases');
+    expect(input('time').value).toBe('07:00');
+    typeArea(textarea() as HTMLTextAreaElement, ' From Trogir, 4 suitcases and a pram ');
+    type(input('time'), '07:30');
+    submit();
+    expect(onConfirm).toHaveBeenCalledWith({
+      email: 'a@b.test',
+      name: 'Ana',
+      phone: '+385 91 000',
+      note: 'From Trogir, 4 suitcases and a pram',
+      time: '07:30',
+    });
+    expect(host.textContent).toContain('Free to cancel until the provider accepts your request.');
+    expect(host.textContent).not.toContain('late-cancellation');
+  });
+
+  it('shows the time only when the form has it, and sends no cleared note', () => {
+    const onConfirm = vi.fn();
+    detailed({ ...TRANSFER, startsAt: DRAFT.startsAt }, { note: true, time: false }, onConfirm);
+    expect(host.querySelector('input[name="time"]')).toBeNull();
+    typeArea(textarea() as HTMLTextAreaElement, '   ');
+    submit();
+    expect(onConfirm).toHaveBeenCalledWith({
+      email: 'a@b.test',
+      name: 'Ana',
+      phone: '+385 91 000',
+    });
+    detailed(DRAFT, { note: false, time: false });
+    expect(textarea()).toBeNull();
+  });
+
+  it('blocks an invalid time with an error on the field', () => {
+    const onConfirm = vi.fn();
+    detailed(TRANSFER, { note: true, time: true }, onConfirm);
+    // A browser without a time picker falls back to a text box, where anything can be typed.
+    input('time').type = 'text';
+    type(input('time'), '7:5');
+    submit();
+    expect(onConfirm).not.toHaveBeenCalled();
+    const time = input('time');
+    expect(time.getAttribute('aria-invalid')).toBe('true');
+    expect(host.textContent).toContain('Enter a time like 07:30.');
+    expect(document.activeElement).toBe(time);
+  });
+
+  it('counts only near the limit', () => {
+    detailed(TRANSFER, { note: true, time: true });
+    expect(host.textContent).not.toContain('/ 500');
+    typeArea(textarea() as HTMLTextAreaElement, 'x'.repeat(420));
+    expect(host.textContent).toContain('420 / 500');
+  });
+});
+
 describe('AvailabilityPicker', () => {
   it('moves focus with arrows and picks on Enter or a tap', () => {
     const onPick = vi.fn();
@@ -424,6 +565,7 @@ const ORDER: OrderSummaryPayload = {
   refundMinor: null,
   respondBy: null,
   cancellation: null,
+  note: null,
 };
 
 const RECEIPT: ReceiptLabels = {
@@ -433,6 +575,7 @@ const RECEIPT: ReceiptLabels = {
   status: 'Booking',
   payment: 'Payment',
   reference: 'Reference',
+  note: 'Your note',
   dateTime: CARD.dateTime,
   price: CARD.price,
   orderStatus: (s) => (s === 'confirmed' ? 'Confirmed' : s),
@@ -501,6 +644,15 @@ describe('ReceiptCard', () => {
     expect(host.textContent).toContain('failed · 45 EUR');
     mount(<ReceiptCard order={{ ...refunded, paymentStatus: 'captured' }} labels={RECEIPT} />);
     expect(host.textContent).not.toContain('45 EUR');
+  });
+
+  it('shows the guest note as written, and no row without one', () => {
+    mount(<ReceiptCard order={{ ...ORDER, note: 'Gate 2,\nblue suitcase' }} labels={RECEIPT} />);
+    const note = host.querySelector('.fv-receipt-note');
+    expect(note?.textContent).toBe('Gate 2,\nblue suitcase');
+    expect(note?.previousElementSibling?.textContent).toBe('Your note');
+    mount(<ReceiptCard order={ORDER} labels={RECEIPT} />);
+    expect(host.querySelector('.fv-receipt-note')).toBeNull();
   });
 
   it('shows a notice line', () => {

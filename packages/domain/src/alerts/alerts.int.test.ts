@@ -96,6 +96,7 @@ async function book(spaceId: string, day: string, placeId: string) {
     spaceId,
     offerScope,
     contact: { email: 'guest@example.test', name: 'Ana' },
+    details: { note: null, time: null },
   });
   return { orderId: order.id, offerId: boat.offerId };
 }

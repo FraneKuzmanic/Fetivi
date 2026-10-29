@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Executor } from '../../db/client';
+import { offers } from '../../db/schema/offers';
 import { orderProposals, orders, paymentAttempts } from '../../db/schema/orders';
 import { pendingActions } from '../../db/schema/pending-actions';
 import { properties, units } from '../../db/schema/properties';
@@ -8,6 +9,7 @@ import { stays } from '../../db/schema/stays';
 import { PAYMENT_MODES } from '../../offers/vocabulary';
 import { cancel, type OrderDeps } from '../../orders/machine';
 import {
+  awaitingAcceptanceOf,
   type CancellationTerms,
   cancellationTermsAt,
   cancellationTermsSchema,
@@ -93,10 +95,12 @@ async function loadCancel(db: Executor, spaceId: string, orderId: string) {
       zone: properties.timezone,
       checkIn: stays.checkIn,
       activeUntil: stays.activeUntil,
+      hostId: offers.hostId,
     })
     .from(orders)
     .innerJoin(orderProposals, eq(orderProposals.id, orders.currentProposalId))
     .leftJoin(paymentAttempts, eq(paymentAttempts.proposalId, orders.currentProposalId))
+    .innerJoin(offers, eq(offers.id, orders.offerId))
     .innerJoin(stays, eq(stays.id, orders.stayId))
     .innerJoin(units, eq(units.id, stays.unitId))
     .innerJoin(properties, eq(properties.id, units.propertyId))
@@ -162,6 +166,7 @@ function termsAt(row: Loaded, now: Date): CancellationTerms {
     orderStart(row.proposal, row.zone),
     row.zone,
     now,
+    awaitingAcceptanceOf(row.order, row.hostId ? 'host' : 'provider'),
   );
 }
 
@@ -282,8 +287,9 @@ export async function completeCancel(
 
     const refund = refundAt(current, now);
     const terms = termsAt(current, now);
-    // A pay-direct card said "free" before the cutoff; after it the provider may charge, so the
-    // guest is asked again, as for a changed refund. Under no late charge it stays free.
+    // A pay-direct card said "free" before the cutoff, or while the request awaited acceptance;
+    // after it the provider may charge, so the guest is asked again, as for a changed refund.
+    // Under no late charge it stays free.
     const windowChanged =
       draft.cancellation !== null &&
       terms.lateChargePercent > 0 &&

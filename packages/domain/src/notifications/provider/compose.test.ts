@@ -19,6 +19,7 @@ const input = (over: Partial<ProviderConfirmedInput> = {}): ProviderConfirmedInp
   quantity: 2,
   priceUnit: 'person',
   guest: guestFieldsFor('name_and_phone', GUEST),
+  note: null,
   link: 'https://host.fetivi.test/api/provider-link/abc',
   ...over,
 });
@@ -61,6 +62,29 @@ describe('composeProviderConfirmed', () => {
     expect(text).not.toMatch(/undefined|null/);
     expect(text).not.toContain('Vrijeme');
     expect(text).not.toContain('Gost');
+  });
+});
+
+describe('the guest note', () => {
+  it('shows the translation with the original below', () => {
+    const { text } = composeProviderConfirmed(
+      input({ note: { text: 'Two child seats', translation: 'Dvije dječje sjedalice' } }),
+    );
+    expect(text).toContain('Napomena gosta: Dvije dječje sjedalice\nIzvorno: Two child seats');
+  });
+
+  it('shows the note alone when it is not translated', () => {
+    const { text } = composeProviderConfirmed(
+      input({ language: 'en', note: { text: 'Two child seats', translation: null } }),
+    );
+    expect(text).toContain('Guest note: Two child seats');
+    expect(text).not.toContain('Original');
+  });
+
+  it('adds nothing without a note', () => {
+    const { text } = composeProviderConfirmed(input());
+    expect(text).not.toContain('Napomena');
+    expect(text).not.toContain('Izvorno');
   });
 });
 

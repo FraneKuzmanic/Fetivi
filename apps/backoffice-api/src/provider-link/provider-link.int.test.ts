@@ -136,6 +136,29 @@ describe('the page', () => {
     expect((await get(t.app, `${url}?lang=de`)).body).toContain('<html lang="en">');
   });
 
+  it("shows the guest's note translated, with the original below, only in the translation's language", async () => {
+    const { url, ref } = await confirmedOrder();
+    await t.db
+      .update(orders)
+      .set({
+        guestNote: 'Pickup at the marina, 4 big suitcases <please>',
+        guestNoteTranslation: 'Preuzimanje u marini, 4 velika kofera',
+        guestNoteTranslatedTo: 'hr',
+      })
+      .where(eq(orders.id, ref.orderId));
+    const hr = (await get(t.app, url)).body;
+    expect(hr).toContain('<dt>Napomena gosta</dt><dd>Preuzimanje u marini, 4 velika kofera</dd>');
+    expect(hr).toContain(
+      '<dt>Izvorno</dt><dd>Pickup at the marina, 4 big suitcases &lt;please&gt;</dd>',
+    );
+    const en = (await get(t.app, `${url}?lang=en`)).body;
+    expect(en).toContain(
+      '<dt>Guest note</dt><dd>Pickup at the marina, 4 big suitcases &lt;please&gt;</dd>',
+    );
+    expect(en).not.toContain('Original');
+    expect(en).not.toContain('velika kofera');
+  });
+
   it('escapes Offer text', async () => {
     const { url } = await confirmedOrder({ title: '<script>alert(1)</script> & "tour"' });
     const body = (await get(t.app, url)).body;

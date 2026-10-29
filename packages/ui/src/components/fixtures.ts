@@ -98,6 +98,10 @@ export function projection(
 export const TERMS_LABELS: CancellationTermsLabels = {
   freeAnyTime: 'Cancelling is free at any time.',
   freeUntil: (when) => `Free cancellation until ${when}.`,
+  freeUntilAccepted: (who) =>
+    who === 'host'
+      ? 'Free to cancel until your host accepts your request.'
+      : 'Free to cancel until the provider accepts your request.',
   directAfter: (p) =>
     `After that, the provider may ask you to pay ${p} % of the price directly to them.`,
   directAfterFull: 'After that, the provider may ask you to pay the full price directly to them.',
@@ -123,4 +127,5 @@ export const TERMS: CancellationTermsPayload = {
   freeUntil: '2026-10-21T07:00:00.000Z',
   freeUntilLocal: '2026-10-21T09:00',
   freeWindowPassed: false,
+  awaitingAcceptance: null,
 };

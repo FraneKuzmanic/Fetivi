@@ -243,6 +243,7 @@ describe('InboxPart notices', () => {
     reviewUrl: null,
     safety: null,
     tip: null,
+    freeCancellationEnded: false,
     at: '2027-05-01T10:00:00Z',
     ...over,
   });

@@ -238,6 +238,8 @@ export const de: Messages = {
       'Morgen, {{date}}, ist in Ihrem Plan noch frei. Wie wäre es mit {{offer}}{{distance}}? Fragen Sie mich, dann erzähle ich Ihnen mehr.',
     tipDistance: ' ({{km}} km entfernt)',
     tipVenue: ', {{venueName}}',
+    freeCancellationEnded:
+      'Die Anfrage wurde nach Ende der kostenlosen Stornierungsfrist angenommen, eine Stornierung ist also nicht mehr kostenlos.',
   },
   push: {
     offer: 'Auf diesem Handy benachrichtigen',
@@ -340,6 +342,8 @@ export const de: Messages = {
       'Die kostenlose Stornierung ist vorbei: Eine Stornierung kostet {{percent}} % des Preises.',
     chargeNowFull:
       'Die kostenlose Stornierung ist vorbei: Eine Stornierung kostet den vollen Preis.',
+    freeUntilProviderAccepts: 'Kostenlos stornierbar, bis der Anbieter Ihre Anfrage annimmt.',
+    freeUntilHostAccepts: 'Kostenlos stornierbar, bis Ihr Gastgeber Ihre Anfrage annimmt.',
   },
   respondOrder: {
     headingTime: 'Der Anbieter schlägt eine andere Zeit vor',
@@ -421,6 +425,17 @@ export const de: Messages = {
     confirmOnline: 'Weiter zur Zahlung',
     checkoutClosed:
       'Die Zeit für die Zahlung ist abgelaufen. Den Stand der Buchung sehen Sie unter Meine Reise.',
+    details: 'Details zu dieser Buchung',
+    detailsHint: 'Abholort, Gepäck, alles, was man wissen sollte.',
+    detailsCount: '{{count}} / {{max}}',
+    time: 'Uhrzeit',
+    timeHint: 'Wann es Ihnen passt.',
+    invalidTime: 'Geben Sie eine Uhrzeit ein, z. B. 07:30.',
+    warningsHeading: 'Bevor Sie bestätigen',
+    warnCheckout: 'An diesem Tag reisen Sie ab: Sie müssen die Unterkunft bis {{time}} verlassen.',
+    warnCheckoutDay: 'An diesem Tag reisen Sie ab.',
+    warnWeather: '{{level}} vom DHMZ: {{event}}',
+    yourNote: 'Ihre Notiz',
   },
   trip: {
     plan: 'Plan',

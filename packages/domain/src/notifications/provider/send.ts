@@ -3,7 +3,9 @@ import type { Db } from '../../db/client';
 import { accounts } from '../../db/schema/accounts';
 import { offers } from '../../db/schema/offers';
 import { orders } from '../../db/schema/orders';
+import type { HandoffTranslator } from '../../handoff/translate';
 import type { Mailer } from '../../mail';
+import { ensureNoteTranslation } from '../../orders/guest-note';
 import { orderJobKey } from '../../orders/timers';
 import { backofficeLanguageOf } from '../../property/vocabulary';
 import { findHostOrder } from '../../services/host-orders';
@@ -25,6 +27,8 @@ export interface NotifyDeps {
   providerLink: { secret: string; baseUrl: string };
   /** The back office, where a host answers Orders on own Offers (38). */
   webOrigin: string;
+  /** Translates the guest's note into the reader's language; a failure sends the original. */
+  handoffTranslator: HandoffTranslator;
 }
 
 export type SendOutcome = 'sent' | 'already_sent' | 'skipped';
@@ -60,6 +64,13 @@ export async function sendProviderNotification(
   if (!found?.provider) return 'skipped';
   const view = providerLinkView(found);
   const { email } = found.provider;
+  // Translated before the send and stored, so a retried job makes no second call.
+  const note = view.guestNote
+    ? await ensureNoteTranslation(
+        { db: deps.db, translator: deps.handoffTranslator },
+        { orderId: job.orderId, to: view.language },
+      )
+    : null;
   const input = {
     language: view.language,
     providerName: found.provider.name,
@@ -69,6 +80,7 @@ export async function sendProviderNotification(
     quantity: view.quantity,
     priceUnit: view.priceUnit,
     guest: view.guest,
+    note,
     link: providerLinkUrl(deps.providerLink.baseUrl, token),
   };
   let message: ReturnType<typeof composeProviderConfirmed>;
@@ -111,15 +123,23 @@ async function sendHostNotification(
   if (job.kind === 'provider_request' && !view.respondBy) {
     throw new Error(`Order ${job.orderId} waits with no response deadline`);
   }
+  const language = backofficeLanguageOf(host.uiLanguage);
+  const note = view.guestNote
+    ? await ensureNoteTranslation(
+        { db: deps.db, translator: deps.handoffTranslator },
+        { orderId: job.orderId, to: language },
+      )
+    : null;
   const message = composeHostOrderEmail({
     kind: job.kind,
-    language: backofficeLanguageOf(host.uiLanguage),
+    language,
     offerTitle: view.offerTitle,
     date: view.date,
     startTime: view.startTime,
     quantity: view.quantity,
     priceUnit: view.priceUnit,
     guest: view.guest,
+    note,
     respondBy: view.respondBy,
     priceMinor: view.priceMinor,
     currency: view.currency,
