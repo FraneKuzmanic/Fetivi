@@ -26,6 +26,7 @@ import { componentFor, withComponentParts } from '../stream/parts';
 import { endsWithPresentation, textAfterSilentChips } from '../stream/presentation';
 import type { TurnTools } from '../tools/registry';
 import type { GuestAnswer, Outcome, PausedCall } from './elicitation';
+import { inputUsage } from './usage';
 
 // The turn loop around guest-confirmed tools. The AI SDK stops a step on a tool without
 // `execute`; the loop then runs that call's first half and either shows the card (and ends the
@@ -49,6 +50,7 @@ export interface LoopResult {
   outcome: UIMessageStreamOutcome;
   /** Model steps across every segment; 0 when no model ran. */
   steps: number;
+  /** Summed over segments; `input` is uncached input only. */
   usage: { input: number; output: number; cacheRead: number; cacheWrite: number };
 }
 
@@ -204,10 +206,11 @@ export function createLoop(
     }
     const [steps, usage] = await Promise.all([run.steps, run.usage]);
     result.steps += steps.length;
-    result.usage.input += usage.inputTokens ?? 0;
+    const input = inputUsage(usage);
+    result.usage.input += input.input;
     result.usage.output += usage.outputTokens ?? 0;
-    result.usage.cacheRead += usage.inputTokenDetails?.cacheReadTokens ?? 0;
-    result.usage.cacheWrite += usage.inputTokenDetails?.cacheWriteTokens ?? 0;
+    result.usage.cacheRead += input.cacheRead;
+    result.usage.cacheWrite += input.cacheWrite;
     return true;
   }
 

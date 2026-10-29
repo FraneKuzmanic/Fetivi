@@ -189,7 +189,8 @@ describe('POST /api/chat', () => {
       steps: 2,
       toolCalls: 1,
       toolNames: ['probe_situation'],
-      inputTokens: 220,
+      // Uncached input only: 20 + 20, the cache reads counted once in their own column.
+      inputTokens: 40,
       outputTokens: 15,
       cacheReadTokens: 180,
       cacheWriteTokens: 0,
@@ -222,6 +223,10 @@ describe('POST /api/chat', () => {
     });
     expect(p2.slice(0, p1.length)).toEqual(p1);
     expect(c1?.tools).toEqual(c2?.tools);
+    // The automatic history breakpoint rides on every request, never on the messages.
+    for (const c of [c1, c2]) {
+      expect(c?.providerOptions?.anthropic).toMatchObject({ cacheControl: { type: 'ephemeral' } });
+    }
     // Same quarter hour: no new situation note on turn 2.
     expect(rows.filter((r) => r.role === 'system')).toHaveLength(1);
     expect(p2.filter((m) => m.role === 'system')).toHaveLength(2);
