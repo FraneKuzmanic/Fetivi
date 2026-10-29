@@ -33,7 +33,7 @@ export function presentationTools(deps: {
   return {
     suggest_replies: tool({
       description:
-        "Show 1–4 tappable follow-ups under your answer, written as the guest would say them, in the guest's language. Call this last, in the same response as your answer, and never together with another tool except show_results. Never suggest something the guest declined or passed over earlier, unless they bring it up again.",
+        "Show 1–4 tappable follow-ups under your answer, written as the guest would say them, in the guest's language. Call this last, in the same response as your answer, and never together with another tool except show_results. Never suggest something the guest declined or passed over earlier, unless they bring it up again. Set switchLanguage only when the guest's message is clearly written in another of Fetivi's languages than the one they chose: the app adds a chip that switches Fetivi to it.",
       inputSchema: followUpChips,
       execute: async () => ({ shown: true }),
     }),
@@ -81,17 +81,35 @@ const endsTurn = (name: string) =>
   name === GAP_TOOL_NAME;
 
 /**
+ * draft_host_message in an emergency shows the contacts card instead of a draft: it ends the reply
+ * like a property card, so the 112 and host instructions are said once (ticket 63). A draft is
+ * followed by send_host_message, so it does not.
+ */
+const isEmergencyCard = (
+  step: StepResult<ToolSet> | undefined,
+  call: { toolName: string; toolCallId: string },
+) =>
+  call.toolName === 'draft_host_message' &&
+  (step?.toolResults ?? []).some(
+    (r) =>
+      r.toolCallId === call.toolCallId &&
+      (r.output as { outcome?: unknown } | null)?.outcome === 'emergency',
+  );
+
+/**
  * Stops the loop after a step whose calls are all presentation calls or the property card: the
  * guest answers next, so another model round trip would only cost. A step that also searched
  * continues, so the model sees the results; so does one with an invalid call or a tool error (e.g.
  * show_results with unknown ids), so the model can correct it. Chips, shown results, a choice
  * card or a property card without any text in the turn continue too, so the guest never gets them
- * without words (ticket 66).
+ * without words (ticket 66). The emergency contacts card ends it the same way (ticket 63).
  */
 export const endsWithPresentation: StopCondition<ToolSet> = ({ steps }) => {
-  const calls = steps.at(-1)?.toolCalls ?? [];
+  const last = steps.at(-1);
+  const calls = last?.toolCalls ?? [];
   if (calls.length === 0) return false;
-  if (!calls.every((c) => !c.invalid && endsTurn(c.toolName))) return false;
+  if (!calls.every((c) => !c.invalid && (endsTurn(c.toolName) || isEmergencyCard(last, c))))
+    return false;
   if (steps.at(-1)?.content.some((p) => p.type === 'tool-error')) return false;
   return answered(steps);
 };
@@ -110,11 +128,14 @@ const WORDS_AFTER: readonly string[] = ['suggest_replies', 'ask_choice', 'show_p
  * with an invalid call or a tool error keeps its tools, so the model can correct the call.
  */
 export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, messages }) => {
-  const calls = steps.at(-1)?.toolCalls ?? [];
+  const last = steps.at(-1);
+  const calls = last?.toolCalls ?? [];
   if (calls.some((c) => c.invalid)) return undefined;
-  if (steps.at(-1)?.content.some((p) => p.type === 'tool-error')) return undefined;
+  if (last?.content.some((p) => p.type === 'tool-error')) return undefined;
+  // An emergency card counts as a show but keeps its call: the words must know the contacts were shown (ticket 63).
   const shows = calls.some(
-    (c) => c.toolName === 'show_results' || WORDS_AFTER.includes(c.toolName),
+    (c) =>
+      c.toolName === 'show_results' || WORDS_AFTER.includes(c.toolName) || isEmergencyCard(last, c),
   );
   if (!shows || answered(steps)) return undefined;
   const [call, result] = messages.slice(-2);

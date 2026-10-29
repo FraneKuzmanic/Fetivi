@@ -65,6 +65,31 @@ describe('interactions', () => {
     expect(onSelect).toHaveBeenCalledWith('No');
   });
 
+  it('adds a language switch chip after the replies, which only switches (ticket 63)', () => {
+    const onSelect = vi.fn();
+    const onSwitch = vi.fn();
+    mount(
+      <FollowUpChips
+        replies={['Yes']}
+        label="Replies"
+        onSelect={onSelect}
+        switchTo={{ label: 'Fetivi auf Deutsch', lang: 'de', onSelect: onSwitch }}
+      />,
+    );
+    const chips = [...host.querySelectorAll('button')];
+    expect(chips.map((b) => b.textContent)).toEqual(['Yes', 'Fetivi auf Deutsch']);
+    expect(chips[1]?.lang).toBe('de');
+    act(() => button('Fetivi auf Deutsch').click());
+    expect(onSwitch).toHaveBeenCalledOnce();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('shows no switch chip without switchTo', () => {
+    mount(<FollowUpChips replies={['Yes']} label="Replies" onSelect={vi.fn()} />);
+    expect(host.querySelectorAll('button')).toHaveLength(1);
+    expect(host.querySelector('[lang]')).toBeNull();
+  });
+
   it('moves focus with arrows and answers only on activation', () => {
     const onAnswer = vi.fn();
     choice(false, onAnswer);

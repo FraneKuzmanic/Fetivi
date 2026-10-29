@@ -11,15 +11,25 @@ import type { TurnResults } from './results';
 /** A step with these calls ('!' marks an invalid one); it has text unless `silent`. */
 const step = (...names: string[]) => stepWith('Some text.', names);
 const silent = (...names: string[]) => stepWith('', names);
-const stepWith = (text: string, names: string[], content: { type: string }[] = []) =>
+const stepWith = (
+  text: string,
+  names: string[],
+  content: { type: string }[] = [],
+  outputs: unknown[] = [],
+) =>
   ({
     text,
     content,
-    toolCalls: names.map((name) => ({
+    toolCalls: names.map((name, i) => ({
       toolName: name.replace('!', ''),
+      toolCallId: `c${i}`,
       invalid: name.endsWith('!'),
     })),
+    toolResults: outputs.map((output, i) => ({ toolCallId: `c${i}`, output })),
   }) as unknown as StepResult<ToolSet>;
+/** A draft_host_message step with this outcome; it has text unless `silent`. */
+const hostStep = (outcome: 'emergency' | 'draft', text = 'Call 112 first.') =>
+  stepWith(text, ['draft_host_message'], [], [{ outcome }]);
 
 describe('endsWithPresentation', () => {
   it('stops only when every call of the last step is a presentation call', async () => {
@@ -83,6 +93,13 @@ describe('endsWithPresentation', () => {
     expect(
       await endsWithPresentation({ steps: [step('get_weather'), silent('show_property_info')] }),
     ).toBe(true);
+  });
+
+  it('stops after the emergency contacts card with text, not after a draft (ticket 63)', async () => {
+    expect(await endsWithPresentation({ steps: [hostStep('emergency')] })).toBe(true);
+    expect(await endsWithPresentation({ steps: [hostStep('emergency', '')] })).toBe(false);
+    // A draft goes on to send_host_message.
+    expect(await endsWithPresentation({ steps: [hostStep('draft')] })).toBe(false);
   });
 });
 
@@ -184,6 +201,17 @@ describe('textAfterSilentChips', () => {
         [question, ...search, ...withChips],
       ),
     ).toEqual({ toolChoice: 'none', messages: [question, ...search, ...kept] });
+  });
+
+  it('answers in text after an emergency card without text, keeping the card call (ticket 63)', () => {
+    const card = [
+      { role: 'assistant', content: [{ type: 'tool-call', toolName: 'draft_host_message' }] },
+      { role: 'tool', content: [{ type: 'tool-result', toolName: 'draft_host_message' }] },
+    ];
+    expect(prepare([hostStep('emergency', '')], [question, ...card])).toEqual({
+      toolChoice: 'none',
+    });
+    expect(prepare([hostStep('draft', '')], [question, ...card])).toBeUndefined();
   });
 
   it('leaves every other step alone', () => {

@@ -154,6 +154,7 @@ export const en = {
   },
   components: {
     followUps: 'Suggested replies',
+    switchLanguage: 'Fetivi in English',
     somethingElse: 'Something else',
     send: 'Send',
     places: 'Places',

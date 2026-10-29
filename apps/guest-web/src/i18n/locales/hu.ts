@@ -156,6 +156,7 @@ export const hu: Messages = {
   },
   components: {
     followUps: 'Javasolt válaszok',
+    switchLanguage: 'Fetivi magyarul',
     somethingElse: 'Valami mást',
     send: 'Küldés',
     places: 'Helyek',

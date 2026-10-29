@@ -325,6 +325,30 @@ describe('host instructions', () => {
     expect(INSTRUCTIONS).toContain('Once it is sent, confirm it in one short sentence.');
     expect(INSTRUCTIONS).toContain('Do not also call show_property_info for it.');
   });
+
+  it('keeps 112 for danger to people and sends urgent apartment problems to the host (ticket 63)', () => {
+    expect(INSTRUCTIONS).toContain('a smell of gas');
+    expect(INSTRUCTIONS).toContain('never mention 112 unless it turns into danger to people');
+    expect(INSTRUCTIONS).toContain("the host's own instructions from the unit record");
+    expect(INSTRUCTIONS).toContain('reason problem and urgency urgent');
+    expect(INSTRUCTIONS).toContain('switch off the main fuse');
+    expect(INSTRUCTIONS).toContain(
+      'Only sparks, smoke, fire or an injury make it danger to people.',
+    );
+    expect(INSTRUCTIONS).toContain('Write one short text before the card and nothing after it');
+  });
+});
+
+describe('reply language', () => {
+  it("answers a message in the guest's written language and offers the switch (ticket 63)", () => {
+    expect(INSTRUCTIONS).toContain('not a single word, a greeting or a place name');
+    expect(INSTRUCTIONS).toContain('suggest_replies with switchLanguage');
+    expect(INSTRUCTIONS).toContain(
+      'Safety and emergency replies always use the language the guest wrote in.',
+    );
+    expect(INSTRUCTIONS).toContain('unless a later system note says otherwise');
+    expect(INSTRUCTIONS).not.toContain('whatever language the guest writes in');
+  });
 });
 
 describe('answers in stream order, refunds and citations', () => {

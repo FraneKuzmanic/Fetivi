@@ -12,14 +12,14 @@ const message = z
 const urgency = z
   .enum(HANDOFF_URGENCIES)
   .describe(
-    "urgent only when it cannot wait for the host's next check: a broken lock, no water, a leak, locked out",
+    "urgent only when it cannot wait for the host's next check: a leak, a power cut, no water, a broken lock, locked out",
   );
 
 export const draftHostMessageInput = z.object({
   reason: z
     .enum([...HANDOFF_REASONS, 'emergency'])
     .describe(
-      'property_question: about the unit and not in the unit record; problem; request: something only the host can do; guest_asked: the guest wants to contact the host; emergency: someone is hurt or in danger',
+      'property_question: about the unit and not in the unit record; problem; request: something only the host can do; guest_asked: the guest wants to contact the host; emergency: danger to people (someone hurt, fire, smoke, sparks, a smell of gas, a person missing); a leak, power cut or lockout is a problem with urgency urgent, not an emergency',
     ),
   message,
   urgency,

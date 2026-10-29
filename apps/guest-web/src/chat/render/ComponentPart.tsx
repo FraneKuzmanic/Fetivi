@@ -20,6 +20,7 @@ import { propertyInfoLabels } from '../../guide/labels';
 import { useInbox } from '../../inbox/InboxProvider';
 import { usePay } from '../../my-trip/orders/orders-api';
 import { AlertOffer } from '../../push/AlertOffer';
+import { useSpace } from '../../space';
 import {
   choiceLabels,
   eventLabels,
@@ -71,18 +72,32 @@ export function ComponentPart({
   const { t, i18n } = useTranslation();
   const savedPlaces = useSavedPlaces();
   const inbox = useInbox();
+  const { changeLanguage } = useSpace();
   const parsed = useMemo(() => componentPart.safeParse(data), [data]);
   if (!parsed.success) return null;
   const part = parsed.data;
   switch (part.name) {
-    case 'follow-up-chips':
+    case 'follow-up-chips': {
+      const target = part.payload.switchLanguage;
+      // The guest wrote in another of Fetivi's languages: one tap switches Fetivi, through the
+      // same path as Settings (ticket 63). Once switched, the chip is gone by itself.
+      const switchTo =
+        target && target !== i18n.language
+          ? {
+              label: t('components.switchLanguage', { lng: target }),
+              lang: target,
+              onSelect: () => void changeLanguage(target),
+            }
+          : undefined;
       return latest ? (
         <FollowUpChips
           replies={part.payload.replies}
           label={t('components.followUps')}
           onSelect={onSend}
+          switchTo={switchTo}
         />
       ) : null;
+    }
     case 'choice-card':
       return (
         <ChoiceCard

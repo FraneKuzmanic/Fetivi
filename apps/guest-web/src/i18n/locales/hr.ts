@@ -156,6 +156,7 @@ export const hr: Messages = {
   },
   components: {
     followUps: 'Predloženi odgovori',
+    switchLanguage: 'Fetivi na hrvatskom',
     somethingElse: 'Nešto drugo',
     send: 'Pošalji',
     places: 'Mjesta',

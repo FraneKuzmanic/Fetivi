@@ -20,7 +20,7 @@ export const draftHostMessageSpec: GuestToolSpec = guestTool({
   config: {
     title: 'Draft a message to the host',
     description:
-      "Prepare a message to the host. Use it only for a question about the unit that the unit record does not answer, a problem, a request for the host, or when the guest asks to contact the host; never for local questions (places, food, transport, events). Offer it, don't push it; if the guest declines, don't offer again unless they ask. For an emergency (injury, fire, someone in danger) pass reason emergency: no message is drafted; tell the guest to call 112 first; the contacts card is shown, so do not also call show_property_info. Otherwise call send_host_message with the draft.",
+      "Prepare a message to the host. Use it only for a question about the unit that the unit record does not answer, a problem, a request for the host, or when the guest asks to contact the host; never for local questions (places, food, transport, events). Offer it, don't push it; if the guest declines, don't offer again unless they ask. Only for danger to people (injury, fire, smoke, sparks, a smell of gas, a person missing) pass reason emergency: no message is drafted; tell the guest to call 112 first; the contacts card is shown, so do not also call show_property_info and write nothing after it. A leak, power cut, no water or lockout is reason problem with urgency urgent: no 112. Otherwise call send_host_message with the draft.",
     scope: 'host_message:send',
     inputSchema: draftHostMessageInput,
     outputSchema: draftHostMessageOutput,

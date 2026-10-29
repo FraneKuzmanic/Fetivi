@@ -159,6 +159,7 @@ export const de: Messages = {
   },
   components: {
     followUps: 'Vorgeschlagene Antworten',
+    switchLanguage: 'Fetivi auf Deutsch',
     somethingElse: 'Etwas anderes',
     send: 'Senden',
     places: 'Orte',

@@ -156,6 +156,7 @@ export const pl: Messages = {
   },
   components: {
     followUps: 'Proponowane odpowiedzi',
+    switchLanguage: 'Fetivi po polsku',
     somethingElse: 'Coś innego',
     send: 'Wyślij',
     places: 'Miejsca',

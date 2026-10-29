@@ -38,6 +38,11 @@ describe('follow-up-chips', () => {
     expect(followUpChips.safeParse({ replies: ['a', 'b', 'c', 'd'] }).success).toBe(true);
   });
 
+  it("takes one of Fetivi's languages to switch to (ticket 63)", () => {
+    expect(followUpChips.safeParse({ replies: ['a'], switchLanguage: 'de' }).success).toBe(true);
+    expect(followUpChips.safeParse({ replies: ['a'], switchLanguage: 'es' }).success).toBe(false);
+  });
+
   it('refuses none, five, a long one or an extra key', () => {
     for (const bad of [
       { replies: [] },

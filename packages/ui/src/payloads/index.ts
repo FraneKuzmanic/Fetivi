@@ -44,9 +44,13 @@ export * from './property-info';
 
 const short = z.string().trim().min(1).max(60);
 
-/** 1–4 tappable replies under Fetivi's answer, written as the guest would say them. */
+/**
+ * 1–4 tappable replies under Fetivi's answer, written as the guest would say them; optionally one
+ * chip to switch Fetivi to the language the guest just wrote in (ticket 63).
+ */
 export const followUpChips = z.strictObject({
   replies: z.array(short).min(1).max(4),
+  switchLanguage: z.enum(GUEST_LANGUAGES).optional(),
 });
 
 /** A question with 2–6 distinct options; the app adds "Something else". */
