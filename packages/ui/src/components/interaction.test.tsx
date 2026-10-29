@@ -82,6 +82,7 @@ describe('interactions', () => {
     act(() => button('Fetivi auf Deutsch').click());
     expect(onSwitch).toHaveBeenCalledOnce();
     expect(onSelect).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(button('Yes'));
   });
 
   it('shows no switch chip without switchTo', () => {

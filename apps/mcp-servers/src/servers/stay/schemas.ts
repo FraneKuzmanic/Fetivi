@@ -19,7 +19,7 @@ export const draftHostMessageInput = z.object({
   reason: z
     .enum([...HANDOFF_REASONS, 'emergency'])
     .describe(
-      'property_question: about the unit and not in the unit record; problem; request: something only the host can do; guest_asked: the guest wants to contact the host; emergency: danger to people (someone hurt, fire, smoke, sparks, a smell of gas, a person missing); a leak, power cut or lockout is a problem with urgency urgent, not an emergency',
+      'property_question: about the unit and not in the unit record; problem; request: something only the host can do; guest_asked: the guest wants to contact the host; emergency: danger to people (someone hurt or unwell, fire, smoke, sparks, a smell of gas, a person missing); a leak, power cut or lockout is a problem with urgency urgent, not an emergency',
     ),
   message,
   urgency,

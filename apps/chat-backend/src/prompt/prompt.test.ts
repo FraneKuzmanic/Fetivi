@@ -328,7 +328,7 @@ describe('host instructions', () => {
 
   it('keeps 112 for danger to people and sends urgent apartment problems to the host (ticket 63)', () => {
     expect(INSTRUCTIONS).toContain('a smell of gas');
-    expect(INSTRUCTIONS).toContain('never mention 112 unless it turns into danger to people');
+    expect(INSTRUCTIONS).toContain('do not mention 112, not even for what to do if it gets worse');
     expect(INSTRUCTIONS).toContain("the host's own instructions from the unit record");
     expect(INSTRUCTIONS).toContain('reason problem and urgency urgent');
     expect(INSTRUCTIONS).toContain('switch off the main fuse');
@@ -336,6 +336,9 @@ describe('host instructions', () => {
       'Only sparks, smoke, fire or an injury make it danger to people.',
     );
     expect(INSTRUCTIONS).toContain('Write one short text before the card and nothing after it');
+    expect(INSTRUCTIONS).toContain(
+      'Someone hurt or unwell now is an emergency (below), not a request for advice.',
+    );
   });
 });
 

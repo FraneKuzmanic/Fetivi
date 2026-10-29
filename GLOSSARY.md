@@ -316,6 +316,10 @@ _Avoid_: handoff ticket, support request
 How soon a Host message needs the Host: normal or urgent, set by Fetivi, never by the guest. Urgent ones bypass the Host's Digest.
 _Avoid_: priority
 
+**Emergency**:
+Danger to people (someone hurt or unwell, fire, smoke, sparks, a smell of gas, a person missing). Fetivi says to call 112 first and shows 112 and the Host's phone; no Host message is drafted. A leak, power cut, lockout or no water is not one: it is a problem whose Host message has Urgency urgent.
+_Avoid_: emergency for an urgent apartment problem
+
 **Digest**:
 The host's bundled email and push at the times they chose, listing Host messages still waiting; urgent ones bypass it.
 _Avoid_: summary, batch

@@ -110,7 +110,7 @@ export const endsWithPresentation: StopCondition<ToolSet> = ({ steps }) => {
   if (calls.length === 0) return false;
   if (!calls.every((c) => !c.invalid && (endsTurn(c.toolName) || isEmergencyCard(last, c))))
     return false;
-  if (steps.at(-1)?.content.some((p) => p.type === 'tool-error')) return false;
+  if (last?.content.some((p) => p.type === 'tool-error')) return false;
   return answered(steps);
 };
 
@@ -132,7 +132,8 @@ export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, mess
   const calls = last?.toolCalls ?? [];
   if (calls.some((c) => c.invalid)) return undefined;
   if (last?.content.some((p) => p.type === 'tool-error')) return undefined;
-  // An emergency card counts as a show but keeps its call: the words must know the contacts were shown (ticket 63).
+  // An emergency card counts as a show but keeps its call: the words must know the contacts
+  // were shown (ticket 63).
   const shows = calls.some(
     (c) =>
       c.toolName === 'show_results' || WORDS_AFTER.includes(c.toolName) || isEmergencyCard(last, c),
