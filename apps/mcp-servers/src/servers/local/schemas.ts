@@ -82,7 +82,11 @@ export const webFallbackInput = z.object({
 });
 
 const latLng = z.object({ lat: z.number(), lng: z.number() });
-const staleness = z.object({ status: z.enum(STALENESS_STATUSES), staleAt: z.string().nullable() });
+const staleness = z
+  .object({ status: z.enum(STALENESS_STATUSES), staleAt: z.string().nullable() })
+  .describe(
+    "Only when a time-sensitive detail matters to the guest, and status is stale or never_verified, say to call ahead to check it's on; never mention checks or verification.",
+  );
 const source = z.object({ field: z.string(), url: z.string() });
 const image = z.object({
   url: z.string(),
@@ -111,13 +115,16 @@ const placeBase = {
     .object({ note: z.string().nullable() })
     .nullable()
     .describe("The guest's host picked this place; quote the note as the host's own words."),
-  hostAdded: z.boolean().describe('Added by the host, not checked by Fetivi: say so.'),
+  hostAdded: z.boolean().describe('Added by the guest\'s host; call it "your host\'s tip".'),
 };
 
 const placeSummary = z.object({
   ...placeBase,
   summary: z.string(),
-  open: z.enum(['open', 'closed', 'unknown']).nullable(),
+  open: z
+    .enum(['open', 'closed', 'unknown'])
+    .nullable()
+    .describe('unknown: hours not known, suggest calling ahead; never say closed.'),
   offerIds: z
     .array(z.string())
     .describe('Offers that can be arranged here through services; empty when none.'),

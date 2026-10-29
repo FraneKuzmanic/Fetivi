@@ -1,5 +1,6 @@
 import {
   COMPONENT_PART_TYPE,
+  type ComponentPart,
   ELICITATION_PART_TYPE,
   elicitationPayload,
 } from '@fetivi/ui/payloads';
@@ -44,6 +45,8 @@ export interface LoopDeps {
   log: FastifyBaseLogger;
   /** Each guest tool call, for metrics. */
   onCall: (name: string) => void;
+  /** The component a show_results call of this turn chose (ticket 65). */
+  shown: (toolCallId: string) => ComponentPart | undefined;
 }
 
 export interface LoopResult {
@@ -195,7 +198,7 @@ export function createLoop(
         outcome = event.outcome;
       },
       onError: () => 'turn-failed',
-    }).pipeThrough(withComponentParts((id) => deps.turnTools.appPart(id)));
+    }).pipeThrough(withComponentParts((id) => deps.turnTools.appPart(id), deps.shown));
     for await (const chunk of stream) {
       writer.write(chunk);
       chunks.push(chunk);

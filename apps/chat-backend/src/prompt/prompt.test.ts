@@ -121,6 +121,18 @@ describe('system text', () => {
     expect(INSTRUCTIONS).toContain('never offer to book them');
   });
 
+  it('lets the model choose the cards and keeps searches and checks out of the words (65)', () => {
+    expect(INSTRUCTIONS).toContain('call show_results with the ids');
+    expect(INSTRUCTIONS).toContain('never as a fallback');
+    expect(INSTRUCTIONS).toContain('open: "unknown"');
+    expect(INSTRUCTIONS).toContain('matchesQuery false');
+    expect(INSTRUCTIONS).toContain("your host's tip");
+    expect(INSTRUCTIONS).toContain('Never describe your searches or tools');
+    expect(INSTRUCTIONS).toContain('An empty plan shows no timeline');
+    expect(INSTRUCTIONS).not.toContain('last checked');
+    expect(INSTRUCTIONS).not.toContain('no checked suggestion');
+  });
+
   it('puts the cache breakpoint on its single block', () => {
     expect(systemInstructions('text')).toEqual([
       {

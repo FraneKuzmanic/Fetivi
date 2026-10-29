@@ -559,14 +559,39 @@ const textAndCallStep = (text: string, toolName: string, input: unknown): Stream
   }),
 });
 
+/** A step with text and then several tool calls, as one response. */
+const textAndCallsStep = (text: string, calls: [string, unknown][]): StreamResult => ({
+  stream: simulateReadableStream({
+    chunks: [
+      { type: 'stream-start', warnings: [] },
+      { type: 'text-start', id: 't1' },
+      { type: 'text-delta', id: 't1', delta: text },
+      { type: 'text-end', id: 't1' },
+      ...calls.map(([toolName, input], i) => ({
+        type: 'tool-call' as const,
+        toolCallId: `call-${toolName}-${i}`,
+        toolName,
+        input: JSON.stringify(input),
+      })),
+      {
+        type: 'finish',
+        finishReason: { unified: 'tool-calls', raw: 'tool_use' },
+        usage: usage(100, 10),
+      },
+    ],
+  }),
+});
+
 describe('Recommendation components', () => {
+  /** Seeds two restaurants and returns their ids by title. */
   async function seedRestaurants(t: ChatTestApp) {
     const { destinationId } = await seedTrogir(t.db, noopQueue, t.clock.now());
+    const ids: Record<string, string> = {};
     for (const [title, x] of [
       ['Konoba Mala', 16.2513],
       ['Konoba Velika', 16.2531],
     ] as const) {
-      await createCatalogRecord(
+      const row = await createCatalogRecord(
         t.db,
         noopQueue,
         {
@@ -579,8 +604,10 @@ describe('Recommendation components', () => {
         },
         t.clock.now(),
       );
+      ids[title] = row.id;
     }
     await publishCatalog(t.db, destinationId);
+    return ids as { 'Konoba Mala': string; 'Konoba Velika': string };
   }
 
   const components = (parts: { type: string }[]) =>
@@ -590,39 +617,48 @@ describe('Recommendation components', () => {
       data: { name: string; payload: Record<string, unknown> };
     }[];
 
-  it('"where should we eat tonight" streams and stores a carousel and follow-up chips', async () => {
-    const model = mockModel([
-      callStep('search_places', { category: 'restaurant', date: '2027-07-12' }),
-      textAndCallStep('Try Konoba Mala tonight.', 'suggest_replies', {
-        replies: ['Show me on a map', 'Something cheaper'],
-      }),
-      textStep('never reached'),
-    ]);
+  it('"where should we eat tonight" streams and stores the shown carousel and follow-up chips', async () => {
+    const steps = [callStep('search_places', { category: 'restaurant', date: '2027-07-12' })];
+    const model = mockModel(steps);
     const { t, cookie, space } = await setup(model);
-    await seedRestaurants(t);
+    const ids = await seedRestaurants(t);
+    steps.push(
+      textAndCallsStep('Try Konoba Velika, or Konoba Mala.', [
+        ['show_results', { kind: 'places', ids: [ids['Konoba Velika'], ids['Konoba Mala']] }],
+        ['suggest_replies', { replies: ['Show me on a map', 'Something cheaper'] }],
+      ]),
+      textStep('never reached'),
+    );
 
     const response = await send(t, cookie, 'Where should we eat tonight?');
     expect(response.statusCode).toBe(200);
-    // The loop stopped after the step that only showed chips.
+    // The loop stopped after the step that only showed results and chips.
     expect(model.doStreamCalls).toHaveLength(2);
 
     const chunks = readStream(response);
     expect(chunks.filter((c) => c.type === 'start')).toHaveLength(1);
+    // The search itself draws nothing (ticket 65).
     const searched = chunks.findIndex(
       (c) => c.type === 'tool-output-available' && c.toolCallId === 'call-search_places',
     );
-    const carousel = chunks[searched + 1] as unknown as {
+    expect(chunks[searched + 1]?.type).not.toBe('data-component');
+    const shown = chunks.findIndex(
+      (c) => c.type === 'tool-output-available' && c.toolCallId === 'call-show_results-0',
+    );
+    expect(chunks[shown]).toMatchObject({ output: { shown: 2 } });
+    const carousel = chunks[shown + 1] as unknown as {
       type: string;
       data: { name: string; payload: { places: { title: string }[] } };
     };
     expect(carousel).toMatchObject({ type: 'data-component', data: { name: 'place-carousel' } });
+    // In the order the answer gave, not the search's.
     expect(carousel.data.payload.places.map((p) => p.title)).toEqual([
-      '[en] Konoba Mala',
       '[en] Konoba Velika',
+      '[en] Konoba Mala',
     ]);
     expect(chunks).toContainEqual({
       type: 'data-component',
-      id: 'call-suggest_replies',
+      id: 'call-suggest_replies-1',
       data: {
         name: 'follow-up-chips',
         payload: { replies: ['Show me on a map', 'Something cheaper'] },
@@ -649,6 +685,71 @@ describe('Recommendation components', () => {
     // Presentation calls are not MCP calls.
     const [metrics] = await t.db.select().from(turnMetrics);
     expect(metrics?.toolNames).toEqual(['search_places']);
+  });
+
+  it('sends unknown ids back to the model as a tool error, and shows no carousel', async () => {
+    const steps = [callStep('search_places', { category: 'restaurant', date: '2027-07-12' })];
+    const model = mockModel(steps);
+    const { t, cookie } = await setup(model);
+    const ids = await seedRestaurants(t);
+    steps.push(
+      textAndCallStep('Try Konoba Nowhere.', 'show_results', {
+        kind: 'places',
+        ids: ['not-a-place'],
+      }),
+      // A fresh call id, as a real model would use.
+      textAndCallsStep('Try Konoba Mala.', [
+        ['show_results', { kind: 'places', ids: [ids['Konoba Mala']] }],
+      ]),
+    );
+
+    const chunks = readStream(await send(t, cookie, 'Where should we eat tonight?'));
+    expect(chunks).toContainEqual(
+      // The browser gets the generic error text; the model gets the message.
+      expect.objectContaining({ type: 'tool-output-error', toolCallId: 'call-show_results' }),
+    );
+    // The error went back to the model, which corrected the call.
+    expect(model.doStreamCalls).toHaveLength(3);
+    expect(JSON.stringify(model.doStreamCalls[2]?.prompt)).toContain(
+      'Unknown places ids: not-a-place',
+    );
+    expect(components(chunks as never).map((c) => c.data.name)).toEqual(['place-carousel']);
+  });
+
+  it('lets the model answer in text after results shown without any, and resends them after it', async () => {
+    const steps = [callStep('search_places', { category: 'restaurant', date: '2027-07-12' })];
+    const model = mockModel(steps);
+    const { t, cookie, space } = await setup(model);
+    const ids = await seedRestaurants(t);
+    steps.push(
+      callStep('show_results', { kind: 'places', ids: [ids['Konoba Mala']] }),
+      textStep('Try Konoba Mala tonight.'),
+      textStep('You are welcome.'),
+    );
+
+    const chunks = readStream(await send(t, cookie, 'Where should we eat tonight?'));
+    expect(model.doStreamCalls).toHaveLength(3);
+    // The guard step may only write text, and keeps the show_results call so its words match.
+    expect(model.doStreamCalls[2]?.toolChoice).toEqual({ type: 'none' });
+    expect(JSON.stringify(model.doStreamCalls[2]?.prompt)).toContain('"toolName":"show_results"');
+    expect(components(chunks as never).map((c) => c.data.name)).toEqual(['place-carousel']);
+    const types = (await stored(t, space.space.id)).rows.at(-1)?.parts.map((p) => p.type) ?? [];
+    expect(types.indexOf('tool-show_results')).toBeLessThan(types.indexOf('text'));
+
+    readStream(await send(t, cookie, 'Thanks'));
+    const prompt = model.doStreamCalls[3]?.prompt ?? [];
+    const content = (i: number) =>
+      (prompt[i]?.content ?? []) as { type: string; text?: string; toolName?: string }[];
+    const at = prompt.findIndex(
+      (m, i) =>
+        m.role === 'assistant' && content(i).some((c) => c.text === 'Try Konoba Mala tonight.'),
+    );
+    expect(content(at).map((c) => [c.type, c.toolName])).toEqual([
+      ['text', undefined],
+      ['tool-call', 'show_results'],
+    ]);
+    expect(prompt[at + 1]?.role).toBe('tool');
+    expect(JSON.stringify(prompt.slice(0, at))).not.toContain('"toolName":"show_results"');
   });
 
   it('shows no component for an empty search or invalid chips, and the text still streams', async () => {

@@ -11,6 +11,7 @@ import {
   type UIMessage,
 } from 'ai';
 import { z } from 'zod';
+import { SHOW_RESULTS_MAX, type TurnResults } from './results';
 
 /** Host-side tools that only show a component; they are not MCP tools and touch no data. */
 export const PRESENTATION_TOOLS = ['suggest_replies', 'ask_choice'] as const;
@@ -22,17 +23,34 @@ export const isPresentationTool = (name: string): name is PresentationTool =>
 /**
  * The input schema is the component's payload schema, so an invalid payload is a tool error the
  * model sees. show_property_info is the exception: the model names only a topic, and the card is
- * filled from the unit record, so its component comes from the output.
+ * filled from the unit record, so its component comes from the output. show_results draws cards
+ * from this turn's search results (ticket 65); its component is kept by call id in `results`.
  */
 export function presentationTools(deps: {
   readProjection: () => Promise<GuestProjection>;
+  results: TurnResults;
 }): ToolSet {
   return {
     suggest_replies: tool({
       description:
-        "Show 1–4 tappable follow-ups under your answer, written as the guest would say them, in the guest's language. Call this last, in the same response as your answer, and never together with another tool.",
+        "Show 1–4 tappable follow-ups under your answer, written as the guest would say them, in the guest's language. Call this last, in the same response as your answer, and never together with another tool except show_results.",
       inputSchema: followUpChips,
       execute: async () => ({ shown: true }),
+    }),
+    show_results: tool({
+      description:
+        "Show the places or events your answer recommends as cards, in the order your answer mentions them: kind 'places' for ids from search_places or list_host_picks, 'events' for ids from search_events, at most 5, only ids returned in this turn. Searches show the guest nothing by themselves. Never show a place you advise against or do not mention. Call it in the same response as your answer, before suggest_replies.",
+      inputSchema: z.object({
+        kind: z.enum(['places', 'events']),
+        ids: z
+          .array(z.string().min(1))
+          .min(1)
+          .max(SHOW_RESULTS_MAX)
+          .refine((ids) => new Set(ids).size === ids.length, 'Each id once.'),
+      }),
+      execute: async ({ kind, ids }, { toolCallId }) => ({
+        shown: deps.results.show(toolCallId, kind, ids),
+      }),
     }),
     ask_choice: tool({
       description:
@@ -57,42 +75,52 @@ const answered = (steps: readonly StepResult<ToolSet>[]) =>
  * (44) also ends it, so "I don't have that" plus the note costs no extra round trip.
  */
 const endsTurn = (name: string) =>
-  isPresentationTool(name) || name === 'show_property_info' || name === GAP_TOOL_NAME;
+  isPresentationTool(name) ||
+  name === 'show_property_info' ||
+  name === 'show_results' ||
+  name === GAP_TOOL_NAME;
 
 /**
  * Stops the loop after a step whose calls are all presentation calls or the property card: the
  * guest answers next, so another model round trip would only cost. A step that also searched
- * continues, so the model sees the results; so does one with an invalid call, so the model can
- * correct it. Chips or a card without any text in the turn continue too, so the guest never gets
+ * continues, so the model sees the results; so does one with an invalid call or a tool error (e.g.
+ * show_results with unknown ids), so the model can correct it. Chips, shown results or a card without any text in the turn continue too, so the guest never gets
  * them without words (a choice card carries its own question).
  */
 export const endsWithPresentation: StopCondition<ToolSet> = ({ steps }) => {
   const calls = steps.at(-1)?.toolCalls ?? [];
   if (calls.length === 0) return false;
   if (!calls.every((c) => !c.invalid && endsTurn(c.toolName))) return false;
+  if (steps.at(-1)?.content.some((p) => p.type === 'tool-error')) return false;
   return answered(steps) || calls.some((c) => c.toolName === 'ask_choice');
 };
 
 /**
- * The step after chips shown without text writes the answer. It is sent without that chips call
- * and may not call tools: after seeing its own chips acknowledged, Sonnet often ends the turn
- * empty, while from the search results it answers. The chips are already shown and stored.
+ * The step after chips or shown results without text writes the answer, and may not call tools.
+ * A chips step is sent without that chips call: after seeing its own chips acknowledged,
+ * Sonnet often ends the turn empty, while from the search results it answers. A step that showed
+ * results keeps its call, so the words match the cards (ticket 65). Both are already stored.
  */
 export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, messages }) => {
   const calls = steps.at(-1)?.toolCalls ?? [];
-  const chips = calls.some((c) => !c.invalid && c.toolName === 'suggest_replies');
-  if (!chips || answered(steps)) return undefined;
+  const shows = calls.some(
+    (c) => !c.invalid && (c.toolName === 'suggest_replies' || c.toolName === 'show_results'),
+  );
+  if (!shows || answered(steps)) return undefined;
+  const keepCall = calls.some((c) => c.toolName === 'show_results');
   const [call, result] = messages.slice(-2);
-  const dropChips = call?.role === 'assistant' && result?.role === 'tool';
+  const dropChips = !keepCall && call?.role === 'assistant' && result?.role === 'tool';
   return { toolChoice: 'none', ...(dropChips ? { messages: messages.slice(0, -2) } : {}) };
 };
 
 const isChips = (part: UIMessage['parts'][number]) =>
-  isToolUIPart(part) && getToolName(part) === 'suggest_replies';
+  isToolUIPart(part) &&
+  (getToolName(part) === 'suggest_replies' || getToolName(part) === 'show_results');
 
 /**
  * A stored answer resent to the model with its chips call after its last text, as if both came
- * in one response. Rescued turns are stored chips-then-text (the guard writes the words after
+ * in one response; a show_results call moves the same way, keeping its place before the chips
+ * (ticket 65). Rescued turns are stored chips-then-text (the guard writes the words after
  * the chips); resent in that order they teach the model to call chips first, until the guard
  * step has nothing it may say and ends empty (ticket 60). Only the request changes: what is
  * stored and streamed keeps its order. A message without text, and every other part, stay as

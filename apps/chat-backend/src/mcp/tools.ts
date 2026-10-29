@@ -86,11 +86,16 @@ export function outputOf(result: CallToolResult): unknown {
 /**
  * Hand conversion into AI SDK tools (not @ai-sdk/mcp). A tool the server marks as guest-confirmed
  * gets no `execute`, so the step stops on it and the turn loop runs its halves (src/loop). A tool
- * error from the server becomes a thrown error, which the model sees as a tool error.
+ * error from the server becomes a thrown error, which the model sees as a tool error. `onOutput`
+ * gets each successful output, so the turn can show search results later (ticket 65).
  */
 export function toAiTools(
   listed: ListedTool[],
-  opts: { tools: TurnTools; onCall?: (name: string) => void },
+  opts: {
+    tools: TurnTools;
+    onCall?: (name: string) => void;
+    onOutput?: (name: string, output: unknown) => void;
+  },
 ): ToolSet {
   const tools: ToolSet = {};
   for (const l of listed) {
@@ -108,7 +113,9 @@ export function toAiTools(
       ...definition,
       execute: async (input: unknown, { toolCallId }) => {
         opts.onCall?.(t.name);
-        return opts.tools.call(l, input, toolCallId);
+        const output = await opts.tools.call(l, input, toolCallId);
+        opts.onOutput?.(t.name, output);
+        return output;
       },
     });
   }

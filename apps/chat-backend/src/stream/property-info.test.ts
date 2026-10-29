@@ -2,6 +2,7 @@ import type { GuestProjection } from '@fetivi/domain';
 import { describe, expect, it } from 'vitest';
 import { componentFor } from './parts';
 import { endsWithPresentation, isPresentationTool, presentationTools } from './presentation';
+import { turnResults } from './results';
 
 const card = {
   topic: 'wifi',
@@ -25,7 +26,10 @@ const projection = {
 
 describe('show_property_info', () => {
   it('fills the card from the unit record, whatever the model says', async () => {
-    const tools = presentationTools({ readProjection: async () => projection });
+    const tools = presentationTools({
+      readProjection: async () => projection,
+      results: turnResults(),
+    });
     const output = await tools.show_property_info?.execute?.({ topic: 'wifi' }, {
       toolCallId: 'c',
       messages: [],
@@ -47,7 +51,11 @@ describe('show_property_info', () => {
 
   it('ends the turn after its text, though it is not a presentation tool', () => {
     expect(isPresentationTool('show_property_info')).toBe(false);
-    const step = { text: 'Here it is.', toolCalls: [{ toolName: 'show_property_info' }] };
+    const step = {
+      text: 'Here it is.',
+      content: [],
+      toolCalls: [{ toolName: 'show_property_info' }],
+    };
     expect(endsWithPresentation({ steps: [step] } as never)).toBe(true);
   });
 });

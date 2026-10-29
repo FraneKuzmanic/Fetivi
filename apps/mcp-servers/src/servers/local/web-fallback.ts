@@ -9,7 +9,7 @@ import { webFallbackInput, webFallbackOutput } from './schemas';
  */
 /** What the model is told when the query breaks the payload contract. */
 export const REPHRASE =
-  'Search only with topic keywords and a place name: no names, numbers, codes, contact or booking details, and nothing about the guests. Rephrase and try once more, or say you have no checked suggestion.';
+  "Search only with topic keywords and a place name: no names, numbers, codes, contact or booking details, and nothing about the guests. Rephrase and try once more, or say you don't have a suggestion for that.";
 
 export const webFallbackTool = guestTool({
   name: 'web_fallback_search',

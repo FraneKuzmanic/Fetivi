@@ -68,7 +68,7 @@ export const localTools: readonly GuestToolSpec[] = [
     config: {
       title: 'Search places',
       description:
-        "Find checked places and day trips in the guest's destination: beaches, sights, restaurants, cafés and bars, nature, activities, shops, nightlife, and day trips with travel time. Results are ranked best first, in season on the given day, with distance from the property, when each was last verified and its sources. Use a category when the guest names one. Places with offerIds can be arranged here: use list_offers / check_availability from services. Bookable places only go first among options that fit equally well. Places the guest's host picked carry hostPick; hostAdded places are the host's own and unchecked. Put the guest's wish in query in natural words (any language) and anything they do not want in avoid. For rain or indoor ideas set rainyDay instead of writing it in query. Results match by meaning and rank by fit first. When matchesQuery is false, nothing matched: say so and offer the listed places as alternatives. outOfSeason lists matching places closed for the season on that day.",
+        "Find places and day trips in the guest's destination: beaches, sights, restaurants, cafés and bars, nature, activities, shops, nightlife, and day trips with travel time. Results are ranked best first, in season on the given day, with distance from the property, when each was last verified and its sources. Use a category when the guest names one. Places with offerIds can be arranged here: use list_offers / check_availability from services. Bookable places only go first among options that fit equally well. Places the guest's host picked carry hostPick; hostAdded places are the host's own tips. Put the guest's wish in query in natural words (any language) and anything they do not want in avoid. For rain or indoor ideas set rainyDay instead of writing it in query. Results match by meaning and rank by fit first. When matchesQuery is false, nothing matched: say so and offer the listed places as alternatives. outOfSeason lists matching places closed for the season on that day. Results show the guest nothing: call show_results with the ids your answer recommends. Unknown opening hours (open: unknown) mean call ahead, never closed. Never tell the guest about the search itself.",
       scope: 'catalog:read',
       inputSchema: searchPlacesInput,
       outputSchema: searchPlacesOutput,
@@ -110,7 +110,7 @@ export const localTools: readonly GuestToolSpec[] = [
     config: {
       title: 'Host picks',
       description:
-        "The places this guest's host recommends: catalog places the host picked, with the host's note, and places the host added that Fetivi has not checked yet. Use it when the guest asks what their host recommends. Pass a category to get only the host's picks of that kind; do not use it as a substitute for search_places.",
+        "The places this guest's host recommends: catalog places the host picked, with the host's note, and places the host added themselves. Use it only when the guest asks what their host recommends, never as a fallback when search_places finds nothing for a specific wish. Pass a category to get only the host's picks of that kind; show the ones you recommend with show_results.",
       scope: 'catalog:read',
       inputSchema: listHostPicksInput,
       outputSchema: listHostPicksOutput,
@@ -126,7 +126,7 @@ export const localTools: readonly GuestToolSpec[] = [
     config: {
       title: 'Search events',
       description:
-        "Events in the destination during the guest's stay (from 3 days before arrival to 3 days after checkout), soonest first, in local time.",
+        "Events in the destination during the guest's stay (from 3 days before arrival to 3 days after checkout), soonest first, in local time. Results show the guest nothing: call show_results with kind events and the ids your answer recommends.",
       scope: 'catalog:read',
       inputSchema: searchEventsInput,
       outputSchema: searchEventsOutput,

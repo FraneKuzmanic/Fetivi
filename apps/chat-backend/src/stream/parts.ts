@@ -12,29 +12,9 @@ import { isPresentationTool } from './presentation';
 type Rec = Record<string, unknown>;
 const isRecord = (v: unknown): v is Rec => typeof v === 'object' && v !== null;
 
+// Searches draw nothing: show_results draws the cards the answer recommends (ticket 65).
 const candidate = (toolName: string, value: unknown): unknown => {
   switch (toolName) {
-    case 'search_places': {
-      const results = isRecord(value) ? value.results : null;
-      if (!Array.isArray(results) || results.length === 0) return null;
-      return {
-        name: 'place-carousel',
-        // Parsing keeps only the fields a card shows; contact details and sources stay in the result.
-        payload: { places: results },
-      };
-    }
-    case 'search_events': {
-      const results = isRecord(value) ? value.results : null;
-      if (!Array.isArray(results) || results.length === 0) return null;
-      // A numbered list with a map when any event has a location; the search returns at most 10.
-      return { name: 'event-list', payload: { events: results.slice(0, 10) } };
-    }
-    case 'list_host_picks': {
-      const results = isRecord(value) ? value.results : null;
-      if (!Array.isArray(results) || results.length === 0) return null;
-      // The carousel holds at most 10; the Guide shows them all.
-      return { name: 'place-carousel', payload: { places: results.slice(0, 10) } };
-    }
     case 'suggest_replies':
       return { name: 'follow-up-chips', payload: value };
     case 'ask_choice':
@@ -80,11 +60,16 @@ const candidate = (toolName: string, value: unknown): unknown => {
       if (!isRecord(value) || value.outcome !== 'sent') return null;
       return { name: 'host-message-sent', payload: { message: value.message } };
     case 'get_plan':
-    case 'update_plan':
+    case 'update_plan': {
       // Both show the plan they return: the whole stay, one day, or the days a change touched.
-      return isRecord(value) && isRecord(value.plan)
-        ? { name: 'day-plan', payload: value.plan }
-        : null;
+      if (!isRecord(value) || !isRecord(value.plan)) return null;
+      // No card when every day it would show is empty (ticket 65).
+      const days = value.plan.days;
+      const empty =
+        Array.isArray(days) &&
+        days.every((d) => isRecord(d) && Array.isArray(d.items) && d.items.length === 0);
+      return empty ? null : { name: 'day-plan', payload: value.plan };
+    }
     case 'get_weather':
       // Parsing keeps what the card shows; symbol codes and forecastUpdatedAt stay in the result.
       return isRecord(value) ? { name: 'weather', payload: value } : null;
@@ -130,10 +115,12 @@ export function componentFor(toolName: string, value: unknown): ComponentPart | 
 /**
  * Adds a `data-component` chunk right after each tool output that maps to a valid component, and a
  * `data-mcp-app` chunk after an external tool's output that shows a widget (`appPart` looks up the
- * call's raw result). Never throws: a payload that cannot be shown is skipped and the stream goes on.
+ * call's raw result). A show_results call's component is the one `shown` kept for it (ticket 65).
+ * Never throws: a payload that cannot be shown is skipped and the stream goes on.
  */
 export function withComponentParts(
   appPart: (toolCallId: string) => unknown = () => undefined,
+  shown: (toolCallId: string) => ComponentPart | undefined = () => undefined,
 ): TransformStream<UIMessageChunk, UIMessageChunk> {
   const calls = new Map<string, { toolName: string; input: unknown }>();
   return new TransformStream({
@@ -148,10 +135,13 @@ export function withComponentParts(
       if (!call) return;
       let data: ComponentPart | null = null;
       try {
-        data = componentFor(
-          call.toolName,
-          isPresentationTool(call.toolName) ? call.input : chunk.output,
-        );
+        data =
+          call.toolName === 'show_results'
+            ? (shown(chunk.toolCallId) ?? null)
+            : componentFor(
+                call.toolName,
+                isPresentationTool(call.toolName) ? call.input : chunk.output,
+              );
       } catch {
         data = null;
       }

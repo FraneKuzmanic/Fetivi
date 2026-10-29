@@ -50,6 +50,7 @@ import {
   weatherNote,
 } from '../prompt/prompt';
 import { presentationTools } from '../stream/presentation';
+import { type TurnResults, turnResults } from '../stream/results';
 import type { ToolBinding, TurnTools } from '../tools/registry';
 import { CHAT_MODEL_ID } from './model';
 
@@ -117,6 +118,8 @@ interface OpenTurn {
   turnTools: TurnTools;
   tools: ToolSet;
   paused: Map<string, FirstPartyListed>;
+  /** This turn's search results, which show_results draws as cards (ticket 65). */
+  results: TurnResults;
   /** Guest tool calls of this turn, for metrics. */
   calls: string[];
   /** `chat.turn`: ended once, by the stream's end or by a throw before streaming. */
@@ -162,9 +165,14 @@ async function withTurn(
     opened = turnTools;
     const listed = await turnTools.list();
     const calls: string[] = [];
-    const mcpTools = toAiTools(listed, { tools: turnTools, onCall: (n) => calls.push(n) });
+    const results = turnResults();
+    const mcpTools = toAiTools(listed, {
+      tools: turnTools,
+      onCall: (n) => calls.push(n),
+      onOutput: results.record,
+    });
     const hostSideTools = {
-      ...presentationTools({ readProjection: () => turnTools.readProjection() }),
+      ...presentationTools({ readProjection: () => turnTools.readProjection(), results }),
       ...gapTools(),
     };
     for (const name of Object.keys(hostSideTools)) {
@@ -179,6 +187,7 @@ async function withTurn(
       turnTools,
       tools: { ...mcpTools, ...hostSideTools },
       paused: pausedTools(listed),
+      results,
       calls,
       span,
       otel,
@@ -281,6 +290,7 @@ const loopDeps = (deps: ChatDeps, turn: OpenTurn, conversation: ConversationRow)
   turnTools: turn.turnTools,
   log: deps.log,
   onCall: (name: string) => turn.calls.push(name),
+  shown: turn.results.shown,
 });
 
 /**

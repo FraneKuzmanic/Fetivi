@@ -86,15 +86,18 @@ describe('toAiTools', () => {
       content: [{ type: 'text', text: '{}' }],
     }));
     const names: string[] = [];
+    const outputs: unknown[] = [];
     const tools = toAiTools([{ server: 'local', tool: def('find') }], {
       tools: turnTools,
       onCall: (n) => names.push(n),
+      onOutput: (n, o) => outputs.push([n, o]),
     });
     expect(tools.find?.description).toBe('find tool');
     const out = await tools.find?.execute?.({ q: 'x' }, execOptions);
     expect(out).toEqual({ echoed: { q: 'x' } });
     expect(callTool).toHaveBeenCalledWith({ name: 'find', arguments: { q: 'x' }, _meta: {} });
     expect(names).toEqual(['find']);
+    expect(outputs).toEqual([['find', { echoed: { q: 'x' } }]]);
   });
 
   it('returns the text when there is no structured content', async () => {
@@ -110,8 +113,10 @@ describe('toAiTools', () => {
       isError: true,
       content: [{ type: 'text', text: 'not permitted' }],
     }));
-    const tools = toAiTools([{ server: 'local', tool: def('t') }], { tools: turnTools });
+    const onOutput = vi.fn();
+    const tools = toAiTools([{ server: 'local', tool: def('t') }], { tools: turnTools, onOutput });
     await expect(tools.t?.execute?.({}, execOptions)).rejects.toThrow('not permitted');
+    expect(onOutput).not.toHaveBeenCalled();
   });
 
   it('leaves a tool the server marks guest-confirmed without execute', () => {

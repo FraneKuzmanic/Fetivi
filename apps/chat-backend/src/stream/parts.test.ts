@@ -1,5 +1,6 @@
 import { weatherToolResult } from '@fetivi/domain';
 import { sampleWeatherReport } from '@fetivi/domain/testing';
+import type { ComponentPart } from '@fetivi/ui/payloads';
 import type { UIMessageChunk } from 'ai';
 import { describe, expect, it } from 'vitest';
 import { componentFor, withComponentParts } from './parts';
@@ -30,81 +31,14 @@ const result = (id: string, title: string) => ({
 });
 
 describe('componentFor', () => {
-  it('turns search results into a carousel, in order, with only the card fields', () => {
-    const part = componentFor('search_places', {
-      date: '2027-07-12',
-      openAt: null,
-      results: [result('1', 'Konoba A'), result('2', 'Konoba B')],
-    });
-    expect(part?.name).toBe('place-carousel');
-    if (part?.name !== 'place-carousel') return;
-    expect(part.payload.places.map((p) => p.title)).toEqual(['Konoba A', 'Konoba B']);
-    const card = part.payload.places[0] as Record<string, unknown>;
-    expect(card.phone).toBeUndefined();
-    expect(card.sources).toBeUndefined();
-    expect(card.staleness).toEqual({ status: 'never_verified' });
-    expect(card.image).toEqual({
-      url: 'https://img.test/a.jpg',
-      licence: null,
-      attribution: 'Ana',
-      sourcePageUrl: null,
-    });
+  it('draws nothing for searches: show_results draws their cards', () => {
+    const results = [result('1', 'Konoba A')];
+    expect(componentFor('search_places', { results })).toBeNull();
+    expect(componentFor('list_host_picks', { results })).toBeNull();
+    expect(componentFor('search_events', { window: {}, results })).toBeNull();
   });
 
-  it('turns host picks into a carousel of at most 10, keeping the note and the badge', () => {
-    const picks = Array.from({ length: 12 }, (_, i) => ({
-      ...result(String(i), `Pick ${i}`),
-      hostPick: { note: 'Go early' },
-      hostAdded: i === 0,
-    }));
-    const part = componentFor('list_host_picks', { results: picks });
-    expect(part?.name).toBe('place-carousel');
-    if (part?.name !== 'place-carousel') return;
-    expect(part.payload.places).toHaveLength(10);
-    expect(part.payload.places[0]).toMatchObject({
-      hostPick: { note: 'Go early' },
-      hostAdded: true,
-    });
-    expect(componentFor('list_host_picks', { results: [] })).toBeNull();
-  });
-
-  it('turns found events into an event list, in order, with only the list fields', () => {
-    const event = (id: string, title: string, location: { lat: number; lng: number } | null) => ({
-      id,
-      title,
-      summary: 'Concerts.',
-      startsAt: '2027-07-10T21:00',
-      endsAt: '2027-07-10T23:00',
-      venueName: 'Kamerlengo Fortress',
-      address: null,
-      location,
-      distanceKm: location ? 0.4 : null,
-      websiteUrl: null,
-      verifiedAt: null,
-      staleness: { status: 'fresh', staleAt: null },
-      sources: [],
-    });
-    const part = componentFor('search_events', {
-      window: { from: '2027-07-07', to: '2027-07-18' },
-      results: [
-        event('1', 'Klapa night', { lat: 43.5, lng: 16.2 }),
-        event('2', 'Fish night', null),
-      ],
-    });
-    expect(part?.name).toBe('event-list');
-    if (part?.name !== 'event-list') return;
-    expect(part.payload.events.map((e) => e.title)).toEqual(['Klapa night', 'Fish night']);
-    const first = part.payload.events[0] as Record<string, unknown>;
-    expect(first.location).toEqual({ lat: 43.5, lng: 16.2 });
-    expect(first.sources).toBeUndefined();
-    expect(componentFor('search_events', { window: {}, results: [] })).toBeNull();
-  });
-
-  it('shows nothing for an empty, invalid or unknown result', () => {
-    expect(componentFor('search_places', { results: [] })).toBeNull();
-    expect(componentFor('search_places', 'text only')).toBeNull();
-    const { title: _t, ...untitled } = result('1', 'x');
-    expect(componentFor('search_places', { results: [untitled] })).toBeNull();
+  it('shows nothing for an unknown result', () => {
     expect(componentFor('get_place', { place: result('1', 'x') })).toBeNull();
   });
 
@@ -124,6 +58,7 @@ describe('componentFor', () => {
 async function run(
   chunks: UIMessageChunk[],
   appPart?: (toolCallId: string) => unknown,
+  shown?: (toolCallId: string) => ComponentPart | undefined,
 ): Promise<UIMessageChunk[]> {
   const out: UIMessageChunk[] = [];
   const stream = new ReadableStream<UIMessageChunk>({
@@ -131,7 +66,7 @@ async function run(
       for (const c of chunks) controller.enqueue(c);
       controller.close();
     },
-  }).pipeThrough(withComponentParts(appPart));
+  }).pipeThrough(withComponentParts(appPart, shown));
   for await (const c of stream) out.push(c);
   return out;
 }
@@ -140,12 +75,13 @@ describe('withComponentParts', () => {
   it('adds the component right after its tool output', async () => {
     const out = await run([
       { type: 'start' },
-      { type: 'tool-input-available', toolCallId: 's', toolName: 'search_places', input: {} },
       {
-        type: 'tool-output-available',
-        toolCallId: 's',
-        output: { results: [result('1', 'Konoba A')] },
+        type: 'tool-input-available',
+        toolCallId: 'p',
+        toolName: 'ask_choice',
+        input: { question: 'Which?', options: ['a', 'b'] },
       },
+      { type: 'tool-output-available', toolCallId: 'p', output: { shown: true } },
       {
         type: 'tool-input-available',
         toolCallId: 'r',
@@ -165,11 +101,42 @@ describe('withComponentParts', () => {
       'data-component',
       'finish',
     ]);
-    expect(out[3]).toMatchObject({ id: 's', data: { name: 'place-carousel' } });
+    expect(out[3]).toMatchObject({ id: 'p', data: { name: 'choice-card' } });
     expect(out[6]).toMatchObject({
       id: 'r',
       data: { name: 'follow-up-chips', payload: { replies: ['Cheaper?'] } },
     });
+  });
+
+  it('adds the component show_results chose after its output, and nothing without one', async () => {
+    const carousel = componentFor('suggest_replies', { replies: ['x'] });
+    const chunks: UIMessageChunk[] = [
+      { type: 'tool-input-available', toolCallId: 's', toolName: 'search_places', input: {} },
+      {
+        type: 'tool-output-available',
+        toolCallId: 's',
+        output: { results: [result('1', 'Konoba A')] },
+      },
+      {
+        type: 'tool-input-available',
+        toolCallId: 'v',
+        toolName: 'show_results',
+        input: { kind: 'places', ids: ['1'] },
+      },
+      { type: 'tool-output-available', toolCallId: 'v', output: { shown: 1 } },
+    ];
+    const out = await run(chunks, undefined, (id) =>
+      id === 'v' && carousel ? carousel : undefined,
+    );
+    expect(out.map((c) => c.type)).toEqual([
+      'tool-input-available',
+      'tool-output-available',
+      'tool-input-available',
+      'tool-output-available',
+      'data-component',
+    ]);
+    expect(out[4]).toMatchObject({ id: 'v', data: carousel });
+    expect(await run(chunks)).toEqual(chunks);
   });
 
   it('leaves streams without components unchanged', async () => {
@@ -345,6 +312,23 @@ describe('day plan component', () => {
   it('shows the plan of get_plan and update_plan as a day plan', () => {
     expect(componentFor('get_plan', { plan })).toEqual({ name: 'day-plan', payload: plan });
     expect(componentFor('update_plan', { plan })).toEqual({ name: 'day-plan', payload: plan });
+  });
+
+  it('shows nothing when every day it would show is empty', () => {
+    const empty = {
+      ...plan,
+      days: [
+        { date: '2027-07-15', items: [] },
+        { date: '2027-07-16', items: [] },
+      ],
+    };
+    expect(componentFor('get_plan', { plan: empty })).toBeNull();
+    expect(componentFor('update_plan', { plan: empty })).toBeNull();
+    const oneFull = { ...plan, days: [...empty.days, ...plan.days] };
+    expect(componentFor('get_plan', { plan: oneFull })).toEqual({
+      name: 'day-plan',
+      payload: oneFull,
+    });
   });
 
   it('shows nothing for an error text or a malformed plan', () => {
