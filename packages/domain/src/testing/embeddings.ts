@@ -3,7 +3,7 @@
 import {
   type Embedder,
   type EmbeddingInput,
-  EmbeddingUnavailableError,
+  EmbeddingNotConfiguredError,
 } from '../embeddings/voyage';
 
 const FAKE_MODEL = 'fake-1';
@@ -53,7 +53,7 @@ export function unavailableEmbedder(): Embedder {
   return {
     model: FAKE_MODEL,
     async embed() {
-      throw new EmbeddingUnavailableError('no key');
+      throw new EmbeddingNotConfiguredError();
     },
   };
 }

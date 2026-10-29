@@ -19,6 +19,14 @@ export class EmbeddingUnavailableError extends Error {
   override name = 'EmbeddingUnavailableError';
 }
 
+/** No key configured: unavailable on every call, so jobs stop quietly instead of retrying. */
+export class EmbeddingNotConfiguredError extends EmbeddingUnavailableError {
+  override name = 'EmbeddingNotConfiguredError';
+  constructor() {
+    super('no key');
+  }
+}
+
 const voyageResponse = z.object({
   data: z.array(z.object({ embedding: z.array(z.number()), index: z.number().int() })),
   usage: z.object({ total_tokens: z.number() }),
@@ -48,7 +56,7 @@ export function createVoyageEmbedder(options: VoyageEmbedderOptions): Embedder {
   return {
     model,
     async embed(texts, input) {
-      if (!options.apiKey) throw new EmbeddingUnavailableError('no key');
+      if (!options.apiKey) throw new EmbeddingNotConfiguredError();
       if (texts.length === 0) return { vectors: [], tokens: 0 };
       let response: Response;
       try {

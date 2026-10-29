@@ -71,7 +71,7 @@ export const RELEVANCE_CASES: RelevanceCase[] = [
   { query: 'Konoba Mala', expect: [{ first: 'Konoba Mala' }] },
   { query: 'bus 37', among: 'all', expect: [{ first: 'Split–Trogir city bus 37' }] },
   { query: 'xqzt vlorp', expect: [{ none: true }] },
-  // The chat test's queries (findings F1).
+  // The queries the live chat test sends.
   { query: 'fresh fish seafood', expect: [{ top: 2, includes: 'Konoba Mala' }] },
   { query: 'vegetarian pizza pasta', expect: [{ top: 2, includes: 'Pizzeria Kampanel' }] },
   { query: 'family kids', expect: [{ top: 3, every: notNightlife, label: 'no nightlife' }] },

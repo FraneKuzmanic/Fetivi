@@ -119,7 +119,7 @@ describe('relevanceOf', () => {
   it('falls back to words without a query vector or without record vectors', () => {
     const texts = ['Kamerlengo Fortress', 'A Venetian fortress'];
     const noQueryVector = relevanceOf(input({ query: 'fortress', texts }));
-    expect(noQueryVector).toMatchObject({ matches: true });
+    expect(noQueryVector).toMatchObject({ matches: true, semantic: false });
     expect(noQueryVector.score).toBeCloseTo(RELEVANCE.lexicalBase + RELEVANCE.wordBoost);
     expect(relevanceOf(input({ queryVector: [1, 0], query: 'fortress', texts })).matches).toBe(
       true,
@@ -128,6 +128,7 @@ describe('relevanceOf', () => {
       score: 0,
       matches: false,
       order: 0,
+      semantic: false,
     });
   });
 
@@ -186,7 +187,12 @@ describe('rankByRelevance', () => {
 });
 
 describe('matcherFor', () => {
-  const r = (score: number) => ({ score, matches: score >= RELEVANCE.cutoff, order: score });
+  const r = (score: number, semantic = true) => ({
+    score,
+    matches: score >= RELEVANCE.cutoff,
+    order: score,
+    semantic,
+  });
 
   it('drops matches far below the best one', () => {
     const named = r(0.9);
@@ -201,5 +207,20 @@ describe('matcherFor', () => {
     const matches = matcherFor([r(0.26), weak, r(0.1)]);
     expect(matches(weak)).toBe(true);
     expect(matches(r(0.1))).toBe(false);
+  });
+
+  it('never hides a record without a vector behind a well-embedded one', () => {
+    // A word-only record tops out at lexicalBase + wordBoost: 0.3, under 0.6 of a 0.52 cosine.
+    const wordsOnly = r(RELEVANCE.lexicalBase + RELEVANCE.wordBoost, false);
+    const matches = matcherFor([r(0.52), wordsOnly]);
+    expect(matches(wordsOnly)).toBe(true);
+  });
+
+  it('still drops word-only matches far below a named word-only match', () => {
+    const named = r(RELEVANCE.lexicalBase + RELEVANCE.nameBoost + RELEVANCE.wordBoost, false);
+    const weak = r(RELEVANCE.lexicalBase, false);
+    const matches = matcherFor([named, weak]);
+    expect(matches(named)).toBe(true);
+    expect(matches(weak)).toBe(false);
   });
 });

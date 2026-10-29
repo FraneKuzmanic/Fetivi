@@ -110,7 +110,7 @@ export interface PlaceSummary {
 
 export interface PlaceQuery {
   query?: string;
-  /** What the guest does not want; matching places rank last, they are not removed. Needs `query`. */
+  /** What the guest does not want; matching places rank last, they are not removed. Ignored without `query`. */
   avoid?: string;
   category?: PlaceCategory | 'day_trip';
   maxDistanceKm?: number;
@@ -431,7 +431,7 @@ export async function searchPlaces(
     : new Map<string, SearchTexts>();
   // Without words every place matches and keeps its usual order.
   const relevanceFor = (t: SearchTexts | undefined): Relevance =>
-    wish ? relevanceIn(wish, t) : { score: 0, matches: true, order: 0 };
+    wish ? relevanceIn(wish, t) : { score: 0, matches: true, order: 0, semantic: false };
 
   const offerIds = await offerIdsByPlace(
     db,

@@ -136,6 +136,8 @@ export interface Relevance {
   matches: boolean;
   /** The score less the `avoid` penalty: what results sort by. */
   order: number;
+  /** Scored on vectors; false when on words only (no vector yet, or no query vector). */
+  semantic: boolean;
 }
 
 export function relevanceOf(i: RelevanceInput): Relevance {
@@ -158,16 +160,21 @@ export function relevanceOf(i: RelevanceInput): Relevance {
         ? r.avoidWeight * Math.max(0, bestCosine(i.avoidVector, i.vectors))
         : r.avoidWeight * lexicalScore(i.avoid, i.texts);
   }
-  return { score, matches: score >= r.cutoff, order: score - penalty };
+  return { score, matches: score >= r.cutoff, order: score - penalty, semantic };
 }
 
 /**
  * Whether a record matches, given every candidate of the search: it reaches the cutoff and
- * `relative` of the best score (including candidates dropped only for the season).
+ * `relative` of the best score (including candidates dropped only for the season). Vector and
+ * word-only scores are on different scales, so each is measured against the best of its own kind:
+ * a record without a vector yet is never hidden by a well-embedded neighbour.
  */
 export function matcherFor(all: Relevance[]): (r: Relevance) => boolean {
-  const best = all.reduce((max, r) => Math.max(max, r.score), 0);
-  return (r) => r.matches && r.score >= RELEVANCE.relative * best;
+  const bestOf = (semantic: boolean) =>
+    all.reduce((max, r) => (r.semantic === semantic ? Math.max(max, r.score) : max), 0);
+  const best = { semantic: bestOf(true), words: bestOf(false) };
+  return (r) =>
+    r.matches && r.score >= RELEVANCE.relative * (r.semantic ? best.semantic : best.words);
 }
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));

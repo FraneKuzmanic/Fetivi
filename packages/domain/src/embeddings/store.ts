@@ -6,7 +6,7 @@ import { hostPlaces, hostPlaceTranslations } from '../db/schema/host-places';
 import { type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
 import type { GuestLanguage } from '../property/vocabulary';
 import { EMBEDDING_LIMITS } from './vocabulary';
-import { type Embedder, EmbeddingUnavailableError } from './voyage';
+import { type Embedder, EmbeddingNotConfiguredError } from './voyage';
 
 // Search vectors of published text (ticket 61). A job embeds a translation when its revision is
 // published; the backfill embeds whatever is still missing for the current model. Texts are
@@ -81,7 +81,7 @@ async function embedAndStore(
       'document',
     );
   } catch (error) {
-    if (error instanceof EmbeddingUnavailableError && error.message === 'no key') {
+    if (error instanceof EmbeddingNotConfiguredError) {
       return { result: 'not-configured', tokens: 0 };
     }
     throw error;

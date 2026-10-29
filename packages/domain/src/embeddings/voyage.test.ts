@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { EMBEDDING_MODEL, VOYAGE_ENDPOINT } from './vocabulary';
-import { createVoyageEmbedder, EmbeddingUnavailableError, parseVoyageResponse } from './voyage';
+import {
+  createVoyageEmbedder,
+  EmbeddingNotConfiguredError,
+  EmbeddingUnavailableError,
+  parseVoyageResponse,
+} from './voyage';
 
 function stubFetch(respond: () => Response | Promise<Response>) {
   const calls: { url: string; init: RequestInit | undefined }[] = [];
@@ -62,7 +67,9 @@ describe('createVoyageEmbedder', () => {
   it('is unavailable without a key and sends nothing', async () => {
     const fetch = stubFetch(() => new Response(voyageBody([])));
     const embedder = createVoyageEmbedder({ fetch, apiKey: undefined });
-    await expect(embedder.embed(['fish'], 'query')).rejects.toThrow(/^no key$/);
+    const error = await embedder.embed(['fish'], 'query').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(EmbeddingNotConfiguredError);
+    expect(error).toBeInstanceOf(EmbeddingUnavailableError);
     expect(fetch.calls).toHaveLength(0);
   });
 

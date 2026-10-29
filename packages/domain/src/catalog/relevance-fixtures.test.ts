@@ -63,7 +63,13 @@ function search(c: RelevanceCase) {
     .filter((r) => !c.rainyDay || r.record.rainyDay);
   const { query } = c;
   if (query === undefined) {
-    return candidates.map((r) => ({ record: r.record, score: 0, order: 0, matches: true }));
+    return candidates.map((r) => ({
+      record: r.record,
+      score: 0,
+      order: 0,
+      matches: true,
+      semantic: false,
+    }));
   }
   const queryVector = vectorOf(query);
   const avoidVector = c.avoid ? vectorOf(c.avoid) : null;

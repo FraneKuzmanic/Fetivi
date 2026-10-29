@@ -36,7 +36,7 @@ export const searchPlacesInput = z.object({
   avoid: searchWish
     .optional()
     .describe(
-      'What the guest does not want, in natural words, e.g. "fish, seafood". Matching places go last; they are not removed.',
+      'What the guest does not want, in natural words, e.g. "fish, seafood". Matching places go last; they are not removed. Only used together with query.',
     ),
   rainyDay: z
     .boolean()
