@@ -423,7 +423,7 @@ export const fr: Messages = {
     checkoutClosed:
       'Le délai de paiement est écoulé. Retrouvez l’état de la réservation dans Mon séjour.',
     details: 'Détails de cette réservation',
-    detailsHint: 'Lieu de prise en charge, bagages, tout ce qu’il doit savoir.',
+    detailsHint: 'Tout ce qu’il faut savoir pour cette réservation.',
     detailsCount: '{{count}} / {{max}}',
     time: 'Heure',
     timeHint: 'Quand cela vous convient.',
@@ -431,7 +431,7 @@ export const fr: Messages = {
     warningsHeading: 'Avant de confirmer',
     warnCheckout: 'C’est votre jour de départ : vous devez libérer le logement avant {{time}}.',
     warnCheckoutDay: 'C’est votre jour de départ.',
-    warnWeather: '{{level}} du DHMZ : {{event}}',
+    warnWeather: '{{event}} (DHMZ)',
     yourNote: 'Votre note',
   },
   trip: {

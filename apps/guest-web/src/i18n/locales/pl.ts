@@ -416,7 +416,7 @@ export const pl: Messages = {
     confirmOnline: 'Przejdź do płatności',
     checkoutClosed: 'Czas na płatność minął. Stan rezerwacji sprawdzisz w zakładce Moja podróż.',
     details: 'Szczegóły tej rezerwacji',
-    detailsHint: 'Miejsce odbioru, bagaż, wszystko, co powinien wiedzieć.',
+    detailsHint: 'Wszystko, co powinni wiedzieć o tej rezerwacji.',
     detailsCount: '{{count}} / {{max}}',
     time: 'Godzina',
     timeHint: 'Kiedy ci pasuje.',
@@ -424,7 +424,7 @@ export const pl: Messages = {
     warningsHeading: 'Zanim potwierdzisz',
     warnCheckout: 'To dzień twojego wymeldowania: musisz opuścić kwaterę do {{time}}.',
     warnCheckoutDay: 'To dzień twojego wymeldowania.',
-    warnWeather: '{{level}} od DHMZ: {{event}}',
+    warnWeather: '{{event}} (DHMZ)',
     yourNote: 'Twoja notatka',
   },
   trip: {

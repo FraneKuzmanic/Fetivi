@@ -72,6 +72,20 @@ const NOT_CONFIRMED = 'Not confirmed; nothing was booked.';
 
 const emptyAssistant = (): UIMessage => ({ id: '', role: 'assistant', parts: [] });
 
+const hasText = (message: UIMessage) =>
+  message.parts.some((p) => p.type === 'text' && p.text.trim().length > 0);
+
+/**
+ * The message as it stood before the model's step that called `toolCallId`: the parts before
+ * that call, without the step's start. The words step sees the turn without the paused call.
+ */
+function beforeCall(message: UIMessage, toolCallId: string): UIMessage {
+  const at = message.parts.findIndex((p) => 'toolCallId' in p && p.toolCallId === toolCallId);
+  let end = at < 0 ? message.parts.length : at;
+  while (end > 0 && ['step-start', 'custom'].includes(message.parts[end - 1]?.type ?? '')) end--;
+  return { ...message, parts: message.parts.slice(0, end) };
+}
+
 /** Applies chunks to a copy of the message, as the browser does with the same chunks. */
 async function applyChunks(message: UIMessage, chunks: UIMessageChunk[]): Promise<UIMessage> {
   const next = structuredClone(message);
@@ -162,11 +176,15 @@ export function createLoop(
     current = await applyChunks(current, chunks);
   }
 
-  /** One streamText run; false when the model failed. */
-  async function segment(): Promise<boolean> {
+  /**
+   * One streamText run; false when the model failed. With `wordsBefore`, the model writes only
+   * text, seeing the turn as it stood before that paused call.
+   */
+  async function segment(wordsBefore?: string): Promise<boolean> {
+    const message = wordsBefore ? beforeCall(current, wordsBefore) : current;
     // Resent with each answer's chips after its text; `current` itself keeps stream order.
     const messages = await convertToModelMessages(
-      (current.parts.length > 0 ? [...history, current] : history).map(chipsAfterText),
+      (message.parts.length > 0 ? [...history, message] : history).map(chipsAfterText),
       { tools: deps.tools },
     );
     let outcome = { status: 'unknown' } as UIMessageStreamOutcome;
@@ -179,6 +197,7 @@ export function createLoop(
       tools: deps.tools,
       stopWhen: [isStepCount(MAX_STEPS - result.steps), endsWithPresentation],
       prepareStep: textAfterSilentChips,
+      ...(wordsBefore ? { toolChoice: 'none' as const } : {}),
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       providerOptions: CHAT_PROVIDER_OPTIONS,
       onError: ({ error }) => deps.log.error({ err: error }, 'chat turn failed'),
@@ -226,6 +245,12 @@ export function createLoop(
       if (fresh.length === 0) return;
       let waiting = false;
       for (const open of fresh) {
+        // A booking card never comes without words (ticket 62): when the model called
+        // create_order before saying anything, one text-only step says the price and the
+        // warnings first, from the turn without that call; the card follows it.
+        if (open.toolName === 'create_order' && !hasText(current)) {
+          if (!(await segment(open.part.toolCallId))) return;
+        }
         deps.onCall(open.toolName);
         const call = pausedCall(open);
         const outcome = await deps.turnTools.firstHalf(call);

@@ -418,7 +418,7 @@ export const hu: Messages = {
     confirmOnline: 'Tovább a fizetéshez',
     checkoutClosed: 'A fizetési idő lejárt. A foglalás állapotát az Utazásom részben látod.',
     details: 'A foglalás részletei',
-    detailsHint: 'Felvétel helye, csomagok, minden, amit tudnia kell.',
+    detailsHint: 'Minden, amit tudniuk kell ehhez a foglaláshoz.',
     detailsCount: '{{count}} / {{max}}',
     time: 'Időpont',
     timeHint: 'Mikor lenne jó neked.',
@@ -426,7 +426,7 @@ export const hu: Messages = {
     warningsHeading: 'Mielőtt megerősíted',
     warnCheckout: 'Ez a kijelentkezésed napja: {{time}}-ig el kell hagynod a szállást.',
     warnCheckoutDay: 'Ez a kijelentkezésed napja.',
-    warnWeather: '{{level}} a DHMZ-től: {{event}}',
+    warnWeather: '{{event}} (DHMZ)',
     yourNote: 'A megjegyzésed',
   },
   trip: {

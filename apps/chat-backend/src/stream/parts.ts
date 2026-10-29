@@ -22,7 +22,11 @@ const candidate = (toolName: string, value: unknown): unknown => {
     case 'check_availability': {
       if (!isRecord(value)) return null;
       const starts = value.starts;
-      if (!Array.isArray(starts) || starts.length === 0) return null;
+      // A day without start times (on request) has nothing to pick: the guest names the time,
+      // and "Any time" would contradict the card's time field (ticket 62).
+      if (!Array.isArray(starts) || !starts.some((s) => isRecord(s) && s.startsAtLocal)) {
+        return null;
+      }
       return {
         name: 'availability-picker',
         // The picker shows local times and places left; instants stay in the result.

@@ -205,6 +205,11 @@ describe('booking components', () => {
     expect(componentFor('check_availability', { ...day, starts: [] })).toBeNull();
   });
 
+  it('shows nothing for a day whose start has no time (on request)', () => {
+    const untimed = { slotId: 's-1', startsAt: null, startsAtLocal: null, remaining: null };
+    expect(componentFor('check_availability', { ...day, starts: [untimed] })).toBeNull();
+  });
+
   it('shows a receipt only for an Order that was made', () => {
     expect(componentFor('create_order', { outcome: 'ordered', order: ORDER })).toEqual({
       name: 'receipt-card',

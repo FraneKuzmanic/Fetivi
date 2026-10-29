@@ -17,8 +17,8 @@ export type CardAnswer = {
 
 /**
  * An Order confirmation card from its stored part. The payload is checked again; the form holds
- * the server's fields (email, name and phone, plus the note and the wished time when asked). Without a draft nothing can be shown, so
- * nothing renders and the next message cancels the call.
+ * the server's fields (email, name and phone, plus the note and the wished time when asked).
+ * Without a draft nothing can be shown, so nothing renders and the next message cancels the call.
  */
 export function ConfirmationPart({
   data,

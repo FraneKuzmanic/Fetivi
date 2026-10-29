@@ -411,7 +411,7 @@ export const en = {
     confirmOnline: 'Continue to payment',
     checkoutClosed: "This payment window has closed. Check My trip for the booking's status.",
     details: 'Details for this booking',
-    detailsHint: 'Pickup place, luggage, anything they need to know.',
+    detailsHint: 'Anything they need to know for this booking.',
     detailsCount: '{{count}} / {{max}}',
     time: 'Time',
     timeHint: 'When you would like it.',
@@ -419,7 +419,7 @@ export const en = {
     warningsHeading: 'Before you confirm',
     warnCheckout: 'This is your checkout day: you need to be out by {{time}}.',
     warnCheckoutDay: 'This is your checkout day.',
-    warnWeather: '{{level}} from DHMZ: {{event}}',
+    warnWeather: '{{event}} (DHMZ)',
     yourNote: 'Your note',
   },
   trip: {

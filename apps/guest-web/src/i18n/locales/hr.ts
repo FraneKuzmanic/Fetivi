@@ -415,7 +415,7 @@ export const hr: Messages = {
     checkoutClosed:
       'Vrijeme za plaćanje je isteklo. Stanje rezervacije pogledajte u Mojem putovanju.',
     details: 'Detalji za ovu rezervaciju',
-    detailsHint: 'Mjesto preuzimanja, prtljaga, sve što trebaju znati.',
+    detailsHint: 'Sve što trebaju znati za ovu rezervaciju.',
     detailsCount: '{{count}} / {{max}}',
     time: 'Vrijeme',
     timeHint: 'Kada vam odgovara.',
@@ -423,7 +423,7 @@ export const hr: Messages = {
     warningsHeading: 'Prije nego potvrdite',
     warnCheckout: 'Ovo je dan vaše odjave: smještaj trebate napustiti do {{time}}.',
     warnCheckoutDay: 'Ovo je dan vaše odjave.',
-    warnWeather: '{{level}} DHMZ-a: {{event}}',
+    warnWeather: '{{event}} (DHMZ)',
     yourNote: 'Vaša napomena',
   },
   trip: {

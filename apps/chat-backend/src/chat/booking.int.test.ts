@@ -46,10 +46,20 @@ const usage = () => ({
   outputTokens: { total: 10, text: 10, reasoning: undefined },
 });
 
-const callsStep = (calls: { id: string; toolName: string; input: unknown }[]): StreamResult => ({
+type Call = { id: string; toolName: string; input: unknown };
+
+/** One step's calls, after `text` when given. */
+const callsStep = (calls: Call[], text?: string): StreamResult => ({
   stream: simulateReadableStream({
     chunks: [
       { type: 'stream-start', warnings: [] },
+      ...(text
+        ? [
+            { type: 'text-start', id: 't0' },
+            { type: 'text-delta', id: 't0', delta: text },
+            { type: 'text-end', id: 't0' },
+          ]
+        : []),
       ...calls.map((c) => ({
         type: 'tool-call',
         toolCallId: c.id,
@@ -128,6 +138,9 @@ const sendAnswer = (s: Setup, answer: Record<string, unknown>) =>
   write('POST', s.t.app, '/api/chat', { answer }, { cookie: s.cookie });
 
 const order = (id: string, input: unknown) => ({ id, toolName: 'create_order', input });
+const PRICE_SAID = 'The trip is €90 for two.';
+/** create_order after the words a booking card needs (ticket 62). */
+const orderStep = (...calls: Call[]) => callsStep(calls, PRICE_SAID);
 
 async function stored(s: Setup) {
   const conversation = await findConversation(s.t.db, s.space.space.id);
@@ -159,7 +172,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
   it('asks for confirmation, books on the tap and resumes the same message (E2E)', async () => {
     const s = await setup(transport);
     s.steps.push(
-      callsStep([order('call-order', s.args)]),
+      orderStep(order('call-order', s.args)),
       textStep('Your Blue Lagoon trip is booked for two.'),
     );
 
@@ -271,10 +284,10 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
   it('pauses only the write tool when it is called with a read tool', async () => {
     const s = await setup(transport);
     s.steps.push(
-      callsStep([
-        { id: 'call-list', toolName: 'list_offers', input: {} },
-        order('call-order', s.args),
-      ]),
+      callsStep(
+        [{ id: 'call-list', toolName: 'list_offers', input: {} }, order('call-order', s.args)],
+        PRICE_SAID,
+      ),
     );
     const chunks = readStream(await sendText(s, 'What boat trips are there? Book the first.'));
     expect(ofType(chunks, 'tool-output-available').map((c) => c.toolCallId)).toEqual(['call-list']);
@@ -282,9 +295,40 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
     expect(s.model.doStreamCalls).toHaveLength(1);
   });
 
+  it('writes the words first when create_order comes without them, then shows the card', async () => {
+    const s = await setup(transport);
+    s.steps.push(callsStep([order('call-order', s.args)]), textStep(PRICE_SAID));
+    const chunks = readStream(await sendText(s, 'Book the boat trip for two'));
+    // The words step may only write, and sees the turn without the paused call.
+    expect(s.model.doStreamCalls).toHaveLength(2);
+    expect(s.model.doStreamCalls[1]?.toolChoice).toEqual({ type: 'none' });
+    expect(JSON.stringify(s.model.doStreamCalls[1]?.prompt)).not.toContain('call-order');
+    // The words come before the card, which belongs to the model's own call.
+    const said = chunks.findIndex((c) => 'delta' in c && c.delta === PRICE_SAID);
+    const card = chunks.findIndex((c) => c.type === 'data-elicitation');
+    expect(said).toBeGreaterThan(-1);
+    expect(card).toBeGreaterThan(said);
+    expect(cards(chunks).map((c) => c.id)).toEqual(['call-order']);
+    expect((await pendingOf(s)).map((p) => p.state)).toEqual(['pending']);
+    const parts = (await stored(s)).at(-1)?.parts ?? [];
+    expect(parts.map((p) => p.type).filter((t) => t !== 'step-start')).toEqual([
+      'tool-create_order',
+      'text',
+      'data-elicitation',
+    ]);
+  });
+
+  it('asks for no extra words when the step already said them', async () => {
+    const s = await setup(transport);
+    s.steps.push(orderStep(order('call-order', s.args)));
+    const chunks = readStream(await sendText(s, 'Book the boat trip for two'));
+    expect(s.model.doStreamCalls).toHaveLength(1);
+    expect(cards(chunks).map((c) => c.id)).toEqual(['call-order']);
+  });
+
   it('a decline books nothing, releases the record and the model goes on', async () => {
     const s = await setup(transport);
-    s.steps.push(callsStep([order('call-order', s.args)]), textStep('Nothing was booked.'));
+    s.steps.push(orderStep(order('call-order', s.args)), textStep('Nothing was booked.'));
     await sendText(s, 'Book it');
     const chunks = readStream(await sendAnswer(s, { toolCallId: 'call-order', action: 'decline' }));
     expect(ofType(chunks, 'tool-output-available')[0]).toMatchObject({
@@ -298,7 +342,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
 
   it('a second tap finds nothing to answer and books once', async () => {
     const s = await setup(transport);
-    s.steps.push(callsStep([order('call-order', s.args)]), textStep('Booked.'));
+    s.steps.push(orderStep(order('call-order', s.args)), textStep('Booked.'));
     await sendText(s, 'Book it');
     const tap = { toolCallId: 'call-order', action: 'accept', content: CONTACT };
     expect((await sendAnswer(s, tap)).statusCode).toBe(200);
@@ -309,7 +353,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
 
   it('answers 409 for an unknown call and 400 for a forged body', async () => {
     const s = await setup(transport);
-    s.steps.push(callsStep([order('call-order', s.args)]));
+    s.steps.push(orderStep(order('call-order', s.args)));
     const none = await sendAnswer(s, { toolCallId: 'call-order', action: 'accept' });
     expect([none.statusCode, none.json()]).toEqual([409, { error: 'nothing-to-answer' }]);
     await sendText(s, 'Book it');
@@ -328,7 +372,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
 
   it('new text while a card is open cancels it first, so no call is left without a result', async () => {
     const s = await setup(transport);
-    s.steps.push(callsStep([order('call-order', s.args)]), textStep('Sure, what else?'));
+    s.steps.push(orderStep(order('call-order', s.args)), textStep('Sure, what else?'));
     await sendText(s, 'Book it');
     const chunks = readStream(await sendText(s, 'Actually, what about restaurants?'));
     expect(chunks).toContainEqual(expect.objectContaining({ delta: 'Sure, what else?' }));
@@ -360,7 +404,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
   it('a refusal of the first half goes back to the model in the same response', async () => {
     const s = await setup(transport);
     s.steps.push(
-      callsStep([order('call-order', { ...s.args, date: plusDays(s.day, 30), slotId: undefined })]),
+      orderStep(order('call-order', { ...s.args, date: plusDays(s.day, 30), slotId: undefined })),
       textStep('That day is outside your stay.'),
     );
     const chunks = readStream(await sendText(s, 'Book it next month'));
@@ -376,7 +420,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
 
   it('a tap after the confirmation expired books nothing and the model explains', async () => {
     const s = await setup(transport);
-    s.steps.push(callsStep([order('call-order', s.args)]), textStep('That confirmation expired.'));
+    s.steps.push(orderStep(order('call-order', s.args)), textStep('That confirmation expired.'));
     await sendText(s, 'Book it');
     // The pending record's TTL runs on the app clock (the requestState codec on the real one).
     s.t.clock.advance(11 * 60_000);
@@ -392,7 +436,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
   it('two cards in one step: the first answer waits for the second before the model runs', async () => {
     const s = await setup(transport);
     s.steps.push(
-      callsStep([order('call-a', s.args), order('call-b', { ...s.args, quantity: 1 })]),
+      orderStep(order('call-a', s.args), order('call-b', { ...s.args, quantity: 1 })),
       textStep('Both are booked.'),
     );
     const first = readStream(await sendText(s, 'Book two trips'));
@@ -412,7 +456,7 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
 
   it('a model failure after the tap stores nothing; the next tap returns the same Order', async () => {
     const s = await setup(transport);
-    s.steps.push(callsStep([order('call-order', s.args)]));
+    s.steps.push(orderStep(order('call-order', s.args)));
     const failing = {
       stream: new ReadableStream({
         start(controller) {

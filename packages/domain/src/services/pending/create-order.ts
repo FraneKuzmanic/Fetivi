@@ -42,7 +42,8 @@ import { ORDER_HOLD_MINUTES, PENDING_TTL_SECONDS, type PendingState } from './vo
 // The `create_order` halves of the approved-action binding (architecture §4.3). The first half
 // stores a pending record and nothing else; the guest's tap completes exactly that record, once.
 // Model-sent parameters never reach `completeOrder`: it reads the stored draft and the guest's
-// card answers only (contact, note, time). Lock order: pending row, then the machine's (Offer, then slot).
+// card answers only (contact, note, time). Lock order: pending row, then the machine's (Offer,
+// then slot).
 
 export type ServiceRuleCode =
   | 'offer-not-visible'

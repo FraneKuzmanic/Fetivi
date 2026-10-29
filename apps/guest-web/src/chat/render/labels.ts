@@ -180,8 +180,8 @@ export function confirmationLabels(t: TFunction, language: string): Confirmation
         time
           ? t('order.warnCheckout', { time: f.time(`2000-01-01T${time}`) })
           : t('order.warnCheckoutDay'),
-      weather: (level, event) =>
-        t('order.warnWeather', { level: t(`weather.level_${level}`), event }),
+      // DHMZ's event already names its level ("Yellow wind warning"); the line's weight shows it.
+      weather: (_level, event) => t('order.warnWeather', { event }),
     },
   };
 }

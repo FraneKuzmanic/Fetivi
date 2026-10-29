@@ -426,7 +426,7 @@ export const de: Messages = {
     checkoutClosed:
       'Die Zeit für die Zahlung ist abgelaufen. Den Stand der Buchung sehen Sie unter Meine Reise.',
     details: 'Details zu dieser Buchung',
-    detailsHint: 'Abholort, Gepäck, alles, was man wissen sollte.',
+    detailsHint: 'Alles, was man für diese Buchung wissen sollte.',
     detailsCount: '{{count}} / {{max}}',
     time: 'Uhrzeit',
     timeHint: 'Wann es Ihnen passt.',
@@ -434,7 +434,7 @@ export const de: Messages = {
     warningsHeading: 'Bevor Sie bestätigen',
     warnCheckout: 'An diesem Tag reisen Sie ab: Sie müssen die Unterkunft bis {{time}} verlassen.',
     warnCheckoutDay: 'An diesem Tag reisen Sie ab.',
-    warnWeather: '{{level}} vom DHMZ: {{event}}',
+    warnWeather: '{{event}} (DHMZ)',
     yourNote: 'Ihre Notiz',
   },
   trip: {

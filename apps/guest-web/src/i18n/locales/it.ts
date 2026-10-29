@@ -422,7 +422,7 @@ export const it: Messages = {
     checkoutClosed:
       'Il tempo per pagare è scaduto. Lo stato della prenotazione è in Il mio viaggio.',
     details: 'Dettagli per questa prenotazione',
-    detailsHint: 'Luogo di ritiro, bagagli, tutto quello che deve sapere.',
+    detailsHint: 'Tutto quello che devono sapere per questa prenotazione.',
     detailsCount: '{{count}} / {{max}}',
     time: 'Orario',
     timeHint: 'Quando ti farebbe comodo.',
@@ -430,7 +430,7 @@ export const it: Messages = {
     warningsHeading: 'Prima di confermare',
     warnCheckout: 'È il giorno del check-out: devi lasciare l’alloggio entro le {{time}}.',
     warnCheckoutDay: 'È il giorno del check-out.',
-    warnWeather: '{{level}} del DHMZ: {{event}}',
+    warnWeather: '{{event}} (DHMZ)',
     yourNote: 'La tua nota',
   },
   trip: {
