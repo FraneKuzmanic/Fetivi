@@ -102,18 +102,47 @@ describe('textAfterSilentChips', () => {
     expect(prepare([silent('suggest_replies')])).toEqual({ toolChoice: 'none' });
   });
 
-  it('answers in text after results shown without any text, keeping the show_results call', () => {
-    const showCall = [
-      { role: 'assistant', content: [{ type: 'tool-call', toolName: 'show_results' }] },
-      { role: 'tool', content: [{ type: 'tool-result', toolName: 'show_results' }] },
+  it('answers in text after results shown without any text, keeping only the show_results call', () => {
+    const thinking = { type: 'reasoning', text: 'Konoba Mala fits best because' };
+    const shown = { type: 'tool-call', toolName: 'show_results' };
+    const shownResult = { type: 'tool-result', toolName: 'show_results' };
+    const kept = [
+      { role: 'assistant', content: [shown] },
+      { role: 'tool', content: [shownResult] },
     ];
-    const messages = [question, ...search, ...showCall];
-    expect(prepare([silent('search_places'), silent('show_results')], messages)).toEqual({
-      toolChoice: 'none',
-    });
+    const showCall = [
+      { role: 'assistant', content: [thinking, shown] },
+      { role: 'tool', content: [shownResult] },
+    ];
+    const earlier = { role: 'assistant', content: [thinking] };
+    const thinkingSearch = [
+      { role: 'assistant', content: [thinking, ...(search[0]?.content ?? [])] },
+      search[1],
+    ];
+    // The turn's thinking often holds the whole answer; with it resent the model ends empty.
+    // Thinking before the guest's message belongs to another turn and stays.
     expect(
-      prepare([silent('search_places'), silent('show_results', 'suggest_replies')], messages),
-    ).toEqual({ toolChoice: 'none' });
+      prepare(
+        [silent('search_places'), silent('show_results')],
+        [earlier, question, ...thinkingSearch, ...showCall],
+      ),
+    ).toEqual({ toolChoice: 'none', messages: [earlier, question, ...search, ...kept] });
+    const withChips = [
+      {
+        role: 'assistant',
+        content: [thinking, shown, { type: 'tool-call', toolName: 'suggest_replies' }],
+      },
+      {
+        role: 'tool',
+        content: [shownResult, { type: 'tool-result', toolName: 'suggest_replies' }],
+      },
+    ];
+    expect(
+      prepare(
+        [silent('search_places'), silent('show_results', 'suggest_replies')],
+        [question, ...search, ...withChips],
+      ),
+    ).toEqual({ toolChoice: 'none', messages: [question, ...search, ...kept] });
   });
 
   it('leaves every other step alone', () => {

@@ -100,8 +100,10 @@ export const endsWithPresentation: StopCondition<ToolSet> = ({ steps }) => {
  * The step after chips or shown results without text writes the answer, and may not call tools.
  * A chips step is sent without that chips call: after seeing its own chips acknowledged,
  * Sonnet often ends the turn empty, while from the search results it answers. A step that showed
- * results keeps its call, so the words match the cards (ticket 65). Both are already stored.
- * A step with an invalid call or a tool error keeps its tools, so the model can correct the call.
+ * results keeps only that call, so the words match the cards: its chips call goes the same way,
+ * and so does the turn's thinking, which often holds the whole answer and leaves the guard step
+ * to end empty (ticket 65). Both are already stored. A step with an invalid call or a tool error
+ * keeps its tools, so the model can correct the call.
  */
 export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, messages }) => {
   const calls = steps.at(-1)?.toolCalls ?? [];
@@ -111,10 +113,22 @@ export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, mess
     (c) => c.toolName === 'suggest_replies' || c.toolName === 'show_results',
   );
   if (!shows || answered(steps)) return undefined;
-  const keepCall = calls.some((c) => c.toolName === 'show_results');
   const [call, result] = messages.slice(-2);
-  const dropChips = !keepCall && call?.role === 'assistant' && result?.role === 'tool';
-  return { toolChoice: 'none', ...(dropChips ? { messages: messages.slice(0, -2) } : {}) };
+  if (call?.role !== 'assistant' || result?.role !== 'tool') return { toolChoice: 'none' };
+  if (!calls.some((c) => c.toolName === 'show_results')) {
+    return { toolChoice: 'none', messages: messages.slice(0, -2) };
+  }
+  const turnStart = messages.findLastIndex((m) => m.role === 'user');
+  const kept = (p: { type: string }) =>
+    p.type !== 'reasoning' && !('toolName' in p && p.toolName === 'suggest_replies');
+  return {
+    toolChoice: 'none',
+    messages: messages.map((m, i) =>
+      i > turnStart && (m.role === 'assistant' || m.role === 'tool') && Array.isArray(m.content)
+        ? ({ ...m, content: m.content.filter(kept) } as typeof m)
+        : m,
+    ),
+  };
 };
 
 const isChips = (part: UIMessage['parts'][number]) =>
