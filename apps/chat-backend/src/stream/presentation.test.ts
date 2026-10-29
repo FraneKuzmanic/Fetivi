@@ -124,6 +124,10 @@ describe('textAfterSilentChips', () => {
     expect(prepare([silent('suggest_replies!')])).toBeUndefined();
     expect(prepare([silent('ask_choice')])).toBeUndefined();
     expect(prepare([silent('show_results!')])).toBeUndefined();
+    expect(prepare([silent('show_results!', 'suggest_replies')])).toBeUndefined();
+    // So does a call that failed when run, e.g. show_results with unknown ids.
+    const failed = stepWith('', ['show_results'], [{ type: 'tool-error' }]);
+    expect(prepare([silent('search_places'), failed])).toBeUndefined();
     expect(prepare([step('search_places'), silent('show_results')])).toBeUndefined();
   });
 });

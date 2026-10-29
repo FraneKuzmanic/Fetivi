@@ -84,8 +84,9 @@ const endsTurn = (name: string) =>
  * Stops the loop after a step whose calls are all presentation calls or the property card: the
  * guest answers next, so another model round trip would only cost. A step that also searched
  * continues, so the model sees the results; so does one with an invalid call or a tool error (e.g.
- * show_results with unknown ids), so the model can correct it. Chips, shown results or a card without any text in the turn continue too, so the guest never gets
- * them without words (a choice card carries its own question).
+ * show_results with unknown ids), so the model can correct it. Chips, shown results or a card
+ * without any text in the turn continue too, so the guest never gets them without words (a choice
+ * card carries its own question).
  */
 export const endsWithPresentation: StopCondition<ToolSet> = ({ steps }) => {
   const calls = steps.at(-1)?.toolCalls ?? [];
@@ -100,11 +101,14 @@ export const endsWithPresentation: StopCondition<ToolSet> = ({ steps }) => {
  * A chips step is sent without that chips call: after seeing its own chips acknowledged,
  * Sonnet often ends the turn empty, while from the search results it answers. A step that showed
  * results keeps its call, so the words match the cards (ticket 65). Both are already stored.
+ * A step with an invalid call or a tool error keeps its tools, so the model can correct the call.
  */
 export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, messages }) => {
   const calls = steps.at(-1)?.toolCalls ?? [];
+  if (calls.some((c) => c.invalid)) return undefined;
+  if (steps.at(-1)?.content.some((p) => p.type === 'tool-error')) return undefined;
   const shows = calls.some(
-    (c) => !c.invalid && (c.toolName === 'suggest_replies' || c.toolName === 'show_results'),
+    (c) => c.toolName === 'suggest_replies' || c.toolName === 'show_results',
   );
   if (!shows || answered(steps)) return undefined;
   const keepCall = calls.some((c) => c.toolName === 'show_results');

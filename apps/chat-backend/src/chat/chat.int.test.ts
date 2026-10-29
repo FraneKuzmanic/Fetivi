@@ -716,6 +716,28 @@ describe('Recommendation components', () => {
     expect(components(chunks as never).map((c) => c.data.name)).toEqual(['place-carousel']);
   });
 
+  it('lets the model correct unknown ids it showed without any text, with its tools', async () => {
+    const steps = [callStep('search_places', { category: 'restaurant', date: '2027-07-12' })];
+    const model = mockModel(steps);
+    const { t, cookie } = await setup(model);
+    const ids = await seedRestaurants(t);
+    steps.push(
+      callStep('show_results', { kind: 'places', ids: ['not-a-place'] }),
+      textAndCallsStep('Try Konoba Mala.', [
+        ['show_results', { kind: 'places', ids: [ids['Konoba Mala']] }],
+      ]),
+    );
+
+    const chunks = readStream(await send(t, cookie, 'Where should we eat tonight?'));
+    expect(model.doStreamCalls).toHaveLength(3);
+    // No text-only guard step: the model may call show_results again.
+    expect(model.doStreamCalls[2]?.toolChoice).not.toEqual({ type: 'none' });
+    expect(JSON.stringify(model.doStreamCalls[2]?.prompt)).toContain(
+      'Unknown places ids: not-a-place',
+    );
+    expect(components(chunks as never).map((c) => c.data.name)).toEqual(['place-carousel']);
+  });
+
   it('lets the model answer in text after results shown without any, and resends them after it', async () => {
     const steps = [callStep('search_places', { category: 'restaurant', date: '2027-07-12' })];
     const model = mockModel(steps);

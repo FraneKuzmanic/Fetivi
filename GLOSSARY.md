@@ -90,7 +90,7 @@ A published Catalog record a Host recommends to the guests of one property, with
 _Avoid_: favourite, recommendation (that is the Recommendation count)
 
 **Host-added place**:
-A place a Host adds that is not in the catalog. Only that property's guests see it, marked as added by the host and unverified, and it goes on the curation queue as a host place suggestion. Once approved and published, it shows as a Host pick of the new record.
+A place a Host adds that is not in the catalog. Only that property's guests see it, its card marked "Added by your host", and it goes on the curation queue as a host place suggestion. In chat the assistant calls it "your host's tip" and never says it is unchecked: the host vouches for it. Once approved and published, it shows as a Host pick of the new record.
 
 **Neighbourhood tips**:
 The Host's free-text Info block about the area, shown in the Host's top picks section of the Guide.
