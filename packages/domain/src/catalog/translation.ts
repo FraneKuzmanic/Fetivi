@@ -1,6 +1,7 @@
 import { and, eq, lt, sql } from 'drizzle-orm';
 import type { Executor } from '../db/client';
 import { type CatalogRecordRow, catalogRecords, catalogTranslations } from '../db/schema/catalog';
+import { enqueueCatalogEmbedding } from '../embeddings/store';
 import { type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
 import {
   GUEST_LANGUAGES,
@@ -148,6 +149,7 @@ export async function runCatalogTranslation(
               lt(catalogTranslations.revision, revision),
             ),
           );
+        await enqueueCatalogEmbedding(tx, deps.queue, { id: recordId, revision });
       }
       return 'published';
     }

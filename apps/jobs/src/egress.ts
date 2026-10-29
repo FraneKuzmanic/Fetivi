@@ -1,6 +1,7 @@
 import { JADROLINIJA_HOST } from '@fetivi/domain/alerts-vocabulary';
 import { CALENDAR_HOSTS } from '@fetivi/domain/calendar-vocabulary';
 import { COMMONS_HOST } from '@fetivi/domain/drafting-vocabulary';
+import { VOYAGE_HOST } from '@fetivi/domain/embeddings-vocabulary';
 import { HOST_PUSH_HOSTS } from '@fetivi/domain/host-notification-vocabulary';
 import { PUSH_HOSTS } from '@fetivi/domain/notification-vocabulary';
 import { SEEDING_HOSTS } from '@fetivi/domain/seeding-vocabulary';
@@ -22,6 +23,8 @@ export const EGRESS_ALLOWLIST: readonly string[] = [
   // Wikimedia Commons image metadata for drafted places (42). Venue hosts never join this list:
   // each drafting task gets its own egress for its own sources.
   COMMONS_HOST,
+  // Voyage AI, embeddings of published catalog text for search (61).
+  VOYAGE_HOST,
 ];
 
 /** The allowlist; Jadrolinija's host joins only when its feed is on (written permission). */

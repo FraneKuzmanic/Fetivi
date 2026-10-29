@@ -6,7 +6,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "dev": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx --import ./src/instrumentation.ts --watch src/index.ts",
     "start": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx --import ./src/instrumentation.ts src/index.ts",
-    "blocks:retitle": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx src/cli/retitle-blocks.ts"
+    "blocks:retitle": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx src/cli/retitle-blocks.ts",
+    "embeddings:backfill": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --import tsx src/cli/backfill-embeddings.ts"
   },
   "dependencies": {
     "@fetivi/domain": "workspace:*",

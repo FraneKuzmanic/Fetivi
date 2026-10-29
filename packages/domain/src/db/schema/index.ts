@@ -8,6 +8,7 @@ export * from './catalog';
 export * from './conversations';
 export * from './curation';
 export * from './drafting';
+export * from './embeddings';
 export * from './fallback';
 export * from './feedback';
 export * from './field-texts';

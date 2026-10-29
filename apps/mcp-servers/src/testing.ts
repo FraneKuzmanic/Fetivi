@@ -2,6 +2,7 @@ import type { AddressInfo } from 'node:net';
 import {
   createJobQueue,
   type Db,
+  type Embedder,
   ensureQueues,
   GUEST_LANGUAGES,
   GUEST_TOKEN_ALG,
@@ -20,6 +21,7 @@ import {
   createTestDatabase,
   noopQueue,
   type TestDatabase,
+  unavailableEmbedder,
   unavailableWeatherSource,
   unavailableWebSearch,
 } from '@fetivi/domain/testing';
@@ -120,6 +122,8 @@ export async function createTestServer(
     weather?: WeatherSource;
     /** Default: web search down, so no test reaches Brave. */
     webSearch?: WebSearch;
+    /** Default: no embeddings, so no test reaches Voyage and search matches words. */
+    embedder?: Embedder;
   } = {},
 ): Promise<TestServer> {
   const testDb = await createTestDatabase();
@@ -141,6 +145,7 @@ export async function createTestServer(
     now: options.now,
     weather: options.weather ?? unavailableWeatherSource(),
     webSearch: options.webSearch ?? unavailableWebSearch(),
+    embedder: options.embedder ?? unavailableEmbedder(),
   });
   let url = '';
   if (options.listen) {
@@ -187,8 +192,10 @@ type MountOptions = Parameters<typeof mountServers>[1];
  * down unless given.
  */
 export function buildMcpTestApp(
-  opts: Omit<MountOptions, 'queue' | 'requestStateSecret' | 'weather' | 'webSearch'> &
-    Partial<Pick<MountOptions, 'queue' | 'requestStateSecret' | 'weather' | 'webSearch'>>,
+  opts: Omit<MountOptions, 'queue' | 'requestStateSecret' | 'weather' | 'webSearch' | 'embedder'> &
+    Partial<
+      Pick<MountOptions, 'queue' | 'requestStateSecret' | 'weather' | 'webSearch' | 'embedder'>
+    >,
 ): FastifyInstance {
   const app = createMcpFastifyApp({ host: '127.0.0.1', allowedHosts: ['127.0.0.1', 'localhost'] });
   mountServers(app, {
@@ -196,6 +203,7 @@ export function buildMcpTestApp(
     requestStateSecret: TEST_REQUEST_STATE_SECRET,
     weather: unavailableWeatherSource(),
     webSearch: unavailableWebSearch(),
+    embedder: unavailableEmbedder(),
     ...opts,
   });
   return app;

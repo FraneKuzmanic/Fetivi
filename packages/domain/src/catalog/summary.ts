@@ -10,9 +10,6 @@ import type { CatalogScope, LatLng } from './search';
 // Helpers the catalog read side (search.ts) and the host place read side (host-picks/guest.ts)
 // share; here so neither imports the other's runtime code both ways.
 
-/** The lowest `word_similarity` a record needs to match a guest's words; unrelated prose scores ~0.4. */
-export const TEXT_MATCH_MIN = 0.5;
-
 export interface Origin {
   location: { x: number; y: number } | null;
   checkIn: CivilDate;

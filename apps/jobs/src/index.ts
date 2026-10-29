@@ -7,6 +7,7 @@ import {
   createJobQueue,
   createMailer,
   createStripeGateway,
+  createVoyageEmbedder,
   createWeatherSource,
   createWebPushSender,
   usageRecorder,
@@ -54,6 +55,12 @@ const gateway = config.STRIPE_SECRET_KEY
   ? createStripeGateway({ apiKey: config.STRIPE_SECRET_KEY, fetch: egress.fetch })
   : null;
 if (!gateway) console.warn('STRIPE_SECRET_KEY is not set: online payments are off');
+const embedder = createVoyageEmbedder({ fetch: egress.fetch, apiKey: config.VOYAGE_API_KEY });
+if (!config.VOYAGE_API_KEY) {
+  console.warn(
+    'VOYAGE_API_KEY is not set: search falls back to word matching and nothing is embedded',
+  );
+}
 const weather = createWeatherSource({ fetch: egress.fetch, userAgent: config.WEATHER_USER_AGENT });
 const boss = await startJobRunner({
   connectionString: config.DATABASE_URL,
@@ -84,6 +91,7 @@ const boss = await startJobRunner({
       jadrolinija: config.JADROLINIJA_RSS_ENABLED,
       userAgent: config.WEATHER_USER_AGENT,
       draftingModel,
+      embedder,
       // Each drafting task reads only its own venue, social and tourist-board hosts.
       fetchFor: (allowlist) => createEgress({ allowlist }).fetch,
     }),

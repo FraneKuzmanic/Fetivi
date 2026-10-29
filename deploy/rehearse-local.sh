@@ -57,6 +57,7 @@ EOF
   cat >"$DEPLOY_DIR/env/mcp-servers.env" <<EOF
 REQUEST_STATE_SECRET=$(hex)
 BRAVE_SEARCH_API_KEY=
+VOYAGE_API_KEY=
 EOF
   cat >"$DEPLOY_DIR/env/jobs.env" <<EOF
 PROVIDER_LINK_SECRET=$(hex)
@@ -68,6 +69,7 @@ VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:ops@fetivi.localhost
 STRIPE_SECRET_KEY=
+VOYAGE_API_KEY=
 JADROLINIJA_RSS_ENABLED=false
 EOF
   cat >"$DEPLOY_DIR/env/postgres.env" <<EOF

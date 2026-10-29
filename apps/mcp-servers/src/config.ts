@@ -36,6 +36,11 @@ const schema = z
       .string()
       .optional()
       .transform((s) => s || undefined),
+    /** Voyage AI embeddings for catalog search; without it search matches words only. */
+    VOYAGE_API_KEY: z
+      .string()
+      .optional()
+      .transform((s) => s || undefined),
   })
   .refine(
     (c) => c.NODE_ENV !== 'production' || c.REQUEST_STATE_SECRET !== DEV_REQUEST_STATE_SECRET,

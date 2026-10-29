@@ -23,12 +23,25 @@ const civilDate = z
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .describe('YYYY-MM-DD');
 const searchText = z.string().trim().min(2).max(80);
+/** A guest's wish in natural words; longer than `searchText` (61). */
+const searchWish = z.string().trim().min(2).max(200);
 const placeCategory = z.enum([...PLACE_CATEGORIES, 'day_trip']);
 
 export const searchPlacesInput = z.object({
-  query: searchText
+  query: searchWish
     .optional()
-    .describe('A few words in any language, e.g. "sandy beach" or "fortress".'),
+    .describe(
+      'The guest\'s wish in their own natural words, any language, e.g. "fresh fish for dinner" or "something for kids". Put exclusions in avoid and rain in rainyDay, not here.',
+    ),
+  avoid: searchWish
+    .optional()
+    .describe(
+      'What the guest does not want, in natural words, e.g. "fish, seafood". Matching places go last; they are not removed.',
+    ),
+  rainyDay: z
+    .boolean()
+    .optional()
+    .describe('true: only places good on a rainy day (indoors or sheltered).'),
   category: placeCategory.optional(),
   maxDistanceKm: z.number().min(0.1).max(100).optional(),
   date: civilDate
@@ -42,7 +55,7 @@ export const searchPlacesInput = z.object({
   limit: z.number().int().min(1).max(10).optional(),
 });
 export const getPlaceInput = z.object({ placeId: z.uuid() });
-export const listHostPicksInput = z.object({});
+export const listHostPicksInput = z.object({ category: placeCategory.optional() });
 export const searchEventsInput = z.object({
   query: searchText.optional(),
   from: civilDate.optional(),
@@ -185,6 +198,21 @@ export const searchPlacesOutput = z.object({
   date: z.string(),
   openAt: z.string().nullable(),
   results: z.array(placeSummary),
+  matchesQuery: z
+    .boolean()
+    .nullable()
+    .describe(
+      'false: nothing matched the query; results are other places of the asked category, say so. null: no query.',
+    ),
+  outOfSeason: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        seasons: z.array(z.object({ from: z.string(), to: z.string() })),
+      }),
+    )
+    .describe('Places that match but are closed for the season on that day (MM-DD ranges).'),
 });
 export const getPlaceOutput = z.object({ place: placeDetail });
 export const listHostPicksOutput = z.object({ results: z.array(placeSummary) });

@@ -3,6 +3,7 @@ import {
   createDb,
   createJobQueue,
   createLocalMediaStore,
+  createVoyageEmbedder,
   createWeatherSource,
   ensureQueues,
 } from '@fetivi/domain';
@@ -78,6 +79,10 @@ const app = buildApp({
             webSearch: createBraveSearch({
               fetch: egress.fetch,
               apiKey: config.BRAVE_SEARCH_API_KEY,
+            }),
+            embedder: createVoyageEmbedder({
+              fetch: egress.fetch,
+              apiKey: config.VOYAGE_API_KEY,
             }),
           }),
         }

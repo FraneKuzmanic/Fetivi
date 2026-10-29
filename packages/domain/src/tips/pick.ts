@@ -150,6 +150,7 @@ export async function gatherTipInput(
         limit: CANDIDATES,
       },
       now,
+      null,
     ).then((r) => r?.results ?? []);
 
   const { tomorrowSky } = sky;
@@ -162,6 +163,7 @@ export async function gatherTipInput(
             scope,
             { from: space.tomorrow, to: space.tomorrow, interests: aboutMe.interests },
             now,
+            null,
           )
         )?.results ?? [])
       : [];

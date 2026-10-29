@@ -68,7 +68,7 @@ export const localTools: readonly GuestToolSpec[] = [
     config: {
       title: 'Search places',
       description:
-        "Find checked places and day trips in the guest's destination: beaches, sights, restaurants, cafés and bars, nature, activities, shops, nightlife, and day trips with travel time. Results are ranked best first, in season on the given day, with distance from the property, when each was last verified and its sources. Use a category when the guest names one. Places with offerIds can be arranged here: use list_offers / check_availability from services. Bookable places only go first among options that fit equally well. Places the guest's host picked carry hostPick; hostAdded places are the host's own and unchecked.",
+        "Find checked places and day trips in the guest's destination: beaches, sights, restaurants, cafés and bars, nature, activities, shops, nightlife, and day trips with travel time. Results are ranked best first, in season on the given day, with distance from the property, when each was last verified and its sources. Use a category when the guest names one. Places with offerIds can be arranged here: use list_offers / check_availability from services. Bookable places only go first among options that fit equally well. Places the guest's host picked carry hostPick; hostAdded places are the host's own and unchecked. Put the guest's wish in query in natural words (any language) and anything they do not want in avoid. For rain or indoor ideas set rainyDay instead of writing it in query. Results match by meaning and rank by fit first. When matchesQuery is false, nothing matched: say so and offer the listed places as alternatives. outOfSeason lists matching places closed for the season on that day.",
       scope: 'catalog:read',
       inputSchema: searchPlacesInput,
       outputSchema: searchPlacesOutput,
@@ -76,7 +76,7 @@ export const localTools: readonly GuestToolSpec[] = [
     },
     listed,
     // About me is read per call, so a preference saved earlier in the turn already counts.
-    async handler(args, identity, { db, now }) {
+    async handler(args, identity, { db, now, embedder }) {
       const fit = aboutMeFit(await getAboutMe(db, identity.spaceId));
       return visible(
         await searchPlaces(
@@ -84,6 +84,7 @@ export const localTools: readonly GuestToolSpec[] = [
           { ...catalogScope(identity), aboutMe: fit },
           { ...args, limit: args.limit ?? 5 },
           now(),
+          embedder,
         ),
       );
     },
@@ -109,15 +110,15 @@ export const localTools: readonly GuestToolSpec[] = [
     config: {
       title: 'Host picks',
       description:
-        "The places this guest's host recommends: catalog places the host picked, with the host's note, and places the host added that Fetivi has not checked yet. Use it when the guest asks what their host recommends.",
+        "The places this guest's host recommends: catalog places the host picked, with the host's note, and places the host added that Fetivi has not checked yet. Use it when the guest asks what their host recommends. Pass a category to get only the host's picks of that kind; do not use it as a substitute for search_places.",
       scope: 'catalog:read',
       inputSchema: listHostPicksInput,
       outputSchema: listHostPicksOutput,
       annotations: readOnly,
     },
     listed,
-    async handler(_args, identity, { db, now }) {
-      return { results: visible(await listHostPicks(db, catalogScope(identity), now())) };
+    async handler(args, identity, { db, now }) {
+      return { results: visible(await listHostPicks(db, catalogScope(identity), now(), args)) };
     },
   }),
   guestTool({
@@ -132,8 +133,8 @@ export const localTools: readonly GuestToolSpec[] = [
       annotations: readOnly,
     },
     listed,
-    async handler(args, identity, { db, now }) {
-      return visible(await searchEvents(db, catalogScope(identity), args, now()));
+    async handler(args, identity, { db, now, embedder }) {
+      return visible(await searchEvents(db, catalogScope(identity), args, now(), embedder));
     },
   }),
   guestTool({
@@ -186,9 +187,11 @@ export const localTools: readonly GuestToolSpec[] = [
       annotations: readOnly,
     },
     listed,
-    async handler(args, identity, { db, now }) {
+    async handler(args, identity, { db, now, embedder }) {
       return {
-        results: visible(await listTransportNotes(db, catalogScope(identity), args, now())),
+        results: visible(
+          await listTransportNotes(db, catalogScope(identity), args, now(), embedder),
+        ),
       };
     },
   }),

@@ -12,6 +12,8 @@ import {
   type PlaceImageRow,
   placeImages,
 } from '../db/schema/catalog';
+import { catalogSearchTexts, hostPlaceSearchTexts, type SearchTexts } from '../embeddings/store';
+import type { Embedder } from '../embeddings/voyage';
 import {
   getHostAddedPlace,
   hostAddedCandidates,
@@ -24,6 +26,7 @@ import type { GuestLanguage } from '../property/vocabulary';
 import { type CivilDate, toLocalDateTime } from '../time';
 import { inSeason, monthDayOf, type OpenState, openStateAt } from './calendar';
 import { type AboutMeFit, rankPlaces } from './ranking';
+import { matcherFor, type Relevance, rankByRelevance, relevanceOf } from './relevance';
 import { stalenessOf } from './staleness';
 import {
   kmOf,
@@ -33,7 +36,6 @@ import {
   originGeog,
   seasonDate,
   summaryOf,
-  TEXT_MATCH_MIN,
   todayIn,
 } from './summary';
 import type {
@@ -57,8 +59,6 @@ export interface CatalogScope {
   /** From the Space's About me (aboutMeFit); null when nothing ranks. */
   aboutMe: AboutMeFit | null;
 }
-
-export { TEXT_MATCH_MIN } from './summary';
 
 export interface LatLng {
   lat: number;
@@ -110,13 +110,15 @@ export interface PlaceSummary {
 
 export interface PlaceQuery {
   query?: string;
+  /** What the guest does not want; matching places rank last, they are not removed. Needs `query`. */
+  avoid?: string;
   category?: PlaceCategory | 'day_trip';
   maxDistanceKm?: number;
   date?: CivilDate;
   /** 'HH:MM' local time on `date`. */
   openAt?: string;
   limit?: number;
-  /** True: only records the admin marked good on a rainy day (daily tips). */
+  /** True: only records the admin marked good on a rainy day (daily tips, search_places). */
   rainyDay?: boolean;
   /**
    * False: do not count a recommendation. Daily tips search this way, since their cron recomputes
@@ -131,6 +133,10 @@ export interface PlaceSearch {
   date: CivilDate;
   openAt: string | null;
   results: PlaceSummary[];
+  /** Null without a query; false when nothing matched it and these are the category's places instead. */
+  matchesQuery: boolean | null;
+  /** Matched the query and every other filter, but out of season on `date`. */
+  outOfSeason: { id: string; title: string; seasons: { from: string; to: string }[] }[];
 }
 
 export interface PlaceDetail extends Omit<PlaceSummary, 'open' | 'summary' | 'offerIds'> {
@@ -191,20 +197,69 @@ const distanceOf = (o: Origin) => {
     : sql<number | null>`null::float8`;
 };
 
-/**
- * The best trigram match of the words against every published translation, the source language
- * among them. The record's own title and description are left out: they may hold an unpublished edit.
- */
-function textScoreOf(query: string | undefined): SQL<number> | null {
-  const q = query?.trim().toLowerCase();
-  if (!q) return null;
-  return sql<number>`coalesce((select max(greatest(word_similarity(${q}::text, x.title), word_similarity(${q}::text, x.body)))
-      from catalog_translations x
-      where x.record_id = ${catalogRecords.id} and x.revision = ${catalogRecords.publishedRevision}), 0)`;
+/** A guest's words as search scores them (catalog/relevance.ts). */
+interface Wish {
+  query: string;
+  avoid: string | null;
+  queryVector: number[] | null;
+  avoidVector: number[] | null;
 }
 
-const textMatches = (textScore: SQL<number> | null) =>
-  textScore ? sql`${textScore} >= ${TEXT_MATCH_MIN}` : undefined;
+/**
+ * The trimmed words with their vectors; null without words. One embedder call per search; when
+ * there is no embedder or it fails, the vectors are null and search matches words only.
+ */
+async function wishOf(
+  embedder: Embedder | null,
+  query: string | undefined,
+  avoid?: string,
+): Promise<Wish | null> {
+  const q = query?.trim();
+  if (!q) return null;
+  const a = avoid?.trim() || null;
+  const wish: Wish = { query: q, avoid: a, queryVector: null, avoidVector: null };
+  if (!embedder) return wish;
+  try {
+    const { vectors } = await embedder.embed(a ? [q, a] : [q], 'query');
+    return {
+      ...wish,
+      queryVector: vectors[0] ?? null,
+      avoidVector: a ? (vectors[1] ?? null) : null,
+    };
+  } catch {
+    return wish;
+  }
+}
+
+const NO_TEXTS: SearchTexts = { titles: [], texts: [], vectors: [] };
+
+/** How well a record's published texts (all languages) answer the wish. */
+const relevanceIn = (wish: Wish, texts: SearchTexts | undefined): Relevance =>
+  relevanceOf({ ...wish, ...(texts ?? NO_TEXTS) });
+
+/** The rows that match the words, in their order; all of them without words. */
+async function matchingRows<T extends { id: string }>(
+  db: Executor,
+  rows: T[],
+  embedder: Embedder | null,
+  query: string | undefined,
+): Promise<T[]> {
+  const wish = await wishOf(embedder, query);
+  if (!wish) return rows;
+  const texts = await catalogSearchTexts(
+    db,
+    rows.map((r) => r.id),
+    embedder?.model ?? '',
+  );
+  return rows.filter((r) => relevanceIn(wish, texts.get(r.id)).matches);
+}
+
+const mmdd = (m: number, d: number) =>
+  `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+/** Season rows as 'MM-DD' ranges. */
+const seasonRangesOf = (seasons: CatalogSeasonRow[]) =>
+  seasons.map((s) => ({ from: mmdd(s.fromMonth, s.fromDay), to: mmdd(s.toMonth, s.toDay) }));
 
 /** Published records of the scope's destination; `translationJoin` picks the guest's language. */
 const visibleIn = (scope: CatalogScope) =>
@@ -318,19 +373,21 @@ const placeColumns = (origin: Origin) => ({
 /**
  * Places and day trips in the guest's destination, in season on the asked day (default today,
  * or check-in before arrival), ranked best first, with this property's host-added places among
- * them (40). Counts a recommendation for every catalog result. Null when the token's Stay, unit
- * and property do not belong together.
+ * them (40). With words, only the places that match them, most relevant first (61); when none
+ * match but a category was asked, that category's places with `matchesQuery: false`. Matches
+ * dropped only for the season come back in `outOfSeason`. Counts a recommendation for every
+ * catalog result. Null when the token's Stay, unit and property do not belong together.
  */
 export async function searchPlaces(
   db: Db,
   scope: CatalogScope,
   q: PlaceQuery,
   now: Date,
+  embedder: Embedder | null,
 ): Promise<PlaceSearch | null> {
   const origin = await loadOrigin(db, scope);
   if (!origin) return null;
   const date = seasonDate(origin, now, q.date);
-  const textScore = textScoreOf(q.query);
   const geog = originGeog(origin);
 
   const conditions: (SQL | undefined)[] = [
@@ -347,10 +404,9 @@ export async function searchPlaces(
     );
   }
   if (q.rainyDay) conditions.push(eq(catalogRecords.rainyDay, true));
-  conditions.push(textMatches(textScore));
 
   const rows = await db
-    .select({ ...placeColumns(origin), textScore: textScore ?? sql<null>`null` })
+    .select(placeColumns(origin))
     .from(catalogRecords)
     .innerJoin(catalogTranslations, translationJoin(scope))
     .where(and(...conditions));
@@ -360,18 +416,30 @@ export async function searchPlaces(
     rows.map((r) => r.id),
   );
   const md = monthDayOf(date);
+  const inSeasonRows = rows.filter((r) => inSeason(byRecord(seasons, r.id), md));
+  const seasonDropped = rows.filter((r) => !inSeasonRows.includes(r));
+  const keptIds = inSeasonRows.map((r) => r.id);
+
+  const wish = await wishOf(embedder, q.query, q.avoid);
+  const model = embedder?.model ?? '';
+  const texts = wish
+    ? await catalogSearchTexts(
+        db,
+        rows.map((r) => r.id),
+        model,
+      )
+    : new Map<string, SearchTexts>();
+  // Without words every place matches and keeps its usual order.
+  const relevanceFor = (t: SearchTexts | undefined): Relevance =>
+    wish ? relevanceIn(wish, t) : { score: 0, matches: true, order: 0 };
+
   const offerIds = await offerIdsByPlace(
     db,
     { destinationId: scope.destinationId, propertyId: scope.propertyId, language: scope.language },
-    rows.map((r) => r.id),
+    keptIds,
   );
-  const picks = await hostPicksFor(
-    db,
-    scope,
-    rows.map((r) => r.id),
-  );
-  const candidates = rows.flatMap((r) => {
-    if (!inSeason(byRecord(seasons, r.id), md)) return [];
+  const picks = await hostPicksFor(db, scope, keptIds);
+  const candidates = inSeasonRows.flatMap((r) => {
     const open = q.openAt ? openStateAt(byRecord(hours, r.id), date, q.openAt) : null;
     if (open === 'closed') return [];
     const base = placeBaseOf(r, now);
@@ -386,38 +454,87 @@ export async function searchPlaces(
       hostPick: picks.get(r.id) ?? null,
       hostAdded: false,
     };
+    const relevance = relevanceFor(texts.get(r.id));
     return [
       {
         summary,
         id: r.id,
         category: base.category,
-        textScore: r.textScore === null ? null : Number(r.textScore),
+        textScore: null,
         staleness: base.staleness.status,
         distanceM: r.distanceM === null ? null : Number(r.distanceM),
         // Only candidates that passed every filter above get here: the boost is among results that fit.
         bookable: bookableHere.length > 0,
+        rel: relevance,
+        relevance: relevance.order,
       },
     ];
   });
 
   // Host-added places have no rainy-day flag, and daily tips leave them out (they cannot be planned).
-  const added =
+  const addedRows =
     q.rainyDay || q.includeHostAdded === false
       ? []
-      : (await hostAddedCandidates(db, scope, origin, q)).map((r) => ({
-          summary: toHostAddedSummary(r, q.openAt !== undefined),
-          id: r.id,
-          category: r.placeCategory as PlaceCategory,
-          textScore: r.textScore === null ? null : Number(r.textScore),
-          staleness: 'never_verified' as const,
-          distanceM: r.distanceM === null ? null : Number(r.distanceM),
-          bookable: false,
-        }));
+      : await hostAddedCandidates(db, scope, origin, q);
+  const addedTexts = wish
+    ? await hostPlaceSearchTexts(
+        db,
+        addedRows.map((r) => r.id),
+        model,
+      )
+    : new Map<string, SearchTexts>();
+  const added = addedRows.map((r) => {
+    const relevance = relevanceFor(addedTexts.get(r.id));
+    return {
+      summary: toHostAddedSummary(r, q.openAt !== undefined),
+      id: r.id,
+      category: r.placeCategory as PlaceCategory,
+      textScore: null,
+      staleness: 'never_verified' as const,
+      distanceM: r.distanceM === null ? null : Number(r.distanceM),
+      bookable: false,
+      rel: relevance,
+      relevance: relevance.order,
+    };
+  });
 
   // The same rules for both: no boost for a host's pick or a host-added place.
-  const results = rankPlaces([...candidates, ...added], scope.aboutMe)
+  const all = [...candidates, ...added];
+  const droppedRows = seasonDropped.map((r) => ({ r, relevance: relevanceFor(texts.get(r.id)) }));
+  const matches = matcherFor([...all.map((c) => c.rel), ...droppedRows.map((d) => d.relevance)]);
+  const matched = all.filter((c) => matches(c.rel));
+  const matchesQuery = wish ? matched.length > 0 : null;
+  const ranked = !wish
+    ? rankPlaces(all, scope.aboutMe)
+    : matchesQuery
+      ? rankByRelevance(matched, scope.aboutMe)
+      : q.category
+        ? rankPlaces(all, scope.aboutMe)
+        : [];
+  const results = ranked.slice(0, q.limit ?? 5).map((c) => c.summary);
+
+  // Host-added places have no seasons, so they never land here.
+  const dropped = droppedRows.flatMap(({ r, relevance }) => {
+    if (!matches(relevance)) return [];
+    const base = placeBaseOf(r, now);
+    return [
+      {
+        entry: { id: r.id, title: r.title, seasons: seasonRangesOf(byRecord(seasons, r.id)) },
+        id: r.id,
+        category: base.category,
+        textScore: null,
+        staleness: base.staleness.status,
+        distanceM: r.distanceM === null ? null : Number(r.distanceM),
+        relevance: relevance.order,
+      },
+    ];
+  });
+  const outOfSeason = (
+    wish ? rankByRelevance(dropped, scope.aboutMe) : rankPlaces(dropped, scope.aboutMe)
+  )
     .slice(0, q.limit ?? 5)
-    .map((c) => c.summary);
+    .map((c) => c.entry);
+
   if (q.countRecommendation !== false) {
     await recordRecommendations(
       db,
@@ -425,7 +542,7 @@ export async function searchPlaces(
       todayIn(now, origin.zone),
     );
   }
-  return { date, openAt: q.openAt ?? null, results };
+  return { date, openAt: q.openAt ?? null, results, matchesQuery, outOfSeason };
 }
 
 /** One place or day trip, or a host-added place, in full; null when it is not visible to this guest. */
@@ -451,17 +568,12 @@ export async function getPlace(
   if (!r) return getHostAddedPlace(db, scope, origin, id);
   const { seasons, hours, images } = await rowsFor(db, [r.id]);
   const picks = await hostPicksFor(db, scope, [r.id]);
-  const mmdd = (m: number, d: number) =>
-    `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   return {
     ...placeBaseOf(r, now),
     description: r.body,
     image: images[0] ? imageOf(images[0]) : null,
     images: images.map(imageOf),
-    seasons: seasons.map((s) => ({
-      from: mmdd(s.fromMonth, s.fromDay),
-      to: mmdd(s.toMonth, s.toDay),
-    })),
+    seasons: seasonRangesOf(seasons),
     openingHours: hours
       .sort((a, b) => a.weekday - b.weekday || a.opens.localeCompare(b.opens))
       .map((h) => ({
@@ -479,13 +591,15 @@ export async function getPlace(
 
 /**
  * The places this property's host recommends (40): picks of visible records and visible
- * host-added places, in the order the host added them. Seasons and hours do not filter them.
- * Null when the token's Stay, unit and property do not belong together.
+ * host-added places, in the order the host added them. Seasons and hours do not filter them;
+ * `category` keeps one kind (61). Null when the token's Stay, unit and property do not belong
+ * together.
  */
 export async function listHostPicks(
   db: Db,
   scope: CatalogScope,
   now: Date,
+  opts: { category?: PlaceCategory | 'day_trip' } = {},
 ): Promise<PlaceSummary[] | null> {
   const origin = await loadOrigin(db, scope);
   if (!origin) return null;
@@ -509,9 +623,11 @@ export async function listHostPicks(
   const picked = pickIds.flatMap(({ recordId, createdAt }) => {
     const r = rows.find((row) => row.id === recordId);
     if (!r) return [];
+    const base = placeBaseOf(r, now);
+    if (opts.category && base.category !== opts.category) return [];
     const image = images.find((i) => i.recordId === r.id);
     const summary: PlaceSummary = {
-      ...placeBaseOf(r, now),
+      ...base,
       summary: summaryOf(r.body),
       image: image ? imageOf(image) : null,
       open: null,
@@ -521,11 +637,13 @@ export async function listHostPicks(
     };
     return [{ summary, createdAt, id: r.id }];
   });
-  const added = (await hostAddedCandidates(db, scope, origin, {})).map((r) => ({
-    summary: toHostAddedSummary(r, false),
-    createdAt: r.createdAt,
-    id: r.id,
-  }));
+  const added = (await hostAddedCandidates(db, scope, origin, { category: opts.category })).map(
+    (r) => ({
+      summary: toHostAddedSummary(r, false),
+      createdAt: r.createdAt,
+      id: r.id,
+    }),
+  );
   return [...picked, ...added]
     .sort(
       (a, b) =>
@@ -544,6 +662,7 @@ export async function searchEvents(
   scope: CatalogScope,
   q: { query?: string; from?: CivilDate; to?: CivilDate; interests?: readonly string[] },
   now: Date,
+  embedder: Embedder | null,
 ): Promise<EventSearch | null> {
   const origin = await loadOrigin(db, scope);
   if (!origin) return null;
@@ -560,7 +679,6 @@ export async function searchEvents(
   const end = askedEnd < windowEnd ? askedEnd : windowEnd;
   if (start >= end || q.interests?.length === 0) return { window, results: [] };
 
-  const textScore = textScoreOf(q.query);
   const rows = await db
     .select({
       id: catalogRecords.id,
@@ -587,18 +705,17 @@ export async function searchEvents(
         lt(catalogRecords.startsAt, end.toJSDate()),
         gt(catalogRecords.endsAt, start.toJSDate()),
         gt(catalogRecords.endsAt, now),
-        textMatches(textScore),
         q.interests
           ? sql`${catalogRecords.interests} && ${sql.param([...q.interests])}::text[]`
           : undefined,
       ),
     )
-    .orderBy(asc(catalogRecords.startsAt), asc(catalogRecords.id))
-    .limit(10);
+    .orderBy(asc(catalogRecords.startsAt), asc(catalogRecords.id));
+  const matching = await matchingRows(db, rows, embedder, q.query);
 
   return {
     window,
-    results: rows.map((r) => {
+    results: matching.slice(0, 10).map((r) => {
       // The event CHECK guarantees both instants.
       const startsAt = r.startsAt as Date;
       const endsAt = r.endsAt as Date;
@@ -627,10 +744,10 @@ export async function listTransportNotes(
   scope: CatalogScope,
   q: { mode?: TransportMode; query?: string },
   now: Date,
+  embedder: Embedder | null,
 ): Promise<TransportNote[] | null> {
   const origin = await loadOrigin(db, scope);
   if (!origin) return null;
-  const textScore = textScoreOf(q.query);
   const rows = await db
     .select({
       id: catalogRecords.id,
@@ -650,17 +767,17 @@ export async function listTransportNotes(
         visibleIn(scope),
         eq(catalogRecords.kind, 'transport_note'),
         q.mode ? eq(catalogRecords.transportMode, q.mode) : undefined,
-        textMatches(textScore),
       ),
     )
     .orderBy(asc(catalogTranslations.title), asc(catalogRecords.id));
+  const matching = await matchingRows(db, rows, embedder, q.query);
 
   const { seasons } = await rowsFor(
     db,
-    rows.map((r) => r.id),
+    matching.map((r) => r.id),
   );
   const md = monthDayOf(seasonDate(origin, now));
-  return rows
+  return matching
     .filter((r) => inSeason(byRecord(seasons, r.id), md))
     .slice(0, 20)
     .map((r) => ({

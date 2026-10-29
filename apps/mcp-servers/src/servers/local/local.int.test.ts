@@ -280,11 +280,62 @@ describe('local tools', () => {
   });
 
   it('rejects invalid input', async () => {
-    const outcome = await call(tokenA, 'search_places', { limit: 50 }).then(
-      (r) => (r.isError ? 'error' : 'ok'),
-      () => 'error',
-    );
-    expect(outcome).toBe('error');
+    for (const args of [{ limit: 50 }, { query: 'a'.repeat(201) }]) {
+      const outcome = await call(tokenA, 'search_places', args).then(
+        (r) => (r.isError ? 'error' : 'ok'),
+        () => 'error',
+      );
+      expect(outcome).toBe('error');
+    }
+  });
+});
+
+describe('search_places words (61)', () => {
+  type Search = {
+    results: { id: string; title: string }[];
+    matchesQuery: boolean | null;
+    outOfSeason: { id: string; title: string; seasons: { from: string; to: string }[] }[];
+  };
+  const search = async (args: Record<string, unknown>) =>
+    (await call(tokenA, 'search_places', args)).structuredContent as Search;
+  const titles = (r: Search) => r.results.map((p) => p.title.replace(/^\[it\] /, ''));
+
+  it('puts what the guest avoids last without removing it', async () => {
+    // "old town" is in the texts of Kamerlengo and Copacabana; Pantan has an "old mill".
+    const noBeach = titles(await search({ query: 'old town', avoid: 'beach' }));
+    expect(noBeach).toEqual(['Kamerlengo Fortress', 'Pantan nature reserve', 'Copacabana beach']);
+    const noFortress = titles(await search({ query: 'old town', avoid: 'fortress' }));
+    expect(noFortress).toEqual([
+      'Copacabana beach',
+      'Pantan nature reserve',
+      'Kamerlengo Fortress',
+    ]);
+  });
+
+  it('says whether the query matched', async () => {
+    const found = await search({ query: 'fortress' });
+    expect(found.matchesQuery).toBe(true);
+    expect(found.outOfSeason).toEqual([]);
+    const instead = await search({ query: 'xyzzy', category: 'beach' });
+    expect(instead.matchesQuery).toBe(false);
+    expect(titles(instead)).toEqual(['Copacabana beach']);
+    expect((await search({ category: 'beach' })).matchesQuery).toBeNull();
+  });
+
+  it('keeps only rainy-day places when asked', async () => {
+    expect(titles(await search({ rainyDay: true }))).toEqual(['Cathedral of St Lawrence']);
+  });
+
+  it('lists matches closed for the season on the asked day', async () => {
+    const krka = await search({ query: 'Krka', date: '2027-11-03' });
+    expect(krka.results).toEqual([]);
+    expect(krka.outOfSeason).toEqual([
+      {
+        id: expect.any(String),
+        title: '[it] Krka National Park',
+        seasons: [{ from: '04-01', to: '10-31' }],
+      },
+    ]);
   });
 });
 
@@ -300,6 +351,14 @@ describe('host picks', () => {
       [copacabanaId, { note: '[it] Go before ten' }, false],
       [addedId, { note: '[it] Burek from six' }, true],
     ]);
+  });
+
+  it('keeps one category when asked', async () => {
+    const ids = async (category: string) =>
+      resultsOf(await call(tokenA, 'list_host_picks', { category })).map((r) => r.id);
+    expect(await ids('beach')).toEqual([copacabanaId]);
+    expect(await ids('shop')).toEqual([addedId]);
+    expect(await ids('restaurant')).toEqual([]);
   });
 
   it("never shows A's picks or added places to another property's guests", async () => {

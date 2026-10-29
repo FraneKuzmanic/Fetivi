@@ -9,6 +9,8 @@ export const QUEUES = {
   translateOffer: 'translate-offer',
   translateHostPlace: 'translate-host-place',
   translateFieldText: 'translate-field-text',
+  embedCatalogRecord: 'embed-catalog-record',
+  embedHostPlace: 'embed-host-place',
   orderTimer: 'order-timer',
   orderNotify: 'order-notify',
   orderPayment: 'order-payment',
@@ -47,6 +49,10 @@ export const QUEUE_OPTIONS: Record<keyof typeof QUEUES, Omit<Queue, 'name'>> = {
   translateOffer: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 600 },
   translateHostPlace: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 600 },
   translateFieldText: { retryLimit: 2, retryDelay: 30, retryBackoff: true, expireInSeconds: 600 },
+  // A Voyage outage retries with backoff; publishing never waits for it, and the backfill repairs
+  // what retries gave up on.
+  embedCatalogRecord: { retryLimit: 3, retryDelay: 60, retryBackoff: true, expireInSeconds: 120 },
+  embedHostPlace: { retryLimit: 3, retryDelay: 60, retryBackoff: true, expireInSeconds: 120 },
   // Short database work; the machine makes a retried or duplicate run a no-op.
   orderTimer: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },
   orderNotify: { retryLimit: 5, retryDelay: 10, retryBackoff: true, expireInSeconds: 120 },

@@ -22,6 +22,7 @@ import {
   noopQueue,
   type SeededGuestUnit,
   type TestDatabase,
+  unavailableEmbedder,
   unavailableWeatherSource,
   unavailableWebSearch,
 } from '@fetivi/domain/testing';
@@ -315,6 +316,7 @@ async function createInProcessChatTestApp(options: {
         requestStateSecret: TEST_REQUEST_STATE_SECRET,
         weather,
         webSearch: unavailableWebSearch(),
+        embedder: unavailableEmbedder(),
       }),
       weather,
     },

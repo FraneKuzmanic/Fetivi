@@ -1,14 +1,7 @@
-import { and, asc, eq, inArray, isNotNull, type SQL, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import type { OpenState } from '../catalog/calendar';
 import type { CatalogScope, PlaceDetail, PlaceSummary } from '../catalog/search';
-import {
-  kmOf,
-  latLngOf,
-  type Origin,
-  originGeog,
-  summaryOf,
-  TEXT_MATCH_MIN,
-} from '../catalog/summary';
+import { kmOf, latLngOf, type Origin, originGeog, summaryOf } from '../catalog/summary';
 import type { PlaceCategory } from '../catalog/vocabulary';
 import type { Executor } from '../db/client';
 import { catalogRecords } from '../db/schema/catalog';
@@ -93,15 +86,6 @@ const distanceOf = (origin: Origin) => {
     : sql<number | null>`null::float8`;
 };
 
-/** The best trigram match against every published translation of the name and note. */
-function textScoreOf(query: string | undefined): SQL<number> | null {
-  const q = query?.trim().toLowerCase();
-  if (!q) return null;
-  return sql<number>`coalesce((select max(greatest(word_similarity(${q}::text, x.name), word_similarity(${q}::text, x.note)))
-      from host_place_translations x
-      where x.host_place_id = "host_places"."id" and x.revision = "host_places"."published_revision"), 0)`;
-}
-
 const addedColumns = (origin: Origin) => ({
   id: hostPlaces.id,
   placeCategory: hostPlaces.placeCategory,
@@ -122,22 +106,23 @@ export interface HostAddedRow {
   note: string;
   createdAt: Date;
   distanceM: unknown;
-  textScore: unknown;
 }
 
-/** This property's visible host-added places that pass the search filters. */
+/**
+ * This property's visible host-added places that pass the search filters other than the words;
+ * search scores the words (catalog/relevance.ts).
+ */
 export async function hostAddedCandidates(
   db: Executor,
   scope: CatalogScope,
   origin: Origin,
-  q: { query?: string; category?: PlaceCategory | 'day_trip'; maxDistanceKm?: number },
+  q: { category?: PlaceCategory | 'day_trip'; maxDistanceKm?: number },
 ): Promise<HostAddedRow[]> {
   // A host-added place is never a day trip.
   if (q.category === 'day_trip') return [];
-  const textScore = textScoreOf(q.query);
   const geog = originGeog(origin);
   return db
-    .select({ ...addedColumns(origin), textScore: textScore ?? sql<null>`null` })
+    .select(addedColumns(origin))
     .from(hostPlaces)
     .innerJoin(hostPlaceTranslations, addedJoin(scope))
     .where(
@@ -149,14 +134,13 @@ export async function hostAddedCandidates(
           : geog
             ? sql`ST_DWithin(${hostPlaces.location}::geography, ${geog}, ${q.maxDistanceKm * 1000})`
             : sql`false`,
-        textScore ? sql`${textScore} >= ${TEXT_MATCH_MIN}` : undefined,
       ),
     )
     .orderBy(asc(hostPlaces.createdAt), asc(hostPlaces.id));
 }
 
 /** The fields a host-added summary and detail share: unverified, no photo, not bookable. */
-const addedBaseOf = (r: Omit<HostAddedRow, 'textScore'>) => ({
+const addedBaseOf = (r: HostAddedRow) => ({
   id: r.id,
   kind: 'place' as const,
   category: r.placeCategory as PlaceCategory,
@@ -176,10 +160,7 @@ const addedBaseOf = (r: Omit<HostAddedRow, 'textScore'>) => ({
 });
 
 /** A host-added place as a search result; it has no hours, so an asked time is 'unknown'. */
-export function toHostAddedSummary(
-  r: Omit<HostAddedRow, 'textScore'>,
-  openAsked: boolean,
-): PlaceSummary {
+export function toHostAddedSummary(r: HostAddedRow, openAsked: boolean): PlaceSummary {
   const open: OpenState | null = openAsked ? 'unknown' : null;
   return { ...addedBaseOf(r), summary: summaryOf(r.note), open, offerIds: [] };
 }

@@ -20,6 +20,7 @@ import {
   seedOrderableOffer,
   seedProvider,
   type TestDatabase,
+  unavailableEmbedder,
   unavailableWeatherSource,
   unavailableWebSearch,
 } from '@fetivi/domain/testing';
@@ -78,6 +79,7 @@ beforeAll(async () => {
     requestStateSecret: TEST_REQUEST_STATE_SECRET,
     weather: unavailableWeatherSource(),
     webSearch: unavailableWebSearch(),
+    embedder: unavailableEmbedder(),
   });
 });
 

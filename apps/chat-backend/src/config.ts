@@ -48,6 +48,11 @@ const schema = z
       .string()
       .optional()
       .transform((s) => s || undefined),
+    /** Read only with TOOL_TRANSPORT=inprocess: Voyage embeddings for V0's catalog search. */
+    VOYAGE_API_KEY: z
+      .string()
+      .optional()
+      .transform((s) => s || undefined),
     /** Ferryhopper's public MCP server (V1 only); empty disables ferries and their widgets. */
     FERRYHOPPER_MCP_URL: z
       .string()

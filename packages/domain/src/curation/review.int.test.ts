@@ -24,6 +24,7 @@ import {
   seedDestination,
   seedGuestUnit,
   type TestDatabase,
+  unavailableEmbedder,
 } from '../testing';
 import {
   approveCurationItem,
@@ -453,6 +454,7 @@ describe('a host place suggestion from a host-added place (40)', () => {
       },
       { query, limit: 20 },
       NOW,
+      unavailableEmbedder(),
     ).then((r) =>
       (r?.results ?? [])
         .filter((p) => ids.includes(p.id))

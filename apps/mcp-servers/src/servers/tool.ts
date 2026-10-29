@@ -1,5 +1,6 @@
 import {
   type Db,
+  type Embedder,
   GUEST_CONFIRMS_META_KEY,
   type GuestIdentity,
   type JobQueue,
@@ -79,6 +80,8 @@ export interface ToolDeps {
   weather: WeatherSource;
   /** Brave for web_fallback_search; one per process. */
   webSearch: WebSearch;
+  /** Voyage embeddings for catalog search; without a key search matches words only. */
+  embedder: Embedder;
 }
 
 /** One guest tool as data: the MCP servers register it, V0 calls it in process. */

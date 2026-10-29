@@ -9,8 +9,10 @@ import {
 } from '../catalog/search';
 import { catalogRecommendations, catalogRecords } from '../db/schema/catalog';
 import { hostPlaces } from '../db/schema/host-places';
+import { backfillEmbeddings } from '../embeddings/store';
 import {
   createTestDatabase,
+  fakeEmbedder,
   noopQueue,
   publishCatalog,
   publishHostPlace,
@@ -18,6 +20,7 @@ import {
   seedDestination,
   seedGuestUnit,
   type TestDatabase,
+  unavailableEmbedder,
 } from '../testing';
 import { hostPicksFor } from './guest';
 import { createHostAddedPlace, createHostPick } from './store';
@@ -44,7 +47,9 @@ const scopeOf = (g: SeededGuestUnit): CatalogScope => ({
   aboutMe: null,
 });
 const search = (g: SeededGuestUnit, q: Parameters<typeof searchPlaces>[2] = {}) =>
-  searchPlaces(testDb.db, scopeOf(g), { limit: 20, ...q }, SUMMER).then((r) => r?.results ?? []);
+  searchPlaces(testDb.db, scopeOf(g), { limit: 20, ...q }, SUMMER, unavailableEmbedder()).then(
+    (r) => r?.results ?? [],
+  );
 const byId = (results: PlaceSummary[], id: string) => results.find((r) => r.id === id);
 
 beforeAll(async () => {
@@ -181,6 +186,15 @@ describe('searchPlaces with host places', () => {
     expect((await search(a, { query: 'grilled fish' })).map((r) => r.id)).toEqual([anteId]);
   });
 
+  it('scores a host-added place on its vectors like a catalog place', async () => {
+    await backfillEmbeddings({ db: testDb.db, embedder: fakeEmbedder() });
+    // "grillmaster" shares no word with "Best grilled fish", only the fake's vector slot.
+    const query = { query: 'grillmaster', limit: 20 };
+    const semantic = await searchPlaces(testDb.db, scopeOf(a), query, SUMMER, fakeEmbedder());
+    expect(semantic?.results.map((r) => r.id)).toEqual([anteId]);
+    expect(await search(a, query)).toEqual([]);
+  });
+
   it('applies the category and distance filters', async () => {
     expect((await search(a, { category: 'beach' })).map((r) => r.id)).toEqual([pantanId]);
     expect(await search(a, { category: 'day_trip' })).toEqual([]);
@@ -235,6 +249,14 @@ describe('getPlace and listHostPicks', () => {
       [anteId, true, '[de] Best grilled fish'],
     ]);
     expect(await listHostPicks(testDb.db, scopeOf(b), SUMMER)).toEqual([]);
+  });
+
+  it('keeps one category when asked', async () => {
+    const ids = async (category: 'restaurant' | 'beach' | 'day_trip') =>
+      (await listHostPicks(testDb.db, scopeOf(a), SUMMER, { category }))?.map((p) => p.id);
+    expect(await ids('restaurant')).toEqual([anteId]);
+    expect(await ids('beach')).toEqual([pantanId]);
+    expect(await ids('day_trip')).toEqual([]);
   });
 
   it('hides a pick of a record that is no longer published', async () => {

@@ -2,6 +2,7 @@ import { and, eq, lt, sql } from 'drizzle-orm';
 import type { Executor } from '../db/client';
 import { catalogRecords } from '../db/schema/catalog';
 import { type HostPlaceRow, hostPlaces, hostPlaceTranslations } from '../db/schema/host-places';
+import { enqueueHostPlaceEmbedding } from '../embeddings/store';
 import { type JobQueue, QUEUES, uuidFrom } from '../jobs/queue';
 import { GUEST_LANGUAGES, type TranslationError } from '../property/vocabulary';
 import { collectTranslations } from '../translation/collect';
@@ -159,6 +160,9 @@ export async function runHostPlaceTranslation(
               lt(hostPlaceTranslations.revision, revision),
             ),
           );
+        if (current.name !== null) {
+          await enqueueHostPlaceEmbedding(tx, deps.queue, { id: hostPlaceId, revision });
+        }
       }
       return 'published';
     }

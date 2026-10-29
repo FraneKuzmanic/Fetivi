@@ -40,6 +40,8 @@ const schema = z
     VAPID_SUBJECT: z.string().default('mailto:admin@localhost'),
     /** Stripe, for pay-online checkout, capture, void and refund. Without it online payments are off. */
     STRIPE_SECRET_KEY: optionalString,
+    /** Voyage AI embeddings of published catalog text for search; without it nothing is embedded. */
+    VOYAGE_API_KEY: optionalString,
     /** DHMZ and Jadrolinija get an identifying agent; production sets a reachable one. */
     WEATHER_USER_AGENT: z
       .string()

@@ -77,4 +77,7 @@ describe('egress allowlist', () => {
     );
     expect(EGRESS_ALLOWLIST.filter((host) => /open-?meteo/i.test(host))).toEqual([]);
   });
+  it('has Voyage AI for catalog search (61)', () => {
+    expect(EGRESS_ALLOWLIST).toContain('api.voyageai.com');
+  });
 });

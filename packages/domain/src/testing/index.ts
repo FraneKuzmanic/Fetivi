@@ -22,6 +22,7 @@ export {
   sampleExtraction,
 } from '../property/manual-import/sample-manual';
 export { createTestDatabase, type TestDatabase } from './database';
+export { fakeEmbedder, unavailableEmbedder } from './embeddings';
 export {
   type RecordedBraveFetchOptions,
   recordedBraveFetch,

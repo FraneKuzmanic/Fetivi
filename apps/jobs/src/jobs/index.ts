@@ -1,4 +1,5 @@
 import type {
+  EmbeddingDeps,
   GuestNotifyDeps,
   HostNotifyDeps,
   NotifyDeps,
@@ -8,6 +9,7 @@ import type { JobDefinition } from '../runner';
 import { clusterFallbacksJob } from './cluster-fallbacks';
 import { type DailyTipsDeps, dailyTipsJob } from './daily-tips';
 import { type DraftingJobDeps, draftPlaceJob } from './draft-place';
+import { embedCatalogRecordJob, embedHostPlaceJob } from './embed-search-text';
 import { guestNotifyJob, guestRemindersJob } from './guest-notify';
 import { hostDigestsJob, hostNotifyJob } from './host-notify';
 import { type ImportOpenDataDeps, importOpenDataJob } from './import-open-data';
@@ -46,6 +48,7 @@ export function createJobs(
     ReconcileJobDeps &
     ImportOpenDataDeps &
     DraftingJobDeps &
+    EmbeddingDeps &
     RetentionDeps,
 ): JobDefinition[] {
   // The runner hands each handler the data its own queue was sent.
@@ -55,6 +58,8 @@ export function createJobs(
     translateOfferJob(deps) as JobDefinition,
     translateHostPlaceJob(deps) as JobDefinition,
     translateFieldTextJob(deps) as JobDefinition,
+    embedCatalogRecordJob(deps) as JobDefinition,
+    embedHostPlaceJob(deps) as JobDefinition,
     orderTimerJob(deps) as JobDefinition,
     orderNotifyJob(deps) as JobDefinition,
     orderPaymentJob(deps) as JobDefinition,

@@ -1,7 +1,9 @@
 import {
   createBraveSearch,
+  createVoyageEmbedder,
   createWeatherSource,
   type Db,
+  type Embedder,
   type GuestIdentity,
   type JobQueue,
   MCP_SERVERS,
@@ -35,6 +37,7 @@ export interface AppDeps {
     | 'REQUEST_STATE_SECRET'
     | 'WEATHER_USER_AGENT'
     | 'BRAVE_SEARCH_API_KEY'
+    | 'VOYAGE_API_KEY'
   >;
   db: Db;
   /** Send-only: the Order machine enqueues its timers and notifications in its transaction. */
@@ -47,6 +50,8 @@ export interface AppDeps {
   weather?: WeatherSource;
   /** Built here when not given: Brave through the egress allowlist; no key means unavailable. */
   webSearch?: WebSearch;
+  /** Built here when not given: Voyage through the egress allowlist; no key means words only. */
+  embedder?: Embedder;
 }
 
 export function buildApp(deps: AppDeps) {
@@ -69,6 +74,8 @@ export function buildApp(deps: AppDeps) {
     webSearch:
       deps.webSearch ??
       createBraveSearch({ fetch: egress.fetch, apiKey: config.BRAVE_SEARCH_API_KEY }),
+    embedder:
+      deps.embedder ?? createVoyageEmbedder({ fetch: egress.fetch, apiKey: config.VOYAGE_API_KEY }),
   });
   return app;
 }
@@ -87,11 +94,12 @@ export function mountServers(
     requestStateSecret: string;
     weather: WeatherSource;
     webSearch: WebSearch;
+    embedder: Embedder;
     overrides?: Partial<Record<McpServerName, (identity: GuestIdentity) => McpServer>>;
   },
 ) {
-  const { db, now, queue, requestStateSecret, weather, webSearch } = opts;
-  const deps = { db, now, queue, requestStateSecret, weather, webSearch };
+  const { db, now, queue, requestStateSecret, weather, webSearch, embedder } = opts;
+  const deps = { db, now, queue, requestStateSecret, weather, webSearch, embedder };
   // `local` needs no scope at the gate: outside a destination the token has no catalog:read, yet
   // the server still answers with web_fallback_search alone; tools check per call.
   // `services` likewise: after checkout only list_my_orders is listed, and each tool checks its own.

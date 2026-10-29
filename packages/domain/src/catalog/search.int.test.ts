@@ -1,8 +1,17 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { catalogRecommendations, catalogRecords, destinations } from '../db/schema/catalog';
+import {
+  catalogRecommendations,
+  catalogRecords,
+  catalogTranslations,
+  destinations,
+} from '../db/schema/catalog';
+import { catalogEmbeddings } from '../db/schema/embeddings';
+import { backfillEmbeddings } from '../embeddings/store';
+import type { Embedder } from '../embeddings/voyage';
 import {
   createTestDatabase,
+  fakeEmbedder,
   noopQueue,
   publishCatalog,
   publishOffer,
@@ -13,6 +22,7 @@ import {
   seedProvider,
   type TestDatabase,
   TROGIR,
+  unavailableEmbedder,
 } from '../testing';
 import { fromLocalDateTime } from '../time';
 import {
@@ -120,10 +130,10 @@ afterAll(async () => {
 
 describe('searchPlaces', () => {
   it('filters by distance from the property and sorts equal results by distance', async () => {
-    const near = await searchPlaces(testDb.db, summer(), { maxDistanceKm: 1 }, SUMMER);
+    const near = await searchPlaces(testDb.db, summer(), { maxDistanceKm: 1 }, SUMMER, null);
     expect(titles(near).sort()).toEqual(['Cathedral of St Lawrence', 'Kamerlengo Fortress']);
 
-    const all = await searchPlaces(testDb.db, summer(), { limit: 10 }, SUMMER);
+    const all = await searchPlaces(testDb.db, summer(), { limit: 10 }, SUMMER, null);
     expect(titles(all)).toEqual(
       expect.arrayContaining(['Copacabana beach', 'Pantan nature reserve']),
     );
@@ -133,11 +143,11 @@ describe('searchPlaces', () => {
   });
 
   it('filters by season on the day', async () => {
-    const s = titles(await searchPlaces(testDb.db, summer(), { limit: 10 }, SUMMER));
+    const s = titles(await searchPlaces(testDb.db, summer(), { limit: 10 }, SUMMER, null));
     expect(s).toEqual(
       expect.arrayContaining(['Copacabana beach', 'Kamerlengo Fortress', 'Krka National Park']),
     );
-    const w = titles(await searchPlaces(testDb.db, winter(), { limit: 10 }, WINTER));
+    const w = titles(await searchPlaces(testDb.db, winter(), { limit: 10 }, WINTER, null));
     expect(w).not.toContain('Copacabana beach');
     expect(w).not.toContain('Kamerlengo Fortress');
     expect(w).not.toContain('Krka National Park');
@@ -147,44 +157,80 @@ describe('searchPlaces', () => {
   });
 
   it('checks the season on an asked date', async () => {
-    const r = await searchPlaces(testDb.db, winter(), { date: '2027-07-12', limit: 10 }, WINTER);
+    const r = await searchPlaces(
+      testDb.db,
+      winter(),
+      { date: '2027-07-12', limit: 10 },
+      WINTER,
+      null,
+    );
     expect(r?.date).toBe('2027-07-12');
     expect(titles(r)).toContain('Copacabana beach');
   });
 
   it('drops places known to be closed at a time and keeps unknown hours', async () => {
-    const ten = await searchPlaces(testDb.db, summer(), { openAt: '10:00', limit: 10 }, SUMMER);
+    const ten = await searchPlaces(
+      testDb.db,
+      summer(),
+      { openAt: '10:00', limit: 10 },
+      SUMMER,
+      null,
+    );
     const at10 = Object.fromEntries((ten?.results ?? []).map((p) => [p.id, p.open]));
     expect(at10[idOf['Kamerlengo Fortress'] as string]).toBe('open');
     expect(at10[idOf['Cathedral of St Lawrence'] as string]).toBe('unknown');
 
     const late = titles(
-      await searchPlaces(testDb.db, summer(), { openAt: '22:00', limit: 10 }, SUMMER),
+      await searchPlaces(testDb.db, summer(), { openAt: '22:00', limit: 10 }, SUMMER, null),
     );
     expect(late).not.toContain('Kamerlengo Fortress');
     expect(late).toContain('Cathedral of St Lawrence');
   });
 
   it('filters by category and returns day trips with travel time', async () => {
-    const beach = await searchPlaces(testDb.db, summer(), { category: 'beach' }, SUMMER);
+    const beach = await searchPlaces(testDb.db, summer(), { category: 'beach' }, SUMMER, null);
     expect(titles(beach)).toEqual(['Copacabana beach']);
-    const trips = await searchPlaces(testDb.db, summer(), { category: 'day_trip' }, SUMMER);
+    const trips = await searchPlaces(testDb.db, summer(), { category: 'day_trip' }, SUMMER, null);
     expect(titles(trips)).toEqual(['Krka National Park']);
     expect(trips?.results[0]?.travelMinutes).toBe(60);
     expect(trips?.results[0]?.category).toBe('day_trip');
   });
 
-  it('matches words by trigram similarity', async () => {
-    const fortress = await searchPlaces(testDb.db, summer(), { query: 'fortress' }, SUMMER);
+  it('matches words without embeddings', async () => {
+    const fortress = await searchPlaces(
+      testDb.db,
+      summer(),
+      { query: 'fortress' },
+      SUMMER,
+      unavailableEmbedder(),
+    );
     expect(titles(fortress)[0]).toBe('Kamerlengo Fortress');
-    expect(titles(await searchPlaces(testDb.db, summer(), { query: 'xyzzy' }, SUMMER))).toEqual([]);
-    expect(titles(await searchPlaces(testDb.db, summer(), { query: 'wetland' }, SUMMER))).toEqual([
-      'Pantan nature reserve',
-    ]);
+    expect(
+      titles(
+        await searchPlaces(testDb.db, summer(), { query: 'xyzzy' }, SUMMER, unavailableEmbedder()),
+      ),
+    ).toEqual([]);
+    expect(
+      titles(
+        await searchPlaces(
+          testDb.db,
+          summer(),
+          { query: 'wetland' },
+          SUMMER,
+          unavailableEmbedder(),
+        ),
+      ),
+    ).toEqual(['Pantan nature reserve']);
   });
 
   it('answers in the guest language', async () => {
-    const r = await searchPlaces(testDb.db, summer(), { category: 'sight', limit: 10 }, SUMMER);
+    const r = await searchPlaces(
+      testDb.db,
+      summer(),
+      { category: 'sight', limit: 10 },
+      SUMMER,
+      null,
+    );
     for (const p of r?.results ?? []) expect(p.title.startsWith('[de] ')).toBe(true);
     const kamerlengo = r?.results.find((p) => p.id === idOf['Kamerlengo Fortress']);
     expect(kamerlengo?.summary).toBe(
@@ -198,9 +244,9 @@ describe('searchPlaces', () => {
         [summer(), SUMMER],
         [winter(), WINTER],
       ] as const) {
-        const ids = (await searchPlaces(testDb.db, scope, { ...q, limit: 10 }, now))?.results.map(
-          (p) => p.id,
-        );
+        const ids = (
+          await searchPlaces(testDb.db, scope, { ...q, limit: 10 }, now, null)
+        )?.results.map((p) => p.id);
         expect(ids).not.toContain(lovrijenacId);
         expect(ids).not.toContain(hiddenCoveId);
       }
@@ -211,7 +257,7 @@ describe('searchPlaces', () => {
 
   it('checks the season on check-in day before arrival', async () => {
     // The summer guest checks in two days after SUMMER.
-    expect((await searchPlaces(testDb.db, summer(), {}, SUMMER))?.date).toBe('2027-07-12');
+    expect((await searchPlaces(testDb.db, summer(), {}, SUMMER, null))?.date).toBe('2027-07-12');
   });
 
   it('never matches words from an unpublished edit', async () => {
@@ -223,9 +269,15 @@ describe('searchPlaces', () => {
       .set({ title: 'Xylophone grotto', description: 'Xylophone grotto.', revision: 2 })
       .where(eq(catalogRecords.id, id));
     try {
-      const r = await searchPlaces(testDb.db, summer(), { query: 'xylophone' }, SUMMER);
+      const r = await searchPlaces(
+        testDb.db,
+        summer(),
+        { query: 'xylophone' },
+        SUMMER,
+        unavailableEmbedder(),
+      );
       expect(r?.results).toEqual([]);
-      const beach = await searchPlaces(testDb.db, summer(), { category: 'beach' }, SUMMER);
+      const beach = await searchPlaces(testDb.db, summer(), { category: 'beach' }, SUMMER, null);
       expect(titles(beach)).toEqual(['Copacabana beach']);
     } finally {
       await testDb.db
@@ -237,7 +289,7 @@ describe('searchPlaces', () => {
 
   it('returns null when the Stay does not belong to the property', async () => {
     const scope = scopeOf(summerGuest, { propertyId: winterGuest.propertyId });
-    expect(await searchPlaces(testDb.db, scope, {}, SUMMER)).toBeNull();
+    expect(await searchPlaces(testDb.db, scope, {}, SUMMER, null)).toBeNull();
   });
 });
 
@@ -260,7 +312,7 @@ describe('getPlace', () => {
 
 describe('staleness', () => {
   it('carries verifiedAt and the staleness status of each result', async () => {
-    const all = await searchPlaces(testDb.db, summer(), { limit: 10 }, SUMMER);
+    const all = await searchPlaces(testDb.db, summer(), { limit: 10 }, SUMMER, null);
     for (const p of all?.results ?? []) {
       expect(p.verifiedAt).toBe(WINTER.toISOString());
       expect(p.staleness.status).toBe('fresh');
@@ -269,7 +321,7 @@ describe('staleness', () => {
     const setVerified = (verifiedAt: Date | null) =>
       testDb.db.update(catalogRecords).set({ verifiedAt }).where(eq(catalogRecords.id, copacabana));
     const statusNow = async () =>
-      (await searchPlaces(testDb.db, summer(), { category: 'beach' }, SUMMER))?.results[0]
+      (await searchPlaces(testDb.db, summer(), { category: 'beach' }, SUMMER, null))?.results[0]
         ?.staleness.status;
 
     await setVerified(new Date(SUMMER.getTime() - 400 * DAY_MS));
@@ -282,21 +334,21 @@ describe('staleness', () => {
 
 describe('searchEvents', () => {
   it('finds events overlapping the Stay in local time, and none in winter', async () => {
-    const s = await searchEvents(testDb.db, summer(), {}, SUMMER);
+    const s = await searchEvents(testDb.db, summer(), {}, SUMMER, null);
     expect(s?.results.map((e) => e.title)).toEqual(['[de] Trogir Summer of Culture']);
     expect(s?.results[0]?.startsAt).toBe('2027-07-01T20:00');
     expect(s?.window).toEqual({ from: '2027-07-09', to: '2027-07-18' });
-    expect((await searchEvents(testDb.db, winter(), {}, WINTER))?.results).toEqual([]);
+    expect((await searchEvents(testDb.db, winter(), {}, WINTER, null))?.results).toEqual([]);
   });
 
   it('drops events that have already ended', async () => {
     const early = new Date('2027-07-09T06:00:00Z');
-    const before = await searchEvents(testDb.db, summer(), {}, early);
+    const before = await searchEvents(testDb.db, summer(), {}, early, null);
     expect(before?.results.map((e) => e.title)).toEqual([
       '[de] Trogir Summer of Culture',
       '[de] Morning klapa concert',
     ]);
-    const after = await searchEvents(testDb.db, summer(), {}, SUMMER);
+    const after = await searchEvents(testDb.db, summer(), {}, SUMMER, null);
     expect(after?.results.map((e) => e.title)).not.toContain('[de] Morning klapa concert');
   });
 
@@ -307,7 +359,8 @@ describe('searchEvents', () => {
       .set({ address: 'Obala bana Berislavića bb' })
       .where(eq(catalogRecords.id, festival));
     const early = new Date('2027-07-09T06:00:00Z');
-    const [located, bare] = (await searchEvents(testDb.db, summer(), {}, early))?.results ?? [];
+    const [located, bare] =
+      (await searchEvents(testDb.db, summer(), {}, early, null))?.results ?? [];
     expect(located).toMatchObject({
       address: 'Obala bana Berislavića bb',
       location: { lat: 43.5161, lng: 16.2475 },
@@ -326,6 +379,7 @@ describe('searchEvents', () => {
       winter(),
       { from: '2027-06-01', to: '2027-09-30' },
       WINTER,
+      null,
     );
     expect(wide?.results).toEqual([]);
     const reversed = await searchEvents(
@@ -333,6 +387,7 @@ describe('searchEvents', () => {
       summer(),
       { from: '2027-07-15', to: '2027-07-12' },
       SUMMER,
+      null,
     );
     expect(reversed?.results).toEqual([]);
   });
@@ -340,7 +395,7 @@ describe('searchEvents', () => {
 
 describe('daily-tip seams', () => {
   it('keeps only rainy-day places when asked', async () => {
-    const r = await searchPlaces(testDb.db, summer(), { rainyDay: true, limit: 10 }, SUMMER);
+    const r = await searchPlaces(testDb.db, summer(), { rainyDay: true, limit: 10 }, SUMMER, null);
     expect(titles(r)).toEqual(['Cathedral of St Lawrence']);
   });
 
@@ -350,11 +405,18 @@ describe('daily-tip seams', () => {
       summer(),
       { interests: ['food', 'sights'] },
       SUMMER,
+      null,
     );
     expect(sights?.results.map((e) => e.title)).toEqual(['[de] Trogir Summer of Culture']);
-    const beaches = await searchEvents(testDb.db, summer(), { interests: ['beaches'] }, SUMMER);
+    const beaches = await searchEvents(
+      testDb.db,
+      summer(),
+      { interests: ['beaches'] },
+      SUMMER,
+      null,
+    );
     expect(beaches?.results).toEqual([]);
-    const none = await searchEvents(testDb.db, summer(), { interests: [] }, SUMMER);
+    const none = await searchEvents(testDb.db, summer(), { interests: [] }, SUMMER, null);
     expect(none?.results).toEqual([]);
   });
 
@@ -365,6 +427,7 @@ describe('daily-tip seams', () => {
       summer(),
       { category: 'sight', countRecommendation: false },
       SUMMER,
+      null,
     );
     expect(r?.results.length).toBeGreaterThan(0);
     expect(await testDb.db.select().from(catalogRecommendations)).toEqual([]);
@@ -373,13 +436,15 @@ describe('daily-tip seams', () => {
 
 describe('listTransportNotes', () => {
   it('returns notes with their links as stored', async () => {
-    const bus = await listTransportNotes(testDb.db, summer(), { mode: 'bus' }, SUMMER);
+    const bus = await listTransportNotes(testDb.db, summer(), { mode: 'bus' }, SUMMER, null);
     expect(bus).toHaveLength(1);
     expect(bus?.[0]?.mode).toBe('bus');
     expect(bus?.[0]?.links).toEqual([
       { label: 'Promet Split timetables', url: 'https://www.promet-split.hr/' },
     ]);
-    expect(await listTransportNotes(testDb.db, summer(), { mode: 'ferry' }, SUMMER)).toEqual([]);
+    expect(await listTransportNotes(testDb.db, summer(), { mode: 'ferry' }, SUMMER, null)).toEqual(
+      [],
+    );
   });
 });
 
@@ -393,14 +458,14 @@ describe('recommendation counter', () => {
         count: r.count,
       }));
 
-    const r = await searchPlaces(testDb.db, summer(), { category: 'sight' }, SUMMER);
+    const r = await searchPlaces(testDb.db, summer(), { category: 'sight' }, SUMMER, null);
     const ids = (r?.results ?? []).map((p) => p.id).sort();
     expect(ids.length).toBeGreaterThan(0);
     const once = await counts();
     expect(once.map((c) => c.id).sort()).toEqual(ids);
     for (const c of once) expect(c).toMatchObject({ day: '2027-07-10', count: 1 });
 
-    await searchPlaces(testDb.db, summer(), { category: 'sight' }, SUMMER);
+    await searchPlaces(testDb.db, summer(), { category: 'sight' }, SUMMER, null);
     for (const c of await counts()) expect(c.count).toBe(2);
 
     await getPlace(testDb.db, summer(), ids[0] as string, SUMMER);
@@ -411,7 +476,7 @@ describe('recommendation counter', () => {
     await testDb.db.delete(catalogRecommendations);
     // 23:30 UTC on 10 July is 01:30 on 11 July in Zagreb.
     const lateUtc = new Date('2027-07-10T23:30:00Z');
-    await searchPlaces(testDb.db, summer(), { category: 'sight' }, lateUtc);
+    await searchPlaces(testDb.db, summer(), { category: 'sight' }, lateUtc, null);
     const days = (await testDb.db.select().from(catalogRecommendations)).map((r) => r.day);
     expect(days.length).toBeGreaterThan(0);
     for (const d of days) expect(d).toBe('2027-07-11');
@@ -450,7 +515,13 @@ describe('bookable boost', () => {
     return offerId;
   };
   const search = () =>
-    searchPlaces(testDb.db, scopeOf(summerGuest, { destinationId: dest }), { limit: 10 }, SUMMER);
+    searchPlaces(
+      testDb.db,
+      scopeOf(summerGuest, { destinationId: dest }),
+      { limit: 10 },
+      SUMMER,
+      null,
+    );
   const order = async () => (await search())?.results.map((p) => p.id) ?? [];
 
   beforeAll(async () => {
@@ -504,5 +575,216 @@ describe('bookable boost', () => {
     await linkProvider(y, { commissionBp: 0 });
     expect(await order()).toEqual(before);
     expect(before.sort()).toEqual([x, y].sort());
+  });
+});
+
+describe('relevance (61)', () => {
+  let dest: string;
+  let konobaId: string;
+  let pizzeriaId: string;
+  let coveId: string;
+  const scope = (over: Partial<CatalogScope> = {}) =>
+    scopeOf(summerGuest, { destinationId: dest, ...over });
+  const place = async (
+    title: string,
+    placeCategory: 'restaurant' | 'beach',
+    description: string,
+  ) => {
+    const [r] = await testDb.db
+      .insert(catalogRecords)
+      .values({
+        destinationId: dest,
+        kind: 'place',
+        placeCategory,
+        title,
+        description,
+        location: TROGIR,
+      })
+      .returning();
+    if (!r) throw new Error('no place');
+    return r.id;
+  };
+  const ids = (r: { results: { id: string }[] } | null) => (r?.results ?? []).map((p) => p.id);
+  const failing: Embedder = {
+    model: 'fake-1',
+    async embed() {
+      throw new Error('socket hang up');
+    },
+  };
+
+  beforeAll(async () => {
+    dest = await seedDestination(testDb.db);
+    konobaId = await place(
+      'Konoba Riba',
+      'restaurant',
+      'Grilled fish and black risotto for dinner by the harbour.',
+    );
+    pizzeriaId = await place(
+      'Pizzeria Sole',
+      'restaurant',
+      'Wood-fired pizza and pasta for dinner.',
+    );
+    coveId = await place('Pebble cove', 'beach', 'A quiet pebble beach; bring a picnic dinner.');
+    await publishCatalog(testDb.db, dest);
+    await backfillEmbeddings({ db: testDb.db, embedder: fakeEmbedder() });
+  });
+
+  it('matches by vector where no word matches, embedding the words once as a query', async () => {
+    // "grillmaster risoni" shares no word with the konoba, only the fake's vector slots.
+    const embedder = fakeEmbedder();
+    const q = { query: 'grillmaster risoni' };
+    const r = await searchPlaces(testDb.db, scope(), q, SUMMER, embedder);
+    expect(ids(r)).toEqual([konobaId]);
+    expect(r?.matchesQuery).toBe(true);
+    expect(embedder.calls).toEqual([{ texts: ['grillmaster risoni'], input: 'query' }]);
+    expect(ids(await searchPlaces(testDb.db, scope(), q, SUMMER, unavailableEmbedder()))).toEqual(
+      [],
+    );
+  });
+
+  it('falls back to words without a key or when the embedder fails', async () => {
+    for (const embedder of [unavailableEmbedder(), failing, null]) {
+      const r = await searchPlaces(testDb.db, scope(), { query: 'grilled fish' }, SUMMER, embedder);
+      expect(ids(r)).toEqual([konobaId]);
+    }
+  });
+
+  it('matches a record without a vector on its words among records with vectors', async () => {
+    await testDb.db.delete(catalogEmbeddings).where(eq(catalogEmbeddings.recordId, konobaId));
+    try {
+      const r = await searchPlaces(
+        testDb.db,
+        scope(),
+        { query: 'grilled fish' },
+        SUMMER,
+        fakeEmbedder(),
+      );
+      expect(ids(r)).toEqual([konobaId]);
+    } finally {
+      await backfillEmbeddings({ db: testDb.db, embedder: fakeEmbedder() });
+    }
+  });
+
+  it('puts what the guest avoids last without removing it', async () => {
+    for (const embedder of [fakeEmbedder(), unavailableEmbedder()]) {
+      const q = { query: 'dinner', category: 'restaurant' as const };
+      const avoided = ids(
+        await searchPlaces(testDb.db, scope(), { ...q, avoid: 'fish' }, SUMMER, embedder),
+      );
+      expect(avoided).toEqual([pizzeriaId, konobaId]);
+      const plain = ids(
+        await searchPlaces(testDb.db, scope(), { ...q, avoid: 'pizza' }, SUMMER, embedder),
+      );
+      expect(plain).toEqual([konobaId, pizzeriaId]);
+    }
+  });
+
+  it('drops matches far below the best one', async () => {
+    // Hand-set vectors: the konoba answers the query, the pizzeria half-way, the cove not at all.
+    const at: Record<string, number[]> = {
+      [konobaId]: [1, 0],
+      [pizzeriaId]: [0.5, Math.sqrt(0.75)],
+      [coveId]: [0, 1],
+    };
+    const translations = await testDb.db
+      .select()
+      .from(catalogTranslations)
+      .where(inArray(catalogTranslations.recordId, Object.keys(at)));
+    await testDb.db.insert(catalogEmbeddings).values(
+      translations.map((t) => ({
+        recordId: t.recordId,
+        revision: t.revision,
+        language: t.language,
+        model: 'stub-1',
+        vector: at[t.recordId] ?? [],
+      })),
+    );
+    const stub: Embedder = {
+      model: 'stub-1',
+      async embed() {
+        return { vectors: [[1, 0]], tokens: 1 };
+      },
+    };
+    // The pizzeria's 0.5 passes the cutoff but not a share of the konoba's 1.0.
+    const r = await searchPlaces(testDb.db, scope(), { query: 'tonight' }, SUMMER, stub);
+    expect(ids(r)).toEqual([konobaId]);
+  });
+
+  it('ranks by relevance band first, then by About me inside a band', async () => {
+    const beachFan = scope({ aboutMe: { categoryWeights: { beach: 1 } } });
+    const embedder = unavailableEmbedder();
+    // Both words match the pizzeria, one the cove: different bands, About me cannot reorder them.
+    const across = await searchPlaces(
+      testDb.db,
+      beachFan,
+      { query: 'pizza dinner' },
+      SUMMER,
+      embedder,
+    );
+    expect(ids(across).slice(0, 2)).toEqual([pizzeriaId, coveId]);
+    // One word matches all three equally: About me decides.
+    const within = await searchPlaces(testDb.db, beachFan, { query: 'dinner' }, SUMMER, embedder);
+    expect(ids(within)[0]).toBe(coveId);
+  });
+
+  it('says when nothing matched, and gives the asked category instead', async () => {
+    const embedder = unavailableEmbedder();
+    const instead = await searchPlaces(
+      testDb.db,
+      summer(),
+      { query: 'xyzzy', category: 'beach' },
+      SUMMER,
+      embedder,
+    );
+    expect(instead?.matchesQuery).toBe(false);
+    expect(titles(instead)).toEqual(['Copacabana beach']);
+    const none = await searchPlaces(testDb.db, summer(), { query: 'xyzzy' }, SUMMER, embedder);
+    expect(none?.matchesQuery).toBe(false);
+    expect(none?.results).toEqual([]);
+    const noWords = await searchPlaces(testDb.db, summer(), { category: 'beach' }, SUMMER, null);
+    expect(noWords?.matchesQuery).toBeNull();
+    const found = await searchPlaces(testDb.db, summer(), { query: 'fortress' }, SUMMER, embedder);
+    expect(found?.matchesQuery).toBe(true);
+  });
+
+  it('lists matches dropped only for the season', async () => {
+    const embedder = unavailableEmbedder();
+    const krka = idOf['Krka National Park'] as string;
+    const w = await searchPlaces(testDb.db, winter(), { query: 'Krka' }, WINTER, embedder);
+    expect(w?.results).toEqual([]);
+    expect(w?.matchesQuery).toBe(false);
+    expect(w?.outOfSeason).toEqual([
+      { id: krka, title: '[de] Krka National Park', seasons: [{ from: '04-01', to: '10-31' }] },
+    ]);
+    const s = await searchPlaces(testDb.db, summer(), { query: 'Krka' }, SUMMER, embedder);
+    expect(ids(s)).toEqual([krka]);
+    expect(s?.outOfSeason).toEqual([]);
+  });
+});
+
+describe('words in events and transport notes (61)', () => {
+  it('keeps the events that match, soonest first', async () => {
+    const early = new Date('2027-07-09T06:00:00Z');
+    const embedder = unavailableEmbedder();
+    const of = async (query: string) =>
+      (await searchEvents(testDb.db, summer(), { query }, early, embedder))?.results.map(
+        (e) => e.title,
+      );
+    expect(await of('klapa')).toEqual([
+      '[de] Trogir Summer of Culture',
+      '[de] Morning klapa concert',
+    ]);
+    expect(await of('theatre')).toEqual(['[de] Trogir Summer of Culture']);
+    expect(await of('xyzzy')).toEqual([]);
+  });
+
+  it('keeps the transport notes that match', async () => {
+    const embedder = unavailableEmbedder();
+    const of = async (query: string) =>
+      (await listTransportNotes(testDb.db, summer(), { query }, SUMMER, embedder))?.map(
+        (n) => n.title,
+      );
+    expect(await of('bus 37')).toEqual(['[de] Split–Trogir city bus 37']);
+    expect(await of('xyzzy')).toEqual([]);
   });
 });

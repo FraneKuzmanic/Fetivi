@@ -7,6 +7,7 @@ export * from './curation';
 export * from './db/client';
 export * from './db/migrate';
 export * from './db/schema';
+export * from './embeddings';
 export * from './fallback';
 export * from './feedback';
 export * from './geocode';
