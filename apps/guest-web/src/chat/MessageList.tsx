@@ -1,6 +1,6 @@
 import { CitedText, citesAny, uncitedText } from '@fetivi/ui';
-import { componentPart, type WebResultsPayload } from '@fetivi/ui/payloads';
-import { type ChatStatus, isToolUIPart, type UIMessage } from 'ai';
+import { componentPart, QUIET_DECLINES, type WebResultsPayload } from '@fetivi/ui/payloads';
+import { type ChatStatus, getToolName, isToolUIPart, type UIMessage } from 'ai';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { McpAppPart } from '../mcp-apps/McpAppPart';
@@ -61,12 +61,6 @@ function cardOf(message: UIMessage, part: UIMessage['parts'][number], busy: bool
   return { key: `card-${part.id}`, card: part.data, state: tapped && busy ? 'sending' : 'open' };
 }
 
-/** The tools whose Not now output collapses the card into a quiet line (ticket 66). */
-const DECLINED: Record<string, string> = {
-  'tool-create_order': 'not_ordered',
-  'tool-send_host_message': 'not_sent',
-};
-
 /**
  * A card the guest declined collapses into a quiet line; nothing else follows it (ticket 66). A
  * card cancelled because the guest typed on is stored the same way, so it reads so after a reload.
@@ -76,7 +70,7 @@ function notSentOf(message: UIMessage, part: UIMessage['parts'][number]): NotSen
   const call = message.parts.find((p) => isToolUIPart(p) && p.toolCallId === part.id);
   if (!call || !isToolUIPart(call) || call.state !== 'output-available') return null;
   const outcome = (call.output as { outcome?: unknown } | null)?.outcome;
-  return outcome !== undefined && DECLINED[call.type] === outcome
+  return outcome !== undefined && QUIET_DECLINES[getToolName(call)] === outcome
     ? { key: `not-sent-${part.id}`, notSent: true }
     : null;
 }

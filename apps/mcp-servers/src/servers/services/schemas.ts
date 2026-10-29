@@ -160,8 +160,12 @@ const orderSummary = z.object({
     .describe(
       `host: the guest's host sells it and accepts it; say "your host", never "the provider".`,
     ),
-  orderKind: z.enum(ORDER_KINDS),
-  availabilityMode: z.enum(AVAILABILITY_MODES),
+  orderKind: z
+    .enum(ORDER_KINDS)
+    .describe('What the guest ordered: a booking, a ticket, a purchase of goods or a request.'),
+  availabilityMode: z
+    .enum(AVAILABILITY_MODES)
+    .describe('on_request: the provider or host accepts or declines it before it is confirmed.'),
   responseDueLocal: z
     .string()
     .nullable()

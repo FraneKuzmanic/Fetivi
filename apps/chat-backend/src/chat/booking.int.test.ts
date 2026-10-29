@@ -318,6 +318,40 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
     ]);
   });
 
+  // The model rejects a request that ends in its own text as a prefill (400), so the words step's
+  // text is sent before the call, whatever the stored order.
+  it('after a tap, resends the words step before the call, so the request ends with the result', async () => {
+    const s = await setup(transport);
+    s.steps.push(
+      callsStep([order('call-order', s.args)]),
+      textStep(PRICE_SAID),
+      textStep('Your trip is booked.'),
+    );
+    await sendText(s, 'Book the boat trip for two');
+    const tap = { toolCallId: 'call-order', action: 'accept', content: CONTACT };
+    const chunks = readStream(await sendAnswer(s, tap));
+    expect(chunks).toContainEqual(expect.objectContaining({ delta: 'Your trip is booked.' }));
+    const prompt = s.model.doStreamCalls[2]?.prompt ?? [];
+    expect(prompt.at(-1)?.role).toBe('tool');
+    const said = JSON.stringify(prompt).indexOf(PRICE_SAID);
+    expect(said).toBeGreaterThan(-1);
+    expect(said).toBeLessThan(JSON.stringify(prompt).indexOf('call-order'));
+  });
+
+  it('after a refusal, the model sees the words step before the call', async () => {
+    const s = await setup(transport);
+    s.steps.push(
+      callsStep([order('call-order', { ...s.args, date: plusDays(s.day, 30), slotId: undefined })]),
+      textStep(PRICE_SAID),
+      textStep('That day is outside your stay.'),
+    );
+    const chunks = readStream(await sendText(s, 'Book it next month'));
+    expect(ofType(chunks, 'tool-output-error')[0]).toMatchObject({ toolCallId: 'call-order' });
+    expect(s.model.doStreamCalls).toHaveLength(3);
+    const prompt = s.model.doStreamCalls[2]?.prompt ?? [];
+    expect(prompt.at(-1)?.role).toBe('tool');
+  });
+
   it('asks for no extra words when the step already said them', async () => {
     const s = await setup(transport);
     s.steps.push(orderStep(order('call-order', s.args)));

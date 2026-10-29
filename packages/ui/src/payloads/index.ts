@@ -326,6 +326,15 @@ export type McpAppPart = z.infer<typeof mcpAppPart>;
 /** The UI message part type of a confirmation card; its id is the paused tool call's id. */
 export const ELICITATION_PART_TYPE = 'data-elicitation';
 
+/**
+ * The tools whose Not now ends the response without the model, by the decline outcome each
+ * returns; the card collapses into a quiet line (ticket 66).
+ */
+export const QUIET_DECLINES: Readonly<Record<string, string>> = {
+  create_order: 'not_ordered',
+  send_host_message: 'not_sent',
+};
+
 /** The stored create_order draft the card shows; never model text. Not strict, like placeCard. */
 export const orderDraft = z.object({
   pendingId: z.string().min(1),

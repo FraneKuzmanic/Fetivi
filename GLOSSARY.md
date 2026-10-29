@@ -160,6 +160,7 @@ _Avoid_: Booking (as the umbrella term), reservation, transaction
 
 **Order kind**:
 The shape of an Order: **booking** (a time slot with capacity), **ticket** (a fixed event), **purchase** (goods delivered or picked up) or **request** (needs a price or approval first).
+In the guest's words a purchase is an "order" and an on-request booking or a request is a "request"; for the host's own Offers the guest reads "your host", never "the provider".
 _Avoid_: Order type
 
 **Order status**:

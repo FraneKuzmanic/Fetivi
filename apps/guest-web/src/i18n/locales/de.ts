@@ -396,13 +396,12 @@ export const de: Messages = {
     invalidEmail: 'Geben Sie eine E-Mail-Adresse ein, z. B. name@example.com.',
     invalidName: 'Geben Sie Ihren Namen ein.',
     invalidPhone: 'Geben Sie eine Telefonnummer mit mindestens 6 Ziffern ein.',
-    note: 'Ihre E-Mail und diese Angaben gehen nur für diese Buchung an den Anbieter. Ich schicke Ihre Bestätigung an diese E-Mail und nutze sie für Neuigkeiten und um Sie auf einem anderen Handy zurück in Ihren Chat zu bringen. Ich bitte Sie einmal, sie zu bestätigen.',
+    note: 'Ihre E-Mail und diese Angaben gehen nur an den Anbieter und nur dafür. Ich schicke Ihre Bestätigung an diese E-Mail und nutze sie für Neuigkeiten und um Sie auf einem anderen Handy zurück in Ihren Chat zu bringen. Ich bitte Sie einmal, sie zu bestätigen.',
     confirm: 'Buchung bestätigen',
     cancel: 'Jetzt nicht',
     sending: 'Wird gebucht…',
     cardShown: 'Ihre Buchung ist bereit zum Prüfen und Bestätigen.',
-    errorAnswer:
-      'Das hat nicht geklappt, es ist noch nichts gebucht. Prüfen Sie die Angaben und tippen Sie erneut auf Bestätigen.',
+    errorAnswer: 'Das hat nicht geklappt. Prüfen Sie die Angaben und versuchen Sie es noch einmal.',
     pickHeading: 'Beginn am {{date}}',
     pickStart: 'Den Beginn um {{time}} am {{date}}, bitte.',
     pickDay: '{{date}}, bitte.',
@@ -434,8 +433,8 @@ export const de: Messages = {
     confirmOnline: 'Weiter zur Zahlung',
     checkoutClosed:
       'Die Zeit für die Zahlung ist abgelaufen. Den Stand der Buchung sehen Sie unter Meine Reise.',
-    details: 'Details zu dieser Buchung',
-    detailsHint: 'Alles, was man für diese Buchung wissen sollte.',
+    details: 'Ihre Notiz',
+    detailsHint: 'Alles, was man wissen sollte.',
     detailsCount: '{{count}} / {{max}}',
     time: 'Uhrzeit',
     timeHint: 'Wann es Ihnen passt.',
@@ -454,7 +453,7 @@ export const de: Messages = {
     priceByHost: 'Den Preis legt Ihr Gastgeber fest',
     payDirectHost: 'Direkt bei Ihrem Gastgeber bezahlen',
     noteHost:
-      'Ihre E-Mail und diese Angaben gehen nur für diese Bestellung an Ihren Gastgeber. Ich schicke Ihre Bestätigung an diese E-Mail und nutze sie für Neuigkeiten und um Sie auf einem anderen Handy zurück in Ihren Chat zu bringen. Ich bitte Sie einmal, sie zu bestätigen.',
+      'Ihre E-Mail und diese Angaben gehen nur an Ihren Gastgeber und nur dafür. Ich schicke Ihre Bestätigung an diese E-Mail und nutze sie für Neuigkeiten und um Sie auf einem anderen Handy zurück in Ihren Chat zu bringen. Ich bitte Sie einmal, sie zu bestätigen.',
     requestProvider:
       'Der Anbieter bestätigt Ihre Anfrage. Mit einer Antwort können Sie bis {{when}} rechnen.',
     requestHost:

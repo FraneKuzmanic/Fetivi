@@ -270,6 +270,36 @@ describe('booking confirmation in the guest app', () => {
     expect(chatPosts()).toHaveLength(1);
   });
 
+  it('Not now collapses the card into "Not sent", and nothing follows (ticket 66)', async () => {
+    const declined = () =>
+      createUIMessageStreamResponse({
+        stream: createUIMessageStream({
+          execute: ({ writer }) => {
+            writer.write({ type: 'start', messageId: 'a1' });
+            writer.write({
+              type: 'tool-output-available',
+              toolCallId: 'call-order',
+              output: { outcome: 'not_ordered', order: null },
+            });
+            writer.write({ type: 'finish' });
+          },
+        }),
+      });
+    stubBackend(declined);
+    await mount(paused());
+    await act(async () => {
+      host
+        .querySelector<HTMLButtonElement>('.fv-confirm-no')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await vi.waitFor(() => expect(host.textContent).toContain('Not sent'));
+    expect(host.querySelector('.fv-confirm')).toBeNull();
+    expect(host.querySelector('[role="alert"]')).toBeNull();
+    expect(chatPosts().map((c) => c.body)).toEqual([
+      { answer: { toolCallId: 'call-order', action: 'cancel' } },
+    ]);
+  });
+
   it('a failed answer reloads the chat; the card still open takes another tap', async () => {
     stubBackend(
       () =>
@@ -287,7 +317,7 @@ describe('booking confirmation in the guest app', () => {
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
     await vi.waitFor(() => {
-      expect(host.querySelector('[role="alert"]')?.textContent).toContain('nothing is booked yet');
+      expect(host.querySelector('[role="alert"]')?.textContent).toContain("didn't go through");
     });
     expect(chatPosts().map((c) => c.body)).toEqual([
       { answer: { toolCallId: 'call-order', action: 'cancel' } },

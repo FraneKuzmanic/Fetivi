@@ -104,11 +104,10 @@ const WORDS_AFTER: readonly string[] = ['suggest_replies', 'ask_choice', 'show_p
  * answer, and may not call tools. A step of only such shows is sent without them: after seeing its
  * own chips acknowledged, Sonnet often ends the turn empty, while from the search results it
  * answers (tickets 60, 66). A step that also called another tool keeps it all, so no result the
- * words need is dropped. A step that showed
- * results keeps only that call, so the words match the cards: its chips call goes the same way,
- * and so does the turn's thinking, which often holds the whole answer and leaves the guard step
- * to end empty (ticket 65). Both are already stored. A step with an invalid call or a tool error
- * keeps its tools, so the model can correct the call.
+ * words need is dropped. A step that showed results keeps only that call, so the words match the
+ * cards: its chips call goes the same way, and so does the turn's thinking, which often holds the
+ * whole answer and leaves the guard step to end empty (ticket 65). Both are already stored. A step
+ * with an invalid call or a tool error keeps its tools, so the model can correct the call.
  */
 export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, messages }) => {
   const calls = steps.at(-1)?.toolCalls ?? [];
@@ -153,9 +152,10 @@ const isShownLast = (part: UIMessage['parts'][number]) =>
 /**
  * A stored answer resent to the model with its chips call after its last text, as if both came
  * in one response; a show_results call moves the same way, keeping its place before the chips
- * (ticket 65), and so do a choice and a property card (ticket 66). Rescued turns are stored chips-then-text (the guard writes the words after
- * the chips); resent in that order they teach the model to call chips first, until the guard
- * step has nothing it may say and ends empty (ticket 60). Only the request changes: what is
+ * (ticket 65), and so do a choice and a property card (ticket 66). Rescued turns are stored
+ * chips-then-text (the guard writes the words after the chips); resent in that order they teach
+ * the model to call chips first, until the guard step has nothing it may say and ends empty
+ * (ticket 60). Only the request changes: what is
  * stored and streamed keeps its order. A message without text, and every other part, stay as
  * they are. Pure, so the cached history prefix stays the same from turn to turn.
  */

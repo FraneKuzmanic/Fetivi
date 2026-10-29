@@ -3,6 +3,7 @@ import {
   type ComponentPart,
   ELICITATION_PART_TYPE,
   elicitationPayload,
+  QUIET_DECLINES,
 } from '@fetivi/ui/payloads';
 import {
   convertToModelMessages,
@@ -86,6 +87,49 @@ function beforeCall(message: UIMessage, toolCallId: string): UIMessage {
   return { ...message, parts: message.parts.slice(0, end) };
 }
 
+/**
+ * The message with the parts from `from` on (the words step's) moved before the step that called
+ * `toolCallId`. The words step runs after the model's call, so in stream order its text would sit
+ * after the call; resent that way, an answered card or a refusal leaves the request ending in
+ * assistant text, which the model rejects as a prefill. Only what the model is sent changes: the
+ * stream and the stored answer keep stream order.
+ */
+function wordsFirst(message: UIMessage, toolCallId: string, from: number): UIMessage {
+  const rest = message.parts.slice(0, from);
+  const at = rest.findIndex((p) => 'toolCallId' in p && p.toolCallId === toolCallId);
+  const step = Math.max(
+    0,
+    rest.slice(0, at).findLastIndex((p) => p.type === 'step-start'),
+  );
+  return {
+    ...message,
+    parts: [...rest.slice(0, step), ...message.parts.slice(from), ...rest.slice(step)],
+  };
+}
+
+/**
+ * A stored answer, in stream order, with its words step moved before the call it was written
+ * for: the text between a call and that call's card. Stored answers keep stream order, so a resume
+ * puts the words first again before the model sees the answered card.
+ */
+function wordsBeforeCard(message: UIMessage): UIMessage {
+  for (const call of message.parts) {
+    if (!isToolUIPart(call)) continue;
+    const at = message.parts.indexOf(call);
+    const card = message.parts.findIndex(
+      (p) => p.type === ELICITATION_PART_TYPE && 'id' in p && p.id === call.toolCallId,
+    );
+    if (card <= at) continue;
+    const words: UIMessage['parts'] = message.parts
+      .slice(at + 1, card)
+      .filter((p) => ['text', 'step-start', 'custom'].includes(p.type));
+    if (!words.some((p) => p.type === 'text')) continue;
+    const kept = message.parts.filter((p) => !words.includes(p));
+    return wordsFirst({ ...message, parts: [...kept, ...words] }, call.toolCallId, kept.length);
+  }
+  return message;
+}
+
 /** Applies chunks to a copy of the message, as the browser does with the same chunks. */
 async function applyChunks(message: UIMessage, chunks: UIMessageChunk[]): Promise<UIMessage> {
   const next = structuredClone(message);
@@ -154,12 +198,6 @@ function outcomeChunks(call: { toolCallId: string; toolName: string }, outcome: 
   }
 }
 
-/** "Not now" on these cards ends the response: no model turn (ticket 66). Cancel's Keep it is not one. */
-const QUIET_DECLINES: Record<string, string> = {
-  create_order: 'not_ordered',
-  send_host_message: 'not_sent',
-};
-
 /**
  * Whether the guest's answer is a plain Not now: the tool's own decline output. An order that won
  * the race, an expired record or any error still goes to the model, so it can explain.
@@ -180,7 +218,7 @@ export function createLoop(
   assistant: UIMessage | null,
   writer: UIMessageStreamWriter,
 ) {
-  let current = assistant ? structuredClone(assistant) : emptyAssistant();
+  let current = assistant ? wordsBeforeCard(structuredClone(assistant)) : emptyAssistant();
   const result: LoopResult = {
     outcome: { status: 'completed' },
     steps: 0,
@@ -263,9 +301,12 @@ export function createLoop(
       for (const open of fresh) {
         // A booking card never comes without words (ticket 62): when the model called
         // create_order before saying anything, one text-only step says the price and the
-        // warnings first, from the turn without that call; the card follows it.
+        // warnings first, from the turn without that call; the card follows it. The model then
+        // sees the words before the call, never a turn ending in its own text.
         if (open.toolName === 'create_order' && !hasText(current)) {
+          const from = current.parts.length;
           if (!(await segment(open.part.toolCallId))) return;
+          current = wordsFirst(current, open.part.toolCallId, from);
         }
         deps.onCall(open.toolName);
         const call = pausedCall(open);

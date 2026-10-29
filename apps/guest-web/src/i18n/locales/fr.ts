@@ -393,13 +393,12 @@ export const fr: Messages = {
     invalidEmail: 'Saisissez une adresse e-mail, par exemple nom@example.com.',
     invalidName: 'Saisissez votre nom.',
     invalidPhone: 'Saisissez un numéro de téléphone d’au moins 6 chiffres.',
-    note: 'Votre e-mail et ces informations sont transmis au prestataire pour cette réservation uniquement. J’enverrai votre confirmation à cet e-mail et je l’utiliserai pour vos nouvelles et pour vous ramener dans votre conversation sur un autre téléphone. Je vous demanderai de le confirmer une fois.',
+    note: 'Votre e-mail et ces informations ne sont transmis qu’au prestataire, et uniquement pour cela. J’enverrai votre confirmation à cet e-mail et je l’utiliserai pour vos nouvelles et pour vous ramener dans votre conversation sur un autre téléphone. Je vous demanderai de le confirmer une fois.',
     confirm: 'Confirmer la réservation',
     cancel: 'Pas maintenant',
     sending: 'Réservation…',
     cardShown: 'Votre réservation est prête à être vérifiée et confirmée.',
-    errorAnswer:
-      'Cela n’a pas abouti, rien n’est encore réservé. Vérifiez les informations et touchez de nouveau Confirmer.',
+    errorAnswer: 'Cela n’a pas abouti. Vérifiez les informations et réessayez.',
     pickHeading: 'Départs le {{date}}',
     pickStart: 'Le départ de {{time}} le {{date}}, s’il vous plaît.',
     pickDay: '{{date}}, s’il vous plaît.',
@@ -431,8 +430,8 @@ export const fr: Messages = {
     confirmOnline: 'Continuer vers le paiement',
     checkoutClosed:
       'Le délai de paiement est écoulé. Retrouvez l’état de la réservation dans Mon séjour.',
-    details: 'Détails de cette réservation',
-    detailsHint: 'Tout ce qu’il faut savoir pour cette réservation.',
+    details: 'Votre note',
+    detailsHint: 'Tout ce qu’il faut savoir.',
     detailsCount: '{{count}} / {{max}}',
     time: 'Heure',
     timeHint: 'Quand cela vous convient.',
@@ -451,7 +450,7 @@ export const fr: Messages = {
     priceByHost: 'Votre hôte fixe le prix',
     payDirectHost: 'Payez directement votre hôte',
     noteHost:
-      'Votre e-mail et ces informations sont transmis à votre hôte pour cette commande uniquement. J’enverrai votre confirmation à cet e-mail et je l’utiliserai pour vos nouvelles et pour vous ramener dans votre conversation sur un autre téléphone. Je vous demanderai de le confirmer une fois.',
+      'Votre e-mail et ces informations ne sont transmis qu’à votre hôte, et uniquement pour cela. J’enverrai votre confirmation à cet e-mail et je l’utiliserai pour vos nouvelles et pour vous ramener dans votre conversation sur un autre téléphone. Je vous demanderai de le confirmer une fois.',
     requestProvider:
       'Le prestataire confirme votre demande. Vous aurez une réponse d’ici le {{when}}.',
     requestHost: 'Votre hôte confirme votre demande. Vous aurez une réponse d’ici le {{when}}.',
