@@ -121,7 +121,7 @@ describe('presentationTools', () => {
 });
 
 describe('chipsAfterText', () => {
-  const ss = { type: 'step-start' };
+  const stepStart = { type: 'step-start' };
   const text = (t: string) => ({ type: 'text', text: t });
   const tool = (name: string, input: unknown = {}) => ({
     type: `tool-${name}`,
@@ -144,24 +144,24 @@ describe('chipsAfterText', () => {
 
   it('moves chips shown before the text to right after it', () => {
     const input = answer(
-      ss,
+      stepStart,
       search,
       card('place-carousel'),
-      ss,
+      stepStart,
       chips,
       card('follow-up-chips'),
-      ss,
+      stepStart,
       text('Try Konoba Mala.'),
     );
     const copy = structuredClone(input);
     expect(chipsAfterText(input)).toEqual(
       answer(
-        ss,
+        stepStart,
         search,
         card('place-carousel'),
-        ss,
+        stepStart,
         card('follow-up-chips'),
-        ss,
+        stepStart,
         text('Try Konoba Mala.'),
         chips,
       ),
@@ -170,28 +170,30 @@ describe('chipsAfterText', () => {
   });
 
   it('leaves text-then-chips, chips-only and user messages as they are', () => {
-    const ordered = answer(ss, search, ss, text('Try Konoba Mala.'), chips);
+    const ordered = answer(stepStart, search, stepStart, text('Try Konoba Mala.'), chips);
     expect(chipsAfterText(ordered)).toBe(ordered);
-    const chipsOnly = answer(ss, search, ss, chips);
+    const chipsOnly = answer(stepStart, search, stepStart, chips);
     expect(chipsAfterText(chipsOnly)).toBe(chipsOnly);
     // Whitespace is no answer, like the guard's own check.
-    const blank = answer(ss, search, ss, chips, ss, text('  '));
+    const blank = answer(stepStart, search, stepStart, chips, stepStart, text('  '));
     expect(chipsAfterText(blank)).toBe(blank);
     expect(chipsAfterText(user)).toBe(user);
   });
 
   it('never moves a choice card', () => {
-    const choiceFirst = answer(ss, search, ss, askChoice, text('Pick one.'));
+    const choiceFirst = answer(stepStart, search, stepStart, askChoice, text('Pick one.'));
     expect(chipsAfterText(choiceFirst)).toBe(choiceFirst);
-    expect(chipsAfterText(answer(ss, chips, ss, text('Hi.'), askChoice))).toEqual(
-      answer(ss, ss, text('Hi.'), chips, askChoice),
+    expect(chipsAfterText(answer(stepStart, chips, stepStart, text('Hi.'), askChoice))).toEqual(
+      answer(stepStart, stepStart, text('Hi.'), chips, askChoice),
     );
   });
 
   it('keeps every tool call followed by its result in the model request', async () => {
     const messages = await convertToModelMessages([
       user,
-      chipsAfterText(answer(ss, search, ss, chips, ss, text('Try Konoba Mala.'))),
+      chipsAfterText(
+        answer(stepStart, search, stepStart, chips, stepStart, text('Try Konoba Mala.')),
+      ),
     ]);
     expect(messages.map((m) => m.role)).toEqual(['user', 'assistant', 'tool', 'assistant', 'tool']);
     const content = (i: number) => messages[i]?.content as { type: string; toolCallId?: string }[];

@@ -728,6 +728,7 @@ describe('Recommendation components', () => {
 
     readStream(await send(t, cookie, 'Where should we eat tonight?'));
     expect(model.doStreamCalls).toHaveLength(3);
+    expect(model.doStreamCalls[2]?.toolChoice).toEqual({ type: 'none' });
     // Stored as streamed: the chips came before the words.
     const types = (await stored(t, space.space.id)).rows.at(-1)?.parts.map((p) => p.type) ?? [];
     expect(types.indexOf('tool-suggest_replies')).toBeLessThan(types.indexOf('text'));
@@ -737,9 +738,8 @@ describe('Recommendation components', () => {
     const content = (i: number) =>
       (prompt[i]?.content ?? []) as { type: string; text?: string; toolName?: string }[];
     const at = prompt.findIndex(
-      (m) =>
-        m.role === 'assistant' &&
-        content(prompt.indexOf(m)).some((c) => c.text === 'Try Konoba Mala tonight.'),
+      (m, i) =>
+        m.role === 'assistant' && content(i).some((c) => c.text === 'Try Konoba Mala tonight.'),
     );
     expect(content(at).map((c) => [c.type, c.toolName])).toEqual([
       ['text', undefined],
