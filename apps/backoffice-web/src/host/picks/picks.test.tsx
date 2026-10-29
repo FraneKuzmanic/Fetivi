@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import type { GeoPlace } from '@fetivi/domain/geocode-vocabulary';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -94,6 +95,16 @@ const PICKS: HostPicks = {
   ],
 };
 
+const TRI_VOLTA: GeoPlace = {
+  label: 'Tri Volta, Ribarska ulica, 21220 Trogir, HR',
+  addressLine: 'Ribarska ulica',
+  city: 'Trogir',
+  postalCode: '21220',
+  country: 'HR',
+  lat: 43.5161561,
+  lng: 16.2507282,
+};
+
 let root: Root | null = null;
 let el: HTMLElement;
 let calls: { url: string; method: string; body: unknown }[] = [];
@@ -119,7 +130,7 @@ function stubApi(routes: Record<string, (body: unknown) => Response>) {
     const method = init?.method ?? 'GET';
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
     calls.push({ url, method, body });
-    const handler = routes[`${method} ${url}`];
+    const handler = routes[`${method} ${url}`] ?? routes[`${method} ${url.split('?')[0]}`];
     return handler ? handler(body) : json({ error: 'not-found' }, 404);
   });
 }
@@ -273,6 +284,45 @@ describe('host picks page', () => {
     await setValue(field('Longitude'), '16.25');
     await submit(form);
     await vi.waitFor(() => expect(el.querySelector('form[aria-label="Add a place"]')).toBeNull());
+  });
+
+  it('sets the address from a picked search result, and keeps it editable', async () => {
+    let places = [TRI_VOLTA];
+    stubApi({
+      ...BASE,
+      'GET /api/geocode': () => json({ places }),
+      'POST /api/host/properties/pr1/added-places': () => json(PICKS, 201),
+    });
+    await mount();
+    await click('Add a place');
+    await setValue(field('Name'), 'Tri volta');
+    await setValue(field('Category'), 'restaurant');
+    await setValue(field('Address'), 'Obala 2');
+    await vi.waitFor(() => field('Latitude'));
+    const pick = async (query: string) => {
+      await setValue(field('Find the place'), query);
+      await vi.waitFor(() => expect(el.querySelector('[role="option"]')).not.toBeNull());
+      await act(async () => (el.querySelector('[role="option"]') as HTMLElement).click());
+    };
+    await pick('Tri volta Trogir');
+    expect(field<HTMLInputElement>('Address').value).toBe('Ribarska ulica');
+    expect(field<HTMLInputElement>('Latitude').value).toBe('43.516156');
+    expect(field<HTMLInputElement>('Longitude').value).toBe('16.250728');
+    // A place without a street line gives its whole label.
+    places = [{ ...TRI_VOLTA, label: 'Tri Volta, 21220 Trogir, HR', addressLine: null }];
+    await pick('Tri Volta 21220');
+    expect(field<HTMLInputElement>('Address').value).toBe('Tri Volta, 21220 Trogir, HR');
+    await setValue(field('Address'), 'Ribarska ulica 8');
+    await setValue(field('Why your guests should go'), 'Fish by the canal.');
+    await submit(el.querySelector('form[aria-label="Add a place"]'));
+    await vi.waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    expect(calls.find((c) => c.method === 'POST')?.body).toEqual({
+      name: 'Tri volta',
+      placeCategory: 'restaurant',
+      location: { lat: 43.5161561, lng: 16.2507282 },
+      address: 'Ribarska ulica 8',
+      note: 'Fish by the canal.',
+    });
   });
 
   it('adds a tip in the Neighbourhood tips section only', async () => {

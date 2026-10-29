@@ -90,7 +90,7 @@ export function AddedPlaceForm({
             label: t('picks.findPlace'),
             placeholder: t('picks.nameOrAddress'),
             kind: 'address',
-            onPick: (place) => setAddress((now) => now ?? place.addressLine ?? place.label),
+            onPick: (place) => setAddress(place.addressLine ?? place.label),
           }}
           required
         />
