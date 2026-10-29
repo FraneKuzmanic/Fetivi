@@ -55,7 +55,8 @@ export function isOutdoorCategory(category: OfferCategory): boolean {
 
 /**
  * What the guest should hear before deciding on an order. Offers have no duration, so on checkout
- * day any start before checkout + the margin clashes, and an unknown start always does.
+ * day any start before checkout + the margin clashes, and an unknown start always does. A transfer
+ * never clashes: leaving is the point of the ride.
  */
 export function orderWarnings(input: {
   date: CivilDate;
@@ -70,7 +71,7 @@ export function orderWarnings(input: {
   weather: WeatherWarning[] | null;
 }): OrderWarning[] {
   const out: OrderWarning[] = [];
-  if (input.date === input.checkout && checkoutClash(input)) {
+  if (input.category !== 'transfer' && input.date === input.checkout && checkoutClash(input)) {
     out.push({ kind: 'checkout_day', checkoutTime: input.checkoutTime });
   }
   if (isOutdoorCategory(input.category) && input.weather) {

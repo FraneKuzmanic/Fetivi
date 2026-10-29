@@ -74,10 +74,16 @@ describe('orderWarnings', () => {
     ).toEqual([]);
   });
 
-  it('warns of checkout for every category', () => {
-    expect(orderWarnings({ ...base, category: 'transfer' })).toEqual([
+  it('warns of checkout for categories other than transfer', () => {
+    expect(orderWarnings({ ...base, category: 'tasting' })).toEqual([
       { kind: 'checkout_day', checkoutTime: '10:00' },
     ]);
+  });
+
+  it('does not warn of checkout for a transfer', () => {
+    expect(orderWarnings({ ...base, category: 'transfer', start: at(checkout, '07:00') })).toEqual(
+      [],
+    );
   });
 
   it('ignores weather for indoor categories', () => {
