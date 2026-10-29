@@ -109,6 +109,13 @@ export const TERMS_LABELS: CancellationTermsLabels = {
     `The provider's late-cancellation terms apply: they may ask you to pay ${p} % of the price directly to them.`,
   directNowFull:
     "The provider's late-cancellation terms apply: they may ask you to pay the full price directly to them.",
+  directAfterHost: (p) =>
+    `After that, your host may ask you to pay ${p} % of the price directly to them.`,
+  directAfterFullHost: 'After that, your host may ask you to pay the full price directly to them.',
+  directNowHost: (p) =>
+    `Your host's late-cancellation terms apply: they may ask you to pay ${p} % of the price directly to them.`,
+  directNowFullHost:
+    "Your host's late-cancellation terms apply: they may ask you to pay the full price directly to them.",
   onlineAfter: (p) => `After that, ${p} % of what you paid is refunded.`,
   onlineAfterNone: 'After that, nothing is refunded.',
   onlineNow: (p) => `Free cancellation has ended: ${p} % of what you paid is refunded.`,

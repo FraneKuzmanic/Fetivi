@@ -45,7 +45,8 @@ const candidate = (toolName: string, value: unknown): unknown => {
     case 'show_property_info':
       return { name: 'property-info', payload: value };
     case 'create_order':
-      // Only a real Order gets a receipt; "not ordered" is told by the model's words.
+      // Only a real Order gets a receipt; "not ordered" shows as the guest app's quiet line
+      // (ticket 66).
       if (!isRecord(value) || value.outcome !== 'ordered') return null;
       return { name: 'receipt-card', payload: { order: value.order } };
     case 'cancel_order':
@@ -60,7 +61,8 @@ const candidate = (toolName: string, value: unknown): unknown => {
       }
       return { name: 'receipt-card', payload: { order: value.order } };
     case 'send_host_message':
-      // Only a sent message gets its card; "not sent" is told by the model's words.
+      // Only a sent message gets its card; "not sent" shows as the guest app's quiet line
+      // (ticket 66).
       if (!isRecord(value) || value.outcome !== 'sent') return null;
       return { name: 'host-message-sent', payload: { message: value.message } };
     case 'get_plan':

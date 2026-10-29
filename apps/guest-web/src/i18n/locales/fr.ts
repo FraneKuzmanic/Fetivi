@@ -68,6 +68,7 @@ export const fr: Messages = {
       'Votre séjour est terminé. Vous pouvez lire cette discussion et utiliser Mon séjour jusqu’au {{date}}. Ensuite, je supprime notre conversation.',
     openTrip: 'Aller à Mon séjour',
     retry: 'Réessayer',
+    notSent: 'Non envoyé',
   },
   aboutMe: {
     title: 'À propos de moi',
@@ -341,6 +342,14 @@ export const fr: Messages = {
     freeUntilProviderAccepts:
       'Annulation gratuite tant que le prestataire n’a pas accepté votre demande.',
     freeUntilHostAccepts: 'Annulation gratuite tant que votre hôte n’a pas accepté votre demande.',
+    directAfterHost:
+      'Ensuite, votre hôte peut vous demander de lui payer directement {{percent}} % du prix.',
+    directAfterFullHost:
+      'Ensuite, votre hôte peut vous demander de lui payer directement le prix total.',
+    directNowHost:
+      'Les conditions d’annulation tardive de votre hôte s’appliquent : il peut vous demander de lui payer directement {{percent}} % du prix.',
+    directNowFullHost:
+      'Les conditions d’annulation tardive de votre hôte s’appliquent : il peut vous demander de lui payer directement le prix total.',
   },
   respondOrder: {
     headingTime: 'Le prestataire propose un autre horaire',
@@ -433,6 +442,23 @@ export const fr: Messages = {
     warnCheckoutDay: 'C’est votre jour de départ.',
     warnWeather: '{{event}} (DHMZ)',
     yourNote: 'Votre note',
+    headingRequest: 'Vérifiez votre demande',
+    headingPurchase: 'Vérifiez votre commande',
+    confirmRequest: 'Envoyer la demande',
+    confirmPurchase: 'Commander',
+    sendingRequest: 'Envoi de votre demande…',
+    sendingPurchase: 'Commande en cours…',
+    priceByHost: 'Votre hôte fixe le prix',
+    payDirectHost: 'Payez directement votre hôte',
+    noteHost:
+      'Votre e-mail et ces informations sont transmis à votre hôte pour cette commande uniquement. J’enverrai votre confirmation à cet e-mail et je l’utiliserai pour vos nouvelles et pour vous ramener dans votre conversation sur un autre téléphone. Je vous demanderai de le confirmer une fois.',
+    requestProvider:
+      'Le prestataire confirme votre demande. Vous aurez une réponse d’ici le {{when}}.',
+    requestHost: 'Votre hôte confirme votre demande. Vous aurez une réponse d’ici le {{when}}.',
+    orderStatusRequest: 'Demande',
+    orderStatusPurchase: 'Commande',
+    statusPendingHost: 'En attente de votre hôte',
+    answerBy: 'Réponse attendue',
   },
   trip: {
     plan: 'Plan',

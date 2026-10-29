@@ -33,7 +33,7 @@ export function presentationTools(deps: {
   return {
     suggest_replies: tool({
       description:
-        "Show 1–4 tappable follow-ups under your answer, written as the guest would say them, in the guest's language. Call this last, in the same response as your answer, and never together with another tool except show_results.",
+        "Show 1–4 tappable follow-ups under your answer, written as the guest would say them, in the guest's language. Call this last, in the same response as your answer, and never together with another tool except show_results. Never suggest something the guest declined or passed over earlier, unless they bring it up again.",
       inputSchema: followUpChips,
       execute: async () => ({ shown: true }),
     }),
@@ -54,7 +54,7 @@ export function presentationTools(deps: {
     }),
     ask_choice: tool({
       description:
-        "Ask the guest to pick from 2–6 short options (multiple: true lets them pick several); the app adds 'Something else'. Use it instead of asking a multiple-choice question in prose. Call it last, never together with another tool.",
+        "Ask the guest to pick from 2–6 short options (multiple: true lets them pick several); the app adds 'Something else'. Use it instead of asking a multiple-choice question in prose. Write your sentence first, then call it last, never together with another tool.",
       inputSchema: choiceCard,
       execute: async () => ({ shown: true }),
     }),
@@ -84,22 +84,27 @@ const endsTurn = (name: string) =>
  * Stops the loop after a step whose calls are all presentation calls or the property card: the
  * guest answers next, so another model round trip would only cost. A step that also searched
  * continues, so the model sees the results; so does one with an invalid call or a tool error (e.g.
- * show_results with unknown ids), so the model can correct it. Chips, shown results or a card
- * without any text in the turn continue too, so the guest never gets them without words (a choice
- * card carries its own question).
+ * show_results with unknown ids), so the model can correct it. Chips, shown results, a choice
+ * card or a property card without any text in the turn continue too, so the guest never gets them
+ * without words (ticket 66).
  */
 export const endsWithPresentation: StopCondition<ToolSet> = ({ steps }) => {
   const calls = steps.at(-1)?.toolCalls ?? [];
   if (calls.length === 0) return false;
   if (!calls.every((c) => !c.invalid && endsTurn(c.toolName))) return false;
   if (steps.at(-1)?.content.some((p) => p.type === 'tool-error')) return false;
-  return answered(steps) || calls.some((c) => c.toolName === 'ask_choice');
+  return answered(steps);
 };
 
+/** Silent shows the words step is sent without: chips, a choice card, a property card (ticket 66). */
+const WORDS_AFTER: readonly string[] = ['suggest_replies', 'ask_choice', 'show_property_info'];
+
 /**
- * The step after chips or shown results without text writes the answer, and may not call tools.
- * A chips step is sent without that chips call: after seeing its own chips acknowledged,
- * Sonnet often ends the turn empty, while from the search results it answers. A step that showed
+ * The step after chips, a choice or property card, or shown results without text writes the
+ * answer, and may not call tools. A step of only such shows is sent without them: after seeing its
+ * own chips acknowledged, Sonnet often ends the turn empty, while from the search results it
+ * answers (tickets 60, 66). A step that also called another tool keeps it all, so no result the
+ * words need is dropped. A step that showed
  * results keeps only that call, so the words match the cards: its chips call goes the same way,
  * and so does the turn's thinking, which often holds the whole answer and leaves the guard step
  * to end empty (ticket 65). Both are already stored. A step with an invalid call or a tool error
@@ -110,13 +115,18 @@ export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, mess
   if (calls.some((c) => c.invalid)) return undefined;
   if (steps.at(-1)?.content.some((p) => p.type === 'tool-error')) return undefined;
   const shows = calls.some(
-    (c) => c.toolName === 'suggest_replies' || c.toolName === 'show_results',
+    (c) => c.toolName === 'show_results' || WORDS_AFTER.includes(c.toolName),
   );
   if (!shows || answered(steps)) return undefined;
   const [call, result] = messages.slice(-2);
   if (call?.role !== 'assistant' || result?.role !== 'tool') return { toolChoice: 'none' };
   if (!calls.some((c) => c.toolName === 'show_results')) {
-    return { toolChoice: 'none', messages: messages.slice(0, -2) };
+    const onlyShows = calls.every(
+      (c) => WORDS_AFTER.includes(c.toolName) || c.toolName === GAP_TOOL_NAME,
+    );
+    return onlyShows
+      ? { toolChoice: 'none', messages: messages.slice(0, -2) }
+      : { toolChoice: 'none' };
   }
   const turnStart = messages.findLastIndex((m) => m.role === 'user');
   const kept = (p: { type: string }) =>
@@ -131,14 +141,19 @@ export const textAfterSilentChips: PrepareStepFunction<ToolSet> = ({ steps, mess
   };
 };
 
-const isChips = (part: UIMessage['parts'][number]) =>
-  isToolUIPart(part) &&
-  (getToolName(part) === 'suggest_replies' || getToolName(part) === 'show_results');
+const SHOWN_LAST: readonly string[] = [
+  'suggest_replies',
+  'show_results',
+  'ask_choice',
+  'show_property_info',
+];
+const isShownLast = (part: UIMessage['parts'][number]) =>
+  isToolUIPart(part) && SHOWN_LAST.includes(getToolName(part));
 
 /**
  * A stored answer resent to the model with its chips call after its last text, as if both came
  * in one response; a show_results call moves the same way, keeping its place before the chips
- * (ticket 65). Rescued turns are stored chips-then-text (the guard writes the words after
+ * (ticket 65), and so do a choice and a property card (ticket 66). Rescued turns are stored chips-then-text (the guard writes the words after
  * the chips); resent in that order they teach the model to call chips first, until the guard
  * step has nothing it may say and ends empty (ticket 60). Only the request changes: what is
  * stored and streamed keeps its order. A message without text, and every other part, stay as
@@ -148,12 +163,12 @@ export function chipsAfterText(message: UIMessage): UIMessage {
   if (message.role !== 'assistant') return message;
   const last = message.parts.findLastIndex((p) => p.type === 'text' && p.text.trim().length > 0);
   if (last < 0) return message;
-  const moved = message.parts.slice(0, last).filter(isChips);
+  const moved = message.parts.slice(0, last).filter(isShownLast);
   if (moved.length === 0) return message;
   return {
     ...message,
     parts: [
-      ...message.parts.slice(0, last + 1).filter((p) => !isChips(p)),
+      ...message.parts.slice(0, last + 1).filter((p) => !isShownLast(p)),
       ...moved,
       ...message.parts.slice(last + 1),
     ],

@@ -65,6 +65,7 @@ export const en = {
       'Your stay has ended. You can read this chat and use My trip until {{date}}. After that I delete our conversation.',
     openTrip: 'Go to My trip',
     retry: 'Try again',
+    notSent: 'Not sent',
   },
   aboutMe: {
     title: 'About me',
@@ -330,6 +331,14 @@ export const en = {
     chargeNowFull: 'Free cancellation has ended: cancelling costs the full price.',
     freeUntilProviderAccepts: 'Free to cancel until the provider accepts your request.',
     freeUntilHostAccepts: 'Free to cancel until your host accepts your request.',
+    directAfterHost:
+      'After that, your host may ask you to pay {{percent}} % of the price directly to them.',
+    directAfterFullHost:
+      'After that, your host may ask you to pay the full price directly to them.',
+    directNowHost:
+      "Your host's late-cancellation terms apply: they may ask you to pay {{percent}} % of the price directly to them.",
+    directNowFullHost:
+      "Your host's late-cancellation terms apply: they may ask you to pay the full price directly to them.",
   },
   respondOrder: {
     headingTime: 'The provider suggests another time',
@@ -421,6 +430,22 @@ export const en = {
     warnCheckoutDay: 'This is your checkout day.',
     warnWeather: '{{event}} (DHMZ)',
     yourNote: 'Your note',
+    headingRequest: 'Check your request',
+    headingPurchase: 'Check your order',
+    confirmRequest: 'Send request',
+    confirmPurchase: 'Order',
+    sendingRequest: 'Sending your request…',
+    sendingPurchase: 'Ordering…',
+    priceByHost: 'Your host sets the price',
+    payDirectHost: 'Pay your host directly',
+    noteHost:
+      "Your email and these details go to your host for this order only. I'll send your confirmation to this email, and use it for updates and to get you back into your chat on another phone. I'll ask you to confirm it once.",
+    requestProvider: 'The provider confirms your request. Expect an answer by {{when}}.',
+    requestHost: 'Your host confirms your request. Expect an answer by {{when}}.',
+    orderStatusRequest: 'Request',
+    orderStatusPurchase: 'Order',
+    statusPendingHost: 'Waiting for your host',
+    answerBy: 'Answer expected',
   },
   trip: {
     plan: 'Plan',

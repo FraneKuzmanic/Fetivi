@@ -326,19 +326,45 @@ describe.each(['mcp', 'inprocess'] as const)('booking in chat (%s)', (transport)
     expect(cards(chunks).map((c) => c.id)).toEqual(['call-order']);
   });
 
-  it('a decline books nothing, releases the record and the model goes on', async () => {
-    const s = await setup(transport);
-    s.steps.push(orderStep(order('call-order', s.args)), textStep('Nothing was booked.'));
-    await sendText(s, 'Book it');
-    const chunks = readStream(await sendAnswer(s, { toolCallId: 'call-order', action: 'decline' }));
-    expect(ofType(chunks, 'tool-output-available')[0]).toMatchObject({
-      output: { outcome: 'not_ordered', order: null },
-    });
-    expect(chunks.some((c) => c.type === 'data-component')).toBe(false);
-    expect(chunks).toContainEqual(expect.objectContaining({ delta: 'Nothing was booked.' }));
-    expect(await ordersOf(s)).toEqual([]);
-    expect((await pendingOf(s)).map((p) => p.state)).toEqual(['released']);
-  });
+  // Ticket 66: Not now is the guest's choice, not a failure for the model to explain.
+  it.each(['decline', 'cancel'] as const)(
+    'Not now (%s) books nothing, releases the record and starts no model turn',
+    async (action) => {
+      const s = await setup(transport);
+      s.steps.push(orderStep(order('call-order', s.args)), textStep('Anything else?'));
+      await sendText(s, 'Book it');
+      const chunks = readStream(await sendAnswer(s, { toolCallId: 'call-order', action }));
+      expect(ofType(chunks, 'tool-output-available')[0]).toMatchObject({
+        output: { outcome: 'not_ordered', order: null },
+      });
+      expect(chunks.some((c) => c.type === 'data-component')).toBe(false);
+      expect(chunks.some((c) => c.type === 'text-delta')).toBe(false);
+      expect(chunks.at(-1)?.type).toBe('finish');
+      expect(s.model.doStreamCalls).toHaveLength(1);
+      expect(await ordersOf(s)).toEqual([]);
+      expect((await pendingOf(s)).map((p) => p.state)).toEqual(['released']);
+      // Stored as the browser shows it: the declined card is the answer's last part.
+      const parts = (await stored(s)).at(-1)?.parts ?? [];
+      expect(parts.map((p) => p.type).filter((t) => t !== 'step-start')).toEqual([
+        'text',
+        'tool-create_order',
+        'data-elicitation',
+      ]);
+      expect(partOf(parts, 'tool-create_order')).toMatchObject({
+        state: 'output-available',
+        output: { outcome: 'not_ordered' },
+      });
+
+      // The model sees the decline only in the next turn's history.
+      readStream(await sendText(s, 'What about dinner?'));
+      expect(s.model.doStreamCalls).toHaveLength(2);
+      const results = (s.model.doStreamCalls[1]?.prompt ?? [])
+        .filter((m) => m.role === 'tool')
+        .flatMap((m) => m.content as { type: string; toolCallId: string }[]);
+      expect(results.map((r) => r.toolCallId)).toContain('call-order');
+      expect(JSON.stringify(results)).toContain('not_ordered');
+    },
+  );
 
   it('a second tap finds nothing to answer and books once', async () => {
     const s = await setup(transport);

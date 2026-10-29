@@ -30,13 +30,22 @@ const isBusy = (status: ChatStatus) => status === 'submitted' || status === 'str
 type WebResult = WebResultsPayload['results'][number];
 type Card = { key: string; card: unknown; state: 'open' | 'sending' };
 type TextSegment = { key: string; text: string; results: WebResult[] | null };
-type Segment = TextSegment | { key: string; data: unknown } | { key: string; app: unknown } | Card;
+type NotSent = { key: string; notSent: true };
+type Segment =
+  | TextSegment
+  | { key: string; data: unknown }
+  | { key: string; app: unknown }
+  | Card
+  | NotSent;
 
 const nameOf = (segment: Segment) =>
   'data' in segment ? (segment.data as { name?: unknown } | null)?.name : undefined;
 const isChips = (segment: Segment) => nameOf(segment) === 'follow-up-chips';
 const isPicker = (segment: Segment) => nameOf(segment) === 'availability-picker';
 const isDayPlan = (segment: Segment) => nameOf(segment) === 'day-plan';
+/** Cards the words are written for: they come after the answer's text, like chips (ticket 66). */
+const isTrailingCard = (segment: Segment) =>
+  nameOf(segment) === 'choice-card' || nameOf(segment) === 'property-info';
 
 /**
  * The confirmation card of one elicitation part, if it still waits: open while the call has no
@@ -50,6 +59,26 @@ function cardOf(message: UIMessage, part: UIMessage['parts'][number], busy: bool
   const tapped = call.state === 'output-available' && isGuestAnswer(call.output);
   if (call.state !== 'input-available' && !tapped) return null;
   return { key: `card-${part.id}`, card: part.data, state: tapped && busy ? 'sending' : 'open' };
+}
+
+/** The tools whose Not now output collapses the card into a quiet line (ticket 66). */
+const DECLINED: Record<string, string> = {
+  'tool-create_order': 'not_ordered',
+  'tool-send_host_message': 'not_sent',
+};
+
+/**
+ * A card the guest declined collapses into a quiet line; nothing else follows it (ticket 66). A
+ * card cancelled because the guest typed on is stored the same way, so it reads so after a reload.
+ */
+function notSentOf(message: UIMessage, part: UIMessage['parts'][number]): NotSent | null {
+  if (!isElicitationPart(part) || !part.id) return null;
+  const call = message.parts.find((p) => isToolUIPart(p) && p.toolCallId === part.id);
+  if (!call || !isToolUIPart(call) || call.state !== 'output-available') return null;
+  const outcome = (call.output as { outcome?: unknown } | null)?.outcome;
+  return outcome !== undefined && DECLINED[call.type] === outcome
+    ? { key: `not-sent-${part.id}`, notSent: true }
+    : null;
 }
 
 const cardsOf = (message: UIMessage, busy: boolean): Card[] =>
@@ -89,6 +118,8 @@ function webResultsOf(data: unknown): WebResult[] | null {
  * shown: consecutive text joins one bubble until a card, component or widget comes between
  * (calls with nothing to show, like a search, do not split it). Only the last day plan shows
  * (get_plan then update_plan: the later state counts), and follow-up chips always come last.
+ * A choice or property card comes after the words, before sources and chips: a card shown
+ * without words gets them written after it, and the guest reads them first (ticket 66).
  *
  * Web results never show in place: text after a search cites them with `[n]` badges. An answer
  * that cited none shows one row of their sources at the end, once it has finished, so it never
@@ -103,6 +134,7 @@ function segmentsOf(
 ): Segment[] {
   const segments: Segment[] = [];
   const chips: Segment[] = [];
+  const trailing: Segment[] = [];
   let run: TextSegment | null = null;
   let results: { key: string; data: unknown; list: WebResult[] } | null = null;
   const show = (segment: Segment) => {
@@ -126,7 +158,12 @@ ${part.text}`;
     }
     if (isElicitationPart(part)) {
       const card = cardOf(message, part, busy);
-      if (card && (card.state !== 'open' || latest)) show(card);
+      if (card) {
+        if (card.state !== 'open' || latest) show(card);
+      } else {
+        const line = notSentOf(message, part);
+        if (line) show(line);
+      }
     } else if (isComponentPart(part)) {
       const segment = { key: part.id ?? `part-${index}`, data: part.data };
       const found = webResultsOf(part.data);
@@ -135,6 +172,7 @@ ${part.text}`;
         run = null;
         results = { ...segment, list: found };
       } else if (isChips(segment)) chips.push(segment);
+      else if (isTrailingCard(segment)) trailing.push(segment);
       else if (!isDayPlan(segment) || index === lastPlan) show(segment);
     } else if (isMcpAppPart(part)) {
       show({ key: `app-${part.id ?? index}`, app: part.data });
@@ -145,7 +183,7 @@ ${part.text}`;
   );
   const sources: Segment[] =
     results && !cited && finished ? [{ key: results.key, data: results.data }] : [];
-  return [...segments, ...sources, ...chips];
+  return [...segments, ...trailing, ...sources, ...chips];
 }
 
 /** An answer's words as read out: citation markers resolve to badges, so they are not spoken. */
@@ -296,6 +334,13 @@ export function MessageList({
           <span className="avatar">{firstOfRun && <Mascot className="avatar-mascot" />}</span>
           <div className="fetivi-turn">
             {segments.map((segment) => {
+              if ('notSent' in segment) {
+                return (
+                  <p key={segment.key} className="card-not-sent">
+                    {t('chat.notSent')}
+                  </p>
+                );
+              }
               if ('card' in segment) {
                 if (isCancelOrderCard(segment.card)) {
                   return (

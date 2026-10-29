@@ -67,6 +67,7 @@ export const hu: Messages = {
       'Az ott-tartózkodásod véget ért. Ezt a csevegést olvashatod, és az Utazásomat használhatod eddig: {{date}}. Utána törlöm a beszélgetésünket.',
     openTrip: 'Ugrás az Utazásomhoz',
     retry: 'Újrapróbálás',
+    notSent: 'Nincs elküldve',
   },
   aboutMe: {
     title: 'Rólam',
@@ -337,6 +338,14 @@ export const hu: Messages = {
     freeUntilProviderAccepts:
       'Ingyenesen lemondható, amíg a szolgáltató el nem fogadja a kérésedet.',
     freeUntilHostAccepts: 'Ingyenesen lemondható, amíg a szállásadód el nem fogadja a kérésedet.',
+    directAfterHost:
+      'Ezután a szállásadó kérheti, hogy az ár {{percent}} %-át közvetlenül neki fizesse ki.',
+    directAfterFullHost:
+      'Ezután a szállásadó kérheti, hogy a teljes árat közvetlenül neki fizesse ki.',
+    directNowHost:
+      'A szállásadó késői lemondásra vonatkozó feltételei érvényesek: kérheti, hogy az ár {{percent}} %-át közvetlenül neki fizesse ki.',
+    directNowFullHost:
+      'A szállásadó késői lemondásra vonatkozó feltételei érvényesek: kérheti, hogy a teljes árat közvetlenül neki fizesse ki.',
   },
   respondOrder: {
     headingTime: 'A szolgáltató másik időpontot javasol',
@@ -428,6 +437,22 @@ export const hu: Messages = {
     warnCheckoutDay: 'Ez a kijelentkezésed napja.',
     warnWeather: '{{event}} (DHMZ)',
     yourNote: 'A megjegyzésed',
+    headingRequest: 'Ellenőrizd a kérésedet',
+    headingPurchase: 'Ellenőrizd a rendelésedet',
+    confirmRequest: 'Kérés elküldése',
+    confirmPurchase: 'Megrendelés',
+    sendingRequest: 'Kérés küldése…',
+    sendingPurchase: 'Rendelés folyamatban…',
+    priceByHost: 'Az árat a szállásadód határozza meg',
+    payDirectHost: 'Közvetlenül a szállásadódnak fizetsz',
+    noteHost:
+      'Az e-mail-címed és ezek az adatok csak ehhez a rendeléshez jutnak el a szállásadódhoz. Erre a címre küldöm a visszaigazolást, és ezt használom a hírekhez, valamint ahhoz, hogy egy másik telefonon visszajuss a csevegésbe. Egyszer megkérlek, hogy erősítsd meg.',
+    requestProvider: 'A kérésedet a szolgáltató igazolja vissza. Választ eddig várhatsz: {{when}}.',
+    requestHost: 'A kérésedet a szállásadód igazolja vissza. Választ eddig várhatsz: {{when}}.',
+    orderStatusRequest: 'Kérés',
+    orderStatusPurchase: 'Rendelés',
+    statusPendingHost: 'A szállásadódra vár',
+    answerBy: 'Várható válasz',
   },
   trip: {
     plan: 'Terv',

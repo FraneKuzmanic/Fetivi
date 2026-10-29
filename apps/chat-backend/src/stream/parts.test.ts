@@ -175,6 +175,10 @@ const ORDER = {
   respondBy: null,
   cancellation: null,
   note: null,
+  owner: 'provider',
+  orderKind: 'booking',
+  availabilityMode: 'live',
+  responseDueLocal: null,
 };
 
 describe('booking components', () => {

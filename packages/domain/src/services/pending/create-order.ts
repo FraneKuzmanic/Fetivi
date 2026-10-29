@@ -9,16 +9,18 @@ import { properties, units } from '../../db/schema/properties';
 import { spaces } from '../../db/schema/spaces';
 import { stays } from '../../db/schema/stays';
 import { type GuestOffer, type GuestOfferScope, getGuestOffer } from '../../offers/guest';
-import type { PaymentMode, PriceUnit } from '../../offers/vocabulary';
+import type { AvailabilityMode, OrderKind, PaymentMode, PriceUnit } from '../../offers/vocabulary';
 import { cleanGuestNote, GUEST_NOTE_MAX } from '../../orders/guest-note';
 import { createOrder, getOrder, type OrderDeps, OrderRuleError } from '../../orders/machine';
 import {
+  type AcceptingParty,
   awaitingAcceptanceOf,
   type CancellationTerms,
   cancellationTermsAt,
   lateChargePercent,
   orderStart,
 } from '../../orders/refunds';
+import { responseDueAt } from '../../orders/response-window';
 import { isFinalOrderStatus, type OrderStatus, type PaymentStatus } from '../../orders/vocabulary';
 import { isOutdoorCategory, type OrderWarning, orderWarnings } from '../../orders/warnings';
 import { checkoutOpen } from '../../payments/checkout';
@@ -136,6 +138,12 @@ export interface OrderSummary {
   cancellation: CancellationTerms | null;
   /** The guest's note, as written. */
   note: string | null;
+  /** Who accepts the Order and is paid directly: the host for the host's own Offers. */
+  owner: AcceptingParty;
+  orderKind: OrderKind;
+  availabilityMode: AvailabilityMode;
+  /** 'YYYY-MM-DDTHH:mm' at the property; set only while the answer is awaited (`pending_provider`). */
+  responseDueLocal: string | null;
 }
 
 const CIVIL_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -358,6 +366,12 @@ export async function prepareOrder(
     note,
     requestedTime,
     warnings: warningsAt(stay, offer, input.date, knownStart, weather, now),
+    owner: offer.owner,
+    orderKind: offer.orderKind,
+    responseDueLocal:
+      offer.availabilityMode === 'on_request'
+        ? await responseDueLocal(deps.db, offer.id, now, stay.zone)
+        : null,
   };
   const row = await insertPending(deps.db, {
     kind: 'create_order',
@@ -369,6 +383,24 @@ export async function prepareOrder(
     now,
   });
   return { pendingId: row.id, draft };
+}
+
+/** When an answer to a request sent now is due, by the Offer's response hours (ticket 66). */
+async function responseDueLocal(
+  db: Executor,
+  offerId: string,
+  now: Date,
+  zone: string,
+): Promise<string | null> {
+  const [hours] = await db
+    .select({
+      windowMinutes: offers.responseWindowMinutes,
+      from: offers.responseHoursFrom,
+      to: offers.responseHoursTo,
+    })
+    .from(offers)
+    .where(eq(offers.id, offerId));
+  return hours ? toLocalDateTime(responseDueAt(now, hours, zone), zone) : null;
 }
 
 /** A pending `create_order` record of this space with its draft; null when it is not one. */
@@ -589,6 +621,7 @@ async function summaries(
       title: offerTranslations.title,
       zone: properties.timezone,
       hostId: offers.hostId,
+      orderKind: offers.orderKind,
     })
     .from(orders)
     .innerJoin(orderProposals, eq(orderProposals.id, orders.currentProposalId))
@@ -607,7 +640,7 @@ async function summaries(
     .innerJoin(properties, eq(properties.id, units.propertyId))
     .where(and(eq(orders.spaceId, spaceId), orderId ? eq(orders.id, orderId) : undefined))
     .orderBy(desc(orders.createdAt), desc(orders.id));
-  return rows.map(({ order, proposal, attempt, sourceTitle, title, zone, hostId }) => ({
+  return rows.map(({ order, proposal, attempt, sourceTitle, title, zone, hostId, orderKind }) => ({
     id: order.id,
     offerId: order.offerId,
     offerTitle: title ?? sourceTitle,
@@ -641,6 +674,13 @@ async function summaries(
           awaitingAcceptanceOf(order, hostId ? 'host' : 'provider'),
         ),
     note: order.guestNote,
+    owner: hostId ? 'host' : 'provider',
+    orderKind,
+    availabilityMode: order.availabilityMode,
+    responseDueLocal:
+      order.status === 'pending_provider' && proposal.responseDueAt
+        ? toLocalDateTime(proposal.responseDueAt, zone)
+        : null,
   }));
 }
 

@@ -1,21 +1,25 @@
 import type { PaymentMode, PriceUnit } from '@fetivi/domain/offer-vocabulary';
 import type { OrderStatus, PaymentStatus } from '@fetivi/domain/order-vocabulary';
 import type { OrderSummaryPayload } from '../../payloads';
+import { type OrderOwner, type OrderShape, orderShape } from '../order-shape';
 
 export interface ReceiptLabels {
   when: string;
   /** The quantity's heading, named by its unit. */
   quantity: (unit: PriceUnit) => string;
   total: string;
-  status: string;
+  /** The status row's heading: Booking, Request or Order (ticket 66). */
+  status: (shape: OrderShape) => string;
   payment: string;
   reference: string;
   /** The guest's note, shown as they wrote it. */
   note: string;
   dateTime: (date: string, startsAtLocal: string | null) => string;
-  price: (priceMinor: number | null, currency: string) => string;
-  orderStatus: (status: OrderStatus) => string;
-  paymentStatus: (status: PaymentStatus, mode: PaymentMode) => string;
+  price: (priceMinor: number | null, currency: string, owner: OrderOwner) => string;
+  orderStatus: (status: OrderStatus, owner: OrderOwner) => string;
+  paymentStatus: (status: PaymentStatus, mode: PaymentMode, owner: OrderOwner) => string;
+  /** The heading of the row with the time a request's answer is expected by. */
+  answerBy: string;
   /** The Pay now button of a pay-online Order the guest can still pay. */
   pay: string;
   /** The line under it: the time the checkout closes. */
@@ -76,25 +80,35 @@ export function ReceiptCard({
   /** A short line under the facts, such as why the payment window closed. */
   notice?: string | null;
 }) {
+  const { owner } = order;
   return (
     <article className="fv-receipt">
       <h3 className="fv-receipt-title">{order.offerTitle}</h3>
       <dl className="fv-receipt-facts">
         <div>
-          <dt>{labels.status}</dt>
+          <dt>{labels.status(orderShape(order.orderKind, order.availabilityMode))}</dt>
           <dd>
-            <Status tone={ORDER_TONE[order.status]} text={labels.orderStatus(order.status)} />
+            <Status
+              tone={ORDER_TONE[order.status]}
+              text={labels.orderStatus(order.status, owner)}
+            />
           </dd>
         </div>
+        {order.responseDueLocal && (
+          <div>
+            <dt>{labels.answerBy}</dt>
+            <dd>{labels.dateTime(order.responseDueLocal.slice(0, 10), order.responseDueLocal)}</dd>
+          </div>
+        )}
         <div>
           <dt>{labels.payment}</dt>
           <dd>
             <Status
               tone={PAYMENT_TONE[order.paymentStatus]}
-              text={labels.paymentStatus(order.paymentStatus, order.paymentMode)}
+              text={labels.paymentStatus(order.paymentStatus, order.paymentMode, owner)}
             />
             {order.refundMinor !== null && REFUND_SHOWN.includes(order.paymentStatus) && (
-              <> · {labels.price(order.refundMinor, order.currency)}</>
+              <> · {labels.price(order.refundMinor, order.currency, owner)}</>
             )}
           </dd>
         </div>
@@ -108,7 +122,7 @@ export function ReceiptCard({
         </div>
         <div>
           <dt>{labels.total}</dt>
-          <dd>{labels.price(order.priceMinor, order.currency)}</dd>
+          <dd>{labels.price(order.priceMinor, order.currency, owner)}</dd>
         </div>
         {order.note && (
           <div>

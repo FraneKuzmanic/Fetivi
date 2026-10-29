@@ -69,6 +69,7 @@ export const de: Messages = {
       'Ihr Aufenthalt ist zu Ende. Sie können diesen Chat lesen und Meine Reise bis {{date}} nutzen. Danach lösche ich unser Gespräch.',
     openTrip: 'Zu Meine Reise',
     retry: 'Erneut versuchen',
+    notSent: 'Nicht gesendet',
   },
   aboutMe: {
     title: 'Über mich',
@@ -344,6 +345,14 @@ export const de: Messages = {
       'Die kostenlose Stornierung ist vorbei: Eine Stornierung kostet den vollen Preis.',
     freeUntilProviderAccepts: 'Kostenlos stornierbar, bis der Anbieter Ihre Anfrage annimmt.',
     freeUntilHostAccepts: 'Kostenlos stornierbar, bis Ihr Gastgeber Ihre Anfrage annimmt.',
+    directAfterHost:
+      'Danach kann Ihr Gastgeber Sie bitten, ihm {{percent}} % des Preises direkt zu zahlen.',
+    directAfterFullHost:
+      'Danach kann Ihr Gastgeber Sie bitten, ihm den vollen Preis direkt zu zahlen.',
+    directNowHost:
+      'Es gelten die Bedingungen Ihres Gastgebers für späte Stornierungen: Er kann Sie bitten, ihm {{percent}} % des Preises direkt zu zahlen.',
+    directNowFullHost:
+      'Es gelten die Bedingungen Ihres Gastgebers für späte Stornierungen: Er kann Sie bitten, ihm den vollen Preis direkt zu zahlen.',
   },
   respondOrder: {
     headingTime: 'Der Anbieter schlägt eine andere Zeit vor',
@@ -436,6 +445,24 @@ export const de: Messages = {
     warnCheckoutDay: 'An diesem Tag reisen Sie ab.',
     warnWeather: '{{event}} (DHMZ)',
     yourNote: 'Ihre Notiz',
+    headingRequest: 'Ihre Anfrage prüfen',
+    headingPurchase: 'Ihre Bestellung prüfen',
+    confirmRequest: 'Anfrage senden',
+    confirmPurchase: 'Bestellen',
+    sendingRequest: 'Ihre Anfrage wird gesendet…',
+    sendingPurchase: 'Wird bestellt…',
+    priceByHost: 'Den Preis legt Ihr Gastgeber fest',
+    payDirectHost: 'Direkt bei Ihrem Gastgeber bezahlen',
+    noteHost:
+      'Ihre E-Mail und diese Angaben gehen nur für diese Bestellung an Ihren Gastgeber. Ich schicke Ihre Bestätigung an diese E-Mail und nutze sie für Neuigkeiten und um Sie auf einem anderen Handy zurück in Ihren Chat zu bringen. Ich bitte Sie einmal, sie zu bestätigen.',
+    requestProvider:
+      'Der Anbieter bestätigt Ihre Anfrage. Mit einer Antwort können Sie bis {{when}} rechnen.',
+    requestHost:
+      'Ihr Gastgeber bestätigt Ihre Anfrage. Mit einer Antwort können Sie bis {{when}} rechnen.',
+    orderStatusRequest: 'Anfrage',
+    orderStatusPurchase: 'Bestellung',
+    statusPendingHost: 'Wartet auf Ihren Gastgeber',
+    answerBy: 'Antwort erwartet',
   },
   trip: {
     plan: 'Plan',

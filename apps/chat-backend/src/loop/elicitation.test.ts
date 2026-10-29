@@ -36,6 +36,9 @@ const DRAFT = {
   note: null,
   requestedTime: null,
   warnings: [],
+  owner: 'provider',
+  orderKind: 'booking',
+  responseDueLocal: null,
 };
 
 const SCHEMA = {

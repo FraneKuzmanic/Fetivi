@@ -12,6 +12,7 @@ import {
   type ConfirmationCardLabels,
 } from './confirmation-card/ConfirmationCard';
 import { TERMS, TERMS_LABELS } from './fixtures';
+import { orderShape } from './order-shape';
 import { ReceiptCard, type ReceiptLabels } from './receipt-card/ReceiptCard';
 
 let root: Root | null = null;
@@ -84,10 +85,20 @@ const DRAFT: OrderDraft = {
   note: null,
   requestedTime: null,
   warnings: [],
+  owner: 'provider',
+  orderKind: 'booking',
+  responseDueLocal: null,
 };
 
+const SHAPE_WORDS = {
+  booking: { heading: 'Confirm your booking', confirm: 'Confirm booking', status: 'Booking' },
+  request: { heading: 'Check your request', confirm: 'Send request', status: 'Request' },
+  purchase: { heading: 'Check your order', confirm: 'Order', status: 'Order' },
+} as const;
+const who = (owner: 'provider' | 'host') => (owner === 'host' ? 'your host' : 'the provider');
+
 const CARD: ConfirmationCardLabels = {
-  heading: 'Confirm your booking',
+  heading: (shape) => SHAPE_WORDS[shape].heading,
   offer: 'Trip',
   when: 'When',
   quantity: (unit) => (unit === 'person' ? 'People' : unit),
@@ -96,17 +107,19 @@ const CARD: ConfirmationCardLabels = {
   cancellation: 'Cancellation',
   terms: TERMS_LABELS,
   dateTime: (date, local) => (local ? `${date} at ${local.slice(11)}` : date),
-  price: (minor, currency) =>
-    minor === null ? 'Set by the provider' : `${minor / 100} ${currency}`,
-  paymentMode: (mode) => (mode === 'direct' ? 'Pay the provider directly' : 'Online'),
+  price: (minor, currency, owner) =>
+    minor === null ? `Set by ${who(owner)}` : `${minor / 100} ${currency}`,
+  paymentMode: (mode, owner) => (mode === 'direct' ? `Pay ${who(owner)} directly` : 'Online'),
   field: { email: 'Email', name: 'Name', phone: 'Phone' },
   invalid: { email: 'Enter an email.', name: 'Enter a name.', phone: 'Enter a phone number.' },
-  note: 'These details go to the provider for this booking only.',
+  note: (owner) => `These details go to ${who(owner)} for this booking only.`,
   noteOnline: 'Next you pay on a secure page; your card is charged only once confirmed.',
-  confirm: 'Confirm',
+  confirm: (shape) => SHAPE_WORDS[shape].confirm,
   confirmOnline: 'Continue to payment',
   cancel: 'Cancel',
-  sending: 'Booking…',
+  sending: (shape) => (shape === 'booking' ? 'Booking…' : 'Sending…'),
+  request: (owner, when) =>
+    `${owner === 'host' ? 'Your host' : 'The provider'} confirms your request. Expect an answer by ${when}.`,
   detailsField: 'Details for this booking',
   detailsHint: 'Pickup place, luggage, anything they should know.',
   detailsCount: (n, max) => `${n} / ${max}`,
@@ -186,7 +199,7 @@ describe('ConfirmationCard', () => {
   it('keeps the pay-direct copy', () => {
     card();
     expect(host.textContent).not.toContain(CARD.noteOnline);
-    expect(host.querySelector('button[type="submit"]')?.textContent).toBe('Confirm');
+    expect(host.querySelector('button[type="submit"]')?.textContent).toBe('Confirm booking');
   });
 
   it('shows every stored fact and the note', () => {
@@ -350,7 +363,7 @@ describe('ConfirmationCard', () => {
   it('while sending: everything disabled and a status line', () => {
     const onConfirm = vi.fn();
     card('sending', onConfirm);
-    expect(button('Confirm').disabled).toBe(true);
+    expect(button('Confirm booking').disabled).toBe(true);
     expect(button('Cancel').disabled).toBe(true);
     expect(input('email').disabled).toBe(true);
     expect(host.querySelector('[role="status"]')?.textContent).toBe('Booking…');
@@ -566,20 +579,27 @@ const ORDER: OrderSummaryPayload = {
   respondBy: null,
   cancellation: null,
   note: null,
+  owner: 'provider',
+  orderKind: 'booking',
+  availabilityMode: 'live',
+  responseDueLocal: null,
 };
 
 const RECEIPT: ReceiptLabels = {
   when: 'When',
   quantity: CARD.quantity,
   total: 'Total',
-  status: 'Booking',
+  status: (shape) => SHAPE_WORDS[shape].status,
   payment: 'Payment',
   reference: 'Reference',
   note: 'Your note',
   dateTime: CARD.dateTime,
   price: CARD.price,
-  orderStatus: (s) => (s === 'confirmed' ? 'Confirmed' : s),
-  paymentStatus: (s, mode) => (s === 'none' && mode === 'direct' ? 'Pay the provider directly' : s),
+  orderStatus: (s, owner) =>
+    s === 'confirmed' ? 'Confirmed' : s === 'pending_provider' ? `Waiting for ${who(owner)}` : s,
+  paymentStatus: (s, mode, owner) =>
+    s === 'none' && mode === 'direct' ? `Pay ${who(owner)} directly` : s,
+  answerBy: 'Answer expected',
   pay: 'Pay now',
   payBy: (iso) => `Complete payment by ${iso.slice(11, 16)}`,
   paying: 'Opening the secure payment page…',
@@ -660,5 +680,130 @@ describe('ReceiptCard', () => {
     expect(host.querySelector('[role="status"]')?.textContent).toBe(
       'The payment window has closed.',
     );
+  });
+});
+
+// Ticket 66: cards and receipts word themselves by who owns the Offer and what is ordered.
+describe.each([
+  {
+    name: 'provider booking',
+    owner: 'provider',
+    orderKind: 'booking',
+    availabilityMode: 'allotment',
+    heading: 'Confirm your booking',
+    button: 'Confirm booking',
+    payment: 'Pay the provider directly',
+    status: 'Booking',
+    request: null,
+  },
+  {
+    name: 'provider request',
+    owner: 'provider',
+    orderKind: 'request',
+    availabilityMode: 'on_request',
+    heading: 'Check your request',
+    button: 'Send request',
+    payment: 'Pay the provider directly',
+    status: 'Request',
+    request: 'The provider confirms your request. Expect an answer by 2026-10-21 at 12:30.',
+  },
+  {
+    name: 'host purchase',
+    owner: 'host',
+    orderKind: 'purchase',
+    availabilityMode: 'on_request',
+    heading: 'Check your order',
+    button: 'Order',
+    payment: 'Pay your host directly',
+    status: 'Order',
+    request: 'Your host confirms your request. Expect an answer by 2026-10-21 at 12:30.',
+  },
+  {
+    name: 'host request',
+    owner: 'host',
+    orderKind: 'request',
+    availabilityMode: 'on_request',
+    heading: 'Check your request',
+    button: 'Send request',
+    payment: 'Pay your host directly',
+    status: 'Request',
+    request: 'Your host confirms your request. Expect an answer by 2026-10-21 at 12:30.',
+  },
+] as const)('order wording: $name', (c) => {
+  const due = c.request ? '2026-10-21T12:30' : null;
+
+  it('words the confirmation card', () => {
+    mount(
+      <ConfirmationCard
+        draft={{
+          ...DRAFT,
+          owner: c.owner,
+          orderKind: c.orderKind,
+          availabilityMode: c.availabilityMode,
+          responseDueLocal: due,
+          cancellation: c.request ? { ...TERMS, awaitingAcceptance: c.owner } : DRAFT.cancellation,
+        }}
+        fields={FIELDS}
+        state="open"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        labels={CARD}
+      />,
+    );
+    const text = host.textContent ?? '';
+    expect(host.querySelector('h3')?.textContent).toBe(c.heading);
+    expect(host.querySelector('button[type="submit"]')?.textContent).toBe(c.button);
+    expect(text).toContain(c.payment);
+    if (c.request) {
+      expect(text).toContain(c.request);
+      expect(text).toContain(
+        c.owner === 'host'
+          ? 'Free to cancel until your host accepts your request.'
+          : 'Free to cancel until the provider accepts your request.',
+      );
+    } else expect(text).not.toContain('Expect an answer');
+    if (c.owner === 'host') expect(text).not.toContain('the provider');
+  });
+
+  it('words the receipt, with the answer time while it is awaited', () => {
+    mount(
+      <ReceiptCard
+        order={{
+          ...ORDER,
+          status: c.request ? 'pending_provider' : 'confirmed',
+          owner: c.owner,
+          orderKind: c.orderKind,
+          availabilityMode: c.availabilityMode,
+          responseDueLocal: due,
+        }}
+        labels={RECEIPT}
+      />,
+    );
+    const text = host.textContent ?? '';
+    expect(host.querySelector('dt')?.textContent).toBe(c.status);
+    expect(text).toContain(c.payment);
+    if (c.request) {
+      expect(text).toContain(
+        c.owner === 'host' ? 'Waiting for your host' : 'Waiting for the provider',
+      );
+      expect(text).toContain('Answer expected2026-10-21 at 12:30');
+    } else expect(text).not.toContain('Answer expected');
+  });
+});
+
+describe('orderShape', () => {
+  it('keeps a purchase an order, makes any on-request Offer a request, else a booking', () => {
+    const table = Object.fromEntries(
+      (['booking', 'ticket', 'purchase', 'request'] as const).map((kind) => [
+        kind,
+        (['live', 'allotment', 'on_request'] as const).map((mode) => orderShape(kind, mode)),
+      ]),
+    );
+    expect(table).toEqual({
+      booking: ['booking', 'booking', 'request'],
+      ticket: ['booking', 'booking', 'request'],
+      purchase: ['purchase', 'purchase', 'purchase'],
+      request: ['request', 'request', 'request'],
+    });
   });
 });

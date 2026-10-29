@@ -6,6 +6,7 @@ import type { HostMessageDraft } from '../../handoff/send';
 import {
   AVAILABILITY_MODES,
   CONTACT_FIELDS,
+  ORDER_KINDS,
   PAYMENT_MODES,
   PRICE_UNITS,
 } from '../../offers/vocabulary';
@@ -47,6 +48,14 @@ export const createOrderPayload = z.object({
   requestedTime: z.string().nullable().default(null),
   /** What the guest should hear before deciding: a checkout clash, a DHMZ warning. */
   warnings: z.array(orderWarningSchema).default([]),
+  /**
+   * Who accepts the Order and is paid directly: the host for the host's own Offers (ADR 0016).
+   * This and the next two default so drafts stored before 66 still parse.
+   */
+  owner: z.enum(['provider', 'host']).default('provider'),
+  orderKind: z.enum(ORDER_KINDS).default('booking'),
+  /** 'YYYY-MM-DDTHH:mm' at the property: when an answer to an on-request Order sent now is due. */
+  responseDueLocal: z.string().nullable().default(null),
 });
 export type CreateOrderDraft = z.infer<typeof createOrderPayload>;
 

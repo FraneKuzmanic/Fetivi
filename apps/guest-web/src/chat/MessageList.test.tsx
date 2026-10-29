@@ -143,6 +143,58 @@ describe('MessageList part order', () => {
     expect(html.indexOf('Enjoy!')).toBeLessThan(html.indexOf('aria-label="Suggested replies"'));
   });
 
+  // Ticket 66: the guard writes the words after a card shown without any; they read first.
+  const choice = {
+    type: 'data-component',
+    id: 'call-choice',
+    data: {
+      name: 'choice-card',
+      payload: { question: 'Which slot?', options: ['09:00', '14:00'] },
+    },
+  };
+  const info = {
+    type: 'data-component',
+    id: 'call-info',
+    data: {
+      name: 'property-info',
+      payload: {
+        topic: 'checkout',
+        releaseAt: null,
+        timezone: 'Europe/Zagreb',
+        fields: [{ key: 'checkoutTime', value: '10:00', action: 'text' }],
+        media: [],
+      },
+    },
+  };
+
+  it('puts a choice card after the words written after it, before the chips', () => {
+    const html = render(
+      answer([
+        {
+          type: 'tool-ask_choice',
+          toolCallId: 'call-choice',
+          state: 'output-available',
+          input: {},
+          output: { shown: true },
+        },
+        choice,
+        chips,
+        { type: 'step-start' },
+        text('Two slots are free.'),
+      ]),
+    );
+    expect(html.indexOf('Two slots are free.')).toBeLessThan(html.indexOf('Which slot?'));
+    expect(html.indexOf('Which slot?')).toBeLessThan(
+      html.indexOf('aria-label="Suggested replies"'),
+    );
+  });
+
+  it('puts a property card after the words written after it', () => {
+    const html = render(answer([info, { type: 'step-start' }, text('Checkout is at 10.')]));
+    expect(html).toContain('class="fv-info"');
+    expect(html.indexOf('Checkout is at 10.')).toBeLessThan(html.indexOf('class="fv-info"'));
+  });
+
   it('shows an open confirmation card where it streamed, on the newest answer', () => {
     const html = render(
       answer([
@@ -286,6 +338,51 @@ describe('MessageList empty turns', () => {
 
   it('shows no turn for blank text', () => {
     expect(rows(render(answer([text(' \n ')])))).toBe(0);
+  });
+
+  // Ticket 66: Not now on an order or host message card starts no model turn.
+  const declined = (tool: string, outcome: string) => [
+    {
+      type: `tool-${tool}`,
+      toolCallId: 'call-x',
+      state: 'output-available',
+      input: {},
+      output: { outcome, order: null, message: null },
+    },
+    {
+      type: 'data-elicitation',
+      id: 'call-x',
+      data: {
+        toolCallId: 'call-x',
+        toolName: tool,
+        key: 'confirm',
+        message: 'Confirm?',
+        requestedSchema: { type: 'object', properties: {} },
+        requestState: 'sealed.state',
+        draft: null,
+      },
+    },
+  ];
+
+  it.each([
+    ['create_order', 'not_ordered'],
+    ['send_host_message', 'not_sent'],
+  ])('collapses a declined %s card into a quiet Not sent line', (tool, outcome) => {
+    const html = render(answer([text('Here it is to check.'), ...declined(tool, outcome)]));
+    expect(rows(html)).toBe(1);
+    expect(bubbles(html)).toBe(1);
+    expect(html.indexOf('Here it is to check.')).toBeLessThan(html.indexOf('Not sent'));
+    expect(html).toContain('class="card-not-sent"');
+    expect(html).not.toContain('<form');
+  });
+
+  it('shows no Not sent line for Keep it, an order made, or a card still open', () => {
+    expect(
+      render(answer([text('Sure.'), ...declined('cancel_order', 'not_cancelled')])),
+    ).not.toContain('Not sent');
+    expect(render(answer([text('Booked.'), ...declined('create_order', 'ordered')]))).not.toContain(
+      'Not sent',
+    );
   });
 
   it('shows the words Fetivi wrote after Keep it', () => {

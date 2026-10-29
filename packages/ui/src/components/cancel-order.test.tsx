@@ -187,6 +187,27 @@ describe('cancellationTermsText', () => {
     );
   });
 
+  it("words pay-direct terms of the host's own offer as what the host may ask (ticket 66)", () => {
+    const host = (terms: typeof TERMS) =>
+      cancellationTermsText(terms, 'direct', false, TERMS_LABELS, 'host');
+    expect(host(TERMS)).toBe(
+      'Free cancellation until 2026-10-21 at 09:00. After that, your host may ask you to pay 50 % of the price directly to them.',
+    );
+    expect(host({ ...TERMS, lateChargePercent: 100 })).toBe(
+      'Free cancellation until 2026-10-21 at 09:00. After that, your host may ask you to pay the full price directly to them.',
+    );
+    expect(host({ ...TERMS, freeWindowPassed: true })).toBe(
+      "Your host's late-cancellation terms apply: they may ask you to pay 50 % of the price directly to them.",
+    );
+    expect(host({ ...TERMS, lateChargePercent: 100, freeWindowPassed: true })).toBe(
+      "Your host's late-cancellation terms apply: they may ask you to pay the full price directly to them.",
+    );
+    // Online terms speak of no one, so they read the same.
+    expect(cancellationTermsText(TERMS, 'online', true, TERMS_LABELS, 'host')).toBe(
+      text(TERMS, 'online'),
+    );
+  });
+
   it('words pay-online terms as a refund', () => {
     expect(text(TERMS, 'online')).toBe(
       'Free cancellation until 2026-10-21 at 09:00. After that, 50 % of what you paid is refunded.',

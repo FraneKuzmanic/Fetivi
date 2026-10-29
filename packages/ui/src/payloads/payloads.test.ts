@@ -128,6 +128,10 @@ const ORDER: OrderSummaryPayload = {
   respondBy: null,
   cancellation: null,
   note: null,
+  owner: 'provider',
+  orderKind: 'booking',
+  availabilityMode: 'live',
+  responseDueLocal: null,
 };
 
 const ELICITATION: ElicitationPayload = {
@@ -168,6 +172,9 @@ const ELICITATION: ElicitationPayload = {
     note: null,
     requestedTime: null,
     warnings: [],
+    owner: 'provider',
+    orderKind: 'booking',
+    responseDueLocal: null,
   },
 };
 
@@ -292,6 +299,33 @@ describe('elicitation', () => {
     );
     const { cancellation: __, ...order } = ORDER;
     expect(receiptCard.parse({ order }).order.cancellation).toBe(null);
+  });
+
+  it('still takes drafts and orders stored before 66, worded as a provider booking', () => {
+    const {
+      owner: _,
+      orderKind: __,
+      responseDueLocal: ___,
+      ...stored
+    } = ELICITATION.draft as NonNullable<ElicitationPayload['draft']>;
+    expect(elicitationPayload.parse({ ...ELICITATION, draft: stored }).draft).toMatchObject({
+      owner: 'provider',
+      orderKind: 'booking',
+      responseDueLocal: null,
+    });
+    const {
+      owner: ____,
+      orderKind: _____,
+      availabilityMode: ______,
+      responseDueLocal: _______,
+      ...order
+    } = ORDER;
+    expect(receiptCard.parse({ order }).order).toMatchObject({
+      owner: 'provider',
+      orderKind: 'booking',
+      availabilityMode: 'live',
+      responseDueLocal: null,
+    });
   });
 
   it('still takes drafts and orders stored before the guest note, with empty details', () => {

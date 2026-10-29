@@ -821,6 +821,53 @@ describe('Recommendation components', () => {
     expect(chunks).toContainEqual(expect.objectContaining({ delta: 'Here is what I would do.' }));
   });
 
+  it.each([
+    ['ask_choice', { question: 'Which slot?', options: ['09:00', '14:00'] }, 'choice-card'],
+    ['show_property_info', { topic: 'checkout' }, 'property-info'],
+  ] as const)(
+    'lets the model write words for %s shown without any (ticket 66)',
+    async (name, input, card) => {
+      const model = mockModel([callStep(name, input), textStep('Here is what I found.')]);
+      const { t, cookie, space } = await setup(model);
+
+      const chunks = readStream(await send(t, cookie, 'What now?'));
+      expect(model.doStreamCalls).toHaveLength(2);
+      // The words step may only write text, and is sent without the card call.
+      expect(model.doStreamCalls[1]?.toolChoice).toEqual({ type: 'none' });
+      expect(JSON.stringify(model.doStreamCalls[1]?.prompt)).not.toContain(`"toolName":"${name}"`);
+      expect(chunks).toContainEqual(
+        expect.objectContaining({ data: expect.objectContaining({ name: card }) }),
+      );
+      expect(chunks).toContainEqual(expect.objectContaining({ delta: 'Here is what I found.' }));
+      const types = (await stored(t, space.space.id)).rows.at(-1)?.parts.map((p) => p.type) ?? [];
+      expect(types).toContain(`tool-${name}`);
+      expect(types).toContain('text');
+    },
+  );
+
+  it('resends a rescued choice card after its text (ticket 66)', async () => {
+    const model = mockModel([
+      callStep('ask_choice', { question: 'Which slot?', options: ['09:00', '14:00'] }),
+      textStep('Two slots are free.'),
+      textStep('Noted.'),
+    ]);
+    const { t, cookie } = await setup(model);
+
+    readStream(await send(t, cookie, 'Book the boat trip'));
+    readStream(await send(t, cookie, '09:00'));
+    const prompt = model.doStreamCalls[2]?.prompt ?? [];
+    const content = (i: number) =>
+      (prompt[i]?.content ?? []) as { type: string; text?: string; toolName?: string }[];
+    const at = prompt.findIndex(
+      (m, i) => m.role === 'assistant' && content(i).some((c) => c.text === 'Two slots are free.'),
+    );
+    expect(content(at).map((c) => [c.type, c.toolName])).toEqual([
+      ['text', undefined],
+      ['tool-call', 'ask_choice'],
+    ]);
+    expect(prompt[at + 1]?.role).toBe('tool');
+  });
+
   it('does not resend component parts to the model', async () => {
     const model = mockModel([
       callStep('search_places', { category: 'restaurant', date: '2027-07-12' }),

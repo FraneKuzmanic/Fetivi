@@ -43,6 +43,9 @@ const draft: CreateOrderDraft = {
   note: null,
   requestedTime: null,
   warnings: [],
+  owner: 'provider',
+  orderKind: 'booking',
+  responseDueLocal: null,
 };
 
 describe('contactSchemaFor', () => {

@@ -153,6 +153,9 @@ describe('prepareOrder', () => {
       quantity: 2,
       priceMinor: 5000,
       contactFields: 'name',
+      owner: 'provider',
+      orderKind: 'booking',
+      responseDueLocal: null,
     });
     expect(await remaining(slotId)).toBe(4);
   });
@@ -487,7 +490,11 @@ describe('guest details, warnings and requests free until accepted', () => {
   const NO_DETAILS = { note: null, time: null };
 
   async function onRequest(
-    options: { host?: boolean; category?: 'transfer' | 'boat_trip' | 'tasting' } = {},
+    options: {
+      host?: boolean;
+      category?: 'transfer' | 'boat_trip' | 'tasting';
+      orderKind?: 'booking' | 'purchase';
+    } = {},
   ) {
     const provider = options.host ? undefined : await seedProvider(testDb.db);
     const { offerId } = await seedOrderableOffer(testDb.db, {
@@ -495,6 +502,7 @@ describe('guest details, warnings and requests free until accepted', () => {
       availabilityMode: 'on_request',
       category: options.category ?? 'transfer',
       contactFields: 'name',
+      ...(options.orderKind ? { orderKind: options.orderKind } : {}),
     });
     await publishOffer(testDb.db, offerId);
     return offerId;
@@ -536,6 +544,18 @@ describe('guest details, warnings and requests free until accepted', () => {
     const offerId = await onRequest({ host: true });
     const { draft } = await prepareOrder(deps(), ctx(), { offerId, date: DAY, quantity: 1 });
     expect(draft.cancellation?.awaitingAcceptance).toBe('host');
+  });
+
+  it('drafts who answers a request and by when, from the response hours (ticket 66)', async () => {
+    const offerId = await onRequest({ host: true, orderKind: 'purchase' });
+    const { draft } = await prepareOrder(deps(), ctx(), { offerId, date: DAY, quantity: 1 });
+    // NOW is 12:00 in Zagreb; the default window is 30 minutes within 08:00–21:00.
+    expect(draft).toMatchObject({
+      owner: 'host',
+      orderKind: 'purchase',
+      availabilityMode: 'on_request',
+      responseDueLocal: '2027-05-01T12:30',
+    });
   });
 
   it('creates the Order from the guest’s edited note and time', async () => {
@@ -728,11 +748,16 @@ describe('guest details, warnings and requests free until accepted', () => {
       note: 'Ring at the gate',
       status: 'pending_provider',
       cancellation: { awaitingAcceptance: 'provider' },
+      owner: 'provider',
+      orderKind: 'booking',
+      availabilityMode: 'on_request',
+      responseDueLocal: '2027-05-01T12:30',
     });
     await testDb.db.update(orders).set({ status: 'confirmed' }).where(eq(orders.id, order.id));
     const confirmed = (await listSpaceOrders(testDb.db, guest.spaceId, 'de', NOW)).find(
       (o) => o.id === order.id,
     );
     expect(confirmed?.cancellation?.awaitingAcceptance).toBeNull();
+    expect(confirmed?.responseDueLocal).toBeNull();
   });
 });

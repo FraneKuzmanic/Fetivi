@@ -155,6 +155,19 @@ const orderSummary = z.object({
     .nullable()
     .describe('What cancelling costs now. Null for a finished order.'),
   note: z.string().nullable().describe("The guest's note on the order."),
+  owner: z
+    .enum(['provider', 'host'])
+    .describe(
+      `host: the guest's host sells it and accepts it; say "your host", never "the provider".`,
+    ),
+  orderKind: z.enum(ORDER_KINDS),
+  availabilityMode: z.enum(AVAILABILITY_MODES),
+  responseDueLocal: z
+    .string()
+    .nullable()
+    .describe(
+      'While the provider or host has yet to answer: when the answer is due, local time at the property.',
+    ),
 });
 
 export const listOffersOutput = z.object({ offers: z.array(guestOffer) });

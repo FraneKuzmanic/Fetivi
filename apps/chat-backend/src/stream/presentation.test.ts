@@ -72,8 +72,17 @@ describe('endsWithPresentation', () => {
     expect(
       await endsWithPresentation({ steps: [step('search_places'), silent('suggest_replies')] }),
     ).toBe(true);
-    // A choice card asks its own question.
-    expect(await endsWithPresentation({ steps: [silent('ask_choice')] })).toBe(true);
+  });
+
+  it('lets the model write words for a choice or property card shown without any (ticket 66)', async () => {
+    expect(await endsWithPresentation({ steps: [silent('ask_choice')] })).toBe(false);
+    expect(
+      await endsWithPresentation({ steps: [step('search_places'), silent('ask_choice')] }),
+    ).toBe(true);
+    expect(await endsWithPresentation({ steps: [silent('show_property_info')] })).toBe(false);
+    expect(
+      await endsWithPresentation({ steps: [step('get_weather'), silent('show_property_info')] }),
+    ).toBe(true);
   });
 });
 
@@ -100,6 +109,38 @@ describe('textAfterSilentChips', () => {
       ),
     ).toEqual({ toolChoice: 'none', messages: [question, ...search] });
     expect(prepare([silent('suggest_replies')])).toEqual({ toolChoice: 'none' });
+  });
+
+  it('answers in text, without the card call, after a choice or property card without text', () => {
+    const shown = (name: string) => [
+      { role: 'assistant', content: [{ type: 'tool-call', toolName: name }] },
+      { role: 'tool', content: [{ type: 'tool-result', toolName: name }] },
+    ];
+    for (const name of ['ask_choice', 'show_property_info']) {
+      expect(
+        prepare([silent('search_places'), silent(name)], [question, ...search, ...shown(name)]),
+      ).toEqual({ toolChoice: 'none', messages: [question, ...search] });
+    }
+    // A step that also searched keeps its calls: the words need the results.
+    const mixed = [
+      {
+        role: 'assistant',
+        content: [
+          { type: 'tool-call', toolName: 'ask_choice' },
+          { type: 'tool-call', toolName: 'search_places' },
+        ],
+      },
+      {
+        role: 'tool',
+        content: [
+          { type: 'tool-result', toolName: 'ask_choice' },
+          { type: 'tool-result', toolName: 'search_places' },
+        ],
+      },
+    ];
+    expect(prepare([silent('ask_choice', 'search_places')], [question, ...mixed])).toEqual({
+      toolChoice: 'none',
+    });
   });
 
   it('answers in text after results shown without any text, keeping only the show_results call', () => {
@@ -151,7 +192,7 @@ describe('textAfterSilentChips', () => {
     expect(prepare([step('search_places'), silent('suggest_replies')])).toBeUndefined();
     // An invalid call goes back to the model to correct, with the tools.
     expect(prepare([silent('suggest_replies!')])).toBeUndefined();
-    expect(prepare([silent('ask_choice')])).toBeUndefined();
+    expect(prepare([silent('ask_choice!')])).toBeUndefined();
     expect(prepare([silent('show_results!')])).toBeUndefined();
     expect(prepare([silent('show_results!', 'suggest_replies')])).toBeUndefined();
     // So does a call that failed when run, e.g. show_results with unknown ids.
@@ -182,6 +223,10 @@ describe('presentationTools', () => {
     };
     expect(schema.safeParse({ question: 'Which?', options: ['a'] }).success).toBe(false);
     expect(schema.safeParse({ question: 'Which?', options: ['a', 'b'] }).success).toBe(true);
+    expect(tools.ask_choice?.description).toContain('Write your sentence first');
+    expect(tools.suggest_replies?.description).toContain(
+      'Never suggest something the guest declined or passed over earlier',
+    );
   });
 
   it('shows results through the turn store, taking 1 to 5 distinct ids', async () => {
@@ -307,12 +352,20 @@ describe('chipsAfterText', () => {
     expect(chipsAfterText(user)).toBe(user);
   });
 
-  it('never moves a choice card', () => {
-    const choiceFirst = answer(stepStart, search, stepStart, askChoice, text('Pick one.'));
-    expect(chipsAfterText(choiceFirst)).toBe(choiceFirst);
-    expect(chipsAfterText(answer(stepStart, chips, stepStart, text('Hi.'), askChoice))).toEqual(
+  // Ticket 66: the guard writes the words after a silent choice or property card, like chips.
+  it('moves a choice or property card shown before the text to right after it', () => {
+    expect(
+      chipsAfterText(answer(stepStart, search, stepStart, askChoice, stepStart, text('Pick one.'))),
+    ).toEqual(answer(stepStart, search, stepStart, stepStart, text('Pick one.'), askChoice));
+    const info = tool('show_property_info', { topic: 'checkout' });
+    expect(
+      chipsAfterText(answer(stepStart, info, card('property-info'), stepStart, text('At 10.'))),
+    ).toEqual(answer(stepStart, card('property-info'), stepStart, text('At 10.'), info));
+    expect(chipsAfterText(answer(stepStart, chips, askChoice, stepStart, text('Hi.')))).toEqual(
       answer(stepStart, stepStart, text('Hi.'), chips, askChoice),
     );
+    const ordered = answer(stepStart, text('Hi.'), askChoice);
+    expect(chipsAfterText(ordered)).toBe(ordered);
   });
 
   it('keeps every tool call followed by its result in the model request', async () => {

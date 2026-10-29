@@ -15,6 +15,7 @@ import { GUEST_NOTIFICATION_KINDS } from '@fetivi/domain/notification-vocabulary
 import {
   AVAILABILITY_MODES,
   CONTACT_FIELDS,
+  ORDER_KINDS,
   PAYMENT_MODES,
   PRICE_UNITS,
 } from '@fetivi/domain/offer-vocabulary';
@@ -177,6 +178,15 @@ export const orderSummary = z.object({
   cancellation: cancellationTerms.nullable().default(null),
   /** The guest's note, as written. Defaults so payloads stored before 62 still parse. */
   note: z.string().nullable().default(null),
+  /**
+   * Who accepts the Order: the host for the host's own Offers. This and the next three default so
+   * payloads stored before 66 still parse, worded as a provider booking (the only shape before).
+   */
+  owner: z.enum(['provider', 'host']).default('provider'),
+  orderKind: z.enum(ORDER_KINDS).default('booking'),
+  availabilityMode: z.enum(AVAILABILITY_MODES).default('live'),
+  /** 'YYYY-MM-DDTHH:mm' at the property; set only while the answer is awaited. */
+  responseDueLocal: z.string().nullable().default(null),
 });
 
 export const receiptCard = z.object({ order: orderSummary });
@@ -341,6 +351,11 @@ export const orderDraft = z.object({
   /** 'HH:mm' the guest asked for; only for an Offer whose start has no time. */
   requestedTime: z.string().nullable().default(null),
   warnings: z.array(orderWarningPayload).default([]),
+  /** Defaults so drafts stored before 66 still parse, worded as a provider booking. */
+  owner: z.enum(['provider', 'host']).default('provider'),
+  orderKind: z.enum(ORDER_KINDS).default('booking'),
+  /** 'YYYY-MM-DDTHH:mm' at the property: when an answer to a request sent now is due. */
+  responseDueLocal: z.string().nullable().default(null),
 });
 
 /** The stored send_host_message draft the host message card shows; the guest may edit the text. */

@@ -3,11 +3,13 @@ import type { WarningLevel } from '@fetivi/domain/weather-vocabulary';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import type { OrderDraft, OrderWarningPayload } from '../../payloads';
 import { type CancellationTermsLabels, cancellationTermsText } from '../cancellation-terms';
+import { type OrderOwner, type OrderShape, orderShape } from '../order-shape';
 
 export type ContactField = 'email' | 'name' | 'phone';
 
 export interface ConfirmationCardLabels {
-  heading: string;
+  /** Worded by what the guest decides on: a booking, a request, or an order of goods (ticket 66). */
+  heading: (shape: OrderShape) => string;
   offer: string;
   when: string;
   /** The quantity's heading, named by its unit. */
@@ -17,20 +19,22 @@ export interface ConfirmationCardLabels {
   cancellation: string;
   terms: CancellationTermsLabels;
   dateTime: (date: string, startsAtLocal: string | null) => string;
-  /** null: the provider sets the price. */
-  price: (priceMinor: number | null, currency: string) => string;
-  paymentMode: (mode: PaymentMode) => string;
+  /** null: the provider or the host sets the price. */
+  price: (priceMinor: number | null, currency: string, owner: OrderOwner) => string;
+  paymentMode: (mode: PaymentMode, owner: OrderOwner) => string;
   field: Record<ContactField, string>;
   invalid: Record<ContactField, string>;
   /** Who gets the details, and that the confirmation goes to the email. */
-  note: string;
+  note: (owner: OrderOwner) => string;
   /** Pay-online only: the guest pays on Stripe's page next; charged only once confirmed. */
   noteOnline: string;
-  confirm: string;
+  confirm: (shape: OrderShape) => string;
   /** The confirm button of a pay-online draft. */
   confirmOnline: string;
   cancel: string;
-  sending: string;
+  sending: (shape: OrderShape) => string;
+  /** A request: who confirms it, and by when an answer is expected (`when` is formatted). */
+  request: (owner: OrderOwner, when: string) => string;
   /** The guest's note: what the provider should know. */
   detailsField: string;
   detailsHint: string;
@@ -151,21 +155,29 @@ export function ConfirmationCard({
     onConfirm(content);
   };
 
+  const shape = orderShape(draft.orderKind, draft.availabilityMode);
+  const { owner } = draft;
   // Nothing is paid before the guest confirms, so no refund wording yet.
-  const terms = cancellationTermsText(draft.cancellation, draft.paymentMode, false, labels.terms);
+  const terms = cancellationTermsText(
+    draft.cancellation,
+    draft.paymentMode,
+    false,
+    labels.terms,
+    owner,
+  );
   const facts: [string, string][] = [
     [labels.offer, draft.offerTitle],
     [labels.when, labels.dateTime(draft.date, draft.startsAtLocal)],
     [labels.quantity(draft.priceUnit), String(draft.quantity)],
-    [labels.total, labels.price(draft.priceMinor, draft.currency)],
-    [labels.payment, labels.paymentMode(draft.paymentMode)],
+    [labels.total, labels.price(draft.priceMinor, draft.currency, owner)],
+    [labels.payment, labels.paymentMode(draft.paymentMode, owner)],
     ...(terms ? [[labels.cancellation, terms] as [string, string]] : []),
   ];
 
   return (
     <section className="fv-confirm" aria-labelledby={headingId}>
       <h3 id={headingId} className="fv-confirm-heading">
-        {labels.heading}
+        {labels.heading(shape)}
       </h3>
       {draft.warnings.length > 0 && (
         <div className="fv-confirm-warnings" role="note" aria-label={labels.warnings.heading}>
@@ -189,6 +201,14 @@ export function ConfirmationCard({
           </div>
         ))}
       </dl>
+      {draft.responseDueLocal && (
+        <p className="fv-confirm-note">
+          {labels.request(
+            owner,
+            labels.dateTime(draft.responseDueLocal.slice(0, 10), draft.responseDueLocal),
+          )}
+        </p>
+      )}
       <form ref={form} noValidate aria-labelledby={headingId} onSubmit={submit}>
         {details.time && (
           <div className="fv-field">
@@ -262,11 +282,11 @@ export function ConfirmationCard({
             </div>
           );
         })}
-        <p className="fv-confirm-note">{labels.note}</p>
+        <p className="fv-confirm-note">{labels.note(owner)}</p>
         {online && <p className="fv-confirm-note">{labels.noteOnline}</p>}
         <div className="fv-confirm-actions">
           <button type="submit" className="fv-confirm-yes" disabled={sending}>
-            {online ? labels.confirmOnline : labels.confirm}
+            {online ? labels.confirmOnline : labels.confirm(shape)}
           </button>
           <button type="button" className="fv-confirm-no" disabled={sending} onClick={onCancel}>
             {labels.cancel}
@@ -274,7 +294,7 @@ export function ConfirmationCard({
         </div>
         {sending && (
           <p role="status" className="fv-confirm-sending">
-            {labels.sending}
+            {labels.sending(shape)}
           </p>
         )}
       </form>

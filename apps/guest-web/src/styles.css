@@ -958,6 +958,13 @@ input {
   font-size: 0.9375rem;
 }
 
+/* A declined card, collapsed into one quiet line (ticket 66). */
+.card-not-sent {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 0.9375rem;
+}
+
 .chat-error {
   display: flex;
   flex-wrap: wrap;

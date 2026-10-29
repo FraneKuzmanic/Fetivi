@@ -13,6 +13,7 @@ import type {
   EventListLabels,
   HostDraftLabels,
   HostSentLabels,
+  OrderShape,
   PlaceLabels,
   ReceiptLabels,
   RespondOrderLabels,
@@ -94,6 +95,31 @@ const UNIT_KEYS = {
   day: 'order.days',
 } as const satisfies Record<PriceUnit, string>;
 
+// Ticket 66: the cards word an Order by what the guest decides on.
+const HEADING_KEYS = {
+  booking: 'order.heading',
+  request: 'order.headingRequest',
+  purchase: 'order.headingPurchase',
+} as const satisfies Record<OrderShape, string>;
+
+const CONFIRM_KEYS = {
+  booking: 'order.confirm',
+  request: 'order.confirmRequest',
+  purchase: 'order.confirmPurchase',
+} as const satisfies Record<OrderShape, string>;
+
+const SENDING_KEYS = {
+  booking: 'order.sending',
+  request: 'order.sendingRequest',
+  purchase: 'order.sendingPurchase',
+} as const satisfies Record<OrderShape, string>;
+
+const STATUS_HEADING_KEYS = {
+  booking: 'order.orderStatus',
+  request: 'order.orderStatusRequest',
+  purchase: 'order.orderStatusPurchase',
+} as const satisfies Record<OrderShape, string>;
+
 /** Dates, times and money of an Order in the interface language. */
 function orderFormat(t: TFunction, language: string) {
   // A civil date at UTC noon, formatted in UTC: no day shift in any zone.
@@ -107,9 +133,9 @@ function orderFormat(t: TFunction, language: string) {
     time,
     dateTime: (civil: string, local: string | null) =>
       local ? t('order.dateAt', { date: date(civil), time: time(local) }) : date(civil),
-    price: (minor: number | null, currency: string) =>
+    price: (minor: number | null, currency: string, owner: 'provider' | 'host' = 'provider') =>
       minor === null
-        ? t('order.priceByProvider')
+        ? t(owner === 'host' ? 'order.priceByHost' : 'order.priceByProvider')
         : new Intl.NumberFormat(language, { style: 'currency', currency }).format(minor / 100),
   };
 }
@@ -130,6 +156,10 @@ function cancelTermsLabels(t: TFunction, language: string): CancellationTermsLab
     directAfterFull: t('cancelTerms.directAfterFull'),
     directNow: (percent) => t('cancelTerms.directNow', { percent }),
     directNowFull: t('cancelTerms.directNowFull'),
+    directAfterHost: (percent) => t('cancelTerms.directAfterHost', { percent }),
+    directAfterFullHost: t('cancelTerms.directAfterFullHost'),
+    directNowHost: (percent) => t('cancelTerms.directNowHost', { percent }),
+    directNowFullHost: t('cancelTerms.directNowFullHost'),
     onlineAfter: (percent) => t('cancelTerms.onlineAfter', { percent }),
     onlineAfterNone: t('cancelTerms.onlineAfterNone'),
     onlineNow: (percent) => t('cancelTerms.onlineNow', { percent }),
@@ -145,7 +175,7 @@ function cancelTermsLabels(t: TFunction, language: string): CancellationTermsLab
 export function confirmationLabels(t: TFunction, language: string): ConfirmationCardLabels {
   const f = orderFormat(t, language);
   return {
-    heading: t('order.heading'),
+    heading: (shape) => t(HEADING_KEYS[shape]),
     offer: t('order.offer'),
     when: t('order.when'),
     quantity: (unit) => t(UNIT_KEYS[unit]),
@@ -155,19 +185,28 @@ export function confirmationLabels(t: TFunction, language: string): Confirmation
     terms: cancelTermsLabels(t, language),
     dateTime: f.dateTime,
     price: f.price,
-    paymentMode: (mode) => t(mode === 'direct' ? 'order.payDirect' : 'order.payOnline'),
+    paymentMode: (mode, owner) =>
+      t(
+        mode === 'online'
+          ? 'order.payOnline'
+          : owner === 'host'
+            ? 'order.payDirectHost'
+            : 'order.payDirect',
+      ),
     field: { email: t('order.email'), name: t('order.name'), phone: t('order.phone') },
     invalid: {
       email: t('order.invalidEmail'),
       name: t('order.invalidName'),
       phone: t('order.invalidPhone'),
     },
-    note: t('order.note'),
+    note: (owner) => t(owner === 'host' ? 'order.noteHost' : 'order.note'),
     noteOnline: t('order.noteOnline'),
-    confirm: t('order.confirm'),
+    confirm: (shape) => t(CONFIRM_KEYS[shape]),
     confirmOnline: t('order.confirmOnline'),
     cancel: t('order.cancel'),
-    sending: t('order.sending'),
+    sending: (shape) => t(SENDING_KEYS[shape]),
+    request: (owner, when) =>
+      t(owner === 'host' ? 'order.requestHost' : 'order.requestProvider', { when }),
     detailsField: t('order.details'),
     detailsHint: t('order.detailsHint'),
     detailsCount: (count, max) => t('order.detailsCount', { count, max }),
@@ -262,18 +301,24 @@ export function receiptLabels(t: TFunction, language: string): ReceiptLabels {
     when: t('order.when'),
     quantity: (unit) => t(UNIT_KEYS[unit]),
     total: t('order.total'),
-    status: t('order.orderStatus'),
+    status: (shape) => t(STATUS_HEADING_KEYS[shape]),
     payment: t('order.payment'),
     reference: t('order.reference'),
     note: t('order.yourNote'),
     dateTime: f.dateTime,
     price: f.price,
-    orderStatus: (status) => t(ORDER_STATUS_KEYS[status]),
-    // A pay-direct Order has no payment here: the guest pays the provider.
-    paymentStatus: (status, mode) =>
+    orderStatus: (status, owner) =>
+      t(
+        status === 'pending_provider' && owner === 'host'
+          ? 'order.statusPendingHost'
+          : ORDER_STATUS_KEYS[status],
+      ),
+    // A pay-direct Order has no payment here: the guest pays the provider or the host.
+    paymentStatus: (status, mode, owner) =>
       status === 'none' && mode === 'direct'
-        ? t('order.payDirect')
+        ? t(owner === 'host' ? 'order.payDirectHost' : 'order.payDirect')
         : t(PAYMENT_STATUS_KEYS[status]),
+    answerBy: t('order.answerBy'),
     pay: t('order.pay'),
     // An instant: shown on the guest's own clock, where they are paying.
     payBy: (iso) =>

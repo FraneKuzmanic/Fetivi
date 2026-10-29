@@ -67,6 +67,7 @@ export const pl: Messages = {
       'Twój pobyt się zakończył. Możesz czytać ten czat i korzystać z Mojej podróży do {{date}}. Potem usuwam naszą rozmowę.',
     openTrip: 'Przejdź do Mojej podróży',
     retry: 'Spróbuj ponownie',
+    notSent: 'Nie wysłano',
   },
   aboutMe: {
     title: 'O mnie',
@@ -335,6 +336,13 @@ export const pl: Messages = {
       'Możesz anulować bezpłatnie, dopóki usługodawca nie przyjmie twojej prośby.',
     freeUntilHostAccepts:
       'Możesz anulować bezpłatnie, dopóki twój gospodarz nie przyjmie twojej prośby.',
+    directAfterHost:
+      'Później gospodarz może poprosić, by zapłacić mu bezpośrednio {{percent}} % ceny.',
+    directAfterFullHost: 'Później gospodarz może poprosić, by zapłacić mu bezpośrednio pełną cenę.',
+    directNowHost:
+      'Obowiązują warunki gospodarza dotyczące późnego anulowania: może poprosić, by zapłacić mu bezpośrednio {{percent}} % ceny.',
+    directNowFullHost:
+      'Obowiązują warunki gospodarza dotyczące późnego anulowania: może poprosić, by zapłacić mu bezpośrednio pełną cenę.',
   },
   respondOrder: {
     headingTime: 'Usługodawca proponuje inną godzinę',
@@ -426,6 +434,22 @@ export const pl: Messages = {
     warnCheckoutDay: 'To dzień twojego wymeldowania.',
     warnWeather: '{{event}} (DHMZ)',
     yourNote: 'Twoja notatka',
+    headingRequest: 'Sprawdź swoją prośbę',
+    headingPurchase: 'Sprawdź swoje zamówienie',
+    confirmRequest: 'Wyślij prośbę',
+    confirmPurchase: 'Zamów',
+    sendingRequest: 'Wysyłam prośbę…',
+    sendingPurchase: 'Zamawiam…',
+    priceByHost: 'Cenę ustala Twój gospodarz',
+    payDirectHost: 'Płacisz bezpośrednio gospodarzowi',
+    noteHost:
+      'Twój e-mail i te dane trafią do gospodarza tylko na potrzeby tego zamówienia. Wyślę na ten e-mail potwierdzenie i użyję go do informacji oraz do przywrócenia czatu na innym telefonie. Raz poproszę Cię o jego potwierdzenie.',
+    requestProvider: 'Usługodawca potwierdza Twoją prośbę. Odpowiedź dostaniesz do {{when}}.',
+    requestHost: 'Twój gospodarz potwierdza Twoją prośbę. Odpowiedź dostaniesz do {{when}}.',
+    orderStatusRequest: 'Prośba',
+    orderStatusPurchase: 'Zamówienie',
+    statusPendingHost: 'Czeka na gospodarza',
+    answerBy: 'Odpowiedź do',
   },
   trip: {
     plan: 'Plan',

@@ -154,6 +154,22 @@ function outcomeChunks(call: { toolCallId: string; toolName: string }, outcome: 
   }
 }
 
+/** "Not now" on these cards ends the response: no model turn (ticket 66). Cancel's Keep it is not one. */
+const QUIET_DECLINES: Record<string, string> = {
+  create_order: 'not_ordered',
+  send_host_message: 'not_sent',
+};
+
+/**
+ * Whether the guest's answer is a plain Not now: the tool's own decline output. An order that won
+ * the race, an expired record or any error still goes to the model, so it can explain.
+ */
+const quietDecline = (toolName: string, guest: GuestAnswer, outcome: Outcome) =>
+  guest.action !== 'accept' &&
+  outcome.kind === 'output' &&
+  QUIET_DECLINES[toolName] !== undefined &&
+  (outcome.output as { outcome?: unknown } | null)?.outcome === QUIET_DECLINES[toolName];
+
 /**
  * One response's loop. `assistant` is the message being continued (on resume) or null for a new
  * one; the caller writes nothing itself. Resolves when the response is complete or failed.
@@ -285,8 +301,14 @@ export function createLoop(
         answer: { action: guest.action, content: guest.content },
       });
       await emit(outcomeChunks(call, outcome));
-      // A card shown again, or another card still open: the guest answers next.
-      if (outcome.kind !== 'ask' && openCalls(current, deps.paused).length === 0) await runModel();
+      // A card shown again, another card still open, or a quiet Not now: the guest goes on next.
+      if (
+        outcome.kind !== 'ask' &&
+        openCalls(current, deps.paused).length === 0 &&
+        !quietDecline(open.toolName, guest, outcome)
+      ) {
+        await runModel();
+      }
       writer.write({ type: 'finish' });
       return result;
     },

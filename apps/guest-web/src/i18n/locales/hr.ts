@@ -67,6 +67,7 @@ export const hr: Messages = {
       'Vaš je boravak završio. Ovaj razgovor možete čitati i koristiti Moje putovanje do {{date}}. Nakon toga brišem naš razgovor.',
     openTrip: 'Idi na Moje putovanje',
     retry: 'Pokušaj ponovno',
+    notSent: 'Nije poslano',
   },
   aboutMe: {
     title: 'O meni',
@@ -333,6 +334,14 @@ export const hr: Messages = {
     freeUntilProviderAccepts:
       'Otkazivanje je besplatno dok pružatelj usluge ne prihvati vaš zahtjev.',
     freeUntilHostAccepts: 'Otkazivanje je besplatno dok vaš domaćin ne prihvati vaš zahtjev.',
+    directAfterHost:
+      'Nakon toga vas vaš domaćin može zamoliti da mu izravno platite {{percent}} % cijene.',
+    directAfterFullHost:
+      'Nakon toga vas vaš domaćin može zamoliti da mu izravno platite punu cijenu.',
+    directNowHost:
+      'Vrijede uvjeti vašeg domaćina za kasno otkazivanje: može vas zamoliti da mu izravno platite {{percent}} % cijene.',
+    directNowFullHost:
+      'Vrijede uvjeti vašeg domaćina za kasno otkazivanje: može vas zamoliti da mu izravno platite punu cijenu.',
   },
   respondOrder: {
     headingTime: 'Pružatelj predlaže drugo vrijeme',
@@ -425,6 +434,22 @@ export const hr: Messages = {
     warnCheckoutDay: 'Ovo je dan vaše odjave.',
     warnWeather: '{{event}} (DHMZ)',
     yourNote: 'Vaša napomena',
+    headingRequest: 'Provjerite zahtjev',
+    headingPurchase: 'Provjerite narudžbu',
+    confirmRequest: 'Pošalji zahtjev',
+    confirmPurchase: 'Naruči',
+    sendingRequest: 'Šaljem zahtjev…',
+    sendingPurchase: 'Naručujem…',
+    priceByHost: 'Cijenu određuje vaš domaćin',
+    payDirectHost: 'Plaćate izravno svom domaćinu',
+    noteHost:
+      'Vaša e-pošta i ovi podaci idu vašem domaćinu samo za ovu narudžbu. Na ovu e-poštu poslat ću vam potvrdu, a koristit ću je i za novosti te da vas vratim u razgovor na drugom mobitelu. Jednom ću vas zamoliti da je potvrdite.',
+    requestProvider: 'Pružatelj usluge potvrđuje vaš zahtjev. Odgovor očekujte do {{when}}.',
+    requestHost: 'Vaš domaćin potvrđuje vaš zahtjev. Odgovor očekujte do {{when}}.',
+    orderStatusRequest: 'Zahtjev',
+    orderStatusPurchase: 'Narudžba',
+    statusPendingHost: 'Čeka vašeg domaćina',
+    answerBy: 'Odgovor do',
   },
   trip: {
     plan: 'Plan',

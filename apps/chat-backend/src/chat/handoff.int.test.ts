@@ -222,17 +222,27 @@ describe.each(['mcp', 'inprocess'] as const)('handoff to the host (%s)', (transp
     expect(await handoffsOf(s)).toHaveLength(1);
   });
 
-  it('a decline sends nothing', async () => {
+  it('Not now sends nothing and starts no model turn (ticket 66)', async () => {
     const declined = await setup(transport);
     await openCard(declined);
-    declined.steps.push(textStep('No problem.'));
+    const calls = declined.model.doStreamCalls.length;
     const out = readStream(
       await sendAnswer(declined, { toolCallId: 'call-send', action: 'cancel' }),
     );
     expect(ofType(out, 'tool-output-available')[0]).toMatchObject({
       output: { outcome: 'not_sent', message: null },
     });
+    expect(out.some((c) => c.type === 'text-delta')).toBe(false);
+    expect(declined.model.doStreamCalls).toHaveLength(calls);
     expect(await handoffsOf(declined)).toEqual([]);
+    const conversation = await findConversation(declined.t.db, declined.space.space.id);
+    const rows = await loadMessages(declined.t.db, conversation?.id as string);
+    const parts = rows.at(-1)?.parts ?? [];
+    expect(parts.at(-1)?.type).toBe('data-elicitation');
+    expect(parts.some((p) => p.type === 'text')).toBe(false);
+    expect(parts.find((p) => p.type === 'tool-send_host_message')).toMatchObject({
+      output: { outcome: 'not_sent' },
+    });
   });
 
   it('new text while the card is open cancels it', async () => {

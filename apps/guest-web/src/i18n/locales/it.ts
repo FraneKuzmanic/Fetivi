@@ -67,6 +67,7 @@ export const it: Messages = {
       'Il tuo soggiorno è terminato. Puoi leggere questa chat e usare Il mio viaggio fino al {{date}}. Dopo cancello la nostra conversazione.',
     openTrip: 'Vai a Il mio viaggio',
     retry: 'Riprova',
+    notSent: 'Non inviato',
   },
   aboutMe: {
     title: 'Su di me',
@@ -340,6 +341,14 @@ export const it: Messages = {
     freeUntilProviderAccepts:
       'Puoi cancellare gratis finché il fornitore non accetta la tua richiesta.',
     freeUntilHostAccepts: 'Puoi cancellare gratis finché il tuo host non accetta la tua richiesta.',
+    directAfterHost:
+      'Dopo, il tuo host può chiederti di pagargli direttamente il {{percent}} % del prezzo.',
+    directAfterFullHost:
+      'Dopo, il tuo host può chiederti di pagargli direttamente il prezzo intero.',
+    directNowHost:
+      'Valgono le condizioni del tuo host per la cancellazione tardiva: può chiederti di pagargli direttamente il {{percent}} % del prezzo.',
+    directNowFullHost:
+      'Valgono le condizioni del tuo host per la cancellazione tardiva: può chiederti di pagargli direttamente il prezzo intero.',
   },
   respondOrder: {
     headingTime: 'Il fornitore propone un altro orario',
@@ -432,6 +441,22 @@ export const it: Messages = {
     warnCheckoutDay: 'È il giorno del check-out.',
     warnWeather: '{{event}} (DHMZ)',
     yourNote: 'La tua nota',
+    headingRequest: 'Controlla la tua richiesta',
+    headingPurchase: 'Controlla il tuo ordine',
+    confirmRequest: 'Invia richiesta',
+    confirmPurchase: 'Ordina',
+    sendingRequest: 'Invio della richiesta…',
+    sendingPurchase: 'Ordine in corso…',
+    priceByHost: 'Il prezzo lo stabilisce il tuo host',
+    payDirectHost: 'Paghi direttamente il tuo host',
+    noteHost:
+      'La tua email e questi dati vanno al tuo host solo per questo ordine. Ti invierò la conferma a questa email e la userò per gli aggiornamenti e per riportarti nella chat su un altro telefono. Ti chiederò di confermarla una volta.',
+    requestProvider: 'Il fornitore conferma la tua richiesta. Avrai una risposta entro {{when}}.',
+    requestHost: 'Il tuo host conferma la tua richiesta. Avrai una risposta entro {{when}}.',
+    orderStatusRequest: 'Richiesta',
+    orderStatusPurchase: 'Ordine',
+    statusPendingHost: 'In attesa del tuo host',
+    answerBy: 'Risposta prevista',
   },
   trip: {
     plan: 'Piano',

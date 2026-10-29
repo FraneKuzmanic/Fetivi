@@ -1,5 +1,6 @@
 import type { PaymentMode } from '@fetivi/domain/offer-vocabulary';
 import type { CancellationTermsPayload } from '../payloads';
+import type { OrderOwner } from './order-shape';
 
 /** The cancellation terms in the guest's words, per payment mode. */
 export interface CancellationTermsLabels {
@@ -14,6 +15,11 @@ export interface CancellationTermsLabels {
   /** Pay-direct, after the cutoff. */
   directNow: (percent: number) => string;
   directNowFull: string;
+  /** The same four, for the host's own Offers: the host asks, not a provider (ticket 66). */
+  directAfterHost: (percent: number) => string;
+  directAfterFullHost: string;
+  directNowHost: (percent: number) => string;
+  directNowFullHost: string;
   /** Pay-online, before the cutoff: what comes back afterwards. */
   onlineAfter: (refundPercent: number) => string;
   onlineAfterNone: string;
@@ -40,6 +46,7 @@ export function cancellationTermsText(
   paymentMode: PaymentMode,
   paid: boolean,
   labels: CancellationTermsLabels,
+  owner: OrderOwner = 'provider',
 ): string | null {
   if (!terms) return null;
   const late = terms.lateChargePercent;
@@ -48,6 +55,12 @@ export function cancellationTermsText(
   const until = labels.freeUntil(
     labels.dateTime(terms.freeUntilLocal.slice(0, 10), terms.freeUntilLocal),
   );
+  if (paymentMode === 'direct' && owner === 'host') {
+    if (terms.freeWindowPassed) {
+      return late === 100 ? labels.directNowFullHost : labels.directNowHost(late);
+    }
+    return `${until} ${late === 100 ? labels.directAfterFullHost : labels.directAfterHost(late)}`;
+  }
   if (paymentMode === 'direct') {
     if (terms.freeWindowPassed) return late === 100 ? labels.directNowFull : labels.directNow(late);
     return `${until} ${late === 100 ? labels.directAfterFull : labels.directAfter(late)}`;

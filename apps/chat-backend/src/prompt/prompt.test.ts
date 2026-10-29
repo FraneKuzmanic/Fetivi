@@ -91,6 +91,18 @@ describe('system text', () => {
     expect(INSTRUCTIONS).not.toContain('menu');
   });
 
+  it('takes Not now as a choice, words host offers as the host, and never repeats a declined suggestion (ticket 66)', () => {
+    expect(INSTRUCTIONS).toContain(
+      'Never suggest again something the guest declined or passed over, unless they raise it themselves.',
+    );
+    expect(INSTRUCTIONS).toContain(
+      'means the guest tapped Not now: it is their choice, not a failure. Do not offer to try again or mention the card',
+    );
+    expect(INSTRUCTIONS).toContain(
+      'For an offer with owner host, say "your host", never "the provider".',
+    );
+  });
+
   it('states the total and every warning before the booking card', () => {
     expect(INSTRUCTIONS).toContain(
       'say in your reply the total price (or that the provider names it) and every warning it returned for that start',
