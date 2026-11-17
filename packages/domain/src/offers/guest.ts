@@ -12,7 +12,8 @@ import type {
   PriceUnit,
 } from './vocabulary';
 
-// The guest read side of Offers; who sees what is `visibleOfferCondition` (visibility.ts).
+// The guest read side of Offers. Who sees what is `visibleOfferCondition` (visibility.ts, ADR 0031);
+// the translation join below is the rule's language filter.
 
 export type { GuestOfferScope };
 
@@ -90,7 +91,7 @@ function guestOfferOf({
   };
 }
 
-/** The Offers this guest may see, by translated title. */
+/** The Offers this guest may see, with the guest's category and place filters, by translated title, then id. */
 export async function listGuestOffers(
   db: Executor,
   scope: GuestOfferScope,

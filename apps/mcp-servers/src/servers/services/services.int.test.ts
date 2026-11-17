@@ -5,6 +5,7 @@ import {
   createOrder,
   fromLocalDateTime,
   GUEST_CONFIRMS_META_KEY,
+  hostHiddenProviders,
   paymentAttempts,
   providerPropose,
   QUEUES,
@@ -386,6 +387,40 @@ describe('check_availability', () => {
       quantity: 1,
     });
     expect(other).toMatchObject({ isError: true, content: [{ text: 'not permitted' }] });
+  });
+});
+
+describe('the visibility rule at the tools', () => {
+  it('a Provider the host hid is gone from list_offers and not permitted for check_availability and create_order', async () => {
+    const db = t.db;
+    const boat = await db.query.offers.findFirst({ where: (o, { eq }) => eq(o.id, offer.boat) });
+    const provider = await seedProvider(db);
+    const { offerId } = await seedOrderableOffer(db, {
+      providerId: provider.id,
+      destinationId: boat?.destinationId as string,
+      availabilityMode: 'on_request',
+      title: 'Hidden cruise',
+    });
+    await publishOffer(db, offerId);
+    await db.insert(hostHiddenProviders).values({ hostId: guest.hostId, providerId: provider.id });
+    const ids = async (g: SeededGuestUnit) =>
+      (
+        (await call(g, 'list_offers', {})).structuredContent as { offers: { id: string }[] }
+      ).offers.map((o) => o.id);
+    expect(await ids(guest)).not.toContain(offerId);
+    const args = { offerId, date: day, quantity: 1 };
+    expect(await call(guest, 'check_availability', args)).toMatchObject({
+      isError: true,
+      content: [{ text: 'not permitted' }],
+    });
+    const before = (await pendingOf(guest)).length;
+    expect(await call(guest, 'create_order', args)).toMatchObject({
+      isError: true,
+      content: [{ text: 'not permitted' }],
+    });
+    expect(await pendingOf(guest)).toHaveLength(before);
+    // Hidden only for this host's guests.
+    expect(await ids(neighbour)).toContain(offerId);
   });
 });
 

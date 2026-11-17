@@ -206,8 +206,12 @@ An Offer a host makes available only to their own guests. Its Orders reach the h
 _Avoid_: host Provider, host Offer (in interface copy)
 
 **Hidden Provider**:
-An approved Provider a host has hidden from their guests. Hiding is per host, changes only what guests see from then on, and never touches existing Orders.
+An active Provider a host has hidden from their guests. Hiding is per host, changes only what guests see from then on, and never touches existing Orders.
 _Avoid_: blocked Provider, opt-out (as a noun)
+
+**Visible Offer**:
+An Offer a guest's assistant may show and book: active, published in the guest's language, and either the host's own service or an Offer of the guest's Destination whose Provider is active and not hidden by the host. ADR 0031.
+_Avoid_: available offer (availability is per day and start), bookable offer
 
 **Curation item**:
 One entry on the admin's single curation queue (`curation_items`). Six kinds: a draft, a refresh diff, a record flagged by guests, a host's place suggestion, a host's Provider suggestion and a Fallback topic cluster. An item is open, needs a visit (parked, still reviewable), approved or rejected; there are no assignees, so whoever acts first wins. Approving an item tied to a Catalog record applies what it proposes and stamps the record's Verification date.

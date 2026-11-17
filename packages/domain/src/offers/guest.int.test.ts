@@ -1,7 +1,7 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { catalogRecords } from '../db/schema/catalog';
-import { hostHiddenProviders, offers, providers } from '../db/schema/offers';
+import { hostHiddenProviders, offers, offerTranslations, providers } from '../db/schema/offers';
 import {
   createTestDatabase,
   publishOffer,
@@ -98,6 +98,14 @@ describe('listGuestOffers', () => {
     ]);
   });
 
+  it('the host’s own Offers ignore the destination and the hidden list', async () => {
+    // Own Offers have no Provider, so the Provider and hidden filters cannot apply to them.
+    expect(titles(await listGuestOffers(testDb.db, scope({ destinationId: destB })))).toEqual([
+      'B boat',
+      'Own bike',
+    ]);
+  });
+
   it('another host’s guest sees their own Offers, never this host’s', async () => {
     const list = await listGuestOffers(testDb.db, scope({ propertyId: otherHost.propertyId }));
     expect(titles(list)).toEqual(['A boat', 'Other host bike']);
@@ -167,5 +175,51 @@ describe('a Provider hidden by the host (38)', () => {
       [ids['A boat'] ?? '', hiddenOffer].sort(),
     );
     expect(titles(await listGuestOffers(db, scope({ destinationId: null })))).toEqual(['Own bike']);
+  });
+});
+
+describe('the rest of the rule', () => {
+  const base = { availabilityMode: 'on_request' as const, orderKind: 'booking' as const };
+
+  it('orders by translated title, then id', async () => {
+    const provider = await seedProvider(testDb.db);
+    const one = await offer('Twin', {
+      ...base,
+      providerId: provider.id,
+      destinationId: destA,
+      category: 'tasting',
+    });
+    const two = await offer('Twin', {
+      ...base,
+      providerId: provider.id,
+      destinationId: destA,
+      category: 'tasting',
+    });
+    const list = await listGuestOffers(testDb.db, scope(), { category: 'tasting' });
+    expect(list.map((o) => o.id)).toEqual([one, two].sort());
+  });
+
+  it('an Offer whose published revision has no translation in the guest’s language is not shown', async () => {
+    const db = testDb.db;
+    const provider = await seedProvider(db);
+    const untranslated = await offer('Untranslated', {
+      ...base,
+      providerId: provider.id,
+      destinationId: destA,
+      category: 'class',
+    });
+    await db
+      .delete(offerTranslations)
+      .where(
+        and(eq(offerTranslations.offerId, untranslated), eq(offerTranslations.language, 'de')),
+      );
+
+    expect(await listGuestOffers(db, scope(), { category: 'class' })).toEqual([]);
+    expect(await getGuestOffer(db, scope(), untranslated)).toBeNull();
+    const en = scope({ language: 'en' });
+    expect((await listGuestOffers(db, en, { category: 'class' })).map((o) => o.id)).toEqual([
+      untranslated,
+    ]);
+    expect((await getGuestOffer(db, en, untranslated))?.id).toBe(untranslated);
   });
 });

@@ -5,6 +5,7 @@ import { destinations } from '../db/schema/catalog';
 import { hostHiddenProviders, offers, providers } from '../db/schema/offers';
 import { properties } from '../db/schema/properties';
 import { OfferRuleError } from './store';
+import { activePublishedOffer } from './visibility';
 
 // Host control over Providers (38, PRD §6.4): every approved Provider near the host's properties
 // is shown to their guests unless the host hides it. Per host; existing Orders are untouched.
@@ -67,8 +68,7 @@ export async function listHostProviders(db: Executor, hostId: string): Promise<H
     .where(
       and(
         eq(providers.active, true),
-        eq(offers.active, true),
-        isNotNull(offers.publishedRevision),
+        activePublishedOffer(),
         inArray(offers.destinationId, destinationIds),
       ),
     )

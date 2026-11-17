@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { allotmentSlots } from '../../db/schema/offers';
+import { allotmentSlots, hostHiddenProviders, offers, providers } from '../../db/schema/offers';
 import { inventoryHolds, orderProposals, orders } from '../../db/schema/orders';
 import { pendingActions } from '../../db/schema/pending-actions';
 import { spaces } from '../../db/schema/spaces';
@@ -230,6 +230,73 @@ describe('prepareOrder', () => {
     expect(
       await codeOf(prepareOrder(deps(), ctx(), { offerId: other.offerId, date: DAY, quantity: 1 })),
     ).toBe('offer-not-visible');
+  });
+
+  it('refuses every Offer the visibility rule excludes, at availability and the first half', async () => {
+    const db = testDb.db;
+    const pendingCount = async () =>
+      (await db.select().from(pendingActions).where(eq(pendingActions.spaceId, guest.spaceId)))
+        .length;
+    const visible = async (options: { destinationId?: string; publish?: boolean } = {}) => {
+      const provider = await seedProvider(db);
+      const { offerId } = await seedOrderableOffer(db, {
+        providerId: provider.id,
+        destinationId: options.destinationId ?? destinationId,
+        availabilityMode: 'on_request',
+      });
+      if (options.publish !== false) await publishOffer(db, offerId);
+      return { offerId, providerId: provider.id };
+    };
+
+    const otherDestination = await visible({ destinationId: await seedDestination(db) });
+    const otherHost = await seedOrderableOffer(db, {
+      hostId: neighbour.hostId,
+      availabilityMode: 'on_request',
+    });
+    await publishOffer(db, otherHost.offerId);
+    const unpublished = await visible({ publish: false });
+    const inactiveOffer = await visible();
+    await db.update(offers).set({ active: false }).where(eq(offers.id, inactiveOffer.offerId));
+    const inactiveProvider = await visible();
+    await db
+      .update(providers)
+      .set({ active: false })
+      .where(eq(providers.id, inactiveProvider.providerId));
+    const hidden = await visible();
+    await db
+      .insert(hostHiddenProviders)
+      .values({ hostId: guest.hostId, providerId: hidden.providerId });
+    const outside = await visible();
+    const outsideCtx = { ...ctx(), offerScope: { ...scope(), destinationId: null } };
+
+    const cases = [
+      { name: 'another destination', offerId: otherDestination.offerId, context: ctx() },
+      { name: 'another host’s own', offerId: otherHost.offerId, context: ctx() },
+      { name: 'unpublished', offerId: unpublished.offerId, context: ctx() },
+      { name: 'inactive Offer', offerId: inactiveOffer.offerId, context: ctx() },
+      { name: 'inactive Provider', offerId: inactiveProvider.offerId, context: ctx() },
+      { name: 'hidden Provider', offerId: hidden.offerId, context: ctx() },
+      { name: 'outside every destination', offerId: outside.offerId, context: outsideCtx },
+    ];
+    const before = await pendingCount();
+    for (const { name, offerId, context } of cases) {
+      const input = { offerId, date: DAY, quantity: 1 };
+      expect([name, await codeOf(availabilityFor(deps(), context, input))]).toEqual([
+        name,
+        'offer-not-visible',
+      ]);
+      expect([name, await codeOf(prepareOrder(deps(), context, input))]).toEqual([
+        name,
+        'offer-not-visible',
+      ]);
+    }
+    expect(await pendingCount()).toBe(before);
+    // The same Offer is bookable inside the destination: only the scope made the difference.
+    expect(
+      await codeOf(
+        prepareOrder(deps(), ctx(), { offerId: outside.offerId, date: DAY, quantity: 1 }),
+      ),
+    ).toBe('ok');
   });
 });
 
@@ -467,6 +534,35 @@ describe('completeOrder', () => {
     const { order, replay } = await complete(pendingId);
     expect(replay).toBe(true);
     expect(order.status).toBe('confirmed');
+  });
+
+  it('an Offer that leaves the guest’s view between the halves releases the record and books nothing', async () => {
+    const db = testDb.db;
+    const providerOf = async (offerId: string) => {
+      const [row] = await db.select().from(offers).where(eq(offers.id, offerId));
+      return row?.providerId as string;
+    };
+    const changes: Record<string, (offerId: string) => Promise<unknown>> = {
+      'Provider hidden by the host': async (offerId) =>
+        db
+          .insert(hostHiddenProviders)
+          .values({ hostId: guest.hostId, providerId: await providerOf(offerId) }),
+      'Provider deactivated': async (offerId) =>
+        db
+          .update(providers)
+          .set({ active: false })
+          .where(eq(providers.id, await providerOf(offerId))),
+      'Offer unpublished': (offerId) =>
+        db.update(offers).set({ publishedRevision: null }).where(eq(offers.id, offerId)),
+    };
+    for (const [name, change] of Object.entries(changes)) {
+      const { offerId, slotId, pendingId } = await prepared();
+      await change(offerId);
+      expect([name, await codeOf(complete(pendingId))]).toEqual([name, 'offer-not-visible']);
+      expect([name, (await pendingRow(pendingId))?.state]).toEqual([name, 'released']);
+      expect(await ordersOf(offerId)).toHaveLength(0);
+      expect(await remaining(slotId)).toBe(4);
+    }
   });
 });
 

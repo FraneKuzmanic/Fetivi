@@ -3,15 +3,29 @@ import { hostHiddenProviders, offers, providers } from '../db/schema/offers';
 import { properties } from '../db/schema/properties';
 import type { GuestLanguage } from '../property/vocabulary';
 
-// The one guest visibility rule (authorization matrix, architecture §4.3): inside a destination,
-// the destination's Provider Offers the host has not hidden (38) plus the host's own; outside
-// one, only the host's own. Visibility never looks at commission.
+// The one guest visibility rule (authorization matrix, architecture §4.3; ADR 0031). An Offer is
+// visible to a guest when all of these hold:
+//   1. Active: the Offer is switched on.
+//   2. Published: it has a published revision (all seven guest languages exist).
+//   3. In the guest's language: a translation exists for the published revision in the guest's
+//      language. Applied by the readers' translation join in guest.ts.
+//   4. Owner: either the host's own service (any of the host's properties, inside or outside a
+//      destination), or, only inside a destination, a Provider Offer of that destination
+//      5. whose Provider is active, and
+//      6. which the property's host has not hidden (38).
+// Never looks at commission or dates. Order and the guest's category/place filters:
+// listGuestOffers. Booking adds the bookability checks in services/pending/create-order.ts.
 
 /** Who is asking: the token's destination (null outside one), property and language. */
 export interface GuestOfferScope {
   destinationId: string | null;
   propertyId: string;
   language: GuestLanguage;
+}
+
+/** An Offer that is switched on and has a published revision (all seven languages): filters 1-2. */
+export function activePublishedOffer(): SQL | undefined {
+  return and(eq(offers.active, true), isNotNull(offers.publishedRevision));
 }
 
 /** Published, active Offers this guest may see; `providers` must be left-joined. */
@@ -31,9 +45,5 @@ export function visibleOfferCondition(scope: GuestOfferScope): SQL | undefined {
           eq(providers.active, true),
           notHidden,
         );
-  return and(
-    eq(offers.active, true),
-    isNotNull(offers.publishedRevision),
-    destination ? or(ownHost, destination) : ownHost,
-  );
+  return and(activePublishedOffer(), destination ? or(ownHost, destination) : ownHost);
 }
