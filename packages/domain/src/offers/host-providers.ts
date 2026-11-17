@@ -7,7 +7,7 @@ import { properties } from '../db/schema/properties';
 import { OfferRuleError } from './store';
 import { activePublishedOffer } from './visibility';
 
-// Host control over Providers (38, PRD §6.4): every approved Provider near the host's properties
+// Host control over Providers (38, PRD §6.4): every active Provider near the host's properties
 // is shown to their guests unless the host hides it. Per host; existing Orders are untouched.
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -98,8 +98,7 @@ describe('listGuestOffers', () => {
     ]);
   });
 
-  it('the host’s own Offers ignore the destination and the hidden list', async () => {
-    // Own Offers have no Provider, so the Provider and hidden filters cannot apply to them.
+  it('the host’s own Offers are shown in any destination', async () => {
     expect(titles(await listGuestOffers(testDb.db, scope({ destinationId: destB })))).toEqual([
       'B boat',
       'Own bike',

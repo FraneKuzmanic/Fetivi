@@ -552,6 +552,8 @@ describe('completeOrder', () => {
           .update(providers)
           .set({ active: false })
           .where(eq(providers.id, await providerOf(offerId))),
+      'Offer switched off': (offerId) =>
+        db.update(offers).set({ active: false }).where(eq(offers.id, offerId)),
       'Offer unpublished': (offerId) =>
         db.update(offers).set({ publishedRevision: null }).where(eq(offers.id, offerId)),
     };

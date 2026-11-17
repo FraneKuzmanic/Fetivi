@@ -4,7 +4,7 @@
 
 ## Context
 
-The thesis supervisor asked that the code and the thesis state precisely which Providers and Offers a guest's assistant can see and offer. The rule already lived mostly in one place (`visibleOfferCondition`), but it was not written down as a whole: the language filter and the result order sat in the readers, the "active and published" check was repeated by hand in two other places, and the booking re-checks were spread over the `create_order` halves and the order machine. The readers are the MCP `services` tools (`list_offers`, `check_availability`, `create_order`), plan items and the `search_places` bookable boost.
+The thesis supervisor asked that the code and the thesis state precisely which Providers and Offers a guest's assistant can see and offer. The rule already lived mostly in one place (`visibleOfferCondition`), but it was not written down as a whole: the language filter and the result order sat in the readers, the "active and published" check was repeated by hand in two other places, and the booking re-checks were spread over the `create_order` halves and the order machine. The readers are the MCP `services` tools (`list_offers`, `check_availability`, `create_order`), plan items and the `search_places` boost.
 
 ## Decision
 
@@ -13,7 +13,7 @@ The thesis supervisor asked that the code and the thesis state precisely which P
   1. Active: the Offer is switched on.
   2. Published: it has a published revision, which exists only once all seven guest languages do.
   3. In the guest's language: the published revision has a translation in the guest's language; the guest reads that text.
-  4. Owner: either the host's own service (any of the host's properties, inside or outside a Destination), or, only when the property is inside a Destination, a Provider Offer of that Destination
+  4. Owner: either the host's own service (any of the host's properties, inside or outside a Destination), or, only when the property is inside a Destination, a Provider Offer of that Destination,
   5. whose Provider is active (the admin's switch; a Provider exists only once the admin has a deal), and
   6. which the property's host has not hidden.
 - **The guest's own filters.** `list_offers` can narrow by category and by place; a place id that is not a valid id returns nothing.

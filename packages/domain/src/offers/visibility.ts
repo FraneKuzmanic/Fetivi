@@ -10,7 +10,7 @@ import type { GuestLanguage } from '../property/vocabulary';
 //   3. In the guest's language: a translation exists for the published revision in the guest's
 //      language. Applied by the readers' translation join in guest.ts.
 //   4. Owner: either the host's own service (any of the host's properties, inside or outside a
-//      destination), or, only inside a destination, a Provider Offer of that destination
+//      destination), or, only inside a destination, a Provider Offer of that destination,
 //      5. whose Provider is active, and
 //      6. which the property's host has not hidden (38).
 // Never looks at commission or dates. Order and the guest's category/place filters:
