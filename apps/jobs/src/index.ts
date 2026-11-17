@@ -5,6 +5,7 @@ import {
   createAnthropicTranslationModel,
   createDb,
   createJobQueue,
+  createLlmKeySource,
   createMailer,
   createStripeGateway,
   createVoyageEmbedder,
@@ -21,24 +22,34 @@ import { startJobRunner } from './runner';
 const config = loadConfig();
 const egress = createJobsEgress({ jadrolinija: config.JADROLINIJA_RSS_ENABLED });
 const { db, pool } = createDb(config.DATABASE_URL);
+// The admin's key from Settings, else ANTHROPIC_API_KEY, resolved per call (68).
+const llmKeys = createLlmKeySource({
+  db,
+  envKey: config.ANTHROPIC_API_KEY,
+  secret: config.LLM_KEY_SECRET,
+  onUnreadable: () =>
+    console.warn(
+      'The stored Anthropic key does not decrypt with LLM_KEY_SECRET: using ANTHROPIC_API_KEY',
+    ),
+});
 const model = createAnthropicTranslationModel({
-  apiKey: config.ANTHROPIC_API_KEY,
+  apiKey: llmKeys.get,
   fetch: egress.fetch,
   onUsage: usageRecorder(db, 'translation'),
 });
 const handoffTranslator = createAnthropicHandoffTranslator({
-  apiKey: config.ANTHROPIC_API_KEY,
+  apiKey: llmKeys.get,
   fetch: egress.fetch,
   onUsage: usageRecorder(db, 'handoff_translation'),
 });
 const draftingModel = createAnthropicDraftingModel({
-  apiKey: config.ANTHROPIC_API_KEY,
+  apiKey: llmKeys.get,
   fetch: egress.fetch,
   onUsage: usageRecorder(db, 'drafting'),
 });
 if (!config.ANTHROPIC_API_KEY) {
-  console.warn(
-    'ANTHROPIC_API_KEY is not set: translations and catalog drafting will fail as not-configured',
+  console.info(
+    'ANTHROPIC_API_KEY is not set: translations and catalog drafting need a key in the admin settings',
   );
 }
 const push =

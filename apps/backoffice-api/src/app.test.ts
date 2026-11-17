@@ -17,6 +17,10 @@ const deps = {
   manualImportModel: {
     extract: async () => ({ ok: false as const, error: 'not-configured' as const, detail: '' }),
   },
+  llmKeys: { get: async () => undefined, invalidate: () => {} },
+  llmEnvKey: undefined,
+  llmKeySecret: 'unused-llm-key-secret-long-enough-for-tests',
+  checkLlmKey: async () => ({ ok: false as const, error: 'not-configured' as const }),
 };
 
 afterAll(async () => {
@@ -53,6 +57,7 @@ describe('backoffice-api', () => {
       MEDIA_DIR: '../../.data/media',
       GEOCODER_USER_AGENT: 'Fetivi/0.1 (+https://github.com/FraneKuzmanic/Fetivi)',
       GEOCODER_ENABLED: true,
+      LLM_KEY_SECRET: 'dev-only-llm-key-secret-change-me-in-production',
     });
   });
 

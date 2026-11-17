@@ -3,6 +3,7 @@ import {
   createAnthropicTranslationModel,
   createDb,
   createJobQueue,
+  createLlmKeySource,
   ensureQueues,
   retitleBlocks,
   usageRecorder,
@@ -18,13 +19,26 @@ import { createJobsEgress } from '../egress';
  */
 async function main(): Promise<void> {
   const config = loadConfig();
-  if (!config.ANTHROPIC_API_KEY) {
-    console.error('ANTHROPIC_API_KEY is not set: nothing to translate with');
-    process.exitCode = 1;
-    return;
-  }
   const egress = createJobsEgress({ jadrolinija: false });
   const { db, pool } = createDb(config.DATABASE_URL);
+  // The admin's key from Settings, else ANTHROPIC_API_KEY (68).
+  const llmKeys = createLlmKeySource({
+    db,
+    envKey: config.ANTHROPIC_API_KEY,
+    secret: config.LLM_KEY_SECRET,
+    onUnreadable: () =>
+      console.warn(
+        'The stored Anthropic key does not decrypt with LLM_KEY_SECRET: using ANTHROPIC_API_KEY',
+      ),
+  });
+  if (!(await llmKeys.get())) {
+    console.error(
+      'No Anthropic key in the admin settings or ANTHROPIC_API_KEY: nothing to translate with',
+    );
+    process.exitCode = 1;
+    await pool.end();
+    return;
+  }
   const boss = new PgBoss({
     connectionString: config.DATABASE_URL,
     supervise: false,
@@ -35,7 +49,7 @@ async function main(): Promise<void> {
     await boss.start();
     await ensureQueues(boss);
     const model = createAnthropicTranslationModel({
-      apiKey: config.ANTHROPIC_API_KEY,
+      apiKey: llmKeys.get,
       fetch: egress.fetch,
       onUsage: usageRecorder(db, 'translation'),
     });

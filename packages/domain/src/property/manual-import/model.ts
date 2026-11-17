@@ -1,7 +1,12 @@
-import Anthropic, { type ClientOptions } from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import type { Egress } from '@fetivi/egress';
 import { type ModelUsage, usageOf } from '../../metrics/usage';
+import {
+  type ApiKeySource,
+  anthropicClientCache,
+  NOT_CONFIGURED_DETAIL,
+} from '../../settings/llm-key';
 import { buildManualMessage, MANUAL_IMPORT_MODEL_ID, MANUAL_IMPORT_SYSTEM_PROMPT } from './prompt';
 import { ManualExtraction, type ManualExtractionData } from './schema';
 
@@ -19,30 +24,20 @@ export interface ManualImportModel {
  * every draft, so the fast model is enough. Streaming, because a long manual gives a long output.
  */
 export function createAnthropicManualImportModel(opts: {
-  apiKey: string | undefined;
+  /** Resolved on every call, so a key changed in the admin settings applies without a restart (68). */
+  apiKey: ApiKeySource;
   fetch: Egress['fetch'];
   /** Gets each successful response's tokens (a failed call has none and reports nothing). */
   onUsage?: (usage: ModelUsage) => void;
 }): ManualImportModel {
-  const { apiKey } = opts;
-  if (!apiKey) {
-    return {
-      extract: async () => ({
-        ok: false,
-        error: 'not-configured',
-        detail: 'ANTHROPIC_API_KEY is not set',
-      }),
-    };
-  }
-  // The SDK only ever passes a URL string, which the egress fetch accepts.
-  const client = new Anthropic({
-    apiKey,
-    fetch: opts.fetch as ClientOptions['fetch'],
-    maxRetries: 3,
-  });
+  const clientFor = anthropicClientCache(opts.fetch);
 
   return {
     async extract(text) {
+      // Outside the try: a settings read failure is thrown (the job retries), not a model error.
+      const apiKey = await opts.apiKey();
+      if (!apiKey) return { ok: false, error: 'not-configured', detail: NOT_CONFIGURED_DETAIL };
+      const client = clientFor(apiKey);
       try {
         const message = await client.messages
           .stream({

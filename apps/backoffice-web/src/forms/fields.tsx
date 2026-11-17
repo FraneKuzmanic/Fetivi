@@ -27,7 +27,7 @@ export function TextField({
   maxLength: number;
   placeholder?: string | undefined;
   required?: boolean;
-  type?: 'text' | 'tel' | 'email';
+  type?: 'text' | 'tel' | 'email' | 'password';
   autoComplete?: string;
   /** The earliest and latest day of a date field. */
   min?: string;

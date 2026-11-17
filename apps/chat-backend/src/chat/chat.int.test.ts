@@ -426,6 +426,30 @@ describe('POST /api/chat guards', () => {
     expect([response.statusCode, response.json()]).toEqual([503, { error: 'chat-unavailable' }]);
   });
 
+  it('resolves the model per turn, so a key set at runtime opens the chat without a restart (68)', async () => {
+    const model = mockModel([textStep('Hello.')]);
+    let keySet = false;
+    const t = await createChatTestApp({
+      model: null,
+      modelSource: async () => (keySet ? model : null),
+    });
+    apps.push(t);
+    const seed = await seedGuestUnit(t.db, {
+      now: t.clock.now(),
+      checkInInDays: 2,
+      releaseDaysBefore: 1,
+    });
+    const { cookie } = await enterSpace(t, seed);
+    const before = await send(t, cookie, 'hi');
+    expect([before.statusCode, before.json()]).toEqual([503, { error: 'chat-unavailable' }]);
+    keySet = true;
+    const after = await send(t, cookie, 'hi');
+    expect(after.statusCode).toBe(200);
+    expect(readStream(after).find((c) => c.type === 'text-delta')).toMatchObject({
+      delta: 'Hello.',
+    });
+  });
+
   it('refuses a second turn while one is still streaming', async () => {
     const model = mockModel([textStep('slow', { initial: 400, chunk: 50 }), textStep('next')]);
     const { t, cookie } = await setup(model);

@@ -2,6 +2,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { ConfirmProvider } from '../../shell/ConfirmDialog';
 import { SettingsPage } from './SettingsPage';
 
 let root: Root | null = null;
@@ -57,22 +58,68 @@ const USAGE = {
   unpricedCalls: 0,
 };
 
-async function mount(usage: unknown = USAGE, usageStatus = 200) {
+type KeyStatus = {
+  source: 'settings' | 'environment' | 'none';
+  last4: string | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+};
+
+const ENV_KEY: KeyStatus = {
+  source: 'environment',
+  last4: 'wxyz',
+  updatedAt: null,
+  updatedBy: null,
+};
+const CHANGED = { updatedAt: '2026-11-17T09:05:00.000Z', updatedBy: 'admin@example.test' };
+
+async function mount(
+  usage: unknown = USAGE,
+  usageStatus = 200,
+  options: { llmKey?: KeyStatus; check?: unknown } = {},
+) {
   calls = [];
   let cap = 60;
+  let llmKey = options.llmKey ?? ENV_KEY;
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
     const method = init?.method ?? 'GET';
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
-    if (String(input) === '/api/admin/usage') return json(usage, usageStatus);
-    calls.push({ url: String(input), method, body });
+    if (url === '/api/admin/usage') return json(usage, usageStatus);
+    calls.push({ url, method, body });
+    if (url === '/api/admin/settings/llm-key/test') return json(options.check ?? { ok: true });
+    if (url === '/api/admin/settings/llm-key') {
+      llmKey =
+        method === 'PUT'
+          ? { source: 'settings', last4: (body as { key: string }).key.slice(-4), ...CHANGED }
+          : { ...ENV_KEY, ...CHANGED };
+      return json(llmKey);
+    }
     if (method === 'PUT') cap = (body as { dailyMessageCap: number }).dailyMessageCap;
-    return json({ dailyMessageCap: cap });
+    return json({ dailyMessageCap: cap, llmKey });
   });
   el = document.createElement('div');
   document.body.append(el);
   root = createRoot(el);
   await act(async () => {
-    root?.render(<SettingsPage />);
+    root?.render(
+      <ConfirmProvider>
+        <SettingsPage />
+      </ConfirmProvider>,
+    );
+  });
+}
+
+const keySection = () =>
+  [...el.querySelectorAll('section')].find((s) =>
+    s.querySelector('h2')?.textContent?.includes('Anthropic API key'),
+  ) as HTMLElement;
+const button = (scope: ParentNode, name: string) =>
+  [...scope.querySelectorAll('button')].find((b) => b.textContent === name);
+async function click(target: HTMLElement | undefined) {
+  if (!target) throw new Error('no button');
+  await act(async () => {
+    target.click();
   });
 }
 
@@ -150,5 +197,96 @@ describe('SettingsPage', () => {
     await mount({ error: 'internal' }, 500);
     expect(el.querySelector('[role="alert"]')).not.toBeNull();
     expect(el.querySelector<HTMLInputElement>('input[type="number"]')?.value).toBe('60');
+  });
+});
+
+describe('LlmKeySection (68)', () => {
+  const KEY = 'sk-ant-api03-secret-key-material-abcd';
+
+  it('says where the key in use comes from, by its last four characters', async () => {
+    await mount(USAGE, 200, { llmKey: { source: 'none', last4: null, ...CHANGED } });
+    expect(keySection().textContent).toContain(
+      'No key: the guest chat, translations, drafting and manual import are off.',
+    );
+    expect(keySection().textContent).toMatch(
+      /Last changed by admin@example\.test, 17\.11\.2026, \d\d:05/,
+    );
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+
+    await mount();
+    expect(keySection().textContent).toContain(
+      'From the server environment (ANTHROPIC_API_KEY), ends in …wxyz',
+    );
+    expect(keySection().textContent).not.toContain('Last changed');
+    // Remove only for a key saved in Settings.
+    expect(button(keySection(), 'Remove')).toBeUndefined();
+  });
+
+  it('names a deleted account as who changed the key', async () => {
+    await mount(USAGE, 200, {
+      llmKey: { source: 'settings', last4: 'abcd', ...CHANGED, updatedBy: null },
+    });
+    expect(keySection().textContent).toContain('Last changed by a deleted account');
+  });
+
+  it('saves a new key, clears the field and never shows the key', async () => {
+    await mount();
+    const input = keySection().querySelector<HTMLInputElement>('input[type="password"]');
+    if (!input) throw new Error('no key input');
+    expect([input.value, input.autocomplete]).toEqual(['', 'off']);
+    await type(input, KEY);
+    await act(async () => {
+      keySection().querySelector('form')?.requestSubmit();
+    });
+    expect(calls.at(-1)).toEqual({
+      url: '/api/admin/settings/llm-key',
+      method: 'PUT',
+      body: { key: KEY },
+    });
+    expect(input.value).toBe('');
+    expect(keySection().textContent).toContain('Set in Settings, ends in …abcd');
+    expect(document.body.innerHTML).not.toContain(KEY);
+  });
+
+  it('saves nothing when the key field is empty', async () => {
+    await mount();
+    await act(async () => {
+      keySection()
+        .querySelector('form')
+        ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    // The required field normally stops the submit; past it, save() refuses.
+    expect(keySection().querySelector('[role="alert"]')).not.toBeNull();
+    expect(calls.map((c) => c.url)).toEqual(['/api/admin/settings']);
+  });
+
+  it('asks before removing the saved key and then sends DELETE', async () => {
+    await mount(USAGE, 200, { llmKey: { source: 'settings', last4: 'abcd', ...CHANGED } });
+    await click(button(keySection(), 'Remove'));
+    const dialog = document.querySelector<HTMLElement>('dialog.confirm-dialog');
+    if (!dialog) throw new Error('no confirm dialog');
+    expect(dialog.textContent).toContain('Remove the saved key?');
+    expect(calls.some((c) => c.method === 'DELETE')).toBe(false);
+    await click(button(dialog, 'Remove key'));
+    expect(calls.at(-1)).toEqual({
+      url: '/api/admin/settings/llm-key',
+      method: 'DELETE',
+      body: undefined,
+    });
+    expect(keySection().textContent).toContain('From the server environment');
+    expect(button(keySection(), 'Remove')).toBeUndefined();
+  });
+
+  it.each([
+    [{ ok: true }, 'The key works.'],
+    [{ ok: false, error: 'rejected' }, 'Anthropic rejected the key.'],
+    [{ ok: false, error: 'unreachable' }, 'Anthropic could not be reached.'],
+    [{ ok: false, error: 'not-configured' }, 'No key to test.'],
+  ])('tests the key in use: %o', async (check, message) => {
+    await mount(USAGE, 200, { check });
+    await click(button(keySection(), 'Test the key'));
+    expect(calls.at(-1)).toMatchObject({ url: '/api/admin/settings/llm-key/test', method: 'POST' });
+    expect(keySection().querySelector('output')?.textContent).toBe(message);
   });
 });

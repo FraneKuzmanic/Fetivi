@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 const DEV_PROVIDER_LINK_SECRET = 'dev-only-provider-link-secret-change-me-in-production';
 const DEV_GUEST_LINK_SECRET = 'dev-only-guest-link-secret-change-me-in-production';
+const DEV_LLM_KEY_SECRET = 'dev-only-llm-key-secret-change-me-in-production';
 
 const DEV_MAIL_FROM = 'Fetivi <notifications@localhost>';
 const DEV_GUEST_ORIGIN = 'http://localhost:5173';
@@ -14,11 +15,13 @@ const optionalString = z
 const schema = z
   .object({
     DATABASE_URL: z.string().default('postgres://fetivi:fetivi@127.0.0.1:5433/fetivi'),
-    /** Without it, translations fail visibly as not-configured. */
+    /** Fallback when the admin has set no key in Settings (68); with neither, translations fail visibly as not-configured. */
     ANTHROPIC_API_KEY: z
       .string()
       .optional()
       .transform((s) => s || undefined),
+    /** Encrypts the admin's Anthropic key in the database; the three processes must share it (common.env). */
+    LLM_KEY_SECRET: z.string().min(32).default(DEV_LLM_KEY_SECRET),
     NODE_ENV: z.string().optional(),
     /** Derives the per-order Provider link tokens; required in production. */
     PROVIDER_LINK_SECRET: z.string().min(32).default(DEV_PROVIDER_LINK_SECRET),

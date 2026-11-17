@@ -1,11 +1,11 @@
 import type { Db, JobQueue, MediaStore, WeatherSource } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
 import { traceRoutes } from '@fetivi/telemetry';
-import type { LanguageModel } from 'ai';
 import Fastify from 'fastify';
 import { aboutMeRoutes } from './about-me/routes';
 import { registerAccess } from './access/plugin';
 import { accessRoutes } from './access/routes';
+import type { ChatModelSource } from './chat/model';
 import { chatRoutes } from './chat/routes';
 import { emailRoutes } from './email/routes';
 import { tipsUnsubscribeRoutes } from './email/unsubscribe';
@@ -44,8 +44,8 @@ export interface AppDeps {
   /** Web push: the VAPID public key, or null (unset) when push is not configured. */
   push?: { publicKey: string | null };
   chat: {
-    /** Null without an API key: the chat then answers 503. */
-    model: LanguageModel | null;
+    /** Resolved per turn; null without an API key: the chat then answers 503. */
+    model: ChatModelSource;
     /** Outbound fetch to the MCP servers. */
     mcpFetch: Egress['fetch'];
     /** How the guest tools run; MCP when unset. V0 passes the in-process binding. */

@@ -37,6 +37,7 @@ NODE_ENV=production
 DATABASE_URL=postgres://fetivi:$pg_password@postgres:5432/fetivi
 WEATHER_USER_AGENT=Fetivi/0.1 (+mailto:ops@fetivi.localhost)
 ANTHROPIC_API_KEY=
+LLM_KEY_SECRET=$(hex)
 EOF
   cat >"$DEPLOY_DIR/env/chat-backend.env" <<EOF
 GUEST_TOKEN_PRIVATE_KEY=$signing_key

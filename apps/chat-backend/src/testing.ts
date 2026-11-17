@@ -36,6 +36,7 @@ import type { LanguageModel, UIMessageChunk } from 'ai';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { createLocalJWKSet } from 'jose';
 import { type AppDeps, buildApp } from './app';
+import type { ChatModelSource } from './chat/model';
 import type { Ferryhopper } from './mcp/external/ferryhopper';
 import { loadSigningKey } from './tokens/keys';
 import type { TokenConfig } from './tokens/mint';
@@ -49,7 +50,7 @@ export const TEST_GUEST_LINK_SECRET = 'chat-test-guest-link-secret-long-enough';
 
 /** Chat deps for apps whose tests never chat: no model, and no MCP fetch. */
 export const NO_CHAT: AppDeps['chat'] = {
-  model: null,
+  model: async () => null,
   mcpFetch: async () => {
     throw new Error('no MCP servers in this test');
   },
@@ -201,6 +202,8 @@ export interface ChatTestApp {
  */
 export async function createChatTestApp(options: {
   model: LanguageModel | null;
+  /** Replaces `model` with a per-turn source, for tests of the key changing at runtime (68). */
+  modelSource?: ChatModelSource;
   probe?: boolean;
   queue?: JobQueue;
   transport?: ToolTransport;
@@ -250,7 +253,7 @@ export async function createChatTestApp(options: {
     media: createLocalMediaStore(mediaDir),
     tokens: { key, issuer: TEST_ISSUER, mcpBaseUrl: TEST_MCP_BASE },
     chat: {
-      model: options.model,
+      model: options.modelSource ?? (async () => options.model),
       mcpFetch,
       weather,
       ...(options.ferryhopper ? { ferryhopper: options.ferryhopper } : {}),
@@ -305,7 +308,7 @@ async function createInProcessChatTestApp(options: {
       mcpBaseUrl: TEST_MCP_BASE,
     },
     chat: {
-      model: options.model,
+      model: async () => options.model,
       mcpFetch: async () => {
         throw new Error('no MCP in process mode');
       },

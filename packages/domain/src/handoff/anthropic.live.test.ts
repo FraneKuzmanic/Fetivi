@@ -1,5 +1,6 @@
 import { createEgress } from '@fetivi/egress';
 import { describe, expect, it } from 'vitest';
+import { fixedKey } from '../settings/llm-key';
 import { createAnthropicHandoffTranslator } from './translate';
 
 // One short real Sonnet 5.5 call. Opt-in only:
@@ -9,7 +10,7 @@ const live = process.env.FETIVI_LIVE_TESTS === '1' && Boolean(process.env.ANTHRO
 describe.skipIf(!live)('Anthropic handoff translator (live)', () => {
   it('translates Croatian into German and keeps the door code and the time', async () => {
     const translator = createAnthropicHandoffTranslator({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+      apiKey: fixedKey(process.env.ANTHROPIC_API_KEY),
       fetch: createEgress({ allowlist: ['api.anthropic.com'] }).fetch,
     });
     const result = await translator.translate({

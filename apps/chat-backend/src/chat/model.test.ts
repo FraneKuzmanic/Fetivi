@@ -2,7 +2,7 @@ import type { Egress } from '@fetivi/egress';
 import { type ModelMessage, streamText } from 'ai';
 import { expect, it } from 'vitest';
 import { systemInstructions } from '../prompt/prompt';
-import { CHAT_PROVIDER_OPTIONS, createChatModel } from './model';
+import { CHAT_PROVIDER_OPTIONS, chatModelSource, createChatModel } from './model';
 
 /** Every `cache_control` value anywhere in the request body. */
 function cacheControls(value: unknown): unknown[] {
@@ -53,4 +53,18 @@ it('sends the system breakpoint and the automatic history breakpoint, nothing on
   expect(cacheControls(body.messages)).toEqual([]);
   // Anthropic allows 4 per request.
   expect(cacheControls(body)).toHaveLength(2);
+});
+
+it('builds the chat model per key: null without one, reused while the key stays (68)', async () => {
+  let key: string | undefined;
+  const source = chatModelSource(async () => key, (async () => new Response()) as Egress['fetch']);
+  await expect(source()).resolves.toBeNull();
+  key = 'key-one';
+  const first = await source();
+  expect(first).not.toBeNull();
+  await expect(source()).resolves.toBe(first);
+  key = 'key-two';
+  const second = await source();
+  expect(second).not.toBeNull();
+  expect(second).not.toBe(first);
 });

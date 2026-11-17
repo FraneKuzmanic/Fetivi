@@ -1,7 +1,9 @@
 import {
+  checkAnthropicKey,
   createAnthropicManualImportModel,
   createDb,
   createJobQueue,
+  createLlmKeySource,
   createLocalMediaStore,
   createMailer,
   createPhotonGeocoder,
@@ -17,7 +19,9 @@ import { egress } from './egress';
 
 const config = loadConfig();
 if (!config.ANTHROPIC_API_KEY) {
-  console.warn('ANTHROPIC_API_KEY is not set: house manual imports will fail as not configured');
+  console.info(
+    'ANTHROPIC_API_KEY is not set: house manual imports need a key in the admin settings',
+  );
 }
 const gateway = config.STRIPE_SECRET_KEY
   ? createStripeGateway({ apiKey: config.STRIPE_SECRET_KEY, fetch: egress.fetch })
@@ -34,6 +38,16 @@ const boss = new PgBoss({
 boss.on('error', (error) => console.error('pg-boss error', error));
 await boss.start();
 await ensureQueues(boss);
+// The admin's key from Settings, else ANTHROPIC_API_KEY (68); the settings routes invalidate it.
+const llmKeys = createLlmKeySource({
+  db,
+  envKey: config.ANTHROPIC_API_KEY,
+  secret: config.LLM_KEY_SECRET,
+  onUnreadable: () =>
+    console.warn(
+      'The stored Anthropic key does not decrypt with LLM_KEY_SECRET: using ANTHROPIC_API_KEY',
+    ),
+});
 const app = buildApp({
   db,
   mailer: createMailer({
@@ -48,10 +62,14 @@ const app = buildApp({
   trustProxy: config.TRUST_PROXY,
   media: createLocalMediaStore(config.MEDIA_DIR),
   manualImportModel: createAnthropicManualImportModel({
-    apiKey: config.ANTHROPIC_API_KEY,
+    apiKey: llmKeys.get,
     fetch: egress.fetch,
     onUsage: usageRecorder(db, 'manual_import'),
   }),
+  llmKeys,
+  llmEnvKey: config.ANTHROPIC_API_KEY,
+  llmKeySecret: config.LLM_KEY_SECRET,
+  checkLlmKey: (key) => checkAnthropicKey(key, egress.fetch),
   resendWebhookSecret: config.RESEND_WEBHOOK_SECRET,
   vapidPublicKey: config.VAPID_PUBLIC_KEY,
   stripe: gateway ? { gateway, webhookSecret: config.STRIPE_WEBHOOK_SECRET } : undefined,

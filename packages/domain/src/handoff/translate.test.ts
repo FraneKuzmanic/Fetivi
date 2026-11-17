@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ModelUsage } from '../metrics/usage';
+import { fixedKey } from '../settings/llm-key';
 import { TRANSLATION_MODEL_ID } from '../translation/prompt';
 import {
   buildHandoffUserMessage,
@@ -54,7 +55,7 @@ describe('createAnthropicHandoffTranslator', () => {
     });
     const seen: ModelUsage[] = [];
     const translator = createAnthropicHandoffTranslator({
-      apiKey: 'test-key',
+      apiKey: fixedKey('test-key'),
       fetch,
       onUsage: (u) => seen.push(u),
     });
@@ -79,9 +80,39 @@ describe('createAnthropicHandoffTranslator', () => {
       400,
     );
     const onUsage = vi.fn();
-    const translator = createAnthropicHandoffTranslator({ apiKey: 'test-key', fetch, onUsage });
+    const translator = createAnthropicHandoffTranslator({
+      apiKey: fixedKey('test-key'),
+      fetch,
+      onUsage,
+    });
     const result = await translator.translate({ text: 'x', to: 'de' });
     expect(result.ok).toBe(false);
     expect(onUsage).not.toHaveBeenCalled();
+  });
+
+  it('resolves the key on every call: not configured without one, then calls with it (68)', async () => {
+    const fetch = reply({
+      id: 'msg_2',
+      type: 'message',
+      role: 'assistant',
+      model: TRANSLATION_MODEL_ID,
+      content: [{ type: 'text', text: '{"text":"Hallo."}' }],
+      stop_reason: 'end_turn',
+      stop_sequence: null,
+      usage: { input_tokens: 1, output_tokens: 1 },
+    });
+    let key: string | undefined;
+    const translator = createAnthropicHandoffTranslator({ apiKey: async () => key, fetch });
+    await expect(translator.translate({ text: 'Bok.', to: 'de' })).resolves.toMatchObject({
+      ok: false,
+      error: 'not-configured',
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    key = 'settings-key';
+    await expect(translator.translate({ text: 'Bok.', to: 'de' })).resolves.toEqual({
+      ok: true,
+      text: 'Hallo.',
+    });
+    expect(fetch).toHaveBeenCalledOnce();
   });
 });

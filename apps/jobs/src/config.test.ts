@@ -23,6 +23,10 @@ describe('jobs config', () => {
     ).toBe(secret);
   });
 
+  it('shares the dev LLM key secret with chat-backend and backoffice-api (68)', () => {
+    expect(loadConfig({}).LLM_KEY_SECRET).toBe('dev-only-llm-key-secret-change-me-in-production');
+  });
+
   it('requires a real guest link secret in production', () => {
     expect(loadConfig({}).GUEST_LINK_SECRET.length).toBeGreaterThanOrEqual(32);
     const prod = {

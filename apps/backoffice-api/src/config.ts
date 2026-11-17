@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const DEV_MAIL_FROM = 'Fetivi <notifications@localhost>';
+const DEV_LLM_KEY_SECRET = 'dev-only-llm-key-secret-change-me-in-production';
 
 const optionalString = z
   .string()
@@ -43,11 +44,13 @@ const schema = z
       .enum(['true', 'false'])
       .default('true')
       .transform((v) => v === 'true'),
-    /** For the house manual import; without it, imports fail as not configured. */
+    /** Fallback when the admin has set no key in Settings (68); with neither, manual imports fail as not configured. */
     ANTHROPIC_API_KEY: z
       .string()
       .optional()
       .transform((s) => s || undefined),
+    /** Encrypts the admin's Anthropic key in the database; the three processes must share it (common.env). */
+    LLM_KEY_SECRET: z.string().min(32).default(DEV_LLM_KEY_SECRET),
   })
   .refine((c) => c.MAIL_TRANSPORT !== 'resend' || c.RESEND_API_KEY, {
     message: 'MAIL_TRANSPORT=resend needs RESEND_API_KEY',

@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 const DEV_REQUEST_STATE_SECRET = 'dev-only-request-state-secret-change-me-in-production';
 const DEV_GUEST_LINK_SECRET = 'dev-only-guest-link-secret-change-me-in-production';
+const DEV_LLM_KEY_SECRET = 'dev-only-llm-key-secret-change-me-in-production';
 
 const schema = z
   .object({
@@ -20,8 +21,10 @@ const schema = z
     GUEST_TOKEN_ISSUER: z.url().default('http://localhost:3000'),
     /** Base of the MCP servers' canonical URLs, the token audiences (production https://mcp.<domain>). */
     MCP_PUBLIC_URL: z.url().default('http://localhost:3002'),
-    /** Claude for the guest chat; without it /api/chat answers 503. */
+    /** Fallback when the admin has set no key in Settings (68); with neither, /api/chat answers 503. */
     ANTHROPIC_API_KEY: z.string().optional(),
+    /** Encrypts the admin's Anthropic key in the database; the three processes must share it (common.env). */
+    LLM_KEY_SECRET: z.string().min(32).default(DEV_LLM_KEY_SECRET),
     /** How the chat reaches the guest tools: MCP (production) or in process (V0, evaluation only). */
     TOOL_TRANSPORT: z.enum(TOOL_TRANSPORTS).default('mcp'),
     /**

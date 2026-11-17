@@ -2,6 +2,7 @@ import {
   createBraveSearch,
   createDb,
   createJobQueue,
+  createLlmKeySource,
   createLocalMediaStore,
   createVoyageEmbedder,
   createWeatherSource,
@@ -10,7 +11,7 @@ import {
 import { W3CTraceContextPropagator } from '@fetivi/telemetry';
 import { PgBoss } from 'pg-boss';
 import { buildApp } from './app';
-import { createChatModel } from './chat/model';
+import { chatModelSource } from './chat/model';
 import { loadConfig } from './config';
 import { egress, mcpEgress } from './egress';
 import { createFerryhopper } from './mcp/external/ferryhopper';
@@ -33,6 +34,17 @@ boss.on('error', (error) => console.error('pg-boss error', error));
 await boss.start();
 await ensureQueues(boss);
 const queue = createJobQueue(boss);
+// The admin's key from Settings, else ANTHROPIC_API_KEY (68). onUnreadable runs at turn time,
+// after the app exists.
+const llmKeys = createLlmKeySource({
+  db,
+  envKey: config.ANTHROPIC_API_KEY,
+  secret: config.LLM_KEY_SECRET,
+  onUnreadable: () =>
+    app.log.warn(
+      'The stored Anthropic key does not decrypt with LLM_KEY_SECRET: using ANTHROPIC_API_KEY',
+    ),
+});
 const inProcess = config.TOOL_TRANSPORT === 'inprocess';
 // One weather source per process (the turn's weather note and V0's get_weather), so one cache.
 const weather = createWeatherSource({ fetch: egress.fetch, userAgent: config.WEATHER_USER_AGENT });
@@ -64,7 +76,7 @@ const app = buildApp({
   push: { publicKey: config.VAPID_PUBLIC_KEY ?? null },
   tokens: { key, issuer: config.GUEST_TOKEN_ISSUER, mcpBaseUrl: config.MCP_PUBLIC_URL },
   chat: {
-    model: createChatModel({ apiKey: config.ANTHROPIC_API_KEY, fetch: egress.fetch }),
+    model: chatModelSource(llmKeys.get, egress.fetch),
     mcpFetch: mcpEgress(new URL(config.MCP_PUBLIC_URL)).fetch,
     weather,
     ...(ferryhopper ? { ferryhopper } : {}),
@@ -90,7 +102,7 @@ const app = buildApp({
   },
 });
 if (!config.ANTHROPIC_API_KEY) {
-  app.log.warn('ANTHROPIC_API_KEY is not set: the guest chat answers 503');
+  app.log.info('ANTHROPIC_API_KEY is not set: the guest chat needs a key in the admin settings');
 }
 if (key.ephemeral) {
   app.log.warn('GUEST_TOKEN_PRIVATE_KEY is not set: guest tokens use a key made for this process');

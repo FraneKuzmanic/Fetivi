@@ -53,6 +53,7 @@ import type {
   SeedingSource,
   SourceRunResult,
 } from '@fetivi/domain/seeding-vocabulary';
+import type { LlmKeyCheckError, LlmKeySource } from '@fetivi/domain/settings-vocabulary';
 import type { GapTopic } from '@fetivi/domain/suggestion-vocabulary';
 import type {
   Amenity,
@@ -831,8 +832,11 @@ export const admin = {
   approve: (id: string) => post(`/api/admin/properties/${id}/approve`),
   feedbackStats: () => api<AdminFeedbackStats>('/api/admin/feedback-stats'),
   settings: () => api<PlatformSettings>('/api/admin/settings'),
-  saveSettings: (settings: PlatformSettings) =>
+  saveSettings: (settings: { dailyMessageCap: number }) =>
     put<PlatformSettings>('/api/admin/settings', settings),
+  saveLlmKey: (key: string) => put<LlmKeyStatus>('/api/admin/settings/llm-key', { key }),
+  removeLlmKey: () => api<LlmKeyStatus>('/api/admin/settings/llm-key', { method: 'DELETE' }),
+  testLlmKey: () => post<LlmKeyCheckResult>('/api/admin/settings/llm-key/test'),
   usage: () => api<UsageEstimate>('/api/admin/usage'),
 };
 
@@ -861,7 +865,20 @@ export interface UsageEstimate {
 export interface PlatformSettings {
   /** Guest chat messages per Space per property day. */
   dailyMessageCap: number;
+  llmKey: LlmKeyStatus;
 }
+
+/** Where the Anthropic key in use comes from; never the key itself (68). */
+export interface LlmKeyStatus {
+  source: LlmKeySource;
+  last4: string | null;
+  /** When the admin last set or removed the key. */
+  updatedAt: string | null;
+  /** The email of whoever did; null if never, or the account is gone. */
+  updatedBy: string | null;
+}
+
+export type LlmKeyCheckResult = { ok: true } | { ok: false; error: LlmKeyCheckError };
 
 /** One row of the admin's Orders list. */
 export interface AdminOrderRow {

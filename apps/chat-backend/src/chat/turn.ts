@@ -52,13 +52,13 @@ import {
 import { presentationTools } from '../stream/presentation';
 import { type TurnResults, turnResults } from '../stream/results';
 import type { ToolBinding, TurnTools } from '../tools/registry';
-import { CHAT_MODEL_ID } from './model';
+import { CHAT_MODEL_ID, type ChatModelSource } from './model';
 
 export interface ChatDeps {
   db: Db;
   now: () => Date;
-  /** Null when ANTHROPIC_API_KEY is unset. */
-  model: LanguageModel | null;
+  /** Resolves the admin's or the environment's key per turn; null without one (68). */
+  model: ChatModelSource;
   /** The guest tools: over MCP, or in process for V0 (TOOL_TRANSPORT). */
   tools: ToolBinding;
   /** Asked directly for the weather note, not over MCP, so a turn's MCP time stays the model's. */
@@ -141,7 +141,8 @@ async function withTurn(
   kind: 'message' | 'answer',
   body: (turn: OpenTurn) => Promise<Response>,
 ): Promise<Response> {
-  const { db, log, model } = deps;
+  const { db, log } = deps;
+  const model = await deps.model();
   if (model === null) throw new HttpError(503, 'chat-unavailable');
   if (space.closed) throw new HttpError(409, 'space-closed');
   const spaceId = space.space.id;

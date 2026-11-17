@@ -64,7 +64,7 @@ Fill every `change-me`. `deploy.sh` refuses to run while one is left. The commen
 
 | Value | Command |
 |---|---|
-| `GUEST_LINK_SECRET`, `PROVIDER_LINK_SECRET`, `REQUEST_STATE_SECRET`, `WALG_LIBSODIUM_KEY`, `RESTIC_PASSWORD`, the Postgres password | `openssl rand -hex 32` |
+| `GUEST_LINK_SECRET`, `PROVIDER_LINK_SECRET`, `REQUEST_STATE_SECRET`, `LLM_KEY_SECRET`, `WALG_LIBSODIUM_KEY`, `RESTIC_PASSWORD`, the Postgres password | `openssl rand -hex 32` |
 | `GUEST_TOKEN_PRIVATE_KEY` (one line, literal `\n`) | `openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 \| awk '{printf "%s\\n",$0}'` |
 | VAPID pair (after the first build) | `compose --profile tools run --rm tools -c "packages/domain/node_modules/.bin/web-push generate-vapid-keys"` |
 
@@ -75,7 +75,9 @@ These values must match across files:
 - The Postgres password: `POSTGRES_PASSWORD` = `PGPASSWORD` in `postgres.env`, and the password inside `DATABASE_URL` in `common.env`.
 - The bucket: `WALG_S3_PREFIX=s3://<bucket>/wal-g` and `RESTIC_REPOSITORY=s3:<endpoint>/<bucket>/restic-media` in `backup.env`.
 
-Put `WALG_LIBSODIUM_KEY` and `RESTIC_PASSWORD` in the password manager as well. Without them the backups cannot be read, and if the server is lost they are lost with it.
+The Anthropic key: after the first deploy, enter it in the back office under Settings (or set `ANTHROPIC_API_KEY` in `common.env` as the fallback). The saved key is encrypted with `LLM_KEY_SECRET`: changing that secret makes the saved key unreadable, the processes fall back to `ANTHROPIC_API_KEY`, and the key must be entered again in Settings.
+
+Put `WALG_LIBSODIUM_KEY` and `RESTIC_PASSWORD` in the password manager as well. Without them the backups cannot be read, and if the server is lost they are lost with it. Keep `LLM_KEY_SECRET` there too: without it the key saved in a restored database cannot be read.
 
 ## 6. First deploy
 
@@ -202,7 +204,7 @@ The whole local stand-in (MinIO for the bucket, `fetivi.localhost` with Caddy's 
 | 2026-10-24 | Local (Windows 11, Docker 29.4.1, Compose 5.1.3), MinIO `pgsty/minio:RELEASE.2026-08-04T00-00-00Z` | Postgres 16 + PostGIS 3.6, WAL-G v3.0.9, restic 0.18.1, Caddy v2.11.6 | **PASS**, from empty volumes: deploy, 17/17 smoke checks (health ×4, both SPAs, JWKS, MCP 401, sandbox CSP, PIN flow, MCP Inspector `tools/list` on `https://mcp.fetivi.localhost/stay`). Scratch PITR: fetch 5 s, recovery 3 s, A yes / B no, archive off. Media round trip OK. In-place PITR with `--media`: fetch 5 s, recovery 5 s, 29 s including the fresh base backup; C yes / D no; smoke check green afterwards. Whole run 107 s with images cached. Bucket after the run: WAL-G 37 MiB (two base backups, timelines 1 and 2), restic 3 KiB. |
 | _to do_ | Production server | | Run `bash deploy/rehearse-restore.sh` and fill in this row. |
 
-Not covered locally: a real chat turn streaming (SSE) through Caddy, because there was no `ANTHROPIC_API_KEY`. Check it once on the server.
+Not covered locally: a real chat turn streaming (SSE) through Caddy, because there was no Anthropic key. Check it once on the server.
 
 ## 11. Traces
 

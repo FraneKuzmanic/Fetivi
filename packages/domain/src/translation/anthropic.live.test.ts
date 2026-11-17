@@ -1,6 +1,7 @@
 import { createEgress } from '@fetivi/egress';
 import { describe, expect, it } from 'vitest';
 import { GUEST_LANGUAGES } from '../property/vocabulary';
+import { fixedKey } from '../settings/llm-key';
 import { createAnthropicTranslationModel } from './model';
 import { checkStructure } from './structure';
 
@@ -28,7 +29,7 @@ const SOURCE = {
 describe.skipIf(!live)('Anthropic translation model (live)', () => {
   it('translates a Croatian block into all seven languages with the structure kept', async () => {
     const model = createAnthropicTranslationModel({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+      apiKey: fixedKey(process.env.ANTHROPIC_API_KEY),
       fetch: createEgress({ allowlist: ['api.anthropic.com'] }).fetch,
     });
     const result = await model.translate(SOURCE);

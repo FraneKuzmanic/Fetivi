@@ -3,6 +3,7 @@ import {
   type AnthropicProviderSettings,
   createAnthropic,
 } from '@ai-sdk/anthropic';
+import type { ApiKeySource } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
 import type { LanguageModel } from 'ai';
 
@@ -32,4 +33,20 @@ export function createChatModel(opts: {
     apiKey: opts.apiKey,
     fetch: opts.fetch as AnthropicProviderSettings['fetch'],
   }).languageModel(CHAT_MODEL_ID);
+}
+
+/** The chat model to use now; null without a key (chat then answers 503). */
+export type ChatModelSource = () => Promise<LanguageModel | null>;
+
+/**
+ * Resolves the key per turn, so a key changed in the admin settings reaches the chat without a
+ * restart (68); the model is rebuilt only when the key changes.
+ */
+export function chatModelSource(apiKey: ApiKeySource, fetch: Egress['fetch']): ChatModelSource {
+  let last: { key: string | undefined; model: LanguageModel | null } | undefined;
+  return async () => {
+    const key = await apiKey();
+    if (!last || last.key !== key) last = { key, model: createChatModel({ apiKey: key, fetch }) };
+    return last.model;
+  };
 }

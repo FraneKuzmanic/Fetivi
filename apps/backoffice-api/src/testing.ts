@@ -3,11 +3,14 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   createJobQueue,
+  createLlmKeySource,
   createLocalMediaStore,
   createMemoryMailer,
   type Db,
   ensureQueues,
   type Geocoder,
+  type LlmKeyCheckResult,
+  type LlmKeySourceHandle,
   type ManualImportModel,
   type ManualModelResult,
   type PaymentGateway,
@@ -32,8 +35,12 @@ export interface TestApp {
   clock: { now: () => Date; advance: (ms: number) => void };
   /** This app's own media directory, removed on close. */
   mediaDir: string;
+  /** The app's Anthropic key source (68). */
+  llmKeys: LlmKeySourceHandle;
   close: () => Promise<void>;
 }
+
+export const TEST_LLM_KEY_SECRET = 'backoffice-test-llm-key-secret-long-enough';
 
 const NOT_CONFIGURED_MODEL: ManualImportModel = {
   extract: async () => ({ ok: false, error: 'not-configured', detail: 'test default' }),
@@ -68,6 +75,10 @@ export async function createTestApp(
     vapidPublicKey?: string;
     stripe?: { gateway: PaymentGateway; webhookSecret?: string };
     geocoder?: Geocoder;
+    /** ANTHROPIC_API_KEY for the key source; unset by default (68). */
+    llmEnvKey?: string;
+    /** The Settings key check; "works" for any key by default. */
+    checkLlmKey?: (key: string | undefined) => Promise<LlmKeyCheckResult>;
   } = {},
 ) {
   const testDb = await createTestDatabase();
@@ -84,6 +95,11 @@ export async function createTestApp(
       current += ms;
     },
   };
+  const llmKeys = createLlmKeySource({
+    db: testDb.db,
+    envKey: options.llmEnvKey,
+    secret: TEST_LLM_KEY_SECRET,
+  });
   const app = buildApp({
     db: testDb.db,
     mailer,
@@ -95,6 +111,12 @@ export async function createTestApp(
     trustProxy: options.trustProxy,
     media: createLocalMediaStore(mediaDir),
     manualImportModel: options.manualImportModel ?? NOT_CONFIGURED_MODEL,
+    llmKeys,
+    llmEnvKey: options.llmEnvKey,
+    llmKeySecret: TEST_LLM_KEY_SECRET,
+    checkLlmKey:
+      options.checkLlmKey ??
+      (async (key) => (key ? { ok: true } : { ok: false, error: 'not-configured' })),
     resendWebhookSecret: options.resendWebhookSecret,
     vapidPublicKey: options.vapidPublicKey,
     stripe: options.stripe,
@@ -110,6 +132,7 @@ export async function createTestApp(
     mailer,
     clock,
     mediaDir,
+    llmKeys,
     close: async () => {
       await app.close();
       await boss.stop({ graceful: false, timeout: 1000 });

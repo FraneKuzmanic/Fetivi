@@ -2,6 +2,8 @@ import type {
   Db,
   Geocoder,
   JobQueue,
+  LlmKeyCheckResult,
+  LlmKeySourceHandle,
   Mailer,
   ManualImportModel,
   MediaStore,
@@ -61,6 +63,14 @@ export interface AppDeps {
   media: MediaStore;
   /** Reads house manuals for the import; tests pass a scripted stub. */
   manualImportModel: ManualImportModel;
+  /** The Anthropic key in use (Settings over ANTHROPIC_API_KEY); invalidated on every change (68). */
+  llmKeys: LlmKeySourceHandle;
+  /** ANTHROPIC_API_KEY, the fallback shown in the settings status. */
+  llmEnvKey: string | undefined;
+  /** LLM_KEY_SECRET, which encrypts a key saved in Settings. */
+  llmKeySecret: string;
+  /** The Settings "Test the key" check; tests pass a stub. */
+  checkLlmKey: (key: string | undefined) => Promise<LlmKeyCheckResult>;
   /** Resend's webhook signing secret; without it `/webhooks/resend` is not registered. */
   resendWebhookSecret?: string | undefined;
   /** Address search for the property form; null turns it off. */
@@ -95,7 +105,14 @@ export function buildApp(deps: AppDeps) {
   app.register(reconciliationRoutes, { db, queue, now });
   app.register(curationRoutes, { db, queue, now });
   app.register(feedbackStatsRoutes, { db });
-  app.register(platformSettingsRoutes, { db, now });
+  app.register(platformSettingsRoutes, {
+    db,
+    now,
+    llmKeys: deps.llmKeys,
+    llmEnvKey: deps.llmEnvKey,
+    llmKeySecret: deps.llmKeySecret,
+    checkLlmKey: deps.checkLlmKey,
+  });
   app.register(usageRoutes, { db, now });
   app.register(seedingRoutes, { db, queue, now });
   app.register(draftingRoutes, { db, queue, now });
