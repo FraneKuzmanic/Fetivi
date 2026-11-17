@@ -67,6 +67,10 @@ const schema = z
     message: 'GUEST_LINK_SECRET is required in production',
     path: ['GUEST_LINK_SECRET'],
   })
+  .refine((c) => c.NODE_ENV !== 'production' || c.LLM_KEY_SECRET !== DEV_LLM_KEY_SECRET, {
+    message: 'LLM_KEY_SECRET is required in production',
+    path: ['LLM_KEY_SECRET'],
+  })
   .refine((c) => c.MAIL_TRANSPORT !== 'resend' || c.RESEND_API_KEY, {
     message: 'MAIL_TRANSPORT=resend needs RESEND_API_KEY',
     path: ['RESEND_API_KEY'],

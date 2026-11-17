@@ -5,6 +5,7 @@ const PROD = {
   NODE_ENV: 'production',
   GUEST_TOKEN_PRIVATE_KEY: 'pem',
   GUEST_LINK_SECRET: 'prod-guest-link-secret-at-least-32-chars',
+  LLM_KEY_SECRET: 'prod-llm-key-secret-at-least-32-characters',
 };
 
 describe('chat-backend config: TOOL_TRANSPORT', () => {
@@ -43,5 +44,13 @@ describe('chat-backend config: GUEST_LINK_SECRET', () => {
     const { GUEST_LINK_SECRET: _, ...prodWithout } = PROD;
     expect(() => loadConfig(prodWithout)).toThrow(/GUEST_LINK_SECRET is required in production/);
     expect(loadConfig(PROD).GUEST_LINK_SECRET).toBe(PROD.GUEST_LINK_SECRET);
+  });
+});
+
+describe('chat-backend config: LLM_KEY_SECRET', () => {
+  it('has a dev default and refuses it in production (68)', () => {
+    const { LLM_KEY_SECRET: _, ...prodWithout } = PROD;
+    expect(() => loadConfig(prodWithout)).toThrow(/LLM_KEY_SECRET is required in production/);
+    expect(loadConfig(PROD).LLM_KEY_SECRET).toBe(PROD.LLM_KEY_SECRET);
   });
 });

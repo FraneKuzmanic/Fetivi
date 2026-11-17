@@ -11,6 +11,7 @@ describe('guest token config', () => {
         NODE_ENV: 'production',
         GUEST_TOKEN_PRIVATE_KEY: 'pem',
         GUEST_LINK_SECRET: 'prod-guest-link-secret-at-least-32-chars',
+        LLM_KEY_SECRET: 'prod-llm-key-secret-at-least-32-characters',
       }),
     ).toMatchObject({
       GUEST_TOKEN_PRIVATE_KEY: 'pem',

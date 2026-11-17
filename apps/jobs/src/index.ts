@@ -27,10 +27,7 @@ const llmKeys = createLlmKeySource({
   db,
   envKey: config.ANTHROPIC_API_KEY,
   secret: config.LLM_KEY_SECRET,
-  onUnreadable: () =>
-    console.warn(
-      'The stored Anthropic key does not decrypt with LLM_KEY_SECRET: using ANTHROPIC_API_KEY',
-    ),
+  warn: console.warn,
 });
 const model = createAnthropicTranslationModel({
   apiKey: llmKeys.get,

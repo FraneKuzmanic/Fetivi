@@ -70,7 +70,21 @@ describe('backoffice-api', () => {
     expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/MAIL_TRANSPORT/);
     const resend = { NODE_ENV: 'production', MAIL_TRANSPORT: 'resend', RESEND_API_KEY: 're_x' };
     expect(() => loadConfig(resend)).toThrow(/MAIL_FROM/);
-    const config = loadConfig({ ...resend, MAIL_FROM: 'Fetivi <notifications@fetivi.test>' });
+    const config = loadConfig({
+      ...resend,
+      MAIL_FROM: 'Fetivi <notifications@fetivi.test>',
+      LLM_KEY_SECRET: 'l'.repeat(40),
+    });
     expect(config.MAIL_TRANSPORT).toBe('resend');
+  });
+
+  it('refuses the dev LLM key secret in production (68)', () => {
+    const prod = {
+      NODE_ENV: 'production',
+      MAIL_TRANSPORT: 'resend',
+      RESEND_API_KEY: 're_x',
+      MAIL_FROM: 'Fetivi <notifications@fetivi.test>',
+    };
+    expect(() => loadConfig(prod)).toThrow(/LLM_KEY_SECRET is required in production/);
   });
 });

@@ -197,7 +197,7 @@ describe('importing a manual', () => {
 
   it('answers 503 when no model is configured', async () => {
     const { unitId } = await newUnit();
-    model.push({ ok: false, error: 'not-configured', detail: 'ANTHROPIC_API_KEY is not set' });
+    model.push({ ok: false, error: 'not-configured', detail: 'no Anthropic API key' });
     const r = await post(t.app, base(unitId), { text: 'Hello' }, hostCookie);
     expect([r.statusCode, r.json()]).toEqual([503, { error: 'import-not-configured' }]);
   });

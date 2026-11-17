@@ -208,9 +208,8 @@ describe('LlmKeySection (68)', () => {
     expect(keySection().textContent).toContain(
       'No key: the guest chat, translations, drafting and manual import are off.',
     );
-    expect(keySection().textContent).toMatch(
-      /Last changed by admin@example\.test, 17\.11\.2026, \d\d:05/,
-    );
+    // The last change was a removal: it says nothing about the key in use.
+    expect(keySection().textContent).not.toContain('Last changed');
     act(() => root?.unmount());
     document.body.innerHTML = '';
 
@@ -223,7 +222,14 @@ describe('LlmKeySection (68)', () => {
     expect(button(keySection(), 'Remove')).toBeUndefined();
   });
 
-  it('names a deleted account as who changed the key', async () => {
+  it('says who last changed the saved key, or a deleted account', async () => {
+    await mount(USAGE, 200, { llmKey: { source: 'settings', last4: 'abcd', ...CHANGED } });
+    expect(keySection().textContent).toMatch(
+      /Last changed by admin@example\.test, 17\.11\.2026, \d\d:05/,
+    );
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+
     await mount(USAGE, 200, {
       llmKey: { source: 'settings', last4: 'abcd', ...CHANGED, updatedBy: null },
     });
@@ -279,14 +285,31 @@ describe('LlmKeySection (68)', () => {
   });
 
   it.each([
-    [{ ok: true }, 'The key works.'],
-    [{ ok: false, error: 'rejected' }, 'Anthropic rejected the key.'],
-    [{ ok: false, error: 'unreachable' }, 'Anthropic could not be reached.'],
-    [{ ok: false, error: 'not-configured' }, 'No key to test.'],
-  ])('tests the key in use: %o', async (check, message) => {
+    [{ ok: true }, 'output.saved', 'The key works.'],
+    [{ ok: false, error: 'rejected' }, '[role="alert"]', 'Anthropic rejected the key.'],
+    [{ ok: false, error: 'unreachable' }, '[role="alert"]', 'Anthropic could not be reached.'],
+    [{ ok: false, error: 'not-configured' }, '[role="alert"]', 'No key to test.'],
+  ])('tests the key in use: %o', async (check, selector, message) => {
     await mount(USAGE, 200, { check });
     await click(button(keySection(), 'Test the key'));
     expect(calls.at(-1)).toMatchObject({ url: '/api/admin/settings/llm-key/test', method: 'POST' });
-    expect(keySection().querySelector('output')?.textContent).toBe(message);
+    expect(keySection().querySelector(selector)?.textContent).toBe(message);
+  });
+
+  it('replaces "Saved" with the outcome of a later test', async () => {
+    await mount(USAGE, 200, { check: { ok: false, error: 'rejected' } });
+    const input = keySection().querySelector<HTMLInputElement>('input[type="password"]');
+    if (!input) throw new Error('no key input');
+    await type(input, KEY);
+    await act(async () => {
+      keySection().querySelector('form')?.requestSubmit();
+    });
+    expect(keySection().querySelector('output.saved')?.textContent).toBe('Saved');
+
+    await click(button(keySection(), 'Test the key'));
+    expect(keySection().querySelector('output.saved')).toBeNull();
+    expect(keySection().querySelector('[role="alert"]')?.textContent).toBe(
+      'Anthropic rejected the key.',
+    );
   });
 });

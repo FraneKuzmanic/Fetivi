@@ -4779,6 +4779,17 @@ button.tab-link[aria-selected="true"] {
   max-width: none;
 }
 
+/* The Anthropic key section holds its own form, so its Save key sits at the panel edge (68). */
+.fields:has(> .llm-key-form) {
+  max-width: none;
+}
+
+.llm-key-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .remove-button:hover {
   color: var(--danger);
   background: var(--danger-bg);

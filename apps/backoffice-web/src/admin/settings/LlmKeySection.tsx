@@ -1,11 +1,17 @@
-import { LLM_KEY_LIMITS } from '@fetivi/domain/settings-vocabulary';
-import { useState } from 'react';
+import { LLM_KEY_LIMITS, type LlmKeyCheckError } from '@fetivi/domain/settings-vocabulary';
+import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { admin, type LlmKeyCheckResult, type LlmKeyStatus } from '../../api';
+import { admin, type LlmKeyStatus } from '../../api';
 import { formatMoment } from '../../forms/datetime';
 import { Section, TextField } from '../../forms/fields';
 import { useConfirm } from '../../shell/ConfirmDialog';
 import { useAction } from '../../useAction';
+
+const CHECK_FAILED = {
+  rejected: 'settings.llmKeyRejected',
+  unreachable: 'settings.llmKeyUnreachable',
+  'not-configured': 'settings.llmKeyNotConfigured',
+} as const satisfies Record<LlmKeyCheckError, string>;
 
 /**
  * The Anthropic key the processes use: where it comes from and its last four characters, never
@@ -19,21 +25,34 @@ export function LlmKeySection({
   onChange: (status: LlmKeyStatus) => void;
 }) {
   const { t } = useTranslation('admin');
+  const { t: tc } = useTranslation();
   const confirm = useConfirm();
   const { busy, error, run } = useAction();
   const [key, setKey] = useState<string | null>(null);
-  const [check, setCheck] = useState<LlmKeyCheckResult | null>(null);
+  // The outcome of the last action (save or test), so a later one replaces it.
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
-  async function save() {
-    if (!key?.trim()) throw new Error(t('settings.llmKeyMissing'));
-    onChange(await admin.saveLlmKey(key));
-    setKey(null);
-    setCheck(null);
+  function save(event: FormEvent) {
+    event.preventDefault();
+    setNotice(null);
+    void run(async () => {
+      if (!key?.trim()) throw new Error(t('settings.llmKeyMissing'));
+      onChange(await admin.saveLlmKey(key));
+      setKey(null);
+      setNotice({ ok: true, text: tc('field.saved') });
+    });
   }
 
   function test() {
-    setCheck(null);
-    void run(async () => setCheck(await admin.testLlmKey()));
+    setNotice(null);
+    void run(async () => {
+      const check = await admin.testLlmKey();
+      setNotice(
+        check.ok
+          ? { ok: true, text: t('settings.llmKeyWorks') }
+          : { ok: false, text: t(CHECK_FAILED[check.error]) },
+      );
+    });
   }
 
   async function remove() {
@@ -44,10 +63,8 @@ export function LlmKeySection({
       danger: true,
     });
     if (!yes) return;
-    void run(async () => {
-      onChange(await admin.removeLlmKey());
-      setCheck(null);
-    });
+    setNotice(null);
+    void run(async () => onChange(await admin.removeLlmKey()));
   }
 
   const source =
@@ -57,26 +74,12 @@ export function LlmKeySection({
         ? t('settings.llmKeyFromEnvironment', { last4: status.last4 })
         : t('settings.llmKeyNone');
 
-  const checkLine = !check
-    ? null
-    : check.ok
-      ? t('settings.llmKeyWorks')
-      : check.error === 'rejected'
-        ? t('settings.llmKeyRejected')
-        : check.error === 'unreachable'
-          ? t('settings.llmKeyUnreachable')
-          : t('settings.llmKeyNotConfigured');
-
   return (
-    <Section
-      title={t('settings.llmKey')}
-      description={t('settings.llmKeyHint')}
-      onSave={save}
-      saveLabel={t('settings.llmKeySave')}
-    >
+    <Section title={t('settings.llmKey')} description={t('settings.llmKeyHint')}>
       <div>
         <p>{source}</p>
-        {status.updatedAt ? (
+        {/* Who changed the saved key; an env key or none has no such change to show. */}
+        {status.source === 'settings' && status.updatedAt ? (
           <p className="muted">
             {t('settings.llmKeyChanged', {
               email: status.updatedBy ?? t('settings.llmKeyDeletedAccount'),
@@ -95,23 +98,31 @@ export function LlmKeySection({
           </button>
         ) : null}
       </div>
-      {checkLine ? (
-        <output className={check?.ok ? 'saved' : undefined} aria-live="polite">
-          {checkLine}
+      {notice?.ok ? (
+        <output className="saved" aria-live="polite">
+          {notice.text}
         </output>
       ) : null}
+      {notice && !notice.ok ? <p role="alert">{notice.text}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
-      <div className="field-narrow">
-        <TextField
-          type="password"
-          label={t('settings.llmKeyNew')}
-          value={key}
-          onChange={setKey}
-          maxLength={LLM_KEY_LIMITS.max}
-          autoComplete="off"
-          required
-        />
-      </div>
+      <form className="llm-key-form" onSubmit={save}>
+        <div className="field-narrow">
+          <TextField
+            type="password"
+            label={t('settings.llmKeyNew')}
+            value={key}
+            onChange={setKey}
+            maxLength={LLM_KEY_LIMITS.max}
+            autoComplete="off"
+            required
+          />
+        </div>
+        <div className="section-foot">
+          <button type="submit" className="primary" disabled={busy}>
+            {t('settings.llmKeySave')}
+          </button>
+        </div>
+      </form>
     </Section>
   );
 }

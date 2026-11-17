@@ -6,6 +6,7 @@ const mail = {
   MAIL_FROM: 'Fetivi <notifications@fetivi.test>',
   GUEST_ORIGIN: 'https://fetivi.test',
   GUEST_LINK_SECRET: 'g'.repeat(40),
+  LLM_KEY_SECRET: 'l'.repeat(40),
 };
 
 describe('jobs config', () => {
@@ -27,6 +28,21 @@ describe('jobs config', () => {
     expect(loadConfig({}).LLM_KEY_SECRET).toBe('dev-only-llm-key-secret-change-me-in-production');
   });
 
+  it('refuses the dev LLM key secret in production (68)', () => {
+    const { LLM_KEY_SECRET: _, ...rest } = mail;
+    const prod = {
+      NODE_ENV: 'production',
+      PROVIDER_LINK_SECRET: 'a'.repeat(40),
+      MAIL_TRANSPORT: 'resend',
+      RESEND_API_KEY: 're_x',
+      ...rest,
+    };
+    expect(() => loadConfig(prod)).toThrow(/LLM_KEY_SECRET is required in production/);
+    expect(loadConfig({ ...prod, LLM_KEY_SECRET: mail.LLM_KEY_SECRET }).LLM_KEY_SECRET).toBe(
+      mail.LLM_KEY_SECRET,
+    );
+  });
+
   it('requires a real guest link secret in production', () => {
     expect(loadConfig({}).GUEST_LINK_SECRET.length).toBeGreaterThanOrEqual(32);
     const prod = {
@@ -39,7 +55,11 @@ describe('jobs config', () => {
     };
     expect(() => loadConfig(prod)).toThrow(/GUEST_LINK_SECRET/);
     expect(
-      loadConfig({ ...prod, GUEST_LINK_SECRET: mail.GUEST_LINK_SECRET }).GUEST_LINK_SECRET,
+      loadConfig({
+        ...prod,
+        GUEST_LINK_SECRET: mail.GUEST_LINK_SECRET,
+        LLM_KEY_SECRET: mail.LLM_KEY_SECRET,
+      }).GUEST_LINK_SECRET,
     ).toBe(mail.GUEST_LINK_SECRET);
   });
 

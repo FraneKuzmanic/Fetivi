@@ -63,6 +63,10 @@ const schema = z
   .refine((c) => c.NODE_ENV !== 'production' || c.MAIL_FROM !== DEV_MAIL_FROM, {
     message: 'MAIL_FROM is required in production',
     path: ['MAIL_FROM'],
+  })
+  .refine((c) => c.NODE_ENV !== 'production' || c.LLM_KEY_SECRET !== DEV_LLM_KEY_SECRET, {
+    message: 'LLM_KEY_SECRET is required in production',
+    path: ['LLM_KEY_SECRET'],
   });
 
 export type Config = z.infer<typeof schema>;

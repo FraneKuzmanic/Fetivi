@@ -49,7 +49,7 @@ describe('llm key resolution', () => {
   it('is not configured with no setting and no env key', async () => {
     expect(await source(undefined).get()).toBeUndefined();
     expect(await source('').get()).toBeUndefined();
-    expect(await getLlmKeyStatus(testDb.db, undefined)).toEqual({
+    expect(await getLlmKeyStatus(testDb.db, undefined, SECRET)).toEqual({
       source: 'none',
       last4: null,
       updatedAt: null,
@@ -59,7 +59,7 @@ describe('llm key resolution', () => {
 
   it('uses the env key when the admin set none', async () => {
     expect(await source(ENV_KEY).get()).toBe(ENV_KEY);
-    expect(await getLlmKeyStatus(testDb.db, ENV_KEY)).toEqual({
+    expect(await getLlmKeyStatus(testDb.db, ENV_KEY, SECRET)).toEqual({
       source: 'environment',
       last4: 'wxyz',
       updatedAt: null,
@@ -76,7 +76,7 @@ describe('llm key resolution', () => {
       now: NOW,
     });
     expect(await source(ENV_KEY).get()).toBe(SETTINGS_KEY);
-    expect(await getLlmKeyStatus(testDb.db, ENV_KEY)).toEqual({
+    expect(await getLlmKeyStatus(testDb.db, ENV_KEY, SECRET)).toEqual({
       source: 'settings',
       last4: 'abcd',
       updatedAt: NOW,
@@ -166,7 +166,7 @@ describe('llm key resolution', () => {
     const later = new Date('2026-11-18T08:00:00Z');
     await removeLlmKey(testDb.db, { accountId: admin.id, now: later });
     expect(await source(ENV_KEY).get()).toBe(ENV_KEY);
-    expect(await getLlmKeyStatus(testDb.db, ENV_KEY)).toEqual({
+    expect(await getLlmKeyStatus(testDb.db, ENV_KEY, SECRET)).toEqual({
       source: 'environment',
       last4: 'wxyz',
       updatedAt: later,
@@ -183,7 +183,7 @@ describe('llm key resolution', () => {
       now: NOW,
     });
     await testDb.db.delete(accounts).where(eq(accounts.id, admin.id));
-    expect(await getLlmKeyStatus(testDb.db, undefined)).toMatchObject({
+    expect(await getLlmKeyStatus(testDb.db, undefined, SECRET)).toMatchObject({
       source: 'settings',
       updatedBy: null,
     });
@@ -197,15 +197,19 @@ describe('llm key resolution', () => {
       llmKeyCiphertext: encryptLlmKey(SETTINGS_KEY, 'a-rotated-secret-that-no-longer-matches'),
       llmKeyLast4: 'abcd',
     });
-    const onUnreadable = vi.fn();
-    const keys = createLlmKeySource({
-      db: testDb.db,
-      envKey: ENV_KEY,
-      secret: SECRET,
-      onUnreadable,
-    });
+    const warn = vi.fn();
+    const keys = createLlmKeySource({ db: testDb.db, envKey: ENV_KEY, secret: SECRET, warn });
     expect(await keys.get()).toBe(ENV_KEY);
-    expect(onUnreadable).toHaveBeenCalledWith();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('LLM_KEY_SECRET'));
+    // The status shows the key actually in use, not the unreadable one.
+    expect(await getLlmKeyStatus(testDb.db, ENV_KEY, SECRET)).toMatchObject({
+      source: 'environment',
+      last4: 'wxyz',
+    });
+    expect(await getLlmKeyStatus(testDb.db, undefined, SECRET)).toMatchObject({
+      source: 'none',
+      last4: null,
+    });
   });
 
   it('stores only the ciphertext and the last four characters', async () => {

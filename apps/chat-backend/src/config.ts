@@ -70,6 +70,10 @@ const schema = z
     message: 'GUEST_LINK_SECRET is required in production',
     path: ['GUEST_LINK_SECRET'],
   })
+  .refine((c) => c.NODE_ENV !== 'production' || c.LLM_KEY_SECRET !== DEV_LLM_KEY_SECRET, {
+    message: 'LLM_KEY_SECRET is required in production',
+    path: ['LLM_KEY_SECRET'],
+  })
   // MCP is the production path: the in-process mode skips the token boundary.
   .refine((c) => c.NODE_ENV !== 'production' || c.TOOL_TRANSPORT === 'mcp', {
     message: 'TOOL_TRANSPORT must be mcp in production',

@@ -26,12 +26,16 @@ async function main(): Promise<void> {
     db,
     envKey: config.ANTHROPIC_API_KEY,
     secret: config.LLM_KEY_SECRET,
-    onUnreadable: () =>
-      console.warn(
-        'The stored Anthropic key does not decrypt with LLM_KEY_SECRET: using ANTHROPIC_API_KEY',
-      ),
+    warn: console.warn,
   });
-  if (!(await llmKeys.get())) {
+  let apiKey: string | undefined;
+  try {
+    apiKey = await llmKeys.get();
+  } catch (error) {
+    await pool.end();
+    throw error;
+  }
+  if (!apiKey) {
     console.error(
       'No Anthropic key in the admin settings or ANTHROPIC_API_KEY: nothing to translate with',
     );

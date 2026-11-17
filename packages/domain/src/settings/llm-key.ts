@@ -77,10 +77,13 @@ export interface LlmKeySourceHandle {
   invalidate(): void;
 }
 
+const UNREADABLE_WARNING =
+  'The stored Anthropic key does not decrypt with LLM_KEY_SECRET: using ANTHROPIC_API_KEY';
+
 /**
  * The settings key, else `envKey`, else undefined; cached per process for `ttlMs`, so a change
  * reaches every process within that time without a restart. A stored key that does not decrypt
- * (LLM_KEY_SECRET rotated) is reported through `onUnreadable` and treated as absent.
+ * (LLM_KEY_SECRET rotated) is reported through `warn` and treated as absent.
  */
 export function createLlmKeySource(opts: {
   db: Executor;
@@ -88,7 +91,7 @@ export function createLlmKeySource(opts: {
   secret: string;
   ttlMs?: number;
   now?: () => number;
-  onUnreadable?: () => void;
+  warn?: (message: string) => void;
 }): LlmKeySourceHandle {
   const ttlMs = opts.ttlMs ?? 30_000;
   const now = opts.now ?? Date.now;
@@ -104,7 +107,7 @@ export function createLlmKeySource(opts: {
     if (row?.ciphertext) {
       const key = decryptLlmKey(row.ciphertext, opts.secret);
       if (key !== null) return key;
-      opts.onUnreadable?.();
+      opts.warn?.(UNREADABLE_WARNING);
     }
     return envKey;
   };
@@ -189,13 +192,18 @@ export interface LlmKeyStatus {
   updatedBy: string | null;
 }
 
-/** What the admin may see about the key in use; never decrypts, never returns the key. */
+/**
+ * What the admin may see about the key in use, never the key itself. A stored key that does not
+ * decrypt with `secret` is not in use, so the status shows the env key or none, as the processes do.
+ */
 export async function getLlmKeyStatus(
   db: Executor,
   envKey: string | undefined,
+  secret: string,
 ): Promise<LlmKeyStatus> {
   const [row] = await db
     .select({
+      ciphertext: platformSettings.llmKeyCiphertext,
       last4: platformSettings.llmKeyLast4,
       updatedAt: platformSettings.llmKeyUpdatedAt,
       updatedBy: accounts.email,
@@ -203,7 +211,9 @@ export async function getLlmKeyStatus(
     .from(platformSettings)
     .leftJoin(accounts, eq(accounts.id, platformSettings.llmKeyUpdatedBy));
   const changed = { updatedAt: row?.updatedAt ?? null, updatedBy: row?.updatedBy ?? null };
-  if (row?.last4) return { source: 'settings', last4: row.last4, ...changed };
+  if (row?.ciphertext && row.last4 && decryptLlmKey(row.ciphertext, secret) !== null) {
+    return { source: 'settings', last4: row.last4, ...changed };
+  }
   if (envKey) return { source: 'environment', last4: envKey.slice(-4), ...changed };
   return { source: 'none', last4: null, ...changed };
 }

@@ -34,16 +34,13 @@ boss.on('error', (error) => console.error('pg-boss error', error));
 await boss.start();
 await ensureQueues(boss);
 const queue = createJobQueue(boss);
-// The admin's key from Settings, else ANTHROPIC_API_KEY (68). onUnreadable runs at turn time,
-// after the app exists.
+// The admin's key from Settings, else ANTHROPIC_API_KEY (68). warn runs at turn time, after the
+// app exists.
 const llmKeys = createLlmKeySource({
   db,
   envKey: config.ANTHROPIC_API_KEY,
   secret: config.LLM_KEY_SECRET,
-  onUnreadable: () =>
-    app.log.warn(
-      'The stored Anthropic key does not decrypt with LLM_KEY_SECRET: using ANTHROPIC_API_KEY',
-    ),
+  warn: (message) => app.log.warn(message),
 });
 const inProcess = config.TOOL_TRANSPORT === 'inprocess';
 // One weather source per process (the turn's weather note and V0's get_weather), so one cache.

@@ -40,7 +40,7 @@ export async function platformSettingsRoutes(
   deps: PlatformSettingsDeps,
 ): Promise<void> {
   const admin = { config: { access: 'admin' } } as const;
-  const llmKeyStatus = () => getLlmKeyStatus(deps.db, deps.llmEnvKey);
+  const llmKeyStatus = () => getLlmKeyStatus(deps.db, deps.llmEnvKey, deps.llmKeySecret);
 
   app.get('/api/admin/settings', admin, async () => ({
     ...(await getPlatformSettings(deps.db)),
