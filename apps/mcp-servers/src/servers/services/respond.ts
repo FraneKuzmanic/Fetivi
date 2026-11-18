@@ -21,6 +21,13 @@ import { termsSentence } from './terms';
 
 export type RespondToOrderUpdateOutput = z.infer<typeof respondToOrderUpdateOutput>;
 
+/**
+ * Accepted terms are the provider's own, so payment confirms the Order. Without this the model
+ * carries over create_order's "the request goes out after payment".
+ */
+const PAY_TO_CONFIRM =
+  "The guest accepted the provider's own terms, so nothing more goes to the provider: once the guest pays with the pay button on the receipt shown under your reply, by order.payBy (say it in the property's local time), the order is confirmed. Say it in the guest's language without naming fields or buttons in English.";
+
 // The two halves of respond_to_order_update (36), shared by the services server and V0 like
 // cancel_order's. The card shows the Provider's (or the admin's) new terms next to the old ones;
 // the guest's `answer` field accepts or declines them. MCP decline/cancel means "not now" and
@@ -130,7 +137,9 @@ export async function answerRespondToOrderUpdate(
     const result = await refusingRespond(() =>
       completeRespond({ db, queue, now }, { pendingId, spaceId, answer: given }),
     );
-    return { outcome: result.outcome, order: result.order };
+    return result.outcome === 'accepted' && result.order?.payBy
+      ? { outcome: result.outcome, order: result.order, next: PAY_TO_CONFIRM }
+      : { outcome: result.outcome, order: result.order };
   };
   // Requires kind respond_to_order_update, so a state minted for another tool never completes it.
   const pending = await getPendingRespond(db, pendingId, spaceId);

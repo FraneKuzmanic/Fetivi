@@ -220,6 +220,7 @@ export const cancelOrderOutput = z.object({
 export const respondToOrderUpdateOutput = z.object({
   outcome: z.enum(['accepted', 'declined', 'not_answered']),
   order: orderSummary.nullable(),
+  next: z.string().optional().describe('What to tell the guest now; follow it.'),
 });
 
 // A drift between the domain types and these schemas fails typecheck, not a tool call.
