@@ -59,7 +59,7 @@ export const hr: GuestCopy = {
     order_failed: {
       subject: 'Rezervacija nije uspjela: {{offer}}, {{date}}',
       lines: [
-        'Nešto je pošlo po zlu i {{offer}} ({{date}}) nije rezervirano.',
+        'Nešto je pošlo po zlu, pa rezervacija za {{offer}} ({{date}}) nije uspjela.',
         'Možete pokušati ponovno ili me pitati u razgovoru.',
       ],
       pushTitle: 'Rezervacija nije uspjela',
