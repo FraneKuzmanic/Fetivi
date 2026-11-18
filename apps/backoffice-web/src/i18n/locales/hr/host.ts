@@ -633,8 +633,8 @@ export const host: Translation<typeof en> = {
     addPlaceButton: 'Dodaj mjesto',
     full: 'Dijelite {{limit}} mjesta, najviše što objekt može imati. Uklonite jedno da dodate drugo.',
     noDestination:
-      'Vaš objekt još nije unutar neke Fetivi destinacije, pa nema mjesta iz kataloga za odabir. Savjeti iz susjedstva i dalje stižu do vaših gostiju.',
-    tips: 'Savjeti iz susjedstva',
+      'Vaš objekt još nije unutar neke Fetivi destinacije, pa nema mjesta iz kataloga za odabir. Savjeti za okolicu i dalje stižu do vaših gostiju.',
+    tips: 'Savjeti za okolicu',
     tipsHint: 'Prikazuju se u Vodiču za goste pod preporukama domaćina, na jeziku svakog gosta.',
     tipsEmpty: 'Još nema savjeta. Gdje jedete, kupate se, kupujete kruh?',
     search: 'Pretraži Fetivijeva mjesta',
