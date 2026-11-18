@@ -2,7 +2,6 @@
 export const en = {
   picker: {
     mascot: 'Which language should we talk in?',
-    yourLanguage: "Your phone's language",
   },
   pin: {
     title: 'Enter your PIN',

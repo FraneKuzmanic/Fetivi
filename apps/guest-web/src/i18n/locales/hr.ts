@@ -4,7 +4,6 @@ import type { Messages } from './en';
 export const hr: Messages = {
   picker: {
     mascot: 'Na kojem ćemo jeziku razgovarati?',
-    yourLanguage: 'Jezik vašeg mobitela',
   },
   pin: {
     title: 'Unesite PIN',
@@ -199,10 +198,10 @@ export const hr: Messages = {
     showOriginal: 'Prikaži izvornik',
   },
   notice: {
-    order_confirmed: 'Dobre vijesti: {{offer}} ({{date}}) je potvrđeno.',
+    order_confirmed: 'Dobre vijesti: potvrđeno je „{{offer}}“ ({{date}}).',
     order_new_proposal:
       'Pružatelj usluge {{offer}} predložio je drugo vrijeme ili cijenu. Otvorite Moje putovanje da prihvatite ili odbijete.',
-    order_cancelled: '{{offer}} ({{date}}) je otkazano.',
+    order_cancelled: 'Otkazano je „{{offer}}“ ({{date}}).',
     order_declined:
       'Nažalost, pružatelj ne može prihvatiti vašu rezervaciju za {{offer}} ({{date}}). Pitajte me za nešto drugo kad god želite.',
     order_expired:

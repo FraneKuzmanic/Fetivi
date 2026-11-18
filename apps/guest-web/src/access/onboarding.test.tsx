@@ -25,9 +25,8 @@ afterEach(() => {
   setLanguage('en');
 });
 
-/** A phone set to German; the unit link works. `post` answers the PIN and recovery calls. */
+/** The unit link works. `post` answers the PIN and recovery calls. */
 async function mount(post = () => new Response(null, { status: 204 })) {
-  vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['de-DE']);
   vi.stubGlobal(
     'fetch',
     vi.fn(async (_url: string, init?: RequestInit) =>
@@ -61,14 +60,6 @@ describe('onboarding language', () => {
     localStorage.setItem('fetivi.language', 'hr');
     await mount();
     expect(host.querySelector('h1')?.textContent).toBe(locales.hr.intro.title);
-  });
-
-  it('marks the browser language as the suggested tile', async () => {
-    await mount();
-    await act(async () => host.querySelector<HTMLButtonElement>('.onboarding-button')?.click());
-    const suggested = host.querySelector('[data-suggested="true"]');
-    expect(suggested?.textContent).toContain('Deutsch');
-    expect(host.querySelectorAll('[data-suggested="true"]')).toHaveLength(1);
   });
 });
 

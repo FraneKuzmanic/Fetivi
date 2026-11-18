@@ -4,7 +4,6 @@ import type { Messages } from './en';
 export const hu: Messages = {
   picker: {
     mascot: 'Milyen nyelven beszéljünk?',
-    yourLanguage: 'A telefonod nyelve',
   },
   pin: {
     title: 'Add meg a PIN-kódot',

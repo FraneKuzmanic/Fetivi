@@ -244,13 +244,6 @@ input {
   gap: 0.125rem;
 }
 
-/* The phone's language is a hint, set apart from the chosen look of aria-current. */
-.language-suggested {
-  color: var(--gray-500);
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
 .language-option .note {
   display: inline-flex;
   align-items: center;

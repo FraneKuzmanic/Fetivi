@@ -8,7 +8,7 @@ export const hr: GuestCopy = {
     order_confirmed: {
       subject: 'Potvrđeno: {{offer}}, {{date}}',
       lines: [
-        'Dobre vijesti: {{offer}} ({{date}}) je potvrđeno.',
+        'Dobre vijesti: potvrđeno je „{{offer}}“ ({{date}}).',
         'Pojedinosti su u odjeljku Moje putovanje.',
       ],
       pushTitle: 'Potvrđeno',
@@ -25,7 +25,7 @@ export const hr: GuestCopy = {
     },
     order_cancelled: {
       subject: 'Otkazano: {{offer}}, {{date}}',
-      lines: ['{{offer}} ({{date}}) je otkazano.', 'Pojedinosti su u odjeljku Moje putovanje.'],
+      lines: ['Otkazano je „{{offer}}“ ({{date}}).', 'Pojedinosti su u odjeljku Moje putovanje.'],
       pushTitle: 'Otkazano',
       pushBody: '{{offer}}, {{date}}',
     },

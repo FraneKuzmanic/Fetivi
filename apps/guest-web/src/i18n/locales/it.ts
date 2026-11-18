@@ -4,7 +4,6 @@ import type { Messages } from './en';
 export const it: Messages = {
   picker: {
     mascot: 'In che lingua parliamo?',
-    yourLanguage: 'La lingua del tuo telefono',
   },
   pin: {
     title: 'Inserisci il PIN',
