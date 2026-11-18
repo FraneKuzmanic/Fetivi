@@ -308,6 +308,17 @@ describe('host inbox', () => {
     });
   });
 
+  it('switches to the guest messages while an Order waits', async () => {
+    orders = [ASKED];
+    stubApi([URGENT]);
+    await mount();
+    await vi.waitFor(() => expect(host.querySelector('.order-card')).not.toBeNull());
+    const tab = [...host.querySelectorAll<HTMLButtonElement>('[role=tab]')][0];
+    await act(async () => tab?.click());
+    await vi.waitFor(() => expect(rows()).toHaveLength(1));
+    expect(host.querySelector('.order-card')).toBeNull();
+  });
+
   it("shows the guest's note in the host's language with the original under it", async () => {
     orders = [
       {

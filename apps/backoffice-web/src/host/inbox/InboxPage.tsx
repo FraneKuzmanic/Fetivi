@@ -112,8 +112,8 @@ export function InboxPage() {
   const waiting = orders.filter((o) => o.waiting).length;
   // Orders waiting for an answer open first; otherwise the messages.
   const tab = asked === 'orders' || (asked === null && waiting > 0) ? 'orders' : 'messages';
-  const showTab = (next: 'messages' | 'orders') =>
-    setParams(next === 'messages' ? {} : { tab: next }, { replace: true });
+  // The messages tab is named in the URL too: with no tab, waiting orders would win again.
+  const showTab = (next: 'messages' | 'orders') => setParams({ tab: next }, { replace: true });
 
   usePageTitle(t('inbox.title'));
 
