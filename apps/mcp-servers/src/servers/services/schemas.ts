@@ -211,6 +211,7 @@ export const listMyOrdersOutput = z.object({ orders: z.array(orderSummary) });
 export const createOrderOutput = z.object({
   outcome: z.enum(['ordered', 'not_ordered']),
   order: orderSummary.nullable(),
+  next: z.string().optional().describe('What to tell the guest now; follow it.'),
 });
 export const cancelOrderOutput = z.object({
   outcome: z.enum(['cancelled', 'not_cancelled']),

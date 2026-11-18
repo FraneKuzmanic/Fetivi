@@ -6,6 +6,7 @@ import {
   type GuestOfferScope,
   getPendingDraft,
   getSpaceOrder,
+  type OrderSummary,
   prepareOrder,
   releasePendingOrder,
   type ServiceRuleCode,
@@ -19,6 +20,16 @@ import { confirmationMessage, orderDraftMeta, orderFormFor } from './elicitation
 import type { createOrderInput, createOrderOutput } from './schemas';
 
 export type CreateOrderOutput = z.infer<typeof createOrderOutput>;
+
+/**
+ * An Order that waits for payment has reached no one yet. The card's button says "send request",
+ * so without this the model tells the guest the request went out before they paid.
+ */
+const PAY_FIRST =
+  "Not sent to the provider or host and not booked yet: the guest must first pay with the pay button on the receipt shown under your reply, by order.payBy (say it in the property's local time). Only after payment does the request go out. Do not say it was sent or booked; say it in the guest's language without naming fields or buttons in English.";
+
+const ordered = (order: OrderSummary): CreateOrderOutput =>
+  order.payBy ? { outcome: 'ordered', order, next: PAY_FIRST } : { outcome: 'ordered', order };
 
 // The two halves of create_order (architecture §4.3), shared by the services server (over MCP
 // elicitation) and V0 (through the chat backend's pending-record handler): one completion rule.
@@ -105,7 +116,7 @@ export async function prepareCreateOrder(
 async function alreadyOrdered(deps: ToolDeps, identity: GuestIdentity, orderId: string) {
   const order = await getSpaceOrder(deps.db, identity.spaceId, identity.language, orderId);
   if (!order) throw new ClaimMismatchError('not-found');
-  return { outcome: 'ordered' as const, order };
+  return ordered(order);
 }
 
 /** The guest's answer: only the stored record and the answer count, never the arguments. */
@@ -156,5 +167,5 @@ export async function answerCreateOrder(
       },
     ),
   );
-  return { outcome: 'ordered' as const, order };
+  return ordered(order);
 }
