@@ -28,10 +28,10 @@ const money = (minor: number, currency: string) =>
     minor / 100,
   );
 
-// A per-group price is flat and its quantity is the party size (machine.ts), so both read as people.
+// A per-group price is flat and its quantity counts groups (the services server asks for 1).
 const QUANTITY: Record<HostOrderView['priceUnit'], (n: number) => string> = {
   person: (n) => t('people', { count: n }),
-  group: (n) => t('people', { count: n }),
+  group: (n) => t('groups', { count: n }),
   item: (n) => t('items', { count: n }),
   litre: (n) => t('litres', { count: n }),
   kilogram: (n) => t('kilograms', { count: n }),

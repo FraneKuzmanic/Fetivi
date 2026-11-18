@@ -414,6 +414,8 @@ export const host = {
   order: {
     people_one: '{{count}} person',
     people_other: '{{count}} people',
+    groups_one: '{{count}} group',
+    groups_other: '{{count}} groups',
     items: '{{count}} ×',
     litres: '{{count}} l',
     kilograms: '{{count}} kg',

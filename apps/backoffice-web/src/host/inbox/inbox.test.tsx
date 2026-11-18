@@ -81,7 +81,7 @@ const ASKED: HostOrder = {
   offerTitle: 'Airport transfer',
   date: '2026-10-26',
   startTime: '14:30',
-  quantity: 3,
+  quantity: 1,
   priceUnit: 'group',
   guest: { name: 'Ana Horvat', phone: '+385 91 000 0000' },
   status: 'pending_provider',
@@ -289,7 +289,7 @@ describe('host inbox', () => {
     await vi.waitFor(() => expect(card()).not.toBeNull());
     expect(host.textContent).toContain('Orders for your services');
     expect(card()?.textContent).toContain('Airport transfer');
-    expect(card()?.textContent).toContain('Mon 26 Oct · 14:30 · 3 people · €135.00');
+    expect(card()?.textContent).toContain('Mon 26 Oct · 14:30 · 1 group · €135.00');
     expect(card()?.textContent).toContain('Ana Horvat · +385 91 000 0000');
     expect(card()?.textContent).toContain('Answer by Sun 25 Oct, 12:00');
     const buttons = [...(card()?.querySelectorAll('button') ?? [])].map((b) => b.textContent);
