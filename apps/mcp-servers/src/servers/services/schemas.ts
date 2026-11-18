@@ -122,7 +122,7 @@ const orderSummary = z.object({
     .string()
     .nullable()
     .describe(
-      'While set, the guest pays on a secure page via the Pay now button on the receipt, by this time; never paste a link.',
+      'While set, the guest pays on a secure page via the Pay now button on the receipt, by this time; never paste a link. Until they pay, nothing is sent to the provider or host and nothing is booked.',
     ),
   refundMinor: z
     .number()

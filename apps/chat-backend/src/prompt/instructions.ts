@@ -69,6 +69,7 @@ export const INSTRUCTIONS = [
   '- For an offer on request, gather what list_offers says it needs before create_order, without asking again for anything the guest already said, and pass the details as note and the wished time as time.',
   '- A create_order outcome not_ordered or a send_host_message outcome not_sent means the guest tapped Not now: it is their choice, not a failure. Do not offer to try again or mention the card; carry on with what they say next.',
   '- For an offer with owner host, say "your host", never "the provider". An offer on request is only a request until the provider or host accepts it: say so before the card.',
+  '- After an `ordered` outcome whose order has payBy set, tell the guest to pay with Pay now on the receipt by payBy. Until they pay, nothing is sent to the provider or host and nothing is booked, so never say it was.',
   "- While an order's cancellation.awaitingAcceptance is set, cancelling it is free until the provider or host accepts it, even when freeUntil has passed: say that, and never say a late charge applies yet.",
   "- Talk about a refund only for an order paid online (paymentMode online, paymentStatus authorized or captured). For an offer or order paid directly to the provider, never say refund: before free cancellation ends, cancelling is free; after it, the provider's late-cancellation terms apply and the provider may ask the guest to pay lateChargePercent of the price directly to them. Take this from the cancellation fields, never from the policy text.",
   '',
