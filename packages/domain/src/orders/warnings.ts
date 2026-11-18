@@ -106,10 +106,28 @@ function checkoutClash(input: {
   return input.start.getTime() < checkoutAt.getTime() + CHECKOUT_MARGIN_MINUTES * 60_000;
 }
 
-/** Most severe first, so a red warning is never dropped for a yellow one. */
+/**
+ * One warning per level and event, so the same warning issued for two regions reads once; the
+ * merged one spans both. Most severe first, so a red warning is never dropped for a yellow one.
+ */
 function capWarnings(warnings: WeatherWarning[]): WeatherWarning[] {
+  const merged = new Map<string, WeatherWarning>();
+  for (const w of warnings) {
+    const key = `${w.level}|${w.type}|${w.event}`;
+    const seen = merged.get(key);
+    merged.set(
+      key,
+      seen
+        ? {
+            ...seen,
+            onset: Date.parse(w.onset) < Date.parse(seen.onset) ? w.onset : seen.onset,
+            expires: Date.parse(w.expires) > Date.parse(seen.expires) ? w.expires : seen.expires,
+          }
+        : w,
+    );
+  }
   const severity = (w: WeatherWarning) => WARNING_LEVELS.indexOf(w.level);
-  return [...warnings]
+  return [...merged.values()]
     .sort((a, b) => severity(b) - severity(a))
     .slice(0, MAX_ORDER_WEATHER_WARNINGS);
 }

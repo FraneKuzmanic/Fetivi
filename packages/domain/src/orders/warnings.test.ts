@@ -122,4 +122,21 @@ describe('orderWarnings', () => {
     });
     expect(warnings.map((w) => (w.kind === 'weather' ? w.event : ''))).toEqual(['d', 'c', 'a']);
   });
+
+  it('shows one line for the same warning issued for two regions', () => {
+    const split = wind(at('2026-10-30', '06:00'), at('2026-10-30', '14:00'), {
+      area: 'Split region',
+    });
+    const trogir = wind(at('2026-10-30', '09:00'), at('2026-10-30', '20:00'));
+    expect(orderWarnings({ ...base, date: '2026-10-30', weather: [split, trogir] })).toEqual([
+      {
+        kind: 'weather',
+        level: 'yellow',
+        type: 'wind',
+        event: 'Yellow wind warning',
+        onset: split.onset,
+        expires: trogir.expires,
+      },
+    ]);
+  });
 });
