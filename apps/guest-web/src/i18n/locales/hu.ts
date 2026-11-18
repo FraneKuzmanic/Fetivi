@@ -200,8 +200,9 @@ export const hu: Messages = {
   },
   notice: {
     order_confirmed: 'Jó hír: {{offer}} ({{date}}) visszaigazolva.',
-    order_new_proposal:
-      '{{offer}} szolgáltatója más időpontot vagy árat javasolt. Nyisd meg az Utazásom oldalt, és fogadd el vagy utasítsd el.',
+    order_new_proposal: '{{offer}} szolgáltatója más időpontot vagy árat javasolt.',
+    proposalInChat: 'Válaszolj itt, és fogadd el vagy utasítsd el.',
+    proposalInTrip: 'Nyisd meg az Utazásom oldalt, és fogadd el vagy utasítsd el.',
     order_cancelled: '{{offer}} ({{date}}) lemondva.',
     order_declined:
       'Sajnos a szolgáltató nem tudja elfogadni a foglalásodat: {{offer}} ({{date}}). Kérdezz bátran valami mást.',

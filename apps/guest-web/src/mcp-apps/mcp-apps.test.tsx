@@ -57,6 +57,7 @@ async function show(messages: UIMessage[]) {
         messages={messages}
         status="ready"
         interactive
+        stayOver={false}
         onSend={() => {}}
         onSomethingElse={() => {}}
         onAnswer={() => {}}

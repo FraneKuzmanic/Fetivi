@@ -16,10 +16,7 @@ export const de: GuestCopy = {
     },
     order_new_proposal: {
       subject: 'Neue Zeit oder neuer Preis für {{offer}}',
-      lines: [
-        'Der Anbieter von {{offer}} schlägt eine andere Zeit oder einen anderen Preis vor.',
-        'Öffnen Sie Meine Reise, um zuzustimmen oder abzulehnen.',
-      ],
+      lines: ['Der Anbieter von {{offer}} schlägt eine andere Zeit oder einen anderen Preis vor.'],
       pushTitle: 'Neuer Vorschlag',
       pushBody: '{{offer}}: bitte ansehen',
     },
@@ -133,6 +130,8 @@ export const de: GuestCopy = {
     'Der Seegang kann Fahrten auf der Linie {{lines}} stören ({{offer}}, {{date}}). Fragen Sie vor der Abfahrt bei {{operator}} nach: {{operatorUrl}}',
   orderStands:
     'Ihre Buchung bleibt bestehen, solange der Anbieter sie nicht storniert. Falls doch, sage ich Ihnen sofort Bescheid.',
+  proposalInChat: 'Antworten Sie im Chat, um zuzustimmen oder abzulehnen.',
+  proposalInTrip: 'Öffnen Sie Meine Reise, um zuzustimmen oder abzulehnen.',
   freeCancellationEnded:
     'Ihre Anfrage wurde nach Ablauf der kostenlosen Stornierungsfrist angenommen, daher ist eine Stornierung nicht mehr kostenlos.',
   sourceLine: 'Quelle: {{source}}, {{sourceUrl}}',

@@ -199,8 +199,9 @@ export const it: Messages = {
   },
   notice: {
     order_confirmed: 'Buone notizie: {{offer}} del {{date}} è confermato.',
-    order_new_proposal:
-      'Il fornitore di {{offer}} ha proposto un orario o un prezzo diverso. Apri Il mio viaggio per accettare o rifiutare.',
+    order_new_proposal: 'Il fornitore di {{offer}} ha proposto un orario o un prezzo diverso.',
+    proposalInChat: 'Rispondi qui per accettare o rifiutare.',
+    proposalInTrip: 'Apri Il mio viaggio per accettare o rifiutare.',
     order_cancelled: '{{offer}} del {{date}} è stato annullato.',
     order_declined:
       'Purtroppo il fornitore non può accettare la tua prenotazione per {{offer}} del {{date}}. Chiedimi pure qualcos’altro.',

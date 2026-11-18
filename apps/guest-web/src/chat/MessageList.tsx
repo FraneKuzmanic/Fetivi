@@ -210,6 +210,7 @@ export function MessageList({
   feedback = {},
   status,
   interactive,
+  stayOver,
   onSend,
   onSomethingElse,
   onAnswer,
@@ -222,6 +223,8 @@ export function MessageList({
   status: ChatStatus;
   /** False while a turn runs or after the Stay: the newest answer's chips and choices then hide. */
   interactive: boolean;
+  /** The Stay has ended: notices point to My trip instead of the Chat. */
+  stayOver: boolean;
   onSend: (text: string) => void;
   onSomethingElse: () => void;
   /** The guest's Confirm or Cancel on a confirmation card. */
@@ -273,7 +276,9 @@ export function MessageList({
   const last = messages.at(-1);
   const inboxAfter = (id: string | null) => inbox.filter((e) => e.afterId === id);
   const inboxRows = (id: string | null) =>
-    inboxAfter(id).map((e) => <InboxPart key={`inbox-${e.id}`} item={e.item} />);
+    inboxAfter(id).map((e) => (
+      <InboxPart key={`inbox-${e.id}`} item={e.item} stayOver={stayOver} />
+    ));
   // Shown while Fetivi works and nothing is arriving, also between steps of one answer.
   const typing =
     isBusy(status) && !(last?.role === 'assistant' && isStreamingText(last.parts.at(-1)));

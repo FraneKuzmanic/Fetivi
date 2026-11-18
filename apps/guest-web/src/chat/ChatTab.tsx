@@ -276,6 +276,7 @@ export function ChatView({
           feedback={feedback}
           status={status}
           interactive={!busy && !closed}
+          stayOver={closed}
           onSend={send}
           onSomethingElse={focusComposer}
           onAnswer={answer}

@@ -30,6 +30,9 @@ export interface GuestCopy {
   sailingAdvisory: string;
   /** Added to a ferry notice that touches a booked Order: the Provider's word stands. */
   orderStands: string;
+  /** Ends the new-proposal email: during the stay the guest answers in the Chat, after it in My trip. */
+  proposalInChat: string;
+  proposalInTrip: string;
   /** Added to an accepted request when acceptance came after its free cancellation window. */
   freeCancellationEnded: string;
   /** Added to a weather warning: the source and its site. */

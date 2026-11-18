@@ -16,10 +16,7 @@ export const fr: GuestCopy = {
     },
     order_new_proposal: {
       subject: 'Nouvel horaire ou nouveau prix pour {{offer}}',
-      lines: [
-        'Le prestataire de {{offer}} propose un autre horaire ou un autre prix.',
-        'Ouvrez Mon séjour pour accepter ou refuser.',
-      ],
+      lines: ['Le prestataire de {{offer}} propose un autre horaire ou un autre prix.'],
       pushTitle: 'Nouvelle proposition',
       pushBody: '{{offer}} : à consulter',
     },
@@ -127,6 +124,8 @@ export const fr: GuestCopy = {
     'L’état de la mer peut perturber les traversées sur la ligne {{lines}} ({{offer}}, {{date}}). Renseignez-vous auprès de {{operator}} avant de partir : {{operatorUrl}}',
   orderStands:
     'Votre réservation reste valable, sauf si le prestataire l’annule. Dans ce cas, je vous préviens tout de suite.',
+  proposalInChat: 'Répondez dans la Discussion pour accepter ou refuser.',
+  proposalInTrip: 'Ouvrez Mon séjour pour accepter ou refuser.',
   freeCancellationEnded:
     'Votre demande a été acceptée après la fin de l’annulation gratuite : l’annuler n’est donc plus gratuit.',
   sourceLine: 'Source : {{source}}, {{sourceUrl}}',

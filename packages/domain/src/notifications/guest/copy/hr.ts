@@ -16,10 +16,7 @@ export const hr: GuestCopy = {
     },
     order_new_proposal: {
       subject: 'Novo vrijeme ili cijena za {{offer}}',
-      lines: [
-        'Pružatelj usluge {{offer}} predložio je drugo vrijeme ili cijenu.',
-        'Otvorite Moje putovanje da prihvatite ili odbijete prijedlog.',
-      ],
+      lines: ['Pružatelj usluge {{offer}} predložio je drugo vrijeme ili cijenu.'],
       pushTitle: 'Novi prijedlog',
       pushBody: '{{offer}}: pogledajte prijedlog',
     },
@@ -124,6 +121,8 @@ export const hr: GuestCopy = {
     'Stanje mora može poremetiti plovidbu na liniji {{lines}} ({{offer}}, {{date}}). Prije polaska provjerite kod prijevoznika {{operator}}: {{operatorUrl}}',
   orderStands:
     'Vaša rezervacija ostaje kakva jest, osim ako je pružatelj otkaže. Ako je otkaže, odmah ću vam javiti.',
+  proposalInChat: 'Odgovorite u Razgovoru prihvaćate li prijedlog ili ga odbijate.',
+  proposalInTrip: 'Otvorite Moje putovanje da prihvatite ili odbijete prijedlog.',
   freeCancellationEnded:
     'Vaš je zahtjev prihvaćen nakon isteka besplatnog otkazivanja, pa otkazivanje više nije besplatno.',
   sourceLine: 'Izvor: {{source}}, {{sourceUrl}}',

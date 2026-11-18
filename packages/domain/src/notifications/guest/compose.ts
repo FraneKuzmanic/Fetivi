@@ -7,7 +7,7 @@ import type { TipsUnsubscribeLinks } from '../../tips/unsubscribe';
 import type { DailyTipFacts } from '../../tips/vocabulary';
 import { DHMZ_URL } from '../../weather/vocabulary';
 import { GUEST_COPY } from './copy';
-import { type GuestNotificationKind, NOTICE_PATHS, REVIEW_LINKS } from './vocabulary';
+import { type GuestNotificationKind, noticePath, REVIEW_LINKS } from './vocabulary';
 
 // Guest email and push text, pure: the loader gathers the facts. Neither ever carries contact
 // data, the PIN, door codes or the Wi-Fi password; the arrival notice only points to the Guide.
@@ -30,6 +30,8 @@ export interface GuestNoticeFacts {
   tip: DailyTipFacts | null;
   /** order_confirmed: a request accepted after its cutoff, so cancelling is no longer free. */
   freeCancellationEnded: boolean;
+  /** The guest's space has closed: the Chat is read-only and new terms are answered in My trip. */
+  stayOver: boolean;
 }
 
 function fill(template: string, values: Record<string, string>): string {
@@ -122,10 +124,13 @@ export function composeGuestEmail(
   if (kind === 'ferry_disruption' && safety?.source === 'Jadrolinija' && safety.affected.orderId) {
     lines.push('', copy.orderStands);
   }
+  if (kind === 'order_new_proposal') {
+    lines.push(facts.stayOver ? copy.proposalInTrip : copy.proposalInChat);
+  }
   if (kind === 'order_confirmed' && facts.freeCancellationEnded) {
     lines.push('', copy.freeCancellationEnded);
   }
-  lines.push('', `${copy.openApp}: ${guestOrigin}${NOTICE_PATHS[kind]}`);
+  lines.push('', `${copy.openApp}: ${guestOrigin}${noticePath(kind, facts.stayOver)}`);
   if (kind === 'checkout_reminder' && facts.reviewPlatform) {
     lines.push('', fill(copy.reviewLine, v), REVIEW_LINKS[facts.reviewPlatform]);
   }
@@ -152,5 +157,9 @@ export function composeGuestPush(
 ): { title: string; body: string; url: string } {
   const text = GUEST_COPY[language].kinds[kind];
   const v = values(facts, language);
-  return { title: fill(text.pushTitle, v), body: fill(text.pushBody, v), url: NOTICE_PATHS[kind] };
+  return {
+    title: fill(text.pushTitle, v),
+    body: fill(text.pushBody, v),
+    url: noticePath(kind, facts.stayOver),
+  };
 }

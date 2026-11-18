@@ -23,6 +23,7 @@ const render = (messages: UIMessage[], status: ChatStatus = 'ready') =>
           messages={messages}
           status={status}
           interactive={status === 'ready'}
+          stayOver={false}
           onSend={() => {}}
           onSomethingElse={() => {}}
           onAnswer={() => {}}

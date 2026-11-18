@@ -32,7 +32,10 @@ export interface GuestNotice {
   facts: GuestNoticeFacts;
 }
 
-const NO_FACTS: GuestNoticeFacts = {
+/** What `loadBase` finds; whether the stay is over is added from the space. */
+type BaseFacts = Omit<GuestNoticeFacts, 'stayOver'>;
+
+const NO_FACTS: BaseFacts = {
   offerTitle: null,
   date: null,
   startTime: null,
@@ -47,7 +50,7 @@ interface Base {
   spaceId: string;
   email: string | null;
   orderId: string | null;
-  facts: GuestNoticeFacts;
+  facts: BaseFacts;
 }
 
 /**
@@ -93,7 +96,7 @@ export async function loadGuestNotice(
     spaceOpen: space.closedAt > now,
     email,
     orderId: base.orderId,
-    facts: base.facts,
+    facts: { ...base.facts, stayOver: space.closedAt <= now },
   };
 }
 

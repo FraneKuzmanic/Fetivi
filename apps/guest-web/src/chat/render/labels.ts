@@ -577,8 +577,16 @@ function tipWords(t: TFunction, language: string, notice: Notice): NoticeWords |
   };
 }
 
-/** A notice's sentences in the interface language, dates as the receipts show them; null if never shown. */
-export function noticeText(t: TFunction, language: string, notice: Notice): NoticeWords | null {
+/**
+ * A notice's sentences in the interface language, dates as the receipts show them; null if never
+ * shown. New terms are answered in the Chat during the stay, in My trip after it (`stayOver`).
+ */
+export function noticeText(
+  t: TFunction,
+  language: string,
+  notice: Notice,
+  stayOver: boolean,
+): NoticeWords | null {
   if (notice.notification === 'daily_tip') return tipWords(t, language, notice);
   if (!isShownNotice(notice.notification)) return null;
   if (notice.notification === 'weather_warning' || notice.notification === 'ferry_disruption') {
@@ -590,10 +598,18 @@ export function noticeText(t: TFunction, language: string, notice: Notice): Noti
     offer: notice.offerTitle ?? '',
     date: date ? f.dateTime(date, startTime ? `${date}T${startTime}` : null) : '',
   });
+  const answer =
+    notice.notification === 'order_new_proposal'
+      ? t(stayOver ? 'notice.proposalInTrip' : 'notice.proposalInChat')
+      : null;
   return {
     safety: null,
     // A request accepted after its free window: the guest hears that cancelling now costs.
-    text: notice.freeCancellationEnded ? `${text} ${t('notice.freeCancellationEnded')}` : text,
+    text: notice.freeCancellationEnded
+      ? `${text} ${t('notice.freeCancellationEnded')}`
+      : answer
+        ? `${text} ${answer}`
+        : text,
     checkoutBy: checkoutTime
       ? t('notice.checkoutBy', { checkoutTime: f.time(`2000-01-01T${checkoutTime}`) })
       : null,

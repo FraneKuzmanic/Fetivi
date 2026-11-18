@@ -77,10 +77,13 @@ export const EVENING_REMINDER_TIME = '18:00';
 /** The guest-reminders cron (UTC); arrival and checkout notices are picked up within 15 minutes. */
 export const GUEST_REMINDERS_CRON = '*/15 * * * *';
 
-/** The guest-app path a notice opens: My trip for Orders, the Guide for the Stay, else the Chat. */
+/**
+ * The guest-app path a notice opens: My trip for Orders, the Guide for the Stay, else the Chat. A
+ * Provider's new terms are answered in the Chat during the stay; see `noticePath`.
+ */
 export const NOTICE_PATHS = {
   order_confirmed: '/trip',
-  order_new_proposal: '/trip',
+  order_new_proposal: '/chat',
   order_cancelled: '/trip',
   order_declined: '/trip',
   order_expired: '/trip',
@@ -94,6 +97,14 @@ export const NOTICE_PATHS = {
   ferry_disruption: '/trip',
   daily_tip: '/chat',
 } as const satisfies Record<GuestNotificationKind, '/trip' | '/guide' | '/chat'>;
+
+/** After checkout the Chat is closed, so new terms are answered in My trip instead. */
+export function noticePath(
+  kind: GuestNotificationKind,
+  stayOver: boolean,
+): (typeof NOTICE_PATHS)[GuestNotificationKind] {
+  return kind === 'order_new_proposal' && stayOver ? '/trip' : NOTICE_PATHS[kind];
+}
 
 /** Where the checkout review line links, per calendar feed source: the guest's trips page there. */
 export const REVIEW_LINKS: Record<CalendarSource, string> = {

@@ -15,10 +15,7 @@ export const en: GuestCopy = {
     },
     order_new_proposal: {
       subject: 'A new time or price for {{offer}}',
-      lines: [
-        'The provider of {{offer}} suggested a different time or price.',
-        'Open My trip to accept it or say no.',
-      ],
+      lines: ['The provider of {{offer}} suggested a different time or price.'],
       pushTitle: 'New suggestion',
       pushBody: '{{offer}}: please take a look',
     },
@@ -123,6 +120,8 @@ export const en: GuestCopy = {
     'Sea conditions may disrupt sailings on line {{lines}} ({{offer}}, {{date}}). Check with {{operator}} before you go: {{operatorUrl}}',
   orderStands:
     "Your booking stays as it is unless the provider cancels it. If they do, I'll tell you straight away.",
+  proposalInChat: 'Reply in the Chat to accept it or say no.',
+  proposalInTrip: 'Open My trip to accept it or say no.',
   freeCancellationEnded:
     'Your request was accepted after the free cancellation window, so cancelling it is no longer free.',
   sourceLine: 'Source: {{source}}, {{sourceUrl}}',

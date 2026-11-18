@@ -19,6 +19,7 @@ const ORDER: GuestNoticeFacts = {
   safety: null,
   tip: null,
   freeCancellationEnded: false,
+  stayOver: false,
 };
 const STAY: GuestNoticeFacts = {
   offerTitle: null,
@@ -29,6 +30,7 @@ const STAY: GuestNoticeFacts = {
   safety: null,
   tip: null,
   freeCancellationEnded: false,
+  stayOver: false,
 };
 
 const ZONE = 'Europe/Zagreb';
@@ -97,6 +99,21 @@ describe('composeGuestEmail', () => {
       composeGuestEmail('order_reminder', { ...ORDER, freeCancellationEnded: true }, 'en', ORIGIN)
         .text,
     ).not.toContain('no longer free');
+  });
+
+  it('sends new terms to the Chat during the stay and to My trip after it', () => {
+    const during = composeGuestEmail('order_new_proposal', ORDER, 'en', ORIGIN).text;
+    expect(during).toContain('Reply in the Chat to accept it or say no.');
+    expect(during).toContain(`Open Fetivi: ${ORIGIN}/chat`);
+    const after = composeGuestEmail(
+      'order_new_proposal',
+      { ...ORDER, stayOver: true },
+      'en',
+      ORIGIN,
+    ).text;
+    expect(after).toContain('Open My trip to accept it or say no.');
+    expect(after).toContain(`Open Fetivi: ${ORIGIN}/trip`);
+    expect(composeGuestPush('order_new_proposal', ORDER, 'en').url).toBe('/chat');
   });
 
   it('leaves the time out when the Offer has none', () => {

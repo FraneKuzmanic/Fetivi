@@ -199,8 +199,9 @@ export const hr: Messages = {
   },
   notice: {
     order_confirmed: 'Dobre vijesti: potvrđeno je „{{offer}}“ ({{date}}).',
-    order_new_proposal:
-      'Pružatelj usluge {{offer}} predložio je drugo vrijeme ili cijenu. Otvorite Moje putovanje da prihvatite ili odbijete.',
+    order_new_proposal: 'Pružatelj usluge {{offer}} predložio je drugo vrijeme ili cijenu.',
+    proposalInChat: 'Odgovorite ovdje prihvaćate li prijedlog ili ga odbijate.',
+    proposalInTrip: 'Otvorite Moje putovanje da prihvatite ili odbijete.',
     order_cancelled: 'Otkazano je „{{offer}}“ ({{date}}).',
     order_declined:
       'Nažalost, pružatelj ne može prihvatiti vašu rezervaciju za {{offer}} ({{date}}). Pitajte me za nešto drugo kad god želite.',

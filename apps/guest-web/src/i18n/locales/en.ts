@@ -197,8 +197,9 @@ export const en = {
   },
   notice: {
     order_confirmed: 'Good news: {{offer}} on {{date}} is confirmed.',
-    order_new_proposal:
-      'The provider of {{offer}} suggested a different time or price. Open My trip to accept it or say no.',
+    order_new_proposal: 'The provider of {{offer}} suggested a different time or price.',
+    proposalInChat: 'Reply here to accept it or say no.',
+    proposalInTrip: 'Open My trip to accept it or say no.',
     order_cancelled: '{{offer}} on {{date}} has been cancelled.',
     order_declined:
       "Sorry, the provider can't take your booking for {{offer}} on {{date}}. Ask me for something else whenever you like.",

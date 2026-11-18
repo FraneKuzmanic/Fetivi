@@ -185,3 +185,24 @@ describe('InboxPart order notices', () => {
     expect(html(confirmed(false))).not.toContain('no longer free');
   });
 });
+
+describe('InboxPart new terms', () => {
+  const proposal: InboxItem = {
+    ...(notice('order_new_proposal', warning()) as Notice),
+    safety: null,
+    offerTitle: 'Olive oil',
+  };
+
+  it('asks for the answer in the Chat during the stay and in My trip after it', () => {
+    const during = html(proposal);
+    expect(during).toContain('Reply here to accept it or say no.');
+    expect(during).not.toContain('href="/trip"');
+    const after = renderToString(
+      <MemoryRouter>
+        <InboxPart item={proposal} stayOver />
+      </MemoryRouter>,
+    );
+    expect(after).toContain('Open My trip to accept it or say no.');
+    expect(after).toContain('href="/trip"');
+  });
+});

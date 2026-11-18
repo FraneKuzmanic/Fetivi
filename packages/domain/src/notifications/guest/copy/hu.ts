@@ -16,10 +16,7 @@ export const hu: GuestCopy = {
     },
     order_new_proposal: {
       subject: 'Új időpont vagy ár: {{offer}}',
-      lines: [
-        '{{offer}} szolgáltatója más időpontot vagy árat javasolt.',
-        'Nyisd meg az Utazásom fület, és fogadd el vagy utasítsd el.',
-      ],
+      lines: ['{{offer}} szolgáltatója más időpontot vagy árat javasolt.'],
       pushTitle: 'Új javaslat',
       pushBody: '{{offer}}: nézd meg',
     },
@@ -127,6 +124,8 @@ export const hu: GuestCopy = {
     'A tengeri viszonyok megzavarhatják a járatokat a(z) {{lines}} vonalon ({{offer}}, {{date}}). Indulás előtt érdeklődj itt: {{operator}}, {{operatorUrl}}',
   orderStands:
     'A foglalásod érvényes marad, hacsak a szolgáltató le nem mondja. Ha mégis, azonnal szólok.',
+  proposalInChat: 'Válaszolj a Csevegésben, és fogadd el vagy utasítsd el.',
+  proposalInTrip: 'Nyisd meg az Utazásom fület, és fogadd el vagy utasítsd el.',
   freeCancellationEnded:
     'A kérésedet az ingyenes lemondási határidő után fogadták el, így a lemondás már nem ingyenes.',
   sourceLine: 'Forrás: {{source}}, {{sourceUrl}}',

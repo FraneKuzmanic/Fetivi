@@ -204,7 +204,9 @@ export const de: Messages = {
   notice: {
     order_confirmed: 'Gute Nachricht: {{offer}} am {{date}} ist bestätigt.',
     order_new_proposal:
-      'Der Anbieter von {{offer}} schlägt eine andere Zeit oder einen anderen Preis vor. Öffnen Sie Meine Reise, um anzunehmen oder abzulehnen.',
+      'Der Anbieter von {{offer}} schlägt eine andere Zeit oder einen anderen Preis vor.',
+    proposalInChat: 'Antworten Sie hier, um anzunehmen oder abzulehnen.',
+    proposalInTrip: 'Öffnen Sie Meine Reise, um anzunehmen oder abzulehnen.',
     order_cancelled: '{{offer}} am {{date}} wurde storniert.',
     order_declined:
       'Leider kann der Anbieter Ihre Buchung für {{offer}} am {{date}} nicht annehmen. Fragen Sie mich gern nach etwas anderem.',

@@ -1,5 +1,5 @@
 import { CALENDAR_SOURCE_LABELS } from '@fetivi/domain/calendar-vocabulary';
-import { NOTICE_PATHS } from '@fetivi/domain/notification-vocabulary';
+import { noticePath } from '@fetivi/domain/notification-vocabulary';
 import type { InboxItem } from '@fetivi/ui/payloads';
 import { Warning } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -16,9 +16,9 @@ const PLATFORM_SLOT = '\u0000';
  * or Stay notification) is Fetivi speaking, worded here in the current language. A safety notice
  * quotes its source (DHMZ, Jadrolinija) in the source's own words, with a link to it.
  */
-export function InboxPart({ item }: { item: InboxItem }) {
+export function InboxPart({ item, stayOver = false }: { item: InboxItem; stayOver?: boolean }) {
   const { t } = useTranslation();
-  if (item.kind === 'notice') return <NoticePart notice={item} />;
+  if (item.kind === 'notice') return <NoticePart notice={item} stayOver={stayOver} />;
   return (
     <div className="host-row">
       <div className="bubble host">
@@ -37,11 +37,17 @@ export function InboxPart({ item }: { item: InboxItem }) {
   );
 }
 
-function NoticePart({ notice }: { notice: Extract<InboxItem, { kind: 'notice' }> }) {
+function NoticePart({
+  notice,
+  stayOver,
+}: {
+  notice: Extract<InboxItem, { kind: 'notice' }>;
+  stayOver: boolean;
+}) {
   const { t, i18n } = useTranslation();
-  const words = noticeText(t, i18n.language, notice);
+  const words = noticeText(t, i18n.language, notice, stayOver);
   if (!words) return null;
-  const path = NOTICE_PATHS[notice.notification];
+  const path = noticePath(notice.notification, stayOver);
   const platform = notice.reviewPlatform;
   const [beforeName, afterName] =
     platform && notice.reviewUrl
