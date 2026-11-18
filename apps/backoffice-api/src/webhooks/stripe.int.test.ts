@@ -51,9 +51,11 @@ function deliver(app: TestApp, event: unknown, secret = SECRET) {
 async function placeOnlineOrder() {
   const now = t.clock.now();
   const provider = await seedProvider(t.db, { commissionBp: 1250 });
+  // One connected account per Provider (the column is unique).
+  const account = `${ACCOUNT}_${provider.id}`;
   await t.db
     .update(providers)
-    .set({ stripeAccountId: ACCOUNT, stripeCardPayments: 'active' })
+    .set({ stripeAccountId: account, stripeCardPayments: 'active' })
     .where(eq(providers.id, provider.id));
   const { offerId, slotId } = await seedOrderableOffer(t.db, {
     providerId: provider.id,
@@ -80,13 +82,17 @@ async function placeOnlineOrder() {
     .from(paymentAttempts)
     .where(eq(paymentAttempts.orderId, order.id));
   if (!attempt) throw new Error('no attempt');
-  return { orderId: order.id, attemptId: attempt.id };
+  return { orderId: order.id, attemptId: attempt.id, account };
 }
 
-const completed = (attemptId: string, id = `evt_${randomBytes(6).toString('hex')}`) => ({
+const completed = (
+  attemptId: string,
+  account: string,
+  id = `evt_${randomBytes(6).toString('hex')}`,
+) => ({
   id,
   type: 'checkout.session.completed',
-  account: ACCOUNT,
+  account,
   data: {
     object: {
       id: `cs_test_${randomBytes(6).toString('hex')}`,
@@ -106,16 +112,16 @@ const eventsOf = async (orderId: string) =>
 
 describe('POST /webhooks/stripe', () => {
   it('refuses a bad signature', async () => {
-    const { attemptId } = await placeOnlineOrder();
-    const response = await deliver(t, completed(attemptId), 'whsec_other');
+    const { attemptId, account } = await placeOnlineOrder();
+    const response = await deliver(t, completed(attemptId, account), 'whsec_other');
     expect(response.statusCode).toBe(401);
     expect(response.json()).toEqual({ error: 'bad-signature' });
   });
 
   it('authorizes on a completed checkout, once per event id', async () => {
-    const { orderId, attemptId } = await placeOnlineOrder();
+    const { orderId, attemptId, account } = await placeOnlineOrder();
     const before = await eventsOf(orderId);
-    const event = completed(attemptId);
+    const event = completed(attemptId, account);
     expect((await deliver(t, event)).statusCode).toBe(200);
     expect(await paymentOf(orderId)).toBe('authorized');
     expect(await eventsOf(orderId)).toBe(before + 1);
@@ -130,8 +136,8 @@ describe('POST /webhooks/stripe', () => {
   });
 
   it('acknowledges and ignores an event of another account or an unknown type', async () => {
-    const { orderId, attemptId } = await placeOnlineOrder();
-    const foreign = { ...completed(attemptId), account: 'acct_someone_else' };
+    const { orderId, attemptId, account } = await placeOnlineOrder();
+    const foreign = { ...completed(attemptId, account), account: 'acct_someone_else' };
     expect((await deliver(t, foreign)).statusCode).toBe(200);
     expect(await paymentOf(orderId)).toBe('none');
     const other = { id: 'evt_other', type: 'customer.created', data: { object: { id: 'cus_1' } } };

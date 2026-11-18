@@ -28,7 +28,7 @@ export async function sendStayDatesChanged(
   const [row] = await deps.db
     .select({
       checkIn: stays.checkIn,
-      checkout: stays.checkout,
+      checkout: stays.checkOut,
       unitName: units.name,
       propertyName: properties.name,
       email: accounts.email,

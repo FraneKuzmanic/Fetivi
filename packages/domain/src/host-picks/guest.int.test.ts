@@ -290,7 +290,7 @@ describe('a promoted host-added place', () => {
     if (!record) throw new Error('no record');
     await testDb.db
       .update(hostPlaces)
-      .set({ catalogRecordId: record.id })
+      .set({ recordId: record.id })
       .where(eq(hostPlaces.id, anteId));
 
     const before = await search(a, { query: 'konoba ante' });

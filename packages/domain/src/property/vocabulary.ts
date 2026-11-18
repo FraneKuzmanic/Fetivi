@@ -109,7 +109,7 @@ export type Amenity = (typeof AMENITIES)[number];
 /** Core fields a property sets and a unit may override; null on a unit means "inherit". */
 export const SHARED_CORE_FIELDS = [
   'checkInTime',
-  'checkoutTime',
+  'checkOutTime',
   'checkInMethod',
   'accessInstructions',
   'parkingType',

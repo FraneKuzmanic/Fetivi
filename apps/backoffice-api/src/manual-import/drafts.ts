@@ -31,7 +31,7 @@ type DraftInput = ManualDraftItem extends infer I
 
 const TIME_COLUMNS = new Set<WizardColumn>([
   'checkInTime',
-  'checkoutTime',
+  'checkOutTime',
   'quietHoursFrom',
   'quietHoursTo',
 ]);

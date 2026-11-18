@@ -91,7 +91,7 @@ async function capturedOrder(w: World) {
   const provider = await seedProvider(testDb.db, { commissionBp: 1250 });
   await testDb.db
     .update(providers)
-    .set({ stripeAccountId: 'acct_test', stripeCardPayments: 'active' })
+    .set({ stripeAccountId: `acct_test_${provider.id}`, stripeCardPayments: 'active' })
     .where(eq(providers.id, provider.id));
   const { offerId, slotId } = await seedOrderableOffer(testDb.db, {
     providerId: provider.id,

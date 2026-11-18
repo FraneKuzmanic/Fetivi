@@ -111,7 +111,7 @@ describe('calendar jobs', () => {
       stayId: unit.stayId,
       kind: 'dates_changed',
       checkIn: unit.stay.checkIn,
-      checkout: unit.stay.checkout,
+      checkout: unit.stay.checkOut,
     });
     expect(mailer.sent).toHaveLength(1);
   });

@@ -11,7 +11,7 @@ const CLEAR: Record<(typeof GO_LIVE_FIELD_ITEMS)[number], Partial<WizardValues>>
   check_in_time: { checkInTime: null },
   check_in_method: { checkInMethod: null },
   access_instructions: { accessInstructions: null },
-  checkout_time: { checkoutTime: null },
+  checkout_time: { checkOutTime: null },
   wifi: { noWifi: false },
   host_phone: { hostPhone: null },
 };

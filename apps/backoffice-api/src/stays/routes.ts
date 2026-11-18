@@ -72,7 +72,7 @@ export async function stayRoutes(app: FastifyInstance, deps: StayDeps): Promise<
       past ? lte(stays.activeUntil, now) : gt(stays.activeUntil, now),
     );
     const rows = past
-      ? await selectStays(db).where(scope).orderBy(desc(stays.checkout)).limit(PAST_LIMIT)
+      ? await selectStays(db).where(scope).orderBy(desc(stays.checkOut)).limit(PAST_LIMIT)
       : await selectStays(db).where(scope).orderBy(asc(stays.checkIn), asc(stays.createdAt));
     return { stays: await staysOut(db, rows, ctx()) };
   });

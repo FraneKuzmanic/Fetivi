@@ -146,11 +146,7 @@ export async function runHandoffTranslation(
     if (locked?.state !== 'pending') return 'discarded';
     await tx
       .update(handoffMessages)
-      .set(
-        result.ok
-          ? { replyTranslation: result.text, replyTranslationState: 'done' }
-          : { replyTranslationState: 'failed' },
-      )
+      .set(result.ok ? { replyTranslationState: 'done' } : { replyTranslationState: 'failed' })
       .where(eq(handoffMessages.id, row.id));
     await deliverReply(
       tx,

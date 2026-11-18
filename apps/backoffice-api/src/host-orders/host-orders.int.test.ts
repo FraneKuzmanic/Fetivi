@@ -57,7 +57,7 @@ async function askedOrder(orderKind: 'booking' | 'request' = 'booking') {
     hostId: hostA.id,
     availabilityMode: 'on_request',
     orderKind,
-    contactFields: 'name',
+    contactRequirement: 'name',
     title: 'Airport transfer',
   });
   const { order } = await createOrder(orderDeps(), {

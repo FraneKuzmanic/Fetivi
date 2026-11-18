@@ -82,7 +82,7 @@ describe('GET /api/plan', () => {
     expect(empty.plan.days.map((d) => d.date)).toEqual([
       seed.stay.checkIn,
       plusDays(seed.stay.checkIn, 1),
-      seed.stay.checkout,
+      seed.stay.checkOut,
     ]);
     expect(empty.plan.days.every((d) => d.items.length === 0)).toBe(true);
 

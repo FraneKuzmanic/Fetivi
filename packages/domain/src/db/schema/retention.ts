@@ -12,7 +12,7 @@ import {
 import type { MessagePart } from './conversations';
 import { paymentMode } from './offers';
 import { orderStatus, paymentStatus } from './orders';
-import { guestLanguage } from './translations';
+import { language } from './translations';
 
 /**
  * What survives the 30-day deletion for the 11-year commission accounting rule (architecture
@@ -67,7 +67,7 @@ export interface KeptMessage {
 export const keptConversations = pgTable('kept_conversations', {
   /** Opaque: matches turn_metrics and answer_feedback. */
   conversationId: uuid('conversation_id').primaryKey(),
-  language: guestLanguage('language').notNull(),
+  language: language('language').notNull(),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
   messages: jsonb('messages').$type<KeptMessage[]>().notNull(),
   keptAt: timestamp('kept_at', { withTimezone: true }).notNull(),

@@ -220,7 +220,19 @@ export async function pollFeed(deps: CalendarDeps, feedId: string): Promise<Poll
       .where(eq(calendarFeeds.id, feedId))
       .for('update');
     if (!locked) return { outcome: 'gone' as const };
-    const known = await tx.select().from(calendarEvents).where(eq(calendarEvents.feedId, feedId));
+    const known = await tx
+      .select({
+        id: calendarEvents.id,
+        uid: calendarEvents.uid,
+        checkIn: calendarEvents.checkIn,
+        checkout: calendarEvents.checkOut,
+        summary: calendarEvents.summary,
+        status: calendarEvents.status,
+        stayId: calendarEvents.stayId,
+        vanishedAt: calendarEvents.vanishedAt,
+      })
+      .from(calendarEvents)
+      .where(eq(calendarEvents.feedId, feedId));
     const actions = plan({
       known,
       fetched,
@@ -249,7 +261,7 @@ async function unitStays(tx: Tx, unitId: string, feedId: string, now: Date): Pro
     .select({
       id: stays.id,
       checkIn: stays.checkIn,
-      checkout: stays.checkout,
+      checkout: stays.checkOut,
       possiblyCancelled: stays.possiblyCancelled,
     })
     .from(stays)
@@ -288,7 +300,7 @@ async function applyAction(
         feedId,
         uid: action.uid,
         checkIn: action.checkIn,
-        checkout: action.checkout,
+        checkOut: action.checkout,
         summary: action.summary,
         status: action.status,
         stayId: action.stayId,
@@ -303,7 +315,7 @@ async function applyAction(
         .update(calendarEvents)
         .set({
           checkIn: action.checkIn,
-          checkout: action.checkout,
+          checkOut: action.checkout,
           summary: action.summary,
           lastSeenAt: now,
           updatedAt: now,
@@ -365,7 +377,7 @@ async function applyAction(
  */
 async function linkMatchingPending(tx: Tx, unitId: string, now: Date): Promise<number> {
   const active = await tx
-    .select({ id: stays.id, checkIn: stays.checkIn, checkout: stays.checkout })
+    .select({ id: stays.id, checkIn: stays.checkIn, checkout: stays.checkOut })
     .from(stays)
     .where(and(eq(stays.unitId, unitId), gt(stays.activeUntil, now)));
   let linked = 0;
@@ -398,7 +410,7 @@ async function linkGroup(
             .where(eq(calendarFeeds.unitId, unitId)),
         ),
         eq(calendarEvents.checkIn, dates.checkIn),
-        eq(calendarEvents.checkout, dates.checkout),
+        eq(calendarEvents.checkOut, dates.checkout),
       ),
     )
     .returning({ id: calendarEvents.id });
@@ -432,7 +444,7 @@ export async function listProposals(
     .select({
       id: calendarEvents.id,
       checkIn: calendarEvents.checkIn,
-      checkout: calendarEvents.checkout,
+      checkout: calendarEvents.checkOut,
       summary: calendarEvents.summary,
       createdAt: calendarEvents.createdAt,
       source: calendarFeeds.source,
@@ -493,7 +505,7 @@ async function findEvent(db: Executor, eventId: string) {
       id: calendarEvents.id,
       status: calendarEvents.status,
       checkIn: calendarEvents.checkIn,
-      checkout: calendarEvents.checkout,
+      checkout: calendarEvents.checkOut,
       unitId: units.id,
       propertyId: units.propertyId,
     })
@@ -548,7 +560,7 @@ export async function dismissProposal(db: Db, eventId: string, now: Date): Promi
               .where(eq(calendarFeeds.unitId, event.unitId)),
           ),
           eq(calendarEvents.checkIn, event.checkIn),
-          eq(calendarEvents.checkout, event.checkout),
+          eq(calendarEvents.checkOut, event.checkout),
         ),
       );
   });

@@ -124,7 +124,7 @@ describe('resume', () => {
   });
 
   it('moves on to Wi-Fi once the arrival Required fields are filled', () => {
-    const { noWifi, checkoutTime, hostPhone, ...arrival } = MINIMUM;
+    const { noWifi, checkOutTime, hostPhone, ...arrival } = MINIMUM;
     expect(resumeStep(facts(arrival))).toBe('wifi_essentials');
   });
 

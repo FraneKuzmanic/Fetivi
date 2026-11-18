@@ -3,7 +3,7 @@ import { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { accounts } from '../db/schema/accounts';
 import { allotmentSlots } from '../db/schema/offers';
-import { inventoryHolds, orderEvents, orderProposals, orders } from '../db/schema/orders';
+import { inventoryHolds, orderEvents, orders } from '../db/schema/orders';
 import { createJobQueue, ensureQueues, type JobQueue, QUEUES } from '../jobs/queue';
 import { createTestDatabase, type TestDatabase } from '../testing';
 import { type SeededGuestUnit, seedGuestUnit, seedOrderableOffer } from '../testing/fixtures';
@@ -405,8 +405,6 @@ describe('on-request Order and proposals', () => {
     const { proposal: v2 } = await current(order.id);
     expect(v2.version).toBe(2);
     expect(v2.priceMinor).toBe(v1.priceMinor);
-    const [old] = await testDb.db.select().from(orderProposals).where(eq(orderProposals.id, v1.id));
-    expect(old?.supersededAt).not.toBeNull();
     expect((await notifyKinds(order.id)).at(-1)).toBe('order_new_proposal');
     const card = (await jobsOf(order.id, QUEUES.orderTimer)).find(
       (j) => j.data.operation === 'card_expiry',

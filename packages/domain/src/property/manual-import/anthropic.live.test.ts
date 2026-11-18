@@ -21,7 +21,7 @@ describe.skipIf(!live)('Anthropic manual import model (live)', () => {
     const { fields, blocks, unmapped } = result.output;
 
     expect(fields.checkInTime).toBe('15:00');
-    expect(fields.checkoutTime).toBe('10:00');
+    expect(fields.checkOutTime).toBe('10:00');
     expect(fields.wifiPassword).toBe('sunce2024');
     expect(fields.wifiNetwork).toBe('MareGuest');
     expect(fields.doorCode).toContain('4821');

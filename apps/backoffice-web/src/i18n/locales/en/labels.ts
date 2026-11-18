@@ -125,7 +125,7 @@ export const labels = {
   } satisfies Record<BedType, string>,
   coreField: {
     checkInTime: 'Check-in from',
-    checkoutTime: 'Checkout by',
+    checkOutTime: 'Checkout by',
     checkInMethod: 'Check-in method',
     accessInstructions: 'Access instructions',
     parkingType: 'Parking',

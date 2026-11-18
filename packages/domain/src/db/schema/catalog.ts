@@ -25,10 +25,11 @@ import {
   TRANSPORT_MODES,
 } from '../../catalog/vocabulary';
 import { accounts } from './accounts';
+import { aboutMeInterest } from './enums';
 import { sourceLanguage, translationError, translationStatus } from './info-blocks';
 import { wgs84Point } from './properties';
 import { seedingCandidates } from './seeding';
-import { guestLanguage, translationOrigin } from './translations';
+import { language, translationOrigin } from './translations';
 
 export const catalogKind = pgEnum('catalog_kind', CATALOG_KINDS);
 export const placeCategory = pgEnum('place_category', PLACE_CATEGORIES);
@@ -86,7 +87,10 @@ export const catalogRecords = pgTable(
     /** Places and day trips good on a rainy day; daily tips pick from them when rain is forecast. */
     rainyDay: boolean('rainy_day').notNull().default(false),
     /** Events: About me interests the event suits (INTERESTS codes); daily tips match them. */
-    interests: text('interests').array().notNull().default(sql`'{}'::text[]`),
+    interests: aboutMeInterest('interests')
+      .array()
+      .notNull()
+      .default(sql`'{}'::about_me_interest[]`),
     /** A source URL per field, `{ fieldName: httpsUrl }`. */
     fieldSources: jsonb('field_sources')
       .$type<Partial<Record<SourceField, string>>>()
@@ -139,7 +143,7 @@ export const catalogTranslations = pgTable(
       .notNull()
       .references(() => catalogRecords.id, { onDelete: 'cascade' }),
     revision: integer('revision').notNull(),
-    language: guestLanguage('language').notNull(),
+    language: language('language').notNull(),
     title: text('title').notNull(),
     /** Markdown. */
     body: text('body').notNull(),

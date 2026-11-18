@@ -79,7 +79,7 @@ describe.skipIf(!live)('live chat turn (Sonnet 5.5)', () => {
       .orderBy(asc(turnMetrics.id));
     for (const [i, r] of rows.entries()) {
       console.info(
-        `metrics turn ${i + 1}: steps ${r.steps}, input ${r.inputTokens}, cache read ${r.cacheReadTokens}, cache write ${r.cacheWriteTokens}, output ${r.outputTokens}, input/step ${Math.round(r.inputTokens / r.steps)}, cache read/step ${Math.round(r.cacheReadTokens / r.steps)}, wall ${r.wallMs} ms, mcp ${r.mcpMs} ms`,
+        `metrics turn ${i + 1}: steps ${r.steps}, input ${r.inputTokens}, cache read ${r.cacheReadTokens}, cache write ${r.cacheWriteTokens}, output ${r.outputTokens}, input/step ${Math.round(r.inputTokens / r.steps)}, cache read/step ${Math.round(r.cacheReadTokens / r.steps)}, wall ${r.wallMs} ms, tools ${r.toolMs} ms`,
       );
     }
     expect(rows).toHaveLength(6);

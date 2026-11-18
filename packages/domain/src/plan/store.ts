@@ -90,7 +90,7 @@ const BOOKED: OrderStatus[] = ['confirmed', 'completed'];
 
 async function planStay(db: Executor, spaceId: string) {
   const [row] = await db
-    .select({ checkIn: stays.checkIn, checkout: stays.checkout, zone: properties.timezone })
+    .select({ checkIn: stays.checkIn, checkout: stays.checkOut, zone: properties.timezone })
     .from(spaces)
     .innerJoin(stays, eq(stays.id, spaces.stayId))
     .innerJoin(units, eq(units.id, stays.unitId))
@@ -154,10 +154,11 @@ export async function getPlan(
       id: r.id,
       kind: 'suggestion' as const,
       date: r.date,
-      time: r.startTime,
+      // The column is a `time` ('HH:mm:ss'); the plan speaks 'HH:mm'.
+      time: r.startTime?.slice(0, 5) ?? null,
       title: r.title,
       note: r.note,
-      placeId: r.placeId,
+      placeId: r.recordId,
       offerId: r.offerId,
       orderId: null,
       orderStatus: null,
@@ -290,7 +291,7 @@ export async function updatePlan(
             title: cleanText(change.title, PLAN_LIMITS.titleChars),
           }),
           ...(change.note !== undefined && { note: cleanNote(change.note) }),
-          ...(change.placeId !== undefined && { placeId: change.placeId }),
+          ...(change.placeId !== undefined && { recordId: change.placeId }),
           ...(change.offerId !== undefined && { offerId: change.offerId }),
           updatedAt: now,
         })
@@ -308,7 +309,7 @@ export async function updatePlan(
         startTime: cleanTime(item.time),
         title: cleanText(item.title, PLAN_LIMITS.titleChars),
         note: cleanNote(item.note),
-        placeId: item.placeId ?? null,
+        recordId: item.placeId ?? null,
         offerId: item.offerId ?? null,
         createdAt: now,
         updatedAt: now,

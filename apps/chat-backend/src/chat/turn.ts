@@ -270,7 +270,7 @@ async function recordMetrics(
     model: CHAT_MODEL_ID,
     startedAt: turn.startedAt,
     wallMs: Math.round(performance.now() - turn.t0),
-    mcpMs: Math.round(turn.turnTools.ms),
+    toolMs: Math.round(turn.turnTools.ms),
     transport: turn.turnTools.transport,
     inputTokens: result.usage.input,
     outputTokens: result.usage.output,

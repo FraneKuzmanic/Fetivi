@@ -218,19 +218,19 @@ describe('confirming drafts', () => {
     expect(findField(r.json().import.items, 'check_in_time')?.status).toBe('confirmed');
 
     // The unit overrides the checkout time: the confirm writes the unit, with the edited value.
-    await patch(t.app, `/api/host/units/${ids.unitId}`, { checkoutTime: '09:00' }, hostCookie);
+    await patch(t.app, `/api/host/units/${ids.unitId}`, { checkOutTime: '09:00' }, hostCookie);
     items = (await importWith(ids.unitId)).json().import.items;
     const checkout = findField(items, 'checkout_time');
     expect(
-      (await confirm(ids.unitId, checkout?.id ?? '', { values: { checkoutTime: '10:30' } }))
+      (await confirm(ids.unitId, checkout?.id ?? '', { values: { checkOutTime: '10:30' } }))
         .statusCode,
     ).toBe(200);
     const unit = await unitOf(ids.unitId);
-    expect(unit.checkoutTime).toBe('10:30');
-    expect(unit.propertyValues.checkoutTime).toBeNull();
+    expect(unit.checkOutTime).toBe('10:30');
+    expect(unit.propertyValues.checkOutTime).toBeNull();
 
     const again = await confirm(ids.unitId, checkout?.id ?? '', {
-      values: { checkoutTime: '10:30' },
+      values: { checkOutTime: '10:30' },
     });
     expect([again.statusCode, again.json()]).toEqual([409, { error: 'draft-resolved' }]);
   });
@@ -242,7 +242,7 @@ describe('confirming drafts', () => {
     const r = await confirm(ids.unitId, checkIn?.id ?? '', { values: { checkInTime: '3 pm' } });
     expect(r.statusCode).toBe(400);
     const wrongColumn = await confirm(ids.unitId, checkIn?.id ?? '', {
-      values: { checkoutTime: '10:00' },
+      values: { checkOutTime: '10:00' },
     });
     expect(wrongColumn.statusCode).toBe(400);
     const now = (await get(t.app, base(ids.unitId), hostCookie)).json().import.items as Items;
@@ -354,7 +354,7 @@ describe('confirming drafts', () => {
       .select()
       .from(fieldTexts)
       .where(eq(fieldTexts.propertyId, ids.propertyId));
-    expect(texts.map((r) => [r.kind, r.amenity, r.source]).sort()).toEqual([
+    expect(texts.map((r) => [r.kind, r.amenity, r.sourceText]).sort()).toEqual([
       ['amenity_note', 'ac', 'In the living room and in the bedroom.'],
       ['parking_notes', null, 'In July and August come before 18:00 to find a place.'],
     ]);
@@ -400,7 +400,7 @@ describe('confirming drafts', () => {
     await confirm(ids.unitId, checkIn?.id ?? '', { values: checkIn?.values });
     const extraction = emptyExtraction();
     extraction.fields.checkInTime = '15:00';
-    extraction.fields.checkoutTime = '11:00';
+    extraction.fields.checkOutTime = '11:00';
     const second = (await importWith(ids.unitId, extraction)).json().import;
     expect(second.id).not.toBe(first.id);
     // The confirmed check-in equals the saved value now, so only the checkout is proposed.

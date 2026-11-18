@@ -67,7 +67,12 @@ beforeAll(async () => {
   const sleepy = await seedProvider(db);
   await db.update(providers).set({ active: false }).where(eq(providers.id, sleepy.id));
   const base = { availabilityMode: 'on_request' as const, orderKind: 'booking' as const };
-  await offer('A boat', { ...base, providerId: provider.id, destinationId: destA, placeId });
+  await offer('A boat', {
+    ...base,
+    providerId: provider.id,
+    destinationId: destA,
+    recordId: placeId,
+  });
   await offer('B boat', { ...base, providerId: provider.id, destinationId: destB });
   await offer('Own bike', { ...base, hostId: guest.hostId, category: 'rental' });
   await offer('Other host bike', { ...base, hostId: otherHost.hostId });
@@ -78,7 +83,12 @@ beforeAll(async () => {
     destinationId: destA,
   });
   await db.update(offers).set({ active: false }).where(eq(offers.id, inactive));
-  await offer('Sleepy', { ...base, providerId: sleepy.id, destinationId: destA, placeId });
+  await offer('Sleepy', {
+    ...base,
+    providerId: sleepy.id,
+    destinationId: destA,
+    recordId: placeId,
+  });
 });
 
 afterAll(async () => {
@@ -154,7 +164,7 @@ describe('a Provider hidden by the host (38)', () => {
       ...base,
       providerId: hidden.id,
       destinationId: destA,
-      placeId,
+      recordId: placeId,
     });
     await db.insert(hostHiddenProviders).values({ hostId: guest.hostId, providerId: hidden.id });
 

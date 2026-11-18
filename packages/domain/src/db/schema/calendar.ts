@@ -59,7 +59,7 @@ export const calendarEvents = pgTable(
     uid: text('uid').notNull(),
     /** Civil dates in the property's zone; DTEND is exclusive, so it is the checkout date. */
     checkIn: date('check_in', { mode: 'string' }).notNull(),
-    checkout: date('checkout', { mode: 'string' }).notNull(),
+    checkOut: date('check_out', { mode: 'string' }).notNull(),
     /** SUMMARY only, truncated. Never DESCRIPTION (Airbnb puts phone digits there). */
     summary: text('summary'),
     status: calendarEventStatus('status').notNull().default('pending'),
@@ -76,7 +76,7 @@ export const calendarEvents = pgTable(
   (t) => [
     unique('calendar_events_feed_uid_unique').on(t.feedId, t.uid),
     index('calendar_events_stay_idx').on(t.stayId),
-    check('calendar_events_dates_check', sql`${t.checkout} > ${t.checkIn}`),
+    check('calendar_events_dates_check', sql`${t.checkOut} > ${t.checkIn}`),
     check(
       'calendar_events_dismissed_check',
       sql`(${t.status} = 'dismissed') = (${t.dismissedAt} is not null)`,

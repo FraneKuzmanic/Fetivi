@@ -117,7 +117,7 @@ describe('field translation on save', () => {
       .select()
       .from(fieldTexts)
       .where(eq(fieldTexts.id, unitTexts[0]?.id ?? ''));
-    expect(row).toMatchObject({ unitId, propertyId: null, source: 'Tišina.' });
+    expect(row).toMatchObject({ unitId, propertyId: null, sourceText: 'Tišina.' });
     const property = (await get(t.app, `/api/host/properties/${propertyId}`, hostA)).json();
     expect(property.fieldTranslations).toHaveLength(1);
     expect(property.fieldTranslations[0].id).not.toBe(unitTexts[0]?.id);

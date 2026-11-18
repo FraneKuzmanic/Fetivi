@@ -184,7 +184,7 @@ async function orderView(db: Db, id: string, now: Date) {
       zone: properties.timezone,
       destinationZone: destinations.timezone,
       stayFrom: stays.checkIn,
-      stayTo: stays.checkout,
+      stayTo: stays.checkOut,
     })
     .from(orders)
     .innerJoin(orderProposals, eq(orderProposals.id, orders.currentProposalId))

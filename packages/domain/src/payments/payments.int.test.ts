@@ -95,7 +95,10 @@ async function onlineOffer(
   const provider = await seedProvider(testDb.db, { commissionBp: 1250 });
   await testDb.db
     .update(providers)
-    .set({ stripeAccountId: 'acct_test', stripeCardPayments: options.card ?? 'active' })
+    .set({
+      stripeAccountId: `acct_test_${provider.id}`,
+      stripeCardPayments: options.card ?? 'active',
+    })
     .where(eq(providers.id, provider.id));
   const mode = options.availabilityMode ?? 'allotment';
   const offer = await seedOrderableOffer(testDb.db, {
@@ -106,7 +109,7 @@ async function onlineOffer(
     priceMinor: 2500,
     capacity: 2,
     startsAt: mode === 'allotment' ? SLOT_AT : undefined,
-    contactFields: 'name',
+    contactRequirement: 'name',
   });
   await publishOffer(testDb.db, offer.offerId);
   return { offerId: offer.offerId, slotId: offer.slotId as string };
@@ -222,7 +225,7 @@ describe('the payment job: happy path', () => {
     const [create] = w.gateway.calls;
     expect(create).toMatchObject({
       op: 'create_session',
-      account: 'acct_test',
+      account: expect.stringMatching(/^acct_test_/),
       idempotencyKey: `order:${order.id}:proposal:1:create_session:${unix(HOLD_UNTIL)}`,
       params: {
         clientReferenceId: attempt.id,
@@ -660,7 +663,7 @@ describe("a host's own pay-online Offer (38)", () => {
       priceMinor: 2500,
       capacity: 2,
       startsAt: SLOT_AT,
-      contactFields: 'name',
+      contactRequirement: 'name',
     });
     await publishOffer(testDb.db, offer.offerId);
     const slotId = offer.slotId as string;
@@ -770,7 +773,7 @@ describe('disconnecting a host account', () => {
       priceMinor: 2500,
       capacity: 2,
       startsAt: SLOT_AT,
-      contactFields: 'name',
+      contactRequirement: 'name',
     });
     await publishOffer(testDb.db, offer.offerId);
     const hostScope = {

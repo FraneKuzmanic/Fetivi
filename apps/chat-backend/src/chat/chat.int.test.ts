@@ -195,8 +195,8 @@ describe('POST /api/chat', () => {
       cacheReadTokens: 180,
       cacheWriteTokens: 0,
     });
-    expect(metrics[0]?.mcpMs).toBeGreaterThan(0);
-    expect(metrics[0]?.wallMs).toBeGreaterThanOrEqual(metrics[0]?.mcpMs ?? 0);
+    expect(metrics[0]?.toolMs).toBeGreaterThan(0);
+    expect(metrics[0]?.wallMs).toBeGreaterThanOrEqual(metrics[0]?.toolMs ?? 0);
     expect(metrics[0]?.transport).toBe('mcp');
   });
 

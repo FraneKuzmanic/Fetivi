@@ -5,7 +5,7 @@ import { checkOfferCombination, offerCreateFields, offerFields } from '../provid
 // needs a destination) and no live mode (a booking-engine deal, 37). The owner comes from the
 // session, never the body.
 
-const NOT_FOR_HOSTS = { placeId: true, adapterKind: true, externalProductRef: true } as const;
+const NOT_FOR_HOSTS = { recordId: true, adapterKind: true, externalProductRef: true } as const;
 
 const HostAvailabilityMode = z.enum(['allotment', 'on_request']);
 

@@ -13,12 +13,12 @@ import {
 import { catalogRecords, placeCategory } from './catalog';
 import { sourceLanguage, translationError, translationStatus } from './info-blocks';
 import { properties, wgs84Point } from './properties';
-import { guestLanguage, translationOrigin } from './translations';
+import { language, translationOrigin } from './translations';
 
 /**
  * A host's local knowledge about one property's area (40, architecture §4.2). A row with
- * catalog_record_id is a Host pick; a row with name/place_category/location is a Host-added
- * place. A host-added place whose suggestion the admin approved gets catalog_record_id too, and
+ * record_id is a Host pick; a row with name/place_category/location is a Host-added
+ * place. A host-added place whose suggestion the admin approved gets record_id too, and
  * reads as a pick once that record is published.
  */
 export const hostPlaces = pgTable(
@@ -28,7 +28,7 @@ export const hostPlaces = pgTable(
     propertyId: uuid('property_id')
       .notNull()
       .references(() => properties.id, { onDelete: 'cascade' }),
-    catalogRecordId: uuid('catalog_record_id').references(() => catalogRecords.id, {
+    recordId: uuid('record_id').references(() => catalogRecords.id, {
       onDelete: 'cascade',
     }),
     name: text('name'),
@@ -49,11 +49,11 @@ export const hostPlaces = pgTable(
   },
   (t) => [
     index('host_places_property_idx').on(t.propertyId),
-    uniqueIndex('host_places_property_record_uq').on(t.propertyId, t.catalogRecordId),
+    uniqueIndex('host_places_property_record_uq').on(t.propertyId, t.recordId),
     index('host_places_location_gist').using('gist', t.location),
     check(
       'host_places_shape_check',
-      sql`${t.catalogRecordId} is not null or (${t.name} is not null and ${t.placeCategory} is not null and ${t.location} is not null and ${t.note} is not null)`,
+      sql`${t.recordId} is not null or (${t.name} is not null and ${t.placeCategory} is not null and ${t.location} is not null and ${t.note} is not null)`,
     ),
     check(
       'host_places_published_revision_check',
@@ -70,7 +70,7 @@ export const hostPlaceTranslations = pgTable(
       .notNull()
       .references(() => hostPlaces.id, { onDelete: 'cascade' }),
     revision: integer('revision').notNull(),
-    language: guestLanguage('language').notNull(),
+    language: language('language').notNull(),
     /** The added place's name; '' on a pick (its title is the catalog record's). */
     name: text('name').notNull(),
     note: text('note').notNull(),

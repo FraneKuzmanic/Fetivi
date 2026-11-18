@@ -9,7 +9,7 @@ import { ImportPage } from './ImportPage';
 
 const CORE = {
   checkInTime: null,
-  checkoutTime: null,
+  checkOutTime: null,
   checkInMethod: null,
   accessInstructions: null,
   parkingType: null,
@@ -49,7 +49,7 @@ const UNIT = {
 
 const PROPERTY = {
   ...CORE,
-  checkoutTime: '11:00',
+  checkOutTime: '11:00',
   id: 'p1',
   name: 'Apartman Mare',
   addressLine: null,
@@ -86,7 +86,7 @@ const ITEMS: ManualDraftItem[] = [
     status: 'pending',
     kind: 'field',
     fieldId: 'checkout_time',
-    values: { checkoutTime: '10:00' },
+    values: { checkOutTime: '10:00' },
   },
   {
     id: 'd3',
@@ -257,7 +257,7 @@ describe('ImportPage', () => {
     const input = rowOf('Checkout by').querySelector('.picker.time input') as HTMLInputElement;
     await type(input, '10:30');
     await click(buttonIn(rowOf('Checkout by'), 'Confirm'));
-    expect(posts.at(-1)?.body).toEqual({ values: { checkoutTime: '10:30' } });
+    expect(posts.at(-1)?.body).toEqual({ values: { checkOutTime: '10:30' } });
   });
 
   it('places unmapped text as a block in a chosen section', async () => {

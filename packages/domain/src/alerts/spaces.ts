@@ -123,7 +123,7 @@ async function offerLines(db: Executor, ids: string[]): Promise<Map<string, stri
   const rows = await db
     .select({ id: offers.id, lines: catalogRecords.ferryLines })
     .from(offers)
-    .innerJoin(catalogRecords, eq(catalogRecords.id, offers.placeId))
+    .innerJoin(catalogRecords, eq(catalogRecords.id, offers.recordId))
     .where(inArray(offers.id, [...new Set(ids)]));
   return new Map(rows.map((r) => [r.id, r.lines]));
 }

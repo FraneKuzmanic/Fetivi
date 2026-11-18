@@ -80,7 +80,7 @@ describe('wizard status', () => {
 
   it('resumes at the next step once arrival is saved, keeping the values', async () => {
     const { propertyId, unitId } = await newUnit();
-    const { checkoutTime, hostPhone, ...arrival } = GO_LIVE_PROPERTY;
+    const { checkOutTime, hostPhone, ...arrival } = GO_LIVE_PROPERTY;
     await patch(t.app, `/api/host/properties/${propertyId}`, arrival, hostCookie);
     const status = (await wizard(unitId)).json();
     expect(status.resumeStep).toBe('wifi_essentials');

@@ -230,7 +230,7 @@ type Draft = Pick<
   | 'currency'
   | 'priceUnit'
   | 'paymentMode'
-  | 'contactFields'
+  | 'contactRequirement'
   | 'active'
 > & {
   availabilityMode: HostAvailabilityMode;
@@ -258,7 +258,7 @@ const draftOf = (o: Offer): Draft => ({
   responseHoursTo: o.responseHoursTo,
   freeCancelHoursBefore: o.freeCancelHoursBefore,
   refundPercentAfter: o.refundPercentAfter,
-  contactFields: o.contactFields,
+  contactRequirement: o.contactRequirement,
   active: o.active,
 });
 
@@ -541,15 +541,15 @@ export function ServicePage() {
 
         <Section
           title={t('services.guestDetails')}
-          onSave={save(['contactFields'], { contactFields: draft.contactFields })}
+          onSave={save(['contactRequirement'], { contactRequirement: draft.contactRequirement })}
         >
           <SelectField
             label={t('services.youReceive')}
             hint={t('services.youReceiveHint')}
-            value={draft.contactFields}
+            value={draft.contactRequirement}
             options={CONTACT_FIELDS}
             labels={labels.contactFields}
-            onChange={(c) => c && set('contactFields')(c)}
+            onChange={(c) => c && set('contactRequirement')(c)}
           />
         </Section>
 

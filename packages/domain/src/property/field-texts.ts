@@ -101,7 +101,7 @@ async function lockOwnedText(
 
 /**
  * The one write rule: brings the field text of (owner, kind, amenity) in line with `value`.
- * Runs in the transaction that writes the column, so `source` and the column cannot drift.
+ * Runs in the transaction that writes the column, so `source_text` and the column cannot drift.
  * Returns whether a job was enqueued.
  */
 async function upsertFieldText(
@@ -122,7 +122,7 @@ async function upsertFieldText(
   if (!row) {
     const [inserted] = await tx
       .insert(fieldTexts)
-      .values({ ...owner, kind, amenity, source: value, createdAt: now, updatedAt: now })
+      .values({ ...owner, kind, amenity, sourceText: value, createdAt: now, updatedAt: now })
       .onConflictDoNothing()
       .returning();
     if (inserted) {
@@ -133,11 +133,11 @@ async function upsertFieldText(
     row = await lockOwnedText(tx, owner, kind, amenity);
     if (!row) return false;
   }
-  if (row.source === value) return false;
+  if (row.sourceText === value) return false;
   const [updated] = await tx
     .update(fieldTexts)
     .set({
-      source: value,
+      sourceText: value,
       revision: row.revision + 1,
       translationStatus: 'pending',
       translationError: null,
@@ -237,7 +237,7 @@ export async function runFieldTextTranslation(
   const need = GUEST_LANGUAGES.filter((l) => !have.has(l));
 
   // The field label is sent as the title so the prompt keeps its shape; only the body is stored.
-  const source: BlockText = { title: titleOf(row), body: row.source };
+  const source: BlockText = { title: titleOf(row), body: row.sourceText };
   // The model call runs outside any transaction.
   const result = await collectTranslations(model, source, need, row.sourceLanguage);
   if (!result.ok) return markFailed(deps, row, result.error);
@@ -248,7 +248,7 @@ export async function runFieldTextTranslation(
     if (!current || current.revision !== revision) return 'discarded';
     const now = deps.now();
     if (sourceLanguage !== null && sourceLanguage !== 'other') {
-      const values = { text: row.source, origin: 'source' as const, updatedAt: now };
+      const values = { text: row.sourceText, origin: 'source' as const, updatedAt: now };
       await tx
         .insert(fieldTextTranslations)
         .values({ fieldTextId, revision, language: sourceLanguage, ...values, createdAt: now })

@@ -89,7 +89,7 @@ async function paidOrder(percent = 30) {
   const provider = await seedProvider(t.db, { commissionBp: 1000 });
   await t.db
     .update(providers)
-    .set({ stripeAccountId: 'acct_test', stripeCardPayments: 'active' })
+    .set({ stripeAccountId: `acct_test_${provider.id}`, stripeCardPayments: 'active' })
     .where(eq(providers.id, provider.id));
   const day = new Date(Date.parse(`${guest.stay.checkIn}T00:00:00Z`) + 86_400_000)
     .toISOString()
@@ -333,14 +333,14 @@ describe("recording the Provider's phoned answer", () => {
     expect(res.json().status).toBe('declined');
 
     const { orderId, proposalId, stay } = await pendingOrder();
-    const terms = { proposalId, note: 'Phoned: 18:00 works', date: stay.checkout, time: '18:00' };
+    const terms = { proposalId, note: 'Phoned: 18:00 works', date: stay.checkOut, time: '18:00' };
     const proposed = await post(t.app, path(orderId, '/propose'), terms, adminCookie);
     expect(proposed.statusCode).toBe(200);
     expect(proposed.json()).toMatchObject({
       status: 'awaiting_confirmation',
       proposer: 'admin',
       version: 2,
-      date: stay.checkout,
+      date: stay.checkOut,
     });
   });
 
@@ -355,7 +355,7 @@ describe("recording the Provider's phoned answer", () => {
     const outside = { proposalId, note: 'x', date: '2030-01-01' };
     const outsideRes = await post(t.app, path(orderId, '/propose'), outside, adminCookie);
     expect(outsideRes.statusCode).toBe(400);
-    expect(stay.checkout < outside.date).toBe(true);
+    expect(stay.checkOut < outside.date).toBe(true);
     const stale = {
       proposalId: '00000000-0000-4000-8000-000000000000',
       note: 'Phoned: yes',

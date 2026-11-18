@@ -32,7 +32,7 @@ export interface WizardValues {
   location: boolean;
   buildingDoorCode: string | null;
   checkInTime: string | null;
-  checkoutTime: string | null;
+  checkOutTime: string | null;
   checkInMethod: CheckInMethod | null;
   accessInstructions: string | null;
   parkingType: ParkingType | null;
@@ -195,7 +195,7 @@ const FIELDS = [
     id: 'checkout_time',
     step: 'house_rules_checkout',
     kind: 'core',
-    columns: ['checkoutTime'],
+    columns: ['checkOutTime'],
     level: 'required',
   },
   {

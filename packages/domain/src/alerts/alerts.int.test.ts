@@ -82,7 +82,7 @@ async function book(spaceId: string, day: string, placeId: string) {
     startsAt: fromLocalDateTime(`${day}T09:00`, ZONE),
     capacity: 10,
     title: 'Hvar boat trip',
-    placeId,
+    recordId: placeId,
   });
   await publishOffer(db, boat.offerId);
   const deps = { db, queue: noopQueue, now: () => NOW };
@@ -111,8 +111,8 @@ describe('listAlertSpaces', () => {
     const open = await seedGuestUnit(db, { now: NOW, nights: 3 });
     const day1 = open.stay.checkIn;
     const day2 = plusDays(day1, 1);
-    await suggest(open.spaceId, day1, { title: 'Bol day', startTime: '08:00', placeId: bol });
-    await suggest(open.spaceId, day1, { title: 'Krka day', placeId: krka });
+    await suggest(open.spaceId, day1, { title: 'Bol day', startTime: '08:00', recordId: bol });
+    await suggest(open.spaceId, day1, { title: 'Krka day', recordId: krka });
     const { orderId, offerId } = await book(open.spaceId, day2, hvar);
     // A suggestion that points at the same Offer reaches the line through the Offer's place.
     await suggest(open.spaceId, day2, { title: 'Boat again', startTime: '15:00', offerId });

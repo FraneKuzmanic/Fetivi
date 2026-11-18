@@ -435,6 +435,13 @@
       "when": 1794942184162,
       "tag": "0061_llm_key_setting",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1795010562751,
+      "tag": "0062_schema_naming_cleanup",
+      "breakpoints": true
     }
   ]
 }

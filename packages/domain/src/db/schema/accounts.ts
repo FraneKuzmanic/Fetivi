@@ -1,5 +1,5 @@
 import { index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { guestLanguage, providerCardStatus } from './enums';
+import { language, providerCardStatus } from './enums';
 
 export const accountRole = pgEnum('account_role', ['host', 'admin']);
 
@@ -15,7 +15,7 @@ export const accounts = pgTable('accounts', {
    * The back-office language: UI, setup wizard (ticket 20), host emails and the target of
    * Host-message translation (ticket 53).
    */
-  uiLanguage: guestLanguage('ui_language').notNull().default('en'),
+  uiLanguage: language('ui_language').notNull().default('en'),
   /**
    * When the person last chose `uiLanguage`. Null = never chosen; `uiLanguage` then holds the
    * browser default from the last sign-up or login.

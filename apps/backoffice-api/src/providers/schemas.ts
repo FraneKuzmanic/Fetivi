@@ -50,7 +50,7 @@ const hhmm = z.string().regex(HHMM);
 
 /** Offer fields without defaults; the create adds them. Host Offers (38) reuse them. */
 export const offerFields = {
-  placeId: z.uuid().nullable(),
+  recordId: z.uuid().nullable(),
   title: line(LIMITS.title),
   description: markdown,
   cancellationPolicy: markdown,
@@ -68,7 +68,7 @@ export const offerFields = {
   responseWindowMinutes: z.number().int().min(1),
   responseHoursFrom: hhmm,
   responseHoursTo: hhmm,
-  contactFields: z.enum(CONTACT_FIELDS),
+  contactRequirement: z.enum(CONTACT_FIELDS),
   adapterKind: z.enum(ADAPTER_KINDS).nullable(),
   externalProductRef: optionalLine(OFFER_LIMITS.externalRef),
   active: z.boolean(),
@@ -77,7 +77,7 @@ export const offerFields = {
 /** The Offer fields with the create's defaults, without the owner and destination. */
 export const offerCreateFields = {
   ...offerFields,
-  placeId: offerFields.placeId.default(null),
+  recordId: offerFields.recordId.default(null),
   currency: offerFields.currency.default(OFFER_DEFAULTS.currency),
   priceUnit: offerFields.priceUnit.default(OFFER_DEFAULTS.priceUnit),
   freeCancelHoursBefore: offerFields.freeCancelHoursBefore.default(
@@ -89,7 +89,7 @@ export const offerCreateFields = {
   ),
   responseHoursFrom: hhmm.default(OFFER_DEFAULTS.responseHoursFrom),
   responseHoursTo: hhmm.default(OFFER_DEFAULTS.responseHoursTo),
-  contactFields: offerFields.contactFields.default(OFFER_DEFAULTS.contactFields),
+  contactRequirement: offerFields.contactRequirement.default(OFFER_DEFAULTS.contactRequirement),
   adapterKind: offerFields.adapterKind.default(null),
   externalProductRef: offerFields.externalProductRef.default(null),
   active: offerFields.active.default(true),

@@ -60,7 +60,7 @@ export const OFFER_DEFAULTS = {
   responseHoursTo: '21:00',
   freeCancelHoursBefore: 24,
   refundPercentAfter: 0,
-  contactFields: 'name',
+  contactRequirement: 'name',
 } as const;
 
 export const OFFER_LIMITS = {

@@ -343,8 +343,8 @@ async function createFromSuggestion(
     // place deleted meanwhile is a no-op; the record is still created.
     await db
       .update(hostPlaces)
-      .set({ catalogRecordId: record.id, updatedAt: now })
-      .where(and(eq(hostPlaces.id, payload.hostPlaceId), isNull(hostPlaces.catalogRecordId)));
+      .set({ recordId: record.id, updatedAt: now })
+      .where(and(eq(hostPlaces.id, payload.hostPlaceId), isNull(hostPlaces.recordId)));
   }
   return record.id;
 }

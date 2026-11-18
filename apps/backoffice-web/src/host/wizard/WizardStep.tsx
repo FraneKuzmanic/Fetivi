@@ -205,7 +205,7 @@ export function WizardStep({
         );
       case 'check_in_time':
       case 'checkout_time': {
-        const key = field.id === 'check_in_time' ? 'checkInTime' : 'checkoutTime';
+        const key = field.id === 'check_in_time' ? 'checkInTime' : 'checkOutTime';
         return <TimeField label={label} hideLabel value={draft[key]} onChange={set(key)} />;
       }
       case 'check_in_method':

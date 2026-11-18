@@ -16,7 +16,7 @@ function emptyValues(): WizardValues {
     location: false,
     buildingDoorCode: null,
     checkInTime: null,
-    checkoutTime: null,
+    checkOutTime: null,
     checkInMethod: null,
     accessInstructions: null,
     parkingType: null,

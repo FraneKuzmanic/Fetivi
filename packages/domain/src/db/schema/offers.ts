@@ -28,13 +28,13 @@ import { accounts } from './accounts';
 import { catalogRecords, destinations } from './catalog';
 import { providerCardStatus } from './enums';
 import { sourceLanguage, translationError, translationStatus } from './info-blocks';
-import { guestLanguage, translationOrigin } from './translations';
+import { language, translationOrigin } from './translations';
 
 export const orderKind = pgEnum('order_kind', ORDER_KINDS);
 export const offerCategory = pgEnum('offer_category', OFFER_CATEGORIES);
 export const availabilityMode = pgEnum('availability_mode', AVAILABILITY_MODES);
 export const paymentMode = pgEnum('payment_mode', PAYMENT_MODES);
-export const contactFields = pgEnum('contact_fields', CONTACT_FIELDS);
+export const contactRequirement = pgEnum('contact_requirement', CONTACT_FIELDS);
 export const priceUnit = pgEnum('price_unit', PRICE_UNITS);
 export const adapterKind = pgEnum('adapter_kind', ADAPTER_KINDS);
 export const providerLanguage = pgEnum('provider_language', PROVIDER_LANGUAGES);
@@ -57,7 +57,7 @@ export const providers = pgTable(
     /** Free text, visible to the admin only. */
     dealNotes: text('deal_notes'),
     /** The Stripe connected account (Accounts v2, merchant), created by the admin's onboarding link. */
-    stripeAccountId: text('stripe_account_id'),
+    stripeAccountId: text('stripe_account_id').unique(),
     /** The account's card payments capability as last read from Stripe; null when never onboarded. */
     stripeCardPayments: providerCardStatus('stripe_card_payments'),
     stripeCheckedAt: timestamp('stripe_checked_at', { withTimezone: true }),
@@ -82,7 +82,7 @@ export const offers = pgTable(
       onDelete: 'restrict',
     }),
     /** A catalog place in the same destination (checked by the store). */
-    placeId: uuid('place_id').references(() => catalogRecords.id, { onDelete: 'set null' }),
+    recordId: uuid('record_id').references(() => catalogRecords.id, { onDelete: 'set null' }),
     title: text('title').notNull(),
     /** Markdown, in the admin's source language. */
     description: text('description').notNull(),
@@ -106,7 +106,7 @@ export const offers = pgTable(
     /** Wall-clock times in the destination's zone (the property's for host Offers). */
     responseHoursFrom: time('response_hours_from').notNull().default('08:00'),
     responseHoursTo: time('response_hours_to').notNull().default('21:00'),
-    contactFields: contactFields('contact_fields').notNull().default('name'),
+    contactRequirement: contactRequirement('contact_requirement').notNull().default('name'),
     /** Live mode only. */
     adapterKind: adapterKind('adapter_kind'),
     /** The product id in the adapter's system; live mode only. */
@@ -170,7 +170,7 @@ export const offerTranslations = pgTable(
       .notNull()
       .references(() => offers.id, { onDelete: 'cascade' }),
     revision: integer('revision').notNull(),
-    language: guestLanguage('language').notNull(),
+    language: language('language').notNull(),
     title: text('title').notNull(),
     /** Markdown: the description. */
     body: text('body').notNull(),

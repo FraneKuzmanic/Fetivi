@@ -47,7 +47,7 @@ function factsQuery(db: Executor) {
       unitName: units.name,
       propertyName: properties.name,
       checkIn: stays.checkIn,
-      checkout: stays.checkout,
+      checkout: stays.checkOut,
       reason: handoffMessages.reason,
       urgency: handoffMessages.urgency,
       readAt: handoffMessages.readAt,

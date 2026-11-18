@@ -10,7 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { catalogTranslations } from './catalog';
 import { hostPlaceTranslations } from './host-places';
-import { guestLanguage } from './translations';
+import { language } from './translations';
 
 /** A search vector of one published catalog translation (title + body), per embedding model. */
 export const catalogEmbeddings = pgTable(
@@ -18,7 +18,7 @@ export const catalogEmbeddings = pgTable(
   {
     recordId: uuid('record_id').notNull(),
     revision: integer('revision').notNull(),
-    language: guestLanguage('language').notNull(),
+    language: language('language').notNull(),
     /** The embedding model id, e.g. 'voyage-4'; a vector from another model is never compared. */
     model: text('model').notNull(),
     vector: real('vector').array().notNull(),
@@ -44,7 +44,7 @@ export const hostPlaceEmbeddings = pgTable(
   {
     hostPlaceId: uuid('host_place_id').notNull(),
     revision: integer('revision').notNull(),
-    language: guestLanguage('language').notNull(),
+    language: language('language').notNull(),
     /** The embedding model id, e.g. 'voyage-4'; a vector from another model is never compared. */
     model: text('model').notNull(),
     vector: real('vector').array().notNull(),

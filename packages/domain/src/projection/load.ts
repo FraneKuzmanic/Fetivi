@@ -28,7 +28,7 @@ export async function loadGuestProjection(
     .select({
       unitId: stays.unitId,
       checkIn: stays.checkIn,
-      checkout: stays.checkout,
+      checkOut: stays.checkOut,
       partySize: stays.partySize,
       arrivalReleaseAt: stays.arrivalReleaseAt,
     })
@@ -118,7 +118,7 @@ async function loadFieldTexts(
     owner: r.propertyId ? 'property' : 'unit',
     kind: r.kind,
     amenity: r.amenity,
-    source: r.source,
+    source: r.sourceText,
     revision: r.revision,
     translations: translations.filter((t) => t.fieldTextId === r.id),
   }));

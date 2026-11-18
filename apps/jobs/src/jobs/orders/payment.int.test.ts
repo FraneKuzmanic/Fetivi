@@ -46,7 +46,7 @@ afterAll(async () => {
 async function placeOnlineOrder() {
   const provider = await seedProvider(testDb.db, { commissionBp: 1250 });
   await testDb.pool.query(
-    `update providers set stripe_account_id = 'acct_jobs', stripe_card_payments = 'active' where id = $1`,
+    `update providers set stripe_account_id = 'acct_jobs_' || id, stripe_card_payments = 'active' where id = $1`,
     [provider.id],
   );
   const { offerId, slotId } = await seedOrderableOffer(testDb.db, {

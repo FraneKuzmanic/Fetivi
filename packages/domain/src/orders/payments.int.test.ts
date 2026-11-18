@@ -72,7 +72,7 @@ async function onlineOffer(
   await testDb.db
     .update(providers)
     .set({
-      stripeAccountId: provider.account === undefined ? 'acct_test' : provider.account,
+      stripeAccountId: provider.account === undefined ? `acct_test_${seeded.id}` : provider.account,
       stripeCardPayments: provider.card === undefined ? 'active' : provider.card,
     })
     .where(eq(providers.id, seeded.id));
@@ -149,7 +149,7 @@ describe('pay-online createOrder', () => {
     expect(order.paymentStatus).toBe('none');
     expect(attempt).toMatchObject({
       proposalVersion: 1,
-      stripeAccountId: 'acct_test',
+      stripeAccountId: expect.stringMatching(/^acct_test_/),
       amountMinor: 5000,
       currency: 'EUR',
       applicationFeeMinor: 625,
@@ -297,7 +297,7 @@ describe('pay-online on request', () => {
     const seeded = await seedProvider(testDb.db, { commissionBp: 1250 });
     await testDb.db
       .update(providers)
-      .set({ stripeAccountId: 'acct_test', stripeCardPayments: 'active' })
+      .set({ stripeAccountId: `acct_test_${seeded.id}`, stripeCardPayments: 'active' })
       .where(eq(providers.id, seeded.id));
     const { offerId } = await seedOrderableOffer(testDb.db, {
       providerId: seeded.id,

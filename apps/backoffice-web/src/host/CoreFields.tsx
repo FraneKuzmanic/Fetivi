@@ -16,7 +16,7 @@ export const CORE_SECTIONS: { id: string; title: string; fields: readonly CoreKe
     get title() {
       return i18next.t('host:core.arrival');
     },
-    fields: ['checkInTime', 'checkoutTime', 'checkInMethod', 'accessInstructions'],
+    fields: ['checkInTime', 'checkOutTime', 'checkInMethod', 'accessInstructions'],
   },
   {
     id: 'house-rules',
@@ -64,7 +64,7 @@ export const CORE_SECTION_ICONS: Record<string, Icon> = {
   licence: IdentificationCard,
 };
 
-const TIMES = new Set<CoreKey>(['checkInTime', 'checkoutTime', 'quietHoursFrom', 'quietHoursTo']);
+const TIMES = new Set<CoreKey>(['checkInTime', 'checkOutTime', 'quietHoursFrom', 'quietHoursTo']);
 const BOOLEANS = new Set<CoreKey>(['petsAllowed', 'smokingAllowed', 'partiesAllowed']);
 const LONG_TEXT = new Set<CoreKey>(['accessInstructions', 'parkingNotes', 'houseRulesNotes']);
 const PHONES = new Set<CoreKey>(['hostPhone', 'emergencyContactPhone']);

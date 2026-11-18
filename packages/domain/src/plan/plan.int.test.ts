@@ -131,7 +131,7 @@ describe('getPlan', () => {
     const { seed, ctx } = await newSpace();
     const plan = await getPlan(testDb.db, ctx, NOW);
     expect(plan.checkIn).toBe(seed.stay.checkIn);
-    expect(plan.checkout).toBe(seed.stay.checkout);
+    expect(plan.checkout).toBe(seed.stay.checkOut);
     expect(plan.days.map((d) => d.date)).toEqual(
       [0, 1, 2, 3].map((i) => plusDays(seed.stay.checkIn, i)),
     );
@@ -242,7 +242,7 @@ describe('updatePlan', () => {
   it('rejects an item for a date outside the Stay, and stores nothing of that call', async () => {
     const { seed, ctx } = await newSpace();
     const db = testDb.db;
-    for (const date of [plusDays(seed.stay.checkIn, -1), plusDays(seed.stay.checkout, 1)]) {
+    for (const date of [plusDays(seed.stay.checkIn, -1), plusDays(seed.stay.checkOut, 1)]) {
       expect(
         await codeOf(() =>
           updatePlan(

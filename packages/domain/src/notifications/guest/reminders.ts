@@ -58,7 +58,7 @@ export async function dueStayNotices(db: Executor, now: Date): Promise<GuestNoti
     .select({
       spaceId: spaces.id,
       createdAt: spaces.createdAt,
-      checkout: stays.checkout,
+      checkout: stays.checkOut,
       zone: properties.timezone,
     })
     .from(spaces)
@@ -67,8 +67,8 @@ export async function dueStayNotices(db: Executor, now: Date): Promise<GuestNoti
     .innerJoin(properties, eq(properties.id, units.propertyId))
     .where(
       and(
-        gte(stays.checkout, sql`${today.minus({ days: 1 }).toISODate()}::date`),
-        lte(stays.checkout, sql`${today.plus({ days: 2 }).toISODate()}::date`),
+        gte(stays.checkOut, sql`${today.minus({ days: 1 }).toISODate()}::date`),
+        lte(stays.checkOut, sql`${today.plus({ days: 2 }).toISODate()}::date`),
         gt(spaces.closedAt, now),
         eq(stays.possiblyCancelled, false),
       ),

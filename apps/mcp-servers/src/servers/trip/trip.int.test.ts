@@ -200,7 +200,7 @@ describe('plan tools', () => {
     ]);
     const read = planOf(await call(token, 'get_plan'));
     expect(read.days[0]?.date).toBe(day);
-    expect(read.days.at(-1)?.date).toBe(a.stay.checkout);
+    expect(read.days.at(-1)?.date).toBe(a.stay.checkOut);
     expect(read.days[0]?.items.map((i) => i.title)).toEqual(['Morning swim']);
     expect(planOf(await call(token, 'get_plan', { date: day })).days).toHaveLength(1);
   });
@@ -229,7 +229,7 @@ describe('plan tools', () => {
     const result = await call(token, 'update_plan', {
       add: [
         { date: a.stay.checkIn, title: 'Fine' },
-        { date: plusDays(a.stay.checkout, 1), title: 'After checkout' },
+        { date: plusDays(a.stay.checkOut, 1), title: 'After checkout' },
       ],
     });
     expect(result.isError).toBe(true);

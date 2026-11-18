@@ -3,10 +3,10 @@ import { inheritField, sectionBody } from './patch';
 
 describe('sectionBody', () => {
   it('sends only the section fields and keeps null', () => {
-    const draft = { checkInTime: '16:00', checkoutTime: null, name: 'Apartment 1' };
-    expect(sectionBody(draft, ['checkInTime', 'checkoutTime'])).toEqual({
+    const draft = { checkInTime: '16:00', checkOutTime: null, name: 'Apartment 1' };
+    expect(sectionBody(draft, ['checkInTime', 'checkOutTime'])).toEqual({
       checkInTime: '16:00',
-      checkoutTime: null,
+      checkOutTime: null,
     });
   });
 });

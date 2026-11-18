@@ -103,11 +103,11 @@ export async function offerDetail(
   provider: ProviderRow | null,
   destination: DestinationRow,
 ) {
-  const [place] = offer.placeId
+  const [place] = offer.recordId
     ? await db
         .select({ id: catalogRecords.id, title: catalogRecords.title })
         .from(catalogRecords)
-        .where(eq(catalogRecords.id, offer.placeId))
+        .where(eq(catalogRecords.id, offer.recordId))
     : [];
   return {
     ...offerSummaryOut(offer, destination),
@@ -115,14 +115,14 @@ export async function offerDetail(
     timezone: destination.timezone,
     description: offer.description,
     cancellationPolicy: offer.cancellationPolicy,
-    placeId: offer.placeId,
+    recordId: offer.recordId,
     place: place ?? null,
     freeCancelHoursBefore: offer.freeCancelHoursBefore,
     refundPercentAfter: offer.refundPercentAfter,
     responseWindowMinutes: offer.responseWindowMinutes,
     responseHoursFrom: offer.responseHoursFrom.slice(0, 5),
     responseHoursTo: offer.responseHoursTo.slice(0, 5),
-    contactFields: offer.contactFields,
+    contactRequirement: offer.contactRequirement,
     adapterKind: offer.adapterKind,
     externalProductRef: offer.externalProductRef,
     createdAt: offer.createdAt.toISOString(),

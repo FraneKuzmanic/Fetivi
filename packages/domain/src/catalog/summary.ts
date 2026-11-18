@@ -24,7 +24,7 @@ export async function loadOrigin(db: Executor, scope: CatalogScope): Promise<Ori
       location: properties.location,
       propertyId: units.propertyId,
       checkIn: stays.checkIn,
-      checkout: stays.checkout,
+      checkout: stays.checkOut,
       zone: destinations.timezone,
     })
     .from(stays)

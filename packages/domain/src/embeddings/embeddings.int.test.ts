@@ -133,7 +133,7 @@ describe('publishing enqueues embedding', () => {
     const record = await addRecord();
     const [pick] = await testDb.db
       .insert(hostPlaces)
-      .values({ propertyId, catalogRecordId: record.id, note: 'Go early.' })
+      .values({ propertyId, recordId: record.id, note: 'Go early.' })
       .returning();
     if (!pick) throw new Error('no pick');
     expect(
@@ -268,7 +268,7 @@ describe('runHostPlaceEmbedding', () => {
     const record = await addRecord();
     const [pick] = await testDb.db
       .insert(hostPlaces)
-      .values({ propertyId, catalogRecordId: record.id, note: 'Go early.' })
+      .values({ propertyId, recordId: record.id, note: 'Go early.' })
       .returning();
     if (!pick) throw new Error('no pick');
     await publishHostPlace(testDb.db, pick.id);

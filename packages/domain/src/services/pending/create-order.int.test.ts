@@ -54,7 +54,7 @@ const scope = (g: SeededGuestUnit = guest): GuestOfferScope => ({
 const ctx = (g: SeededGuestUnit = guest) => ({ spaceId: g.spaceId, offerScope: scope(g) });
 
 async function allotment(
-  options: { startsAt?: Date; capacity?: number; contactFields?: 'name' | 'phone' } = {},
+  options: { startsAt?: Date; capacity?: number; contactRequirement?: 'name' | 'phone' } = {},
 ) {
   const provider = await seedProvider(testDb.db);
   const seeded = await seedOrderableOffer(testDb.db, {
@@ -63,7 +63,7 @@ async function allotment(
     availabilityMode: 'allotment',
     startsAt: options.startsAt ?? AT_09,
     capacity: options.capacity ?? 4,
-    contactFields: options.contactFields ?? 'name',
+    contactRequirement: options.contactRequirement ?? 'name',
   });
   await publishOffer(testDb.db, seeded.offerId);
   return { offerId: seeded.offerId, slotId: seeded.slotId as string };
@@ -484,7 +484,7 @@ describe('completeOrder', () => {
   });
 
   it('a missing configured contact field is refused without consuming', async () => {
-    const { pendingId } = await prepared({ contactFields: 'phone' });
+    const { pendingId } = await prepared({ contactRequirement: 'phone' });
     const code = await codeOf(
       completeOrder(deps(), {
         pendingId,
@@ -599,7 +599,7 @@ describe('guest details, warnings and requests free until accepted', () => {
       ...(provider ? { providerId: provider.id, destinationId } : { hostId: guest.hostId }),
       availabilityMode: 'on_request',
       category: options.category ?? 'transfer',
-      contactFields: 'name',
+      contactRequirement: 'name',
       ...(options.orderKind ? { orderKind: options.orderKind } : {}),
     });
     await publishOffer(testDb.db, offerId);

@@ -10,7 +10,7 @@ export function emptyValues(): WizardValues {
     location: false,
     buildingDoorCode: null,
     checkInTime: null,
-    checkoutTime: null,
+    checkOutTime: null,
     checkInMethod: null,
     accessInstructions: null,
     parkingType: null,
@@ -45,7 +45,7 @@ export const MINIMUM: Partial<WizardValues> = {
   checkInTime: '15:00:00',
   checkInMethod: 'lockbox',
   accessInstructions: 'Key box left of the gate.',
-  checkoutTime: '10:00:00',
+  checkOutTime: '10:00:00',
   noWifi: true,
   hostPhone: '+385 91 000 0000',
 };

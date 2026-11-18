@@ -158,7 +158,7 @@ describe('field text translation', () => {
     await sync(queue, owner, 'Prva verzija.');
     await sync(queue, owner, 'Druga verzija.');
     const row = await only(owner);
-    expect(row).toMatchObject({ revision: 2, source: 'Druga verzija.' });
+    expect(row).toMatchObject({ revision: 2, sourceText: 'Druga verzija.' });
     expect(queue.jobs.map((j) => j.data)).toEqual([
       { fieldTextId: row.id, revision: 1 },
       { fieldTextId: row.id, revision: 2 },
@@ -187,7 +187,7 @@ describe('field text translation', () => {
     expect(await translationsOf(row.id)).toHaveLength(7);
     await sync(queue, owner, 'Novi tekst.');
     expect(await only(owner)).toMatchObject({
-      source: 'Novi tekst.',
+      sourceText: 'Novi tekst.',
       revision: 2,
       translationStatus: 'pending',
       sourceLanguage: null,
@@ -304,11 +304,11 @@ describe('field text translation', () => {
     expect(await backfillFieldTexts(testDb.db, queue, new Date())).toBeGreaterThanOrEqual(2);
     expect(await only({ propertyId })).toMatchObject({
       kind: 'parking_notes',
-      source: 'Parking iza zgrade.',
+      sourceText: 'Parking iza zgrade.',
     });
     expect(await only({ unitId })).toMatchObject({
       kind: 'access_instructions',
-      source: secrets.accessInstructions,
+      sourceText: secrets.accessInstructions,
     });
     const again = recordingQueue();
     expect(await backfillFieldTexts(testDb.db, again, new Date())).toBe(0);

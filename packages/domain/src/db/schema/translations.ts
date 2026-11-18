@@ -9,10 +9,10 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { TRANSLATION_ORIGINS } from '../../property/vocabulary';
-import { guestLanguage } from './enums';
+import { language } from './enums';
 import { infoBlocks } from './info-blocks';
 
-export { guestLanguage };
+export { language };
 export const translationOrigin = pgEnum('translation_origin', TRANSLATION_ORIGINS);
 
 /** One guest language's title and body of an Info block, for one source revision. */
@@ -23,7 +23,7 @@ export const blockTranslations = pgTable(
       .notNull()
       .references(() => infoBlocks.id, { onDelete: 'cascade' }),
     revision: integer('revision').notNull(),
-    language: guestLanguage('language').notNull(),
+    language: language('language').notNull(),
     title: text('title').notNull(),
     /** Markdown. */
     body: text('body').notNull(),

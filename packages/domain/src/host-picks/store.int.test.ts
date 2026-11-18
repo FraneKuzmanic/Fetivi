@@ -126,7 +126,7 @@ describe('host picks', () => {
       now,
     );
     expect(row).toMatchObject({
-      catalogRecordId: record.trip,
+      recordId: record.trip,
       note: null,
       publishedRevision: 1,
       translationStatus: 'published',

@@ -276,7 +276,7 @@ async function seeded() {
     availabilityMode: 'allotment',
     startsAt,
     capacity: 40,
-    contactFields: 'name_and_phone',
+    contactRequirement: 'name_and_phone',
   });
   await publishOffer(db, boat.offerId);
   const foreign = await seedOrderableOffer(db, {

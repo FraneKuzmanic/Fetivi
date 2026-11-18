@@ -97,12 +97,12 @@ describe('fieldTarget', () => {
 
 describe('fieldPatches', () => {
   it('patches only changed columns of the step, split by target', () => {
-    const detail = unit({ checkoutTime: '11:00' });
-    const loaded = loadedValues(detail, property({ checkoutTime: '10:00' }));
-    expect(loaded.checkoutTime).toBe('11:00');
-    const draft = { ...loaded, checkoutTime: '09:30', petsAllowed: false, checkInTime: '15:00' };
+    const detail = unit({ checkOutTime: '11:00' });
+    const loaded = loadedValues(detail, property({ checkOutTime: '10:00' }));
+    expect(loaded.checkOutTime).toBe('11:00');
+    const draft = { ...loaded, checkOutTime: '09:30', petsAllowed: false, checkInTime: '15:00' };
     expect(fieldPatches('house_rules_checkout', all, draft, loaded, detail)).toEqual({
-      unit: { checkoutTime: '09:30' },
+      unit: { checkOutTime: '09:30' },
       property: { petsAllowed: false },
     });
   });

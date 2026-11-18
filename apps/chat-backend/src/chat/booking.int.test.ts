@@ -120,7 +120,7 @@ async function setup(transport: ToolTransport) {
     availabilityMode: 'allotment',
     startsAt: fromLocalDateTime(`${day}T09:00`, ZONE),
     capacity: 40,
-    contactFields: 'name_and_phone',
+    contactRequirement: 'name_and_phone',
     title: 'Blue Lagoon boat trip',
     category: 'boat_trip',
   });

@@ -59,8 +59,8 @@ const columns = {
   priceMinor: offers.priceMinor,
   currency: offers.currency,
   priceUnit: offers.priceUnit,
-  contactFields: offers.contactFields,
-  placeId: offers.placeId,
+  contactFields: offers.contactRequirement,
+  placeId: offers.recordId,
   providerId: offers.providerId,
   freeCancelHoursBefore: offers.freeCancelHoursBefore,
   refundPercentAfter: offers.refundPercentAfter,
@@ -103,7 +103,7 @@ export async function listGuestOffers(
   if (filter.placeId !== undefined && !UUID.test(filter.placeId)) return [];
   const rows = await selectGuestOffers(db, scope, [
     filter.category ? eq(offers.category, filter.category) : undefined,
-    filter.placeId ? eq(offers.placeId, filter.placeId) : undefined,
+    filter.placeId ? eq(offers.recordId, filter.placeId) : undefined,
   ]).orderBy(asc(offerTranslations.title), asc(offers.id));
   return rows.map(guestOfferOf);
 }
@@ -128,10 +128,10 @@ export async function offerIdsByPlace(
   const byPlace = new Map<string, string[]>();
   if (placeIds.length === 0) return byPlace;
   const rows = await db
-    .select({ id: offers.id, placeId: offers.placeId })
+    .select({ id: offers.id, placeId: offers.recordId })
     .from(offers)
     .leftJoin(providers, eq(providers.id, offers.providerId))
-    .where(and(visibleOfferCondition(scope), inArray(offers.placeId, placeIds)))
+    .where(and(visibleOfferCondition(scope), inArray(offers.recordId, placeIds)))
     .orderBy(asc(offers.id));
   for (const r of rows) {
     if (!r.placeId) continue;

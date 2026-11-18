@@ -1,9 +1,11 @@
 import { pgEnum, pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { BUDGETS, INTERESTS, PACES, PARTY_SHAPES, TRANSPORTS } from '../../about-me/vocabulary';
+import { BUDGETS, PACES, PARTY_SHAPES, TRANSPORTS } from '../../about-me/vocabulary';
+import { aboutMeInterest } from './enums';
 import { spaces } from './spaces';
 
+export { aboutMeInterest };
+
 export const aboutMeParty = pgEnum('about_me_party', PARTY_SHAPES);
-export const aboutMeInterest = pgEnum('about_me_interest', INTERESTS);
 export const aboutMePace = pgEnum('about_me_pace', PACES);
 export const aboutMeBudget = pgEnum('about_me_budget', BUDGETS);
 export const aboutMeTransport = pgEnum('about_me_transport', TRANSPORTS);

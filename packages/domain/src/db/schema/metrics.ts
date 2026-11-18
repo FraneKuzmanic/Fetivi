@@ -30,7 +30,7 @@ export const turnMetrics = pgTable(
      * Time inside the tool transport: MCP connect, tools/list, resources/read and tools/call, or
      * the in-process tool calls and projection read.
      */
-    mcpMs: integer('mcp_ms').notNull(),
+    toolMs: integer('tool_ms').notNull(),
     /** Which tool transport ran the turn: MCP (V1) or in-process domain calls (V0). */
     transport: toolTransport('transport').notNull().default('mcp'),
     inputTokens: integer('input_tokens').notNull(),

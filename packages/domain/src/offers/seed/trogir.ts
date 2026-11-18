@@ -63,7 +63,7 @@ export async function seedTrogirServices(
       priceUnit: 'person',
       freeCancelHoursBefore: 24,
       refundPercentAfter: 0,
-      contactFields: 'name_and_phone',
+      contactRequirement: 'name_and_phone',
     },
     now,
   );
@@ -98,7 +98,7 @@ export async function seedTrogirServices(
       priceUnit: 'group',
       freeCancelHoursBefore: 48,
       refundPercentAfter: 50,
-      contactFields: 'name',
+      contactRequirement: 'name',
     },
     now,
   );

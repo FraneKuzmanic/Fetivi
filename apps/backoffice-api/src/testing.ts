@@ -212,7 +212,7 @@ export const GO_LIVE_PROPERTY = {
   addressLine: 'Obala 1',
   city: 'Trogir',
   checkInTime: '15:00',
-  checkoutTime: '10:00',
+  checkOutTime: '10:00',
   checkInMethod: 'lockbox',
   accessInstructions: 'The key box is left of the blue gate.',
   hostPhone: '+385 91 000 0000',

@@ -128,7 +128,7 @@ export async function unitAnswerStats(
       .select({
         stayId: stays.id,
         checkIn: stays.checkIn,
-        checkout: stays.checkout,
+        checkout: stays.checkOut,
         bookerName: stays.bookerName,
         conversations: n(sql`coalesce(${perStay.conversations}, 0)`),
         answers: n(sql`coalesce(${perStay.answers}, 0)`),

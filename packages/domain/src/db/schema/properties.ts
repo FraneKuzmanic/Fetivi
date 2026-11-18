@@ -44,7 +44,7 @@ export const sharedCoreColumns = () => ({
   /** Earliest check-in. */
   checkInTime: time('check_in_time'),
   /** Latest checkout. */
-  checkoutTime: time('checkout_time'),
+  checkOutTime: time('check_out_time'),
   checkInMethod: checkInMethod('check_in_method'),
   accessInstructions: text('access_instructions'),
   parkingType: parkingType('parking_type'),

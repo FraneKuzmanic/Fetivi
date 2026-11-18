@@ -195,7 +195,7 @@ describe('calendar sync with fixture feeds', () => {
     const moved = airbnbFile([{ uid: 'k', checkIn: '2026-10-25', checkout: '2026-10-29' }]);
     await poll(s, s.airbnb.id, moved);
     const after = await stayRow(stay.id);
-    expect(after).toMatchObject({ checkIn: '2026-10-25', checkout: '2026-10-29', pin: stay.pin });
+    expect(after).toMatchObject({ checkIn: '2026-10-25', checkOut: '2026-10-29', pin: stay.pin });
     const notify = s.queue.jobs.filter((j) => j.name === 'stay-notify');
     expect(notify).toEqual([
       {
@@ -225,7 +225,7 @@ describe('calendar sync with fixture feeds', () => {
     );
     expect(await stayRow(stay.id)).toMatchObject({
       checkIn: '2026-10-25',
-      checkout: '2026-10-29',
+      checkOut: '2026-10-29',
       pin: stay.pin,
       possiblyCancelled: false,
     });

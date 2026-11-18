@@ -263,7 +263,7 @@ describe('runRetention', () => {
       model: 'm',
       startedAt: SEED,
       wallMs: 1,
-      mcpMs: 1,
+      toolMs: 1,
       inputTokens: 1,
       outputTokens: 1,
       cacheReadTokens: 0,

@@ -25,12 +25,12 @@ export async function hostPicksFor(
   if (recordIds.length === 0) return new Map();
   const rows = await db
     .select({
-      recordId: hostPlaces.catalogRecordId,
+      recordId: hostPlaces.recordId,
       note: hostPlaceTranslations.note,
       repeats: sql<boolean>`${hostPlaces.note} = ${catalogRecords.description}`,
     })
     .from(hostPlaces)
-    .innerJoin(catalogRecords, eq(catalogRecords.id, hostPlaces.catalogRecordId))
+    .innerJoin(catalogRecords, eq(catalogRecords.id, hostPlaces.recordId))
     .leftJoin(
       hostPlaceTranslations,
       and(
@@ -40,10 +40,7 @@ export async function hostPicksFor(
       ),
     )
     .where(
-      and(
-        eq(hostPlaces.propertyId, scope.propertyId),
-        inArray(hostPlaces.catalogRecordId, recordIds),
-      ),
+      and(eq(hostPlaces.propertyId, scope.propertyId), inArray(hostPlaces.recordId, recordIds)),
     );
   return new Map(
     rows.flatMap((r) =>
@@ -55,7 +52,7 @@ export async function hostPicksFor(
 /** The record a promoted host place links to is visible to this guest (search.ts's visibleIn). */
 const recordVisible = (scope: CatalogScope) =>
   sql`exists (select 1 from catalog_records r
-      where r.id = "host_places"."catalog_record_id"
+      where r.id = "host_places"."record_id"
         and r.destination_id = ${scope.destinationId}
         and r.published_revision is not null
         and r.kind in ('place', 'day_trip'))`;
@@ -69,7 +66,7 @@ const addedVisibleTo = (scope: CatalogScope) =>
     sql`exists (select 1 from destinations d
         where d.id = ${scope.destinationId}
           and ST_DWithin("host_places"."location"::geography, d.centre::geography, d.radius_m))`,
-    sql`(${hostPlaces.catalogRecordId} is null or not ${recordVisible(scope)})`,
+    sql`(${hostPlaces.recordId} is null or not ${recordVisible(scope)})`,
   );
 
 const addedJoin = (scope: CatalogScope) =>
@@ -194,12 +191,12 @@ export async function visiblePickIds(
   scope: CatalogScope,
 ): Promise<{ recordId: string; createdAt: Date }[]> {
   const rows = await db
-    .select({ recordId: hostPlaces.catalogRecordId, createdAt: hostPlaces.createdAt })
+    .select({ recordId: hostPlaces.recordId, createdAt: hostPlaces.createdAt })
     .from(hostPlaces)
     .where(
       and(
         eq(hostPlaces.propertyId, scope.propertyId),
-        isNotNull(hostPlaces.catalogRecordId),
+        isNotNull(hostPlaces.recordId),
         recordVisible(scope),
       ),
     )

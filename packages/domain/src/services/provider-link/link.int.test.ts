@@ -71,7 +71,7 @@ async function confirmedOrder(guestNote?: string) {
     availabilityMode: 'allotment',
     capacity: 4,
     startsAt: SLOT_AT,
-    contactFields: 'name',
+    contactRequirement: 'name',
   });
   if (!slotId) throw new Error('no slot');
   const { order } = await createOrder(deps(), {
@@ -316,7 +316,7 @@ describe('an on-request Order waiting for the Provider', () => {
       actions: ['accept', 'suggest_time', 'decline'],
       respondBy: '2027-05-01T12:30',
       stayFrom: unit.stay.checkIn,
-      stayTo: unit.stay.checkout,
+      stayTo: unit.stay.checkOut,
       currency: 'EUR',
       needsPrice: false,
     });

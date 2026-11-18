@@ -65,7 +65,7 @@ export const latLng = z
 
 const coreFields = {
   checkInTime: hhmm,
-  checkoutTime: hhmm,
+  checkOutTime: hhmm,
   checkInMethod: z.enum(CHECK_IN_METHODS).nullable(),
   accessInstructions: optionalText(LIMITS.longText),
   parkingType: z.enum(PARKING_TYPES).nullable(),

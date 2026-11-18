@@ -71,7 +71,7 @@ async function confirmedOrder(
     availabilityMode: 'allotment',
     capacity: 4,
     startsAt: SLOT_AT,
-    contactFields: 'name',
+    contactRequirement: 'name',
   });
   if (!slotId) throw new Error('no slot');
   const { order } = await createOrder(orderDeps(), {
@@ -327,7 +327,7 @@ async function pendingOrder() {
   const { offerId } = await seedOrderableOffer(testDb.db, {
     providerId: provider.id,
     availabilityMode: 'on_request',
-    contactFields: 'name',
+    contactRequirement: 'name',
   });
   const { order } = await createOrder(orderDeps(), {
     spaceId: unit.spaceId,

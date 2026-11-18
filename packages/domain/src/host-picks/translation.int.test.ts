@@ -150,7 +150,7 @@ describe('runHostPlaceTranslation', () => {
   it("sends a pick's record title for shape only and stores an empty name", async () => {
     const [pick] = await testDb.db
       .insert(hostPlaces)
-      .values({ propertyId, catalogRecordId: recordId, note: 'Dođite rano ujutro.' })
+      .values({ propertyId, recordId: recordId, note: 'Dođite rano ujutro.' })
       .returning();
     if (!pick) throw new Error('no pick');
     const model = scripted(output(good));

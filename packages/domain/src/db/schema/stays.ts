@@ -11,7 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { units } from './properties';
-import { guestLanguage } from './translations';
+import { language } from './translations';
 
 // A Stay links to the CalendarEvents that proposed it through `calendar_events.stay_id`
 // (ticket 22); a manually registered Stay has none, so there is no column here.
@@ -24,7 +24,7 @@ export const stays = pgTable(
       .references(() => units.id, { onDelete: 'cascade' }),
     /** Civil dates in the property's zone. */
     checkIn: date('check_in', { mode: 'string' }).notNull(),
-    checkout: date('checkout', { mode: 'string' }).notNull(),
+    checkOut: date('check_out', { mode: 'string' }).notNull(),
     partySize: smallint('party_size').notNull(),
     /** Host-only; never in any guest projection. */
     bookerName: text('booker_name'),
@@ -40,14 +40,14 @@ export const stays = pgTable(
     /** The host's "PIN sent" tick. */
     pinSentAt: timestamp('pin_sent_at', { withTimezone: true }),
     /** The language the host picked for the hand-over message. */
-    handoverLanguage: guestLanguage('handover_language').notNull().default('en'),
+    handoverLanguage: language('handover_language').notNull().default('en'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index('stays_unit_active_idx').on(t.unitId, t.activeUntil),
     check('stays_pin_check', sql`${t.pin} ~ '^[0-9]{6}$'`),
-    check('stays_dates_check', sql`${t.checkout} > ${t.checkIn}`),
+    check('stays_dates_check', sql`${t.checkOut} > ${t.checkIn}`),
     check('stays_party_check', sql`${t.partySize} between 1 and 50`),
   ],
 );

@@ -55,7 +55,7 @@ chat.turn                                    fetivi-chat-backend
 └─ pg.query …                                storing the turn and its metric row
 ```
 
-The client `tools/call` span minus the server `tools/call` span is the MCP transport overhead for that call: serialization, HTTP and token checks. `turn_metrics.mcp_ms` stays the per-turn aggregate; the trace gives the per-call breakdown.
+The client `tools/call` span minus the server `tools/call` span is the MCP transport overhead for that call: serialization, HTTP and token checks. `turn_metrics.tool_ms` stays the per-turn aggregate; the trace gives the per-call breakdown.
 
 ## Privacy
 

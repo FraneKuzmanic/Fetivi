@@ -69,7 +69,7 @@ async function onRequest(
   if (options.online) {
     await testDb.db
       .update(providers)
-      .set({ stripeAccountId: 'acct_test', stripeCardPayments: 'active' })
+      .set({ stripeAccountId: `acct_test_${provider.id}`, stripeCardPayments: 'active' })
       .where(eq(providers.id, provider.id));
   }
   const { offerId } = await seedOrderableOffer(testDb.db, {
@@ -77,7 +77,7 @@ async function onRequest(
     availabilityMode: 'on_request',
     paymentMode: options.online ? 'online' : 'direct',
     orderKind: options.orderKind,
-    contactFields: 'name',
+    contactRequirement: 'name',
   });
   await publishOffer(testDb.db, offerId);
   return offerId;

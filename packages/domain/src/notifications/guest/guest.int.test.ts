@@ -571,7 +571,7 @@ describe('deliverGuestNotification: Stay notices', () => {
       feedId: feed.id,
       uid: `uid-${g.stayId}`,
       checkIn: g.stay.checkIn,
-      checkout: g.stay.checkout,
+      checkOut: g.stay.checkOut,
       status: 'confirmed',
       stayId: g.stayId,
       firstSeenAt: NOW,

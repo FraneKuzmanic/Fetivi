@@ -116,7 +116,7 @@ async function dayTrip(title: string, ferryLines: string[], now: Date) {
 
 async function plan(spaceId: string, date: string, title: string, placeId: string, now: Date) {
   await testDb.pool.query(
-    `insert into plan_items (space_id, date, title, place_id, created_at, updated_at)
+    `insert into plan_items (space_id, date, title, record_id, created_at, updated_at)
      values ($1, $2, $3, $4, $5, $5)`,
     [spaceId, date, title, placeId, now],
   );

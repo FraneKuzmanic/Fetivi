@@ -55,11 +55,11 @@ export function providerOrderQuery(db: Executor) {
       proposal: orderProposals,
       offer: {
         title: offers.title,
-        contactFields: offers.contactFields,
+        contactFields: offers.contactRequirement,
         orderKind: offers.orderKind,
         currency: offers.currency,
       },
-      stay: { checkIn: stays.checkIn, checkout: stays.checkout },
+      stay: { checkIn: stays.checkIn, checkout: stays.checkOut },
       provider: { name: providers.name, email: providers.email, language: providers.language },
       destinationZone: destinations.timezone,
       propertyZone: properties.timezone,

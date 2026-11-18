@@ -68,7 +68,7 @@ export const ManualExtraction = z.strictObject({
     postalCode: text,
     buildingDoorCode: text,
     checkInTime: text,
-    checkoutTime: text,
+    checkOutTime: text,
     checkInMethod: z.enum(CHECK_IN_METHODS).nullable(),
     accessInstructions: text,
     parkingType: z.enum(PARKING_TYPES).nullable(),

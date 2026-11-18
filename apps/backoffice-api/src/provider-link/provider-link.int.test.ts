@@ -55,7 +55,7 @@ async function confirmedOrder(options: { title?: string } = {}) {
     availabilityMode: 'allotment',
     capacity: 4,
     startsAt: SLOT_AT,
-    contactFields: 'name',
+    contactRequirement: 'name',
   });
   if (!slotId) throw new Error('no slot');
   if (options.title) {
@@ -304,7 +304,7 @@ async function pendingOrder(orderKind: 'booking' | 'request' = 'booking') {
     providerId: provider.id,
     availabilityMode: 'on_request',
     orderKind,
-    contactFields: 'name',
+    contactRequirement: 'name',
   });
   const { order } = await createOrder(orderDeps(), {
     spaceId: unit.spaceId,

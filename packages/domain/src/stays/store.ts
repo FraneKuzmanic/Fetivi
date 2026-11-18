@@ -139,7 +139,7 @@ export async function registerStay(
         .values({
           unitId,
           checkIn: input.checkIn,
-          checkout: input.checkout,
+          checkOut: input.checkout,
           partySize: input.partySize,
           bookerName: input.bookerName ?? null,
           reservationNumber: input.reservationNumber ?? null,
@@ -182,7 +182,7 @@ export async function updateStay(
       if (!isActive(stay, now)) throw new StayRuleError('stay-ended');
       const dates = {
         checkIn: changes.checkIn ?? stay.checkIn,
-        checkout: changes.checkout ?? stay.checkout,
+        checkout: changes.checkout ?? stay.checkOut,
       };
       assertStayDates(dates, ctx.timezone, now);
       const pinSentAt =
@@ -194,7 +194,8 @@ export async function updateStay(
       const [row] = await tx
         .update(stays)
         .set({
-          ...dates,
+          checkIn: dates.checkIn,
+          checkOut: dates.checkout,
           ...(changes.partySize !== undefined && { partySize: changes.partySize }),
           ...(changes.bookerName !== undefined && { bookerName: changes.bookerName }),
           ...(changes.reservationNumber !== undefined && {
@@ -233,7 +234,7 @@ export async function refreshStayTimes(
     .select({
       id: stays.id,
       checkIn: stays.checkIn,
-      checkout: stays.checkout,
+      checkout: stays.checkOut,
       releaseDaysBefore: units.arrivalReleaseDaysBefore,
       timezone: properties.timezone,
     })

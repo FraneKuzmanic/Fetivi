@@ -10,7 +10,7 @@
     "approved": false,
     "timezone": "Europe/Zagreb",
     "checkInTime": null,
-    "checkoutTime": null,
+    "checkOutTime": null,
     "checkInMethod": null,
     "accessInstructions": null,
     "parkingType": null,
@@ -39,7 +39,7 @@
     "updatedAt": "2026-10-28T01:51:37.404Z",
     "propertyValues": {
       "checkInTime": null,
-      "checkoutTime": null,
+      "checkOutTime": null,
       "checkInMethod": null,
       "accessInstructions": null,
       "parkingType": null,
@@ -62,7 +62,7 @@
     "hiddenBlockIds": [],
     "effective": {
       "checkInTime": null,
-      "checkoutTime": null,
+      "checkOutTime": null,
       "checkInMethod": null,
       "accessInstructions": null,
       "parkingType": null,
@@ -106,7 +106,7 @@
       "arrivalReleaseDaysBefore": 1,
       "inherited": {
         "checkInTime": true,
-        "checkoutTime": true,
+        "checkOutTime": true,
         "checkInMethod": true,
         "accessInstructions": true,
         "parkingType": true,

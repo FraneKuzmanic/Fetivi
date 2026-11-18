@@ -82,7 +82,7 @@ export const labels: Translation<typeof en> = {
   },
   coreField: {
     checkInTime: 'Prijava od',
-    checkoutTime: 'Odjava do',
+    checkOutTime: 'Odjava do',
     checkInMethod: 'Način prijave',
     accessInstructions: 'Upute za ulaz',
     parkingType: 'Parking',

@@ -43,7 +43,7 @@ async function placeOnlineOrder() {
   const provider = await seedProvider(t.db, { commissionBp: 1250 });
   await t.db
     .update(providers)
-    .set({ stripeAccountId: 'acct_checkout_test', stripeCardPayments: 'active' })
+    .set({ stripeAccountId: `acct_checkout_test_${provider.id}`, stripeCardPayments: 'active' })
     .where(eq(providers.id, provider.id));
   const ctx = await loadSituation(t.db, space.space.id, t.clock.now());
   if (!ctx) throw new Error('no space');

@@ -441,7 +441,7 @@ describe('a host place suggestion from a host-added place (40)', () => {
     return { hostPlaceId: row.id, itemId: item.id };
   };
   const linkOf = async (id: string) =>
-    (await testDb.db.select().from(hostPlaces).where(eq(hostPlaces.id, id)))[0]?.catalogRecordId;
+    (await testDb.db.select().from(hostPlaces).where(eq(hostPlaces.id, id)))[0]?.recordId;
   const searchAs = (g: SeededGuestUnit, query: string, ids: string[]) =>
     searchPlaces(
       testDb.db,

@@ -75,7 +75,7 @@ export type ColumnInput =
 
 const INPUTS: Partial<Record<ManualDraftColumn, ColumnInput>> = {
   checkInTime: 'time',
-  checkoutTime: 'time',
+  checkOutTime: 'time',
   quietHoursFrom: 'time',
   quietHoursTo: 'time',
   checkInMethod: 'enum',

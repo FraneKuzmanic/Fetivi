@@ -47,7 +47,7 @@ function stayOut(row: StayJoin, calendarSources: CalendarSource[], ctx: StayOutC
     propertyName: row.propertyName,
     timezone,
     checkIn: stay.checkIn,
-    checkout: stay.checkout,
+    checkout: stay.checkOut,
     partySize: stay.partySize,
     bookerName: stay.bookerName,
     reservationNumber: stay.reservationNumber,

@@ -10,10 +10,10 @@ The new record starts unpublished. Its translation job publishes it later, and a
 
 ## Decision
 
-- The `host_place_suggestion` payload carries the `hostPlaceId`. `createFromSuggestion` sets that host place's `catalog_record_id` to the new record, inside the approve's apply step (ADR 0017). It only links a row that has no record yet, and a deleted host place is a no-op.
+- The `host_place_suggestion` payload carries the `hostPlaceId`. `createFromSuggestion` sets that host place's `record_id` to the new record, inside the approve's apply step (ADR 0017). It only links a row that has no record yet, and a deleted host place is a no-op.
 - The guest read prefers the record. Once the record is published and visible in the guest's destination, the row reads as a Host pick of it, with the host's note. Until then, the host-added card stays. So guests see exactly one card, with no gap.
 - A Reject keeps the host-only card. Nothing else changes.
-- `host_places.catalog_record_id` cascades on delete. If the admin deletes the record, the linked host place goes with it.
+- `host_places.record_id` cascades on delete. If the admin deletes the record, the linked host place goes with it.
 - The curation item is a snapshot taken when the place is added (`dedupeKey: host-place:<id>`). Later edits by the host do not change it.
 
 ## Rejected

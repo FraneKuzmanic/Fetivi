@@ -69,12 +69,12 @@ afterAll(async () => {
   await testDb?.drop();
 });
 
-async function placeOrder(paymentMode: 'online' | 'direct' = 'online') {
+async function placeOrder(paymentMode: 'online' | 'direct' = 'online', existing?: { id: string }) {
   clock = NOW;
-  const provider = await seedProvider(testDb.db, { commissionBp: 1250 });
+  const provider = existing ?? (await seedProvider(testDb.db, { commissionBp: 1250 }));
   await testDb.db
     .update(providers)
-    .set({ stripeAccountId: 'acct_test', stripeCardPayments: 'active' })
+    .set({ stripeAccountId: `acct_test_${provider.id}`, stripeCardPayments: 'active' })
     .where(eq(providers.id, provider.id));
   const offer = await seedOrderableOffer(testDb.db, {
     providerId: provider.id,
@@ -97,7 +97,12 @@ async function placeOrder(paymentMode: 'online' | 'direct' = 'online') {
     .select()
     .from(paymentAttempts)
     .where(eq(paymentAttempts.orderId, order.id));
-  return { order, attempt, ref: { orderId: order.id, proposalId: order.currentProposalId ?? '' } };
+  return {
+    order,
+    attempt,
+    provider,
+    ref: { orderId: order.id, proposalId: order.currentProposalId ?? '' },
+  };
 }
 
 async function placeOnline() {
@@ -346,11 +351,13 @@ describe('runReconciliation: attempts', () => {
 
 describe('runReconciliation: orphans', () => {
   it('reports a Stripe session with no attempt behind it once, updating it on later runs', async () => {
-    const { attempt } = await placeOnline();
+    const { attempt, provider } = await placeOnline();
+    // Another attempt of the same connected account keeps that account in the orphan scan.
+    await placeOrder('online', provider);
     await runJobs(attempt.id, ['open']);
     const { sessionId } = await attemptOf(attempt.id);
     await testDb.db.delete(paymentAttempts).where(eq(paymentAttempts.id, attempt.id));
-    const subject = `session:acct_test:${sessionId}`;
+    const subject = `session:${attempt.stripeAccountId}:${sessionId}`;
 
     const first = await runReconciliation(rdeps(), { trigger: 'schedule' });
     expect(await findingsFor(first.runId, subject)).toMatchObject([

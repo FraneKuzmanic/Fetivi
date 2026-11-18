@@ -72,7 +72,7 @@ export async function createOffer(
 ): Promise<OfferRow> {
   return withOfferChecks(() =>
     db.transaction(async (tx) => {
-      await assertPlace(tx, values.placeId, values.destinationId);
+      await assertPlace(tx, values.recordId, values.destinationId);
       const [offer] = await tx
         .insert(offers)
         .values({ ...values, createdAt: now, updatedAt: now })
@@ -95,8 +95,8 @@ export async function updateOffer(
   return withOfferChecks(() =>
     db.transaction(async (tx) => {
       const current = await lockOffer(tx, id);
-      if (changes.placeId !== undefined) {
-        await assertPlace(tx, changes.placeId, current.destinationId);
+      if (changes.recordId !== undefined) {
+        await assertPlace(tx, changes.recordId, current.destinationId);
       }
       if (changes.availabilityMode !== undefined && changes.availabilityMode !== 'allotment') {
         const [slot] = await tx

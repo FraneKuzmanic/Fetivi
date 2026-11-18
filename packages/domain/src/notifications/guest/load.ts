@@ -291,7 +291,7 @@ async function loadStayBase(
       closedAt: spaces.closedAt,
       possiblyCancelled: stays.possiblyCancelled,
       // The unit's own checkout time, else the property's (a null unit field inherits).
-      checkoutTime: sql<string | null>`coalesce(${units.checkoutTime}, ${properties.checkoutTime})`,
+      checkoutTime: sql<string | null>`coalesce(${units.checkOutTime}, ${properties.checkOutTime})`,
     })
     .from(spaces)
     .innerJoin(stays, eq(stays.id, spaces.stayId))

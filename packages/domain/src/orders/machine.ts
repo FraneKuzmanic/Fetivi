@@ -160,9 +160,9 @@ async function stayOfOrder(tx: Executor, order: OrderRow) {
 }
 
 /** ISO civil dates compare correctly as strings. */
-function assertWithinStay(date: CivilDate, stay: { checkIn: string; checkout: string }) {
+function assertWithinStay(date: CivilDate, stay: { checkIn: string; checkOut: string }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new OrderRuleError('invalid-input');
-  if (date < stay.checkIn || date > stay.checkout) throw new OrderRuleError('date-outside-stay');
+  if (date < stay.checkIn || date > stay.checkOut) throw new OrderRuleError('date-outside-stay');
 }
 
 /** A slot of `offerId` that starts on `date` in the property's zone. */
@@ -913,10 +913,6 @@ export async function propose(deps: OrderDeps, input: ProposeInput): Promise<Tra
 
     // Order, then attempt: lock the superseded attempt before anything else.
     const old = order.paymentMode === 'online' ? await lockAttempt(tx, proposal.id) : undefined;
-    await tx
-      .update(orderProposals)
-      .set({ supersededAt: now })
-      .where(eq(orderProposals.id, proposal.id));
     await releaseHold(tx, deps, proposal.id);
     const wasAuthorized = order.paymentStatus === 'authorized';
     if (old && wasAuthorized) await enqueuePaymentJob(tx, deps.queue, old, 'void');

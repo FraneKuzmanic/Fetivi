@@ -215,7 +215,7 @@ export async function seedGuestUnit(
       emergencyContactPhone: secrets.emergencyContactPhone,
       licenceNumber: priv.licenceNumber,
       checkInTime: '15:00',
-      checkoutTime: '10:00',
+      checkOutTime: '10:00',
     })
     .returning();
   if (!property) throw new Error('no property');
@@ -409,7 +409,7 @@ export interface SeedOrderableOfferOptions {
   providerId?: string;
   /** Provider Offers only; a fresh destination is seeded when omitted. */
   destinationId?: string;
-  contactFields?: ContactFields;
+  contactRequirement?: ContactFields;
   availabilityMode: AvailabilityMode;
   /** Allotment only: the slot's seats. Default 4. */
   capacity?: number;
@@ -422,7 +422,7 @@ export interface SeedOrderableOfferOptions {
   /** In cents. Default 2500. */
   priceMinor?: number;
   /** A catalog place in the Offer's destination. */
-  placeId?: string;
+  recordId?: string;
   /** Default 'tour'. */
   category?: OfferCategory;
   /** Default 'Kayak tour'. */
@@ -449,8 +449,8 @@ export async function seedOrderableOffer(
       hostId: options.hostId,
       providerId: options.providerId,
       destinationId,
-      contactFields: options.contactFields,
-      placeId: options.placeId,
+      contactRequirement: options.contactRequirement,
+      recordId: options.recordId,
       title: options.title ?? 'Kayak tour',
       description: 'Around the islands.',
       cancellationPolicy: 'Free until 24 hours before.',

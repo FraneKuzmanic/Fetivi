@@ -14,7 +14,7 @@ export type { GuestProjection } from './types';
 
 export interface ProjectionInput {
   unit: EffectiveUnit;
-  stay: Pick<StayRow, 'checkIn' | 'checkout' | 'partySize' | 'arrivalReleaseAt'>;
+  stay: Pick<StayRow, 'checkIn' | 'checkOut' | 'partySize' | 'arrivalReleaseAt'>;
   language: GuestLanguage;
   /** block_translations rows at each block's published revision, any language. */
   translations: Pick<
@@ -121,7 +121,7 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
     },
     stay: {
       checkIn: stay.checkIn,
-      checkout: stay.checkout,
+      checkout: stay.checkOut,
       partySize: stay.partySize,
       arrivalDetailsReleased: released,
       arrivalDetailsHeldBack: heldBack,
@@ -129,7 +129,7 @@ export function guestProjection(input: ProjectionInput): GuestProjection {
     },
     checkInOut: {
       checkInTime: u.checkInTime,
-      checkoutTime: u.checkoutTime,
+      checkoutTime: u.checkOutTime,
       checkInMethod: u.checkInMethod,
     },
     arrival: released ? arrival : null,

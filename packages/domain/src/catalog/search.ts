@@ -706,7 +706,7 @@ export async function searchEvents(
         gt(catalogRecords.endsAt, start.toJSDate()),
         gt(catalogRecords.endsAt, now),
         q.interests
-          ? sql`${catalogRecords.interests} && ${sql.param([...q.interests])}::text[]`
+          ? sql`${catalogRecords.interests} && ${sql.param([...q.interests])}::about_me_interest[]`
           : undefined,
       ),
     )

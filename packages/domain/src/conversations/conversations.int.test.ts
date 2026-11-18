@@ -176,7 +176,7 @@ describe('conversations', () => {
       model: 'm',
       startedAt: NOW,
       wallMs: 1,
-      mcpMs: 1,
+      toolMs: 1,
       inputTokens: 1,
       outputTokens: 1,
       cacheReadTokens: 0,

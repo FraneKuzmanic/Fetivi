@@ -124,7 +124,6 @@ export const orderProposals = pgTable(
     proposer: proposer('proposer').notNull(),
     /** When the guest's confirmation card stops working; null when confirmed at creation. */
     cardExpiresAt: timestamp('card_expires_at', { withTimezone: true }),
-    supersededAt: timestamp('superseded_at', { withTimezone: true }),
     /** When the Provider tapped Got it for these terms. */
     providerAcknowledgedAt: timestamp('provider_acknowledged_at', { withTimezone: true }),
     /** When the Provider's answer is due; set when the proposal is put to the Provider (36). */
@@ -145,7 +144,7 @@ export const orderEvents = pgTable(
     orderId: uuid('order_id')
       .notNull()
       .references(() => orders.id, { onDelete: 'cascade' }),
-    proposalId: uuid('proposal_id'),
+    proposalId: uuid('proposal_id').references(() => orderProposals.id, { onDelete: 'cascade' }),
     /** Null on creation. */
     fromStatus: orderStatus('from_status'),
     toStatus: orderStatus('to_status').notNull(),

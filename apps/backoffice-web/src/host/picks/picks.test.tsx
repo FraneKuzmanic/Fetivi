@@ -51,7 +51,7 @@ const PROPERTY: PropertyDetail = {
   units: [],
   fieldTranslations: [],
   checkInTime: null,
-  checkoutTime: null,
+  checkOutTime: null,
   checkInMethod: null,
   accessInstructions: null,
   parkingType: null,

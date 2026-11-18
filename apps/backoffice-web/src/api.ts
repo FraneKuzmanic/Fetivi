@@ -169,7 +169,7 @@ export interface AuditEntry {
 
 export interface CoreValues {
   checkInTime: string | null;
-  checkoutTime: string | null;
+  checkOutTime: string | null;
   checkInMethod: CheckInMethod | null;
   accessInstructions: string | null;
   parkingType: ParkingType | null;
@@ -1596,7 +1596,7 @@ export interface Offer extends OfferSummary {
   timezone: string;
   description: string;
   cancellationPolicy: string;
-  placeId: string | null;
+  recordId: string | null;
   place: { id: string; title: string } | null;
   freeCancelHoursBefore: number;
   refundPercentAfter: number;
@@ -1604,7 +1604,7 @@ export interface Offer extends OfferSummary {
   /** 'HH:MM'. */
   responseHoursFrom: string;
   responseHoursTo: string;
-  contactFields: ContactFields;
+  contactRequirement: ContactFields;
   adapterKind: AdapterKind | null;
   externalProductRef: string | null;
   createdAt: string;
@@ -1612,7 +1612,7 @@ export interface Offer extends OfferSummary {
 }
 
 export interface OfferFields {
-  placeId: string | null;
+  recordId: string | null;
   title: string;
   description: string;
   cancellationPolicy: string;
@@ -1628,7 +1628,7 @@ export interface OfferFields {
   responseWindowMinutes: number;
   responseHoursFrom: string;
   responseHoursTo: string;
-  contactFields: ContactFields;
+  contactRequirement: ContactFields;
   adapterKind: AdapterKind | null;
   externalProductRef: string | null;
   active: boolean;
@@ -1654,7 +1654,7 @@ export type OfferPatch = Partial<OfferFields>;
 /** A host's own service (38): no place or live mode, and no destination. */
 export type HostOfferFields = Omit<
   OfferFields,
-  'placeId' | 'adapterKind' | 'externalProductRef' | 'availabilityMode'
+  'recordId' | 'adapterKind' | 'externalProductRef' | 'availabilityMode'
 > & { availabilityMode: Exclude<AvailabilityMode, 'live'> };
 
 export type HostOfferInput = Partial<HostOfferFields> &

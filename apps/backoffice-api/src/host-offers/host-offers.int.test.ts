@@ -95,7 +95,7 @@ describe('own Offers', () => {
       provider: null,
       destination: null,
       place: null,
-      placeId: null,
+      recordId: null,
       adapterKind: null,
       timezone: 'Europe/London',
       currency: 'EUR',
@@ -120,7 +120,7 @@ describe('own Offers', () => {
 
   it.each([
     ['live mode', { availabilityMode: 'live' }],
-    ['a place', { placeId: '00000000-0000-4000-8000-000000000000' }],
+    ['a place', { recordId: '00000000-0000-4000-8000-000000000000' }],
     ['a destination', { destinationId: '00000000-0000-4000-8000-000000000000' }],
     ['an adapter', { adapterKind: 'bokun' }],
     ['a commission', { commissionBp: 0 }],
@@ -138,7 +138,7 @@ describe('own Offers', () => {
     expect((await patch(t.app, url, { availabilityMode: 'live' }, hostA.cookie)).statusCode).toBe(
       400,
     );
-    expect((await patch(t.app, url, { placeId: null }, hostA.cookie)).statusCode).toBe(400);
+    expect((await patch(t.app, url, { recordId: null }, hostA.cookie)).statusCode).toBe(400);
   });
 
   it("is 404 for another host on every route, and for the admin's Offer routes", async () => {

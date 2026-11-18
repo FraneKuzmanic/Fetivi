@@ -2,7 +2,7 @@ import { bigint, index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-o
 import { SPACE_TOKEN_PURPOSES } from '../../spaces/vocabulary';
 import { properties } from './properties';
 import { stays } from './stays';
-import { guestLanguage } from './translations';
+import { language } from './translations';
 
 /** One device's private world inside a Stay. */
 export const spaces = pgTable(
@@ -14,7 +14,7 @@ export const spaces = pgTable(
       .references(() => stays.id, { onDelete: 'cascade' }),
     /** Hex SHA-256 of the cookie token; the token itself is never stored. */
     tokenHash: text('token_hash').notNull().unique(),
-    language: guestLanguage('language').notNull(),
+    language: language('language').notNull(),
     /** = stays.active_until, kept in step by the stays store. The PIN and chat stop here. */
     closedAt: timestamp('closed_at', { withTimezone: true }).notNull(),
     /** The one opt-in address (first Order card or the update offer), stored trimmed and lower-case; the latest wins. */

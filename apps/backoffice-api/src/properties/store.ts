@@ -254,7 +254,7 @@ const listUnitAmenities = (db: Executor, unitId: string) =>
 
 // --- Response shapes --------------------------------------------------------------------------
 
-const TIME_FIELDS = new Set(['checkInTime', 'checkoutTime', 'quietHoursFrom', 'quietHoursTo']);
+const TIME_FIELDS = new Set(['checkInTime', 'checkOutTime', 'quietHoursFrom', 'quietHoursTo']);
 
 /** Shared core fields as the API sends them: times as 'HH:MM'. */
 export function coreOut(row: SharedCore): SharedCore {

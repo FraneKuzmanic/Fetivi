@@ -815,8 +815,6 @@ class World {
         currentId = e.proposalId;
       }
       expect(currentId).toBe(order.currentProposalId);
-      const live = proposals.filter((p) => p.orderId === order.id && p.supersededAt === null);
-      expect(live.map((p) => p.id)).toEqual([order.currentProposalId]);
       if (order.paymentMode === 'direct') {
         // 6. Pay-direct keeps Payment status none.
         expect(order.paymentStatus).toBe('none');

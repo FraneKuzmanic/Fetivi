@@ -509,7 +509,7 @@ describe('bookable boost', () => {
       providerId: provider.id,
       destinationId: opts.destinationId ?? dest,
       availabilityMode: 'on_request',
-      placeId,
+      recordId: placeId,
     });
     await publishOffer(testDb.db, offerId);
     return offerId;
@@ -557,7 +557,7 @@ describe('bookable boost', () => {
     const { offerId } = await seedOrderableOffer(testDb.db, {
       hostId: neighbour.hostId,
       availabilityMode: 'on_request',
-      placeId: outsider,
+      recordId: outsider,
     });
     await publishOffer(testDb.db, offerId);
     const results = (await search())?.results ?? [];

@@ -51,7 +51,7 @@ async function askedOrder(guest = unit, title = 'Transfer') {
   const { offerId } = await seedOrderableOffer(testDb.db, {
     hostId: guest.hostId,
     availabilityMode: 'on_request',
-    contactFields: 'name',
+    contactRequirement: 'name',
     title,
   });
   const { order } = await createOrder(deps(), {

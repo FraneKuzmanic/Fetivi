@@ -81,7 +81,7 @@ export function wizardFacts(e: EffectiveUnit): WizardFacts {
       location: e.location !== null,
       buildingDoorCode: e.buildingDoorCode,
       checkInTime: e.checkInTime,
-      checkoutTime: e.checkoutTime,
+      checkOutTime: e.checkOutTime,
       checkInMethod: e.checkInMethod,
       accessInstructions: e.accessInstructions,
       parkingType: e.parkingType,

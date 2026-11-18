@@ -68,7 +68,7 @@ describe.skipIf(!live)('live booking (Sonnet 5.5)', () => {
       title: 'Blue Lagoon boat trip',
       category: 'boat_trip',
       priceMinor: 4500,
-      contactFields: 'name',
+      contactRequirement: 'name',
     });
     await publishOffer(t.db, boat.offerId);
     const { cookie, space } = await enterSpace(t, seed);

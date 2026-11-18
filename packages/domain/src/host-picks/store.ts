@@ -160,7 +160,7 @@ export async function listHostPlaces(db: Executor, propertyId: string): Promise<
       recordCategory: catalogRecords.placeCategory,
     })
     .from(hostPlaces)
-    .leftJoin(catalogRecords, eq(catalogRecords.id, hostPlaces.catalogRecordId))
+    .leftJoin(catalogRecords, eq(catalogRecords.id, hostPlaces.recordId))
     .where(eq(hostPlaces.propertyId, propertyId))
     .orderBy(asc(hostPlaces.createdAt), asc(hostPlaces.id));
   const picks: HostPickView[] = [];
@@ -170,7 +170,7 @@ export async function listHostPlaces(db: Executor, propertyId: string): Promise<
       // The shape CHECK makes a nameless row a pick of an existing record.
       picks.push({
         id: row.id,
-        recordId: row.catalogRecordId as string,
+        recordId: row.recordId as string,
         title: title ?? '',
         kind: kind === 'day_trip' ? 'day_trip' : 'place',
         placeCategory: recordCategory,
@@ -187,7 +187,7 @@ export async function listHostPlaces(db: Executor, propertyId: string): Promise<
         location: { lat: location.y, lng: location.x },
         address: row.address,
         note: row.note as string,
-        inCatalog: row.catalogRecordId !== null,
+        inCatalog: row.recordId !== null,
         translation: translationOf(row),
       });
     }
@@ -217,7 +217,7 @@ export async function browseCatalogPlaces(
       placeCategory: catalogRecords.placeCategory,
       address: catalogRecords.address,
       picked: sql<boolean>`exists (select 1 from host_places h
-          where h.property_id = ${propertyId} and h.catalog_record_id = "catalog_records"."id")`,
+          where h.property_id = ${propertyId} and h.record_id = "catalog_records"."id")`,
     })
     .from(catalogRecords)
     .where(
@@ -306,7 +306,7 @@ export async function createHostPick(
         .insert(hostPlaces)
         .values({
           propertyId,
-          catalogRecordId: record.id,
+          recordId: record.id,
           note: input.note,
           createdAt: now,
           updatedAt: now,

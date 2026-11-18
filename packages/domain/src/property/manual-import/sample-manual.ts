@@ -59,7 +59,7 @@ export function emptyExtraction(): ManualExtractionData {
       postalCode: null,
       buildingDoorCode: null,
       checkInTime: null,
-      checkoutTime: null,
+      checkOutTime: null,
       checkInMethod: null,
       accessInstructions: null,
       parkingType: null,
@@ -103,7 +103,7 @@ export function sampleExtraction(): ManualExtractionData {
       city: 'Trogir',
       postalCode: '21220',
       checkInTime: '15:00',
-      checkoutTime: '10:00',
+      checkOutTime: '10:00',
       checkInMethod: 'keypad',
       accessInstructions:
         'There is no key: the apartment door has a keypad. Find the code in your arrival details.',

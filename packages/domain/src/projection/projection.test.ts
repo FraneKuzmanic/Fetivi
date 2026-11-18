@@ -158,7 +158,7 @@ function input(overrides: Partial<ProjectionInput> & { unit?: ProjectionInput['u
     }),
     stay: {
       checkIn: '2026-10-21',
-      checkout: '2026-10-24',
+      checkOut: '2026-10-24',
       partySize: 2,
       arrivalReleaseAt: RELEASE,
     },
@@ -352,7 +352,7 @@ describe('guestProjection content', () => {
       input({
         stay: {
           checkIn: '2026-10-21',
-          checkout: '2026-10-24',
+          checkOut: '2026-10-24',
           partySize: 2,
           arrivalReleaseAt: RELEASE,
           // Extra Stay columns a caller might pass by mistake must not come through.

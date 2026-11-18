@@ -186,7 +186,7 @@ describe('row checks', () => {
       responseWindowMinutes: 30,
       responseHoursFrom: '08:00:00',
       responseHoursTo: '21:00:00',
-      contactFields: 'name',
+      contactRequirement: 'name',
       active: true,
       revision: 1,
       translationStatus: 'pending',
@@ -226,12 +226,12 @@ describe('place link', () => {
     const here = await newRecord(trogir, 'place');
     const there = await newRecord(split, 'place');
     const event = await newRecord(trogir, 'event');
-    const row = await create(offer({ placeId: here }));
-    expect(row.placeId).toBe(here);
-    await expect(create(offer({ placeId: there }))).rejects.toEqual(invalid);
-    await expect(update(row.id, { placeId: event })).rejects.toEqual(invalid);
-    await expect(update(row.id, { placeId: there })).rejects.toEqual(invalid);
-    expect((await update(row.id, { placeId: null })).placeId).toBeNull();
+    const row = await create(offer({ recordId: here }));
+    expect(row.recordId).toBe(here);
+    await expect(create(offer({ recordId: there }))).rejects.toEqual(invalid);
+    await expect(update(row.id, { recordId: event })).rejects.toEqual(invalid);
+    await expect(update(row.id, { recordId: there })).rejects.toEqual(invalid);
+    expect((await update(row.id, { recordId: null })).recordId).toBeNull();
   });
 
   it('refuses a place on an Offer without a destination', async () => {
@@ -242,16 +242,16 @@ describe('place link', () => {
     if (!host) throw new Error('no host');
     const place = await newRecord(trogir, 'place');
     await expect(
-      create(offer({ providerId: null, hostId: host.id, destinationId: null, placeId: place })),
+      create(offer({ providerId: null, hostId: host.id, destinationId: null, recordId: place })),
     ).rejects.toEqual(invalid);
   });
 
   it('nulls the link when the place is deleted, without a new revision', async () => {
     const place = await newRecord(trogir, 'place');
-    const row = await create(offer({ placeId: place }));
+    const row = await create(offer({ recordId: place }));
     await testDb.db.delete(catalogRecords).where(eq(catalogRecords.id, place));
     const [after] = await testDb.db.select().from(offers).where(eq(offers.id, row.id));
-    expect(after).toMatchObject({ placeId: null, revision: 1 });
+    expect(after).toMatchObject({ recordId: null, revision: 1 });
   });
 });
 

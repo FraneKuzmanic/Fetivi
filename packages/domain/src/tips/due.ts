@@ -55,7 +55,7 @@ export async function dueTipSpaces(db: Executor, now: Date): Promise<DueTipSpace
       zone: properties.timezone,
       location: properties.location,
       checkIn: stays.checkIn,
-      checkout: stays.checkout,
+      checkout: stays.checkOut,
     })
     .from(spaces)
     .innerJoin(stays, eq(stays.id, spaces.stayId))
@@ -66,7 +66,7 @@ export async function dueTipSpaces(db: Executor, now: Date): Promise<DueTipSpace
         gt(spaces.closedAt, now),
         eq(stays.possiblyCancelled, false),
         lte(stays.checkIn, sql`${utc.plus({ days: 1 }).toISODate()}::date`),
-        gte(stays.checkout, sql`${utc.toISODate()}::date`),
+        gte(stays.checkOut, sql`${utc.toISODate()}::date`),
         sql`(${chattedRecently} or (${spaces.tipsEmailOptInAt} is not null and ${spaces.emailVerifiedAt} is not null))`,
       ),
     );

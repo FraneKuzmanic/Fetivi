@@ -113,7 +113,7 @@ describe('loadEffectiveUnit', () => {
     const { property, unit } = await fixture();
     await db
       .update(properties)
-      .set({ checkInTime: '15:00', petsAllowed: true, checkoutTime: '10:00' })
+      .set({ checkInTime: '15:00', petsAllowed: true, checkOutTime: '10:00' })
       .where(eq(properties.id, property.id));
     await db
       .update(units)
@@ -145,9 +145,9 @@ describe('loadEffectiveUnit', () => {
     const e = await loadEffectiveUnit(db, unit.id);
     expect(e).toMatchObject({
       checkInTime: '16:00:00',
-      checkoutTime: '10:00:00',
+      checkOutTime: '10:00:00',
       petsAllowed: false,
-      inherited: { checkInTime: false, checkoutTime: true, petsAllowed: false },
+      inherited: { checkInTime: false, checkOutTime: true, petsAllowed: false },
       amenities: [
         { amenity: 'balcony', note: 'Sea' },
         { amenity: 'pool', note: null },

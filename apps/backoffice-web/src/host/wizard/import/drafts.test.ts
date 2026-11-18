@@ -34,7 +34,7 @@ const block = (id: string, category: 'how_tos' | 'arrival_access'): ManualDraftI
 
 const ITEMS: ManualDraftItem[] = [
   block('d1', 'how_tos'),
-  field('d2', 'checkout_time', { checkoutTime: '10:00' }),
+  field('d2', 'checkout_time', { checkOutTime: '10:00' }),
   field('d3', 'check_in_time', { checkInTime: '15:00' }, 'confirmed'),
   { id: 'd4', status: 'pending', kind: 'amenities', amenities: [{ amenity: 'ac', note: null }] },
   { id: 'd5', status: 'pending', kind: 'unmapped', text: 'Cat', fieldId: null },
@@ -90,7 +90,7 @@ describe('import review helpers', () => {
   });
 
   it('picks an input per column', () => {
-    expect(columnInput('checkoutTime')).toBe('time');
+    expect(columnInput('checkOutTime')).toBe('time');
     expect(columnInput('parkingType')).toBe('enum');
     expect(columnInput('smokingAllowed')).toBe('tri');
     expect(columnInput('noWifi')).toBe('bool');
@@ -102,8 +102,8 @@ describe('import review helpers', () => {
   });
 
   it('shows the saved value only when one is set and differs', () => {
-    const loaded = { checkoutTime: '11:00:00', checkInTime: '15:00:00', city: null } as DraftValues;
-    const draft = field('d1', 'checkout_time', { checkoutTime: '10:00' });
+    const loaded = { checkOutTime: '11:00:00', checkInTime: '15:00:00', city: null } as DraftValues;
+    const draft = field('d1', 'checkout_time', { checkOutTime: '10:00' });
     if (draft.kind !== 'field') throw new Error('field');
     expect(savedSummary(draft, loaded, en)).toBe('11:00');
     const same = field('d2', 'check_in_time', { checkInTime: '15:00' });

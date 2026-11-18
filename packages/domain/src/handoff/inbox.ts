@@ -70,7 +70,7 @@ function inboxQuery(db: Executor) {
       unitName: units.name,
       propertyName: properties.name,
       checkIn: stays.checkIn,
-      checkout: stays.checkout,
+      checkout: stays.checkOut,
       bookerName: stays.bookerName,
     })
     .from(handoffMessages)

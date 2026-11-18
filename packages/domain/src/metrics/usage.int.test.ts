@@ -33,7 +33,7 @@ const turn = (at: string, t: ReturnType<typeof tokens>, model = 'claude-sonnet-5
     model,
     startedAt: new Date(at),
     wallMs: 1000,
-    mcpMs: 100,
+    toolMs: 100,
     steps: 2,
     toolCalls: 1,
     toolNames: ['search_places'],

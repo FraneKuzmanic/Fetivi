@@ -15,7 +15,7 @@ import { TRANSLATED_FIELD_KINDS } from '../../property/vocabulary';
 import { amenity } from './amenities';
 import { sourceLanguage, translationError, translationStatus } from './info-blocks';
 import { properties, units } from './properties';
-import { guestLanguage, translationOrigin } from './translations';
+import { language, translationOrigin } from './translations';
 
 export const fieldTextKind = pgEnum('field_text_kind', TRANSLATED_FIELD_KINDS);
 
@@ -34,8 +34,8 @@ export const fieldTexts = pgTable(
     /** Set only for kind = amenity_note. */
     amenity: amenity('amenity'),
     /** The source text the current revision was made from; equal to the column value after every save. */
-    source: text('source').notNull(),
-    /** +1 on every change of `source`; translations are keyed to it. */
+    sourceText: text('source_text').notNull(),
+    /** +1 on every change of `source_text`; translations are keyed to it. */
     revision: integer('revision').notNull().default(1),
     translationStatus: translationStatus('translation_status').notNull().default('pending'),
     /** Set only when the status is failed. */
@@ -65,7 +65,7 @@ export const fieldTextTranslations = pgTable(
       .notNull()
       .references(() => fieldTexts.id, { onDelete: 'cascade' }),
     revision: integer('revision').notNull(),
-    language: guestLanguage('language').notNull(),
+    language: language('language').notNull(),
     text: text('text').notNull(),
     origin: translationOrigin('origin').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

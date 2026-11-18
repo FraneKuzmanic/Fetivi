@@ -72,7 +72,7 @@ export async function runHostPlaceTranslation(
   const [found] = await db
     .select({ row: hostPlaces, recordTitle: catalogRecords.title })
     .from(hostPlaces)
-    .leftJoin(catalogRecords, eq(catalogRecords.id, hostPlaces.catalogRecordId))
+    .leftJoin(catalogRecords, eq(catalogRecords.id, hostPlaces.recordId))
     .where(eq(hostPlaces.id, hostPlaceId));
   const row = found?.row;
   if (!row || row.revision !== revision || row.translationStatus !== 'pending') {

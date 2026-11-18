@@ -223,7 +223,7 @@ describe('offers: validation', () => {
       responseWindowMinutes: 30,
       responseHoursFrom: '08:00',
       responseHoursTo: '21:00',
-      contactFields: 'name',
+      contactRequirement: 'name',
       adapterKind: null,
       externalProductRef: null,
       place: null,
@@ -350,17 +350,17 @@ describe('offers: validation', () => {
 describe('offers: destination scoping', () => {
   it('links only a place in the Offer destination', async () => {
     const offer = await createOffer();
-    const split = await patch(t.app, offerUrl(offer.id), { placeId: splitPlaceId }, adminCookie);
+    const split = await patch(t.app, offerUrl(offer.id), { recordId: splitPlaceId }, adminCookie);
     expect(split.statusCode).toBe(400);
-    const event = await patch(t.app, offerUrl(offer.id), { placeId: trogirEventId }, adminCookie);
+    const event = await patch(t.app, offerUrl(offer.id), { recordId: trogirEventId }, adminCookie);
     expect(event.statusCode).toBe(400);
-    const linked = await patch(t.app, offerUrl(offer.id), { placeId: trogirPlaceId }, adminCookie);
+    const linked = await patch(t.app, offerUrl(offer.id), { recordId: trogirPlaceId }, adminCookie);
     expect(linked.statusCode).toBe(200);
     expect(linked.json().place).toEqual({ id: trogirPlaceId, title: 'Kamerlengo' });
     const onCreate = await post(
       t.app,
       offersUrl(),
-      offerBody({ placeId: splitPlaceId }),
+      offerBody({ recordId: splitPlaceId }),
       adminCookie,
     );
     expect(onCreate.statusCode).toBe(400);
@@ -378,14 +378,17 @@ describe('offers: destination scoping', () => {
   });
 
   it('drops the link when the place is deleted', async () => {
-    const placeId = await createRecord(trogirId, place('Cathedral', { lat: 43.517, lng: 16.2513 }));
-    const offer = await createOffer({ placeId });
-    expect(offer.place.id).toBe(placeId);
+    const recordId = await createRecord(
+      trogirId,
+      place('Cathedral', { lat: 43.517, lng: 16.2513 }),
+    );
+    const offer = await createOffer({ recordId });
+    expect(offer.place.id).toBe(recordId);
     expect(
-      (await del(t.app, `/api/admin/catalog/records/${placeId}`, adminCookie)).statusCode,
+      (await del(t.app, `/api/admin/catalog/records/${recordId}`, adminCookie)).statusCode,
     ).toBe(204);
     const after = await get(t.app, offerUrl(offer.id), adminCookie);
-    expect(after.json()).toMatchObject({ placeId: null, place: null });
+    expect(after.json()).toMatchObject({ recordId: null, place: null });
     expect(after.json().translation.revision).toBe(1);
   });
 

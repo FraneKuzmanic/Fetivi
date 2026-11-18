@@ -293,14 +293,14 @@ type Draft = Pick<
   | 'cancellationPolicy'
   | 'category'
   | 'orderKind'
-  | 'placeId'
+  | 'recordId'
   | 'currency'
   | 'priceUnit'
   | 'paymentMode'
   | 'availabilityMode'
   | 'adapterKind'
   | 'externalProductRef'
-  | 'contactFields'
+  | 'contactRequirement'
   | 'active'
 > & {
   priceEuros: number | null;
@@ -317,7 +317,7 @@ const draftOf = (o: Offer): Draft => ({
   cancellationPolicy: o.cancellationPolicy,
   category: o.category,
   orderKind: o.orderKind,
-  placeId: o.placeId,
+  recordId: o.recordId,
   priceEuros: eurosFromCents(o.priceMinor),
   currency: o.currency,
   priceUnit: o.priceUnit,
@@ -330,7 +330,7 @@ const draftOf = (o: Offer): Draft => ({
   responseHoursTo: o.responseHoursTo,
   freeCancelHoursBefore: o.freeCancelHoursBefore,
   refundPercentAfter: o.refundPercentAfter,
-  contactFields: o.contactFields,
+  contactRequirement: o.contactRequirement,
   active: o.active,
 });
 
@@ -419,7 +419,7 @@ export function OfferPage() {
   const classificationBody = (): OfferPatch => ({
     category: draft.category,
     orderKind: draft.orderKind,
-    placeId: draft.placeId,
+    recordId: draft.recordId,
     ...(isRequest && offer.availabilityMode !== 'on_request'
       ? { availabilityMode: 'on_request', adapterKind: null, externalProductRef: null }
       : {}),
@@ -475,7 +475,7 @@ export function OfferPage() {
           <Section
             title={t('offer.classification')}
             onSave={save(
-              ['category', 'orderKind', 'placeId', ...AVAILABILITY_KEYS],
+              ['category', 'orderKind', 'recordId', ...AVAILABILITY_KEYS],
               classificationBody(),
             )}
           >
@@ -501,11 +501,11 @@ export function OfferPage() {
               hint={t('offer.linkedPlaceHint', {
                 destination: offer.destination?.name ?? t('offer.theDestination'),
               })}
-              value={draft.placeId}
+              value={draft.recordId}
               options={placeIds}
               labels={placeLabels}
               emptyLabel={t('offer.none')}
-              onChange={set('placeId')}
+              onChange={set('recordId')}
             />
           </Section>
         );
@@ -649,15 +649,15 @@ export function OfferPage() {
         return (
           <Section
             title={t('offer.guestDetails')}
-            onSave={save(['contactFields'], { contactFields: draft.contactFields })}
+            onSave={save(['contactRequirement'], { contactRequirement: draft.contactRequirement })}
           >
             <SelectField
               label={t('offer.receives')}
               hint={t('offer.receivesHint')}
-              value={draft.contactFields}
+              value={draft.contactRequirement}
               options={CONTACT_FIELDS}
               labels={labels.contactFields}
-              onChange={(c) => c && set('contactFields')(c)}
+              onChange={(c) => c && set('contactRequirement')(c)}
             />
           </Section>
         );

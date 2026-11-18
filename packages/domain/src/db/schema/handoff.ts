@@ -9,7 +9,7 @@ import { accounts } from './accounts';
 import { units } from './properties';
 import { spaces } from './spaces';
 import { stays } from './stays';
-import { guestLanguage } from './translations';
+import { language } from './translations';
 
 export const handoffReason = pgEnum('handoff_reason', HANDOFF_REASONS);
 export const handoffUrgency = pgEnum('handoff_urgency', HANDOFF_URGENCIES);
@@ -41,11 +41,11 @@ export const handoffMessages = pgTable(
     reason: handoffReason('reason').notNull(),
     urgency: handoffUrgency('urgency').notNull(),
     /** The space's language at send. */
-    guestLanguage: guestLanguage('guest_language').notNull(),
+    guestLanguage: language('guest_language').notNull(),
     /** What the guest sent, after their edits. */
     text: text('text').notNull(),
     /** The host account's back-office language at send. */
-    hostLanguage: guestLanguage('host_language').notNull(),
+    hostLanguage: language('host_language').notNull(),
     /** Null until done, and when not needed. */
     translation: text('translation'),
     translationState: handoffTranslationState('translation_state').notNull(),
@@ -56,8 +56,7 @@ export const handoffMessages = pgTable(
     repliedAt: timestamp('replied_at', { withTimezone: true }),
     repliedBy: uuid('replied_by').references(() => accounts.id, { onDelete: 'set null' }),
     /** The space's language at reply time. */
-    replyLanguage: guestLanguage('reply_language'),
-    replyTranslation: text('reply_translation'),
+    replyLanguage: language('reply_language'),
     replyTranslationState: handoffTranslationState('reply_translation_state'),
     /** When the reply reached the Conversation as an inbox message. */
     replyDeliveredAt: timestamp('reply_delivered_at', { withTimezone: true }),
