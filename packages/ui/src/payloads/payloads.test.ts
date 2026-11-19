@@ -480,6 +480,7 @@ describe('inbox item', () => {
             safety: null,
             tip: null,
             freeCancellationEnded: true,
+            stayOver: false,
           },
         },
         now,
