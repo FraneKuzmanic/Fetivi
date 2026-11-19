@@ -51,6 +51,30 @@ export function weatherToolDate(
   return date;
 }
 
+/**
+ * One line per level, type and event, so the same warning issued for the county and the sea
+ * region reads once: it names both areas and spans both times.
+ */
+function mergeWarnings(warnings: WeatherWarning[]): WeatherWarning[] {
+  const merged = new Map<string, WeatherWarning>();
+  for (const w of warnings) {
+    const key = `${w.level}|${w.type}|${w.event}`;
+    const seen = merged.get(key);
+    merged.set(
+      key,
+      seen
+        ? {
+            ...seen,
+            area: seen.area.split(', ').includes(w.area) ? seen.area : `${seen.area}, ${w.area}`,
+            onset: Date.parse(w.onset) < Date.parse(seen.onset) ? w.onset : seen.onset,
+            expires: Date.parse(w.expires) > Date.parse(seen.expires) ? w.expires : seen.expires,
+          }
+        : w,
+    );
+  }
+  return [...merged.values()];
+}
+
 /** At most WEATHER_LIMITS.maxWarnings, keeping the most severe, in their original order. */
 function capWarnings(warnings: WeatherWarning[]): WeatherWarning[] {
   if (warnings.length <= WEATHER_LIMITS.maxWarnings) return warnings;
@@ -85,8 +109,10 @@ export function weatherToolResult(
     uv: report.uv,
     warnings: report.warnings
       ? capWarnings(
-          report.warnings.filter(
-            (w) => Date.parse(w.expires) > from && Date.parse(w.onset) < until.getTime(),
+          mergeWarnings(
+            report.warnings.filter(
+              (w) => Date.parse(w.expires) > from && Date.parse(w.onset) < until.getTime(),
+            ),
           ),
         )
       : null,

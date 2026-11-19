@@ -88,6 +88,29 @@ describe('weatherToolResult', () => {
     expect(weatherToolResult(report, PLACE, '2026-07-15', noon).warnings).toEqual([]);
   });
 
+  it('shows one line for the same warning issued for two areas, naming both', () => {
+    const base = report.warnings?.[0];
+    if (!base) throw new Error('sample has a warning');
+    const twice = [
+      { ...base, area: 'Splitsko-dalmatinska', onset: '2026-07-14T08:00:00.000Z' },
+      { ...base, area: 'Srednji Jadran', expires: '2026-07-14T22:30:00.000Z' },
+    ];
+    const warnings = weatherToolResult(
+      { ...report, warnings: twice },
+      PLACE,
+      '2026-07-14',
+      noon,
+    ).warnings;
+    expect(warnings).toEqual([
+      {
+        ...base,
+        area: 'Splitsko-dalmatinska, Srednji Jadran',
+        onset: '2026-07-14T08:00:00.000Z',
+        expires: '2026-07-14T22:30:00.000Z',
+      },
+    ]);
+  });
+
   it('keeps at most WEATHER_LIMITS.maxWarnings, the most severe, in onset order', () => {
     const base = report.warnings?.[0];
     if (!base) throw new Error('sample has a warning');
