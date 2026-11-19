@@ -38,6 +38,7 @@ export function createMemoryMailer(): Mailer & { readonly sent: MailMessage[] } 
   };
 }
 
+export * from './mailpit';
 export * from './resend';
 export * from './select';
 export * from './webhook';

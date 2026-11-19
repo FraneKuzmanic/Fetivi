@@ -31,8 +31,10 @@ const schema = z
     PROVIDER_LINK_BASE_URL: z.url().default('http://localhost:5174'),
     /** The back-office origin, for links in host emails (production https://host.<domain>). */
     WEB_ORIGIN: z.url().default('http://localhost:5174'),
-    /** console logs mail (development); resend sends it (required in production). */
-    MAIL_TRANSPORT: z.enum(['console', 'resend']).default('console'),
+    /** console logs mail, mailpit catches it locally (development); resend sends it (production). */
+    MAIL_TRANSPORT: z.enum(['console', 'mailpit', 'resend']).default('console'),
+    /** Mailpit's web address on this machine, for MAIL_TRANSPORT=mailpit (development). */
+    MAILPIT_URL: optionalString,
     RESEND_API_KEY: optionalString,
     MAIL_FROM: z.string().default(DEV_MAIL_FROM),
     /** The guest-app origin, for links in guest emails (production https://<domain>). */

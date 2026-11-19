@@ -50,6 +50,7 @@ const app = buildApp({
   mailer: createMailer({
     transport: config.MAIL_TRANSPORT,
     resendApiKey: config.RESEND_API_KEY,
+    mailpitUrl: config.MAILPIT_URL,
     from: config.MAIL_FROM,
     fetch: egress.fetch,
   }),

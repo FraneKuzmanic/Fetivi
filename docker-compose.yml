@@ -25,5 +25,11 @@ services:
     ports:
       - "16686:16686" # UI
       - "4318:4318" # OTLP over HTTP
+  # Local mail catcher for MAIL_TRANSPORT=mailpit: the apps post to its send API and the mail shows
+  # in its web inbox. Development only; in memory, so mail goes when it restarts.
+  mailpit:
+    image: axllent/mailpit:v1.27.0
+    ports:
+      - "8025:8025" # web inbox and send API
 volumes:
   pgdata:
