@@ -42,6 +42,10 @@ async function seedAdmin(): Promise<{ id: string; email: string }> {
   return { id: admin.id, email };
 }
 
+/** The key the source resolves now. */
+const keyOf = async (keys: { get(): Promise<{ key: string } | undefined> }) =>
+  (await keys.get())?.key;
+
 const source = (envKey: string | undefined, extra: { now?: () => number } = {}) =>
   createLlmKeySource({ db: testDb.db, envKey, secret: SECRET, ...extra });
 
@@ -51,6 +55,8 @@ describe('llm key resolution', () => {
     expect(await source('').get()).toBeUndefined();
     expect(await getLlmKeyStatus(testDb.db, undefined, SECRET)).toEqual({
       source: 'none',
+      provider: null,
+      model: null,
       last4: null,
       updatedAt: null,
       updatedBy: null,
@@ -58,12 +64,22 @@ describe('llm key resolution', () => {
   });
 
   it('uses the env key when the admin set none', async () => {
-    expect(await source(ENV_KEY).get()).toBe(ENV_KEY);
+    expect(await keyOf(source(ENV_KEY))).toBe(ENV_KEY);
     expect(await getLlmKeyStatus(testDb.db, ENV_KEY, SECRET)).toEqual({
       source: 'environment',
+      provider: 'anthropic',
+      model: null,
       last4: 'wxyz',
       updatedAt: null,
       updatedBy: null,
+    });
+  });
+
+  it('gives the environment key as Anthropic with each task default model', async () => {
+    expect(await source(ENV_KEY).get()).toEqual({
+      provider: 'anthropic',
+      key: ENV_KEY,
+      model: null,
     });
   });
 
@@ -71,13 +87,17 @@ describe('llm key resolution', () => {
     const admin = await seedAdmin();
     await setLlmKey(testDb.db, {
       key: SETTINGS_KEY,
+      provider: 'anthropic',
+      model: 'claude-haiku-5-5',
       secret: SECRET,
       accountId: admin.id,
       now: NOW,
     });
-    expect(await source(ENV_KEY).get()).toBe(SETTINGS_KEY);
+    expect(await keyOf(source(ENV_KEY))).toBe(SETTINGS_KEY);
     expect(await getLlmKeyStatus(testDb.db, ENV_KEY, SECRET)).toEqual({
       source: 'settings',
+      provider: 'anthropic',
+      model: 'claude-haiku-5-5',
       last4: 'abcd',
       updatedAt: NOW,
       updatedBy: admin.email,
@@ -87,9 +107,16 @@ describe('llm key resolution', () => {
   it('trims the key and rejects one that is too short or has inner whitespace', async () => {
     const admin = await seedAdmin();
     const save = (key: string) =>
-      setLlmKey(testDb.db, { key, secret: SECRET, accountId: admin.id, now: NOW });
+      setLlmKey(testDb.db, {
+        key,
+        provider: 'anthropic',
+        model: 'claude-haiku-5-5',
+        secret: SECRET,
+        accountId: admin.id,
+        now: NOW,
+      });
     await save(`  ${SETTINGS_KEY}\n`);
-    expect(await source(undefined).get()).toBe(SETTINGS_KEY);
+    expect(await keyOf(source(undefined))).toBe(SETTINGS_KEY);
     await expect(save('sk-short')).rejects.toThrow(RangeError);
     await expect(save('sk-ant-has inner-whitespace-0000')).rejects.toThrow(RangeError);
     await expect(save('x'.repeat(301))).rejects.toThrow(RangeError);
@@ -99,6 +126,8 @@ describe('llm key resolution', () => {
     const admin = await seedAdmin();
     await setLlmKey(testDb.db, {
       key: SETTINGS_KEY,
+      provider: 'anthropic',
+      model: 'claude-haiku-5-5',
       secret: SECRET,
       accountId: admin.id,
       now: NOW,
@@ -107,9 +136,11 @@ describe('llm key resolution', () => {
       dailyMessageCap: DEFAULT_DAILY_MESSAGE_CAP,
     });
     await setDailyMessageCap(testDb.db, 12, NOW);
-    expect(await source(undefined).get()).toBe(SETTINGS_KEY);
+    expect(await keyOf(source(undefined))).toBe(SETTINGS_KEY);
     await setLlmKey(testDb.db, {
       key: `${SETTINGS_KEY}-new`,
+      provider: 'anthropic',
+      model: 'claude-haiku-5-5',
       secret: SECRET,
       accountId: admin.id,
       now: NOW,
@@ -121,30 +152,32 @@ describe('llm key resolution', () => {
     const admin = await seedAdmin();
     let clock = 0;
     const keys = source(ENV_KEY, { now: () => clock });
-    expect(await keys.get()).toBe(ENV_KEY);
+    expect(await keyOf(keys)).toBe(ENV_KEY);
 
     await setLlmKey(testDb.db, {
       key: SETTINGS_KEY,
+      provider: 'anthropic',
+      model: 'claude-haiku-5-5',
       secret: SECRET,
       accountId: admin.id,
       now: NOW,
     });
     clock = 29_999;
-    expect(await keys.get()).toBe(ENV_KEY);
+    expect(await keyOf(keys)).toBe(ENV_KEY);
     clock = 30_000;
-    expect(await keys.get()).toBe(SETTINGS_KEY);
+    expect(await keyOf(keys)).toBe(SETTINGS_KEY);
 
     await removeLlmKey(testDb.db, { accountId: admin.id, now: NOW });
-    expect(await keys.get()).toBe(SETTINGS_KEY);
+    expect(await keyOf(keys)).toBe(SETTINGS_KEY);
     keys.invalidate();
-    expect(await keys.get()).toBe(ENV_KEY);
+    expect(await keyOf(keys)).toBe(ENV_KEY);
   });
 
   it('shares one read between concurrent gets', async () => {
     const select = vi.spyOn(testDb.db, 'select');
     try {
       const keys = source(ENV_KEY);
-      expect(await Promise.all([keys.get(), keys.get(), keys.get()])).toEqual([
+      expect(await Promise.all([keyOf(keys), keyOf(keys), keyOf(keys)])).toEqual([
         ENV_KEY,
         ENV_KEY,
         ENV_KEY,
@@ -159,15 +192,19 @@ describe('llm key resolution', () => {
     const admin = await seedAdmin();
     await setLlmKey(testDb.db, {
       key: SETTINGS_KEY,
+      provider: 'anthropic',
+      model: 'claude-haiku-5-5',
       secret: SECRET,
       accountId: admin.id,
       now: NOW,
     });
     const later = new Date('2026-11-18T08:00:00Z');
     await removeLlmKey(testDb.db, { accountId: admin.id, now: later });
-    expect(await source(ENV_KEY).get()).toBe(ENV_KEY);
+    expect(await keyOf(source(ENV_KEY))).toBe(ENV_KEY);
     expect(await getLlmKeyStatus(testDb.db, ENV_KEY, SECRET)).toEqual({
       source: 'environment',
+      provider: 'anthropic',
+      model: null,
       last4: 'wxyz',
       updatedAt: later,
       updatedBy: admin.email,
@@ -178,6 +215,8 @@ describe('llm key resolution', () => {
     const admin = await seedAdmin();
     await setLlmKey(testDb.db, {
       key: SETTINGS_KEY,
+      provider: 'anthropic',
+      model: 'claude-haiku-5-5',
       secret: SECRET,
       accountId: admin.id,
       now: NOW,
@@ -196,10 +235,11 @@ describe('llm key resolution', () => {
       updatedAt: NOW,
       llmKeyCiphertext: encryptLlmKey(SETTINGS_KEY, 'a-rotated-secret-that-no-longer-matches'),
       llmKeyLast4: 'abcd',
+      llmProvider: 'anthropic',
     });
     const warn = vi.fn();
     const keys = createLlmKeySource({ db: testDb.db, envKey: ENV_KEY, secret: SECRET, warn });
-    expect(await keys.get()).toBe(ENV_KEY);
+    expect(await keyOf(keys)).toBe(ENV_KEY);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('LLM_KEY_SECRET'));
     // The status shows the key actually in use, not the unreadable one.
     expect(await getLlmKeyStatus(testDb.db, ENV_KEY, SECRET)).toMatchObject({
@@ -216,6 +256,8 @@ describe('llm key resolution', () => {
     const admin = await seedAdmin();
     await setLlmKey(testDb.db, {
       key: SETTINGS_KEY,
+      provider: 'anthropic',
+      model: 'claude-haiku-5-5',
       secret: SECRET,
       accountId: admin.id,
       now: NOW,

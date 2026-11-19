@@ -290,6 +290,10 @@ _Avoid_: chat session, thread
 How many messages a Space may send Fetivi in one day of the property's time zone, one number set by the admin (60 by default). After it the chat says so politely; card answers, the Guide and My trip keep working.
 _Avoid_: rate limit, quota
 
+**Model setting**:
+The one language model every text-generating task runs on: a provider (Anthropic, OpenAI, Google Gemini or Mistral) recognised from the API key the admin pasted, the key, kept encrypted, and the model the admin picked from the provider's list. Without one, ANTHROPIC_API_KEY is used with each task's default Claude model. Catalog search embeddings are not part of it (ADR 0033).
+_Avoid_: LLM config, AI settings
+
 **About me**:
 What a Space's guests chose to share about their trip — who is travelling, interests, pace, budget feel, how they get around and Needs — kept per Space, always visible to them, and changeable and removable by them. Fetivi may save the ordinary preferences it hears in the Conversation; it never saves a Need.
 _Avoid_: profile, preferences, persona

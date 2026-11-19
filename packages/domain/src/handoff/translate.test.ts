@@ -4,7 +4,7 @@ import { fixedKey } from '../settings/llm-key';
 import { TRANSLATION_MODEL_ID } from '../translation/prompt';
 import {
   buildHandoffUserMessage,
-  createAnthropicHandoffTranslator,
+  createHandoffTranslator,
   HANDOFF_TRANSLATION_SYSTEM_PROMPT,
   HandoffTranslationOutput,
 } from './translate';
@@ -27,35 +27,53 @@ describe('handoff translation prompt', () => {
   });
 });
 
-describe('createAnthropicHandoffTranslator', () => {
-  const reply = (body: unknown, status = 200) =>
-    vi.fn(
-      async () =>
-        new Response(JSON.stringify(body), {
-          status,
-          headers: { 'content-type': 'application/json' },
-        }),
+describe('createHandoffTranslator', () => {
+  /** Anthropic's streamed answer carrying `text`, as server-sent events. */
+  const stream = (
+    text: string,
+    usage: Record<string, number | null> = { input_tokens: 1, output_tokens: 1 },
+  ) => {
+    const events = [
+      {
+        type: 'message_start',
+        message: {
+          id: 'msg_1',
+          type: 'message',
+          role: 'assistant',
+          model: TRANSLATION_MODEL_ID,
+          content: [],
+          stop_reason: null,
+          stop_sequence: null,
+          usage,
+        },
+      },
+      { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+      { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text } },
+      { type: 'content_block_stop', index: 0 },
+      {
+        type: 'message_delta',
+        delta: { stop_reason: 'end_turn', stop_sequence: null },
+        usage: { output_tokens: usage.output_tokens },
+      },
+      { type: 'message_stop' },
+    ];
+    const body = events.map((e) => `event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`).join('');
+    return vi.fn(
+      async (_url: string | URL | Request, _init?: RequestInit) =>
+        new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
     );
+  };
 
   it('reports the tokens of each response', async () => {
-    const fetch = reply({
-      id: 'msg_1',
-      type: 'message',
-      role: 'assistant',
-      model: TRANSLATION_MODEL_ID,
-      content: [{ type: 'text', text: '{"text":"Kein warmes Wasser."}' }],
-      stop_reason: 'end_turn',
-      stop_sequence: null,
-      usage: {
-        input_tokens: 120,
-        output_tokens: 15,
-        cache_read_input_tokens: null,
-        cache_creation_input_tokens: 40,
-      },
+    const fetch = stream('{"text":"Kein warmes Wasser."}', {
+      input_tokens: 120,
+      output_tokens: 15,
+      cache_read_input_tokens: null,
+      cache_creation_input_tokens: 40,
     });
     const seen: ModelUsage[] = [];
-    const translator = createAnthropicHandoffTranslator({
-      apiKey: fixedKey('test-key'),
+    const translator = createHandoffTranslator({
+      llm: fixedKey('test-key'),
       fetch,
       onUsage: (u) => seen.push(u),
     });
@@ -75,34 +93,24 @@ describe('createAnthropicHandoffTranslator', () => {
   });
 
   it('reports nothing for a failed call', async () => {
-    const fetch = reply(
-      { type: 'error', error: { type: 'invalid_request_error', message: 'bad' } },
-      400,
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: 'x' } }),
+          { status: 400, headers: { 'content-type': 'application/json' } },
+        ),
     );
     const onUsage = vi.fn();
-    const translator = createAnthropicHandoffTranslator({
-      apiKey: fixedKey('test-key'),
-      fetch,
-      onUsage,
-    });
+    const translator = createHandoffTranslator({ llm: fixedKey('test-key'), fetch, onUsage });
     const result = await translator.translate({ text: 'x', to: 'de' });
-    expect(result.ok).toBe(false);
+    expect(result).toMatchObject({ ok: false, error: 'model-error' });
     expect(onUsage).not.toHaveBeenCalled();
   });
 
-  it('resolves the key on every call: not configured without one, then calls with it (68)', async () => {
-    const fetch = reply({
-      id: 'msg_2',
-      type: 'message',
-      role: 'assistant',
-      model: TRANSLATION_MODEL_ID,
-      content: [{ type: 'text', text: '{"text":"Hallo."}' }],
-      stop_reason: 'end_turn',
-      stop_sequence: null,
-      usage: { input_tokens: 1, output_tokens: 1 },
-    });
+  it('resolves the setting on every call: not configured without one, then calls with it (68)', async () => {
+    const fetch = stream('{"text":"Hallo."}');
     let key: string | undefined;
-    const translator = createAnthropicHandoffTranslator({ apiKey: async () => key, fetch });
+    const translator = createHandoffTranslator({ llm: () => fixedKey(key)(), fetch });
     await expect(translator.translate({ text: 'Bok.', to: 'de' })).resolves.toMatchObject({
       ok: false,
       error: 'not-configured',
@@ -114,5 +122,17 @@ describe('createAnthropicHandoffTranslator', () => {
       text: 'Hallo.',
     });
     expect(fetch).toHaveBeenCalledOnce();
+  });
+
+  it("calls the admin's provider with the admin's model, never the Anthropic default (71)", async () => {
+    const fetch = vi.fn(async () => new Response('{}', { status: 400 }));
+    const translator = createHandoffTranslator({
+      llm: async () => ({ provider: 'openai', key: 'sk-test', model: 'gpt-5' }),
+      fetch,
+    });
+    await translator.translate({ text: 'Bok.', to: 'de' });
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(new URL(url).host).toBe('api.openai.com');
+    expect(JSON.parse(String(init.body)).model).toBe('gpt-5');
   });
 });

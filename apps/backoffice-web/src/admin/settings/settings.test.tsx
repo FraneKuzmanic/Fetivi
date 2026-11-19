@@ -60,6 +60,8 @@ const USAGE = {
 
 type KeyStatus = {
   source: 'settings' | 'environment' | 'none';
+  provider?: 'anthropic' | 'openai' | null;
+  model?: string | null;
   last4: string | null;
   updatedAt: string | null;
   updatedBy: string | null;
@@ -67,16 +69,24 @@ type KeyStatus = {
 
 const ENV_KEY: KeyStatus = {
   source: 'environment',
+  provider: 'anthropic',
+  model: null,
   last4: 'wxyz',
   updatedAt: null,
   updatedBy: null,
 };
+const MODELS = {
+  ok: true,
+  provider: 'anthropic',
+  models: ['claude-haiku-5-5', 'claude-sonnet-5-5'],
+};
+const OPENAI_MODELS = { ok: true, provider: 'openai', models: ['gpt-5', 'gpt-5-mini'] };
 const CHANGED = { updatedAt: '2026-11-17T09:05:00.000Z', updatedBy: 'admin@example.test' };
 
 async function mount(
   usage: unknown = USAGE,
   usageStatus = 200,
-  options: { llmKey?: KeyStatus; check?: unknown } = {},
+  options: { llmKey?: KeyStatus; check?: unknown; typed?: unknown } = {},
 ) {
   calls = [];
   let cap = 60;
@@ -87,11 +97,19 @@ async function mount(
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
     if (url === '/api/admin/usage') return json(usage, usageStatus);
     calls.push({ url, method, body });
-    if (url === '/api/admin/settings/llm-key/test') return json(options.check ?? { ok: true });
+    if (url === '/api/admin/settings/llm-key/test') return json(options.check ?? MODELS);
+    if (url === '/api/admin/settings/llm-key/check') return json(options.typed ?? OPENAI_MODELS);
     if (url === '/api/admin/settings/llm-key') {
+      const saved = body as { key?: string; model: string } | undefined;
       llmKey =
-        method === 'PUT'
-          ? { source: 'settings', last4: (body as { key: string }).key.slice(-4), ...CHANGED }
+        method === 'PUT' && saved
+          ? {
+              source: 'settings',
+              provider: saved.key ? 'openai' : llmKey.provider,
+              model: saved.model,
+              last4: saved.key ? saved.key.slice(-4) : llmKey.last4,
+              ...CHANGED,
+            }
           : { ...ENV_KEY, ...CHANGED };
       return json(llmKey);
     }
@@ -112,7 +130,7 @@ async function mount(
 
 const keySection = () =>
   [...el.querySelectorAll('section')].find((s) =>
-    s.querySelector('h2')?.textContent?.includes('Anthropic API key'),
+    s.querySelector('h2')?.textContent?.includes('Language model'),
   ) as HTMLElement;
 const button = (scope: ParentNode, name: string) =>
   [...scope.querySelectorAll('button')].find((b) => b.textContent === name);
@@ -200,8 +218,8 @@ describe('SettingsPage', () => {
   });
 });
 
-describe('LlmKeySection (68)', () => {
-  const KEY = 'sk-ant-api03-secret-key-material-abcd';
+describe('LlmKeySection (68, 71)', () => {
+  const KEY = 'sk-proj-secret-key-material-abcd';
 
   it('says where the key in use comes from, by its last four characters', async () => {
     await mount(USAGE, 200, { llmKey: { source: 'none', last4: null, ...CHANGED } });
@@ -236,7 +254,7 @@ describe('LlmKeySection (68)', () => {
     expect(keySection().textContent).toContain('Last changed by a deleted account');
   });
 
-  it('saves a new key, clears the field and never shows the key', async () => {
+  it('checks a pasted key, names its provider, saves it with the chosen model and never shows it', async () => {
     await mount();
     const input = keySection().querySelector<HTMLInputElement>('input[type="password"]');
     if (!input) throw new Error('no key input');
@@ -246,13 +264,83 @@ describe('LlmKeySection (68)', () => {
       keySection().querySelector('form')?.requestSubmit();
     });
     expect(calls.at(-1)).toEqual({
-      url: '/api/admin/settings/llm-key',
-      method: 'PUT',
+      url: '/api/admin/settings/llm-key/check',
+      method: 'POST',
       body: { key: KEY },
     });
-    expect(input.value).toBe('');
+    expect(keySection().textContent).toContain(
+      'Provider: OpenAI. Choose the model for every task.',
+    );
+    const select = keySection().querySelector<HTMLSelectElement>('select');
+    if (!select) throw new Error('no model picker');
+    expect([...select.options].map((o) => o.value)).toEqual(['gpt-5', 'gpt-5-mini']);
+    select.value = 'gpt-5-mini';
+    await act(async () => {
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => {
+      keySection().querySelector('form')?.requestSubmit();
+    });
+    expect(calls.at(-1)).toEqual({
+      url: '/api/admin/settings/llm-key',
+      method: 'PUT',
+      body: { key: KEY, model: 'gpt-5-mini' },
+    });
+    expect(keySection().textContent).toContain('OpenAI · gpt-5-mini');
     expect(keySection().textContent).toContain('Set in Settings, ends in …abcd');
+    expect(keySection().querySelector('select')).toBeNull();
     expect(document.body.innerHTML).not.toContain(KEY);
+  });
+
+  it('says when no known provider accepts the pasted key', async () => {
+    await mount(USAGE, 200, { typed: { ok: false, error: 'unrecognised' } });
+    const input = keySection().querySelector<HTMLInputElement>('input[type="password"]');
+    if (!input) throw new Error('no key input');
+    await type(input, 'zz-0123456789-0123456789');
+    await act(async () => {
+      keySection().querySelector('form')?.requestSubmit();
+    });
+    expect(keySection().querySelector('[role="alert"]')?.textContent).toBe(
+      'No known provider accepts this key.',
+    );
+    expect(keySection().querySelector('select')).toBeNull();
+  });
+
+  it('changes the model of the saved key after a test, without pasting the key again', async () => {
+    await mount(USAGE, 200, {
+      llmKey: {
+        source: 'settings',
+        provider: 'anthropic',
+        model: 'claude-haiku-5-5',
+        last4: 'abcd',
+        ...CHANGED,
+      },
+    });
+    expect(keySection().textContent).toContain('Anthropic · claude-haiku-5-5');
+    await click(button(keySection(), 'Test the key in use'));
+    const select = keySection().querySelector<HTMLSelectElement>('select');
+    if (!select) throw new Error('no model picker');
+    expect(select.value).toBe('claude-haiku-5-5');
+    select.value = 'claude-sonnet-5-5';
+    await act(async () => {
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => {
+      keySection().querySelector('form')?.requestSubmit();
+    });
+    expect(calls.at(-1)).toEqual({
+      url: '/api/admin/settings/llm-key',
+      method: 'PUT',
+      body: { model: 'claude-sonnet-5-5' },
+    });
+    expect(keySection().textContent).toContain('Anthropic · claude-sonnet-5-5');
+  });
+
+  it("shows the environment key as Anthropic's default model for each task", async () => {
+    await mount();
+    expect(keySection().textContent).toContain(
+      "Anthropic · Anthropic's default model for each task",
+    );
   });
 
   it('saves nothing when the key field is empty', async () => {
@@ -285,13 +373,13 @@ describe('LlmKeySection (68)', () => {
   });
 
   it.each([
-    [{ ok: true }, 'output.saved', 'The key works.'],
-    [{ ok: false, error: 'rejected' }, '[role="alert"]', 'Anthropic rejected the key.'],
-    [{ ok: false, error: 'unreachable' }, '[role="alert"]', 'Anthropic could not be reached.'],
+    [MODELS, 'output.saved', 'The key works.'],
+    [{ ok: false, error: 'rejected' }, '[role="alert"]', 'The provider rejected the key.'],
+    [{ ok: false, error: 'unreachable' }, '[role="alert"]', 'The provider could not be reached.'],
     [{ ok: false, error: 'not-configured' }, '[role="alert"]', 'No key to test.'],
   ])('tests the key in use: %o', async (check, selector, message) => {
     await mount(USAGE, 200, { check });
-    await click(button(keySection(), 'Test the key'));
+    await click(button(keySection(), 'Test the key in use'));
     expect(calls.at(-1)).toMatchObject({ url: '/api/admin/settings/llm-key/test', method: 'POST' });
     expect(keySection().querySelector(selector)?.textContent).toBe(message);
   });
@@ -304,12 +392,15 @@ describe('LlmKeySection (68)', () => {
     await act(async () => {
       keySection().querySelector('form')?.requestSubmit();
     });
+    await act(async () => {
+      keySection().querySelector('form')?.requestSubmit();
+    });
     expect(keySection().querySelector('output.saved')?.textContent).toBe('Saved');
 
-    await click(button(keySection(), 'Test the key'));
+    await click(button(keySection(), 'Test the key in use'));
     expect(keySection().querySelector('output.saved')).toBeNull();
     expect(keySection().querySelector('[role="alert"]')?.textContent).toBe(
-      'Anthropic rejected the key.',
+      'The provider rejected the key.',
     );
   });
 });

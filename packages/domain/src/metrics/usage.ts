@@ -5,27 +5,9 @@ import { modelUsage, turnMetrics } from '../db/schema/metrics';
 import { costUsd, MODEL_PRICES, PRICES_CHECKED_ON, type TokenCounts } from './prices';
 import { type ModelUse, USAGE_ESTIMATE_USES, type UsageEstimateUse } from './vocabulary';
 
-/** The tokens of one Anthropic response. */
+/** The tokens of one model response. */
 export interface ModelUsage extends TokenCounts {
   model: string;
-}
-
-/** The `usage` object of an Anthropic SDK message (cache counts may be missing or null). */
-export interface SdkUsage {
-  input_tokens: number;
-  output_tokens: number;
-  cache_read_input_tokens?: number | null;
-  cache_creation_input_tokens?: number | null;
-}
-
-export function usageOf(model: string, usage: SdkUsage): ModelUsage {
-  return {
-    model,
-    inputTokens: usage.input_tokens,
-    outputTokens: usage.output_tokens,
-    cacheReadTokens: usage.cache_read_input_tokens ?? 0,
-    cacheWriteTokens: usage.cache_creation_input_tokens ?? 0,
-  };
 }
 
 /** Writes one `model_usage` row. */

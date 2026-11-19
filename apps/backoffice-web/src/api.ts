@@ -53,7 +53,11 @@ import type {
   SeedingSource,
   SourceRunResult,
 } from '@fetivi/domain/seeding-vocabulary';
-import type { LlmKeyCheckError, LlmKeySource } from '@fetivi/domain/settings-vocabulary';
+import type {
+  LlmKeyCheckError,
+  LlmKeySource,
+  LlmProvider,
+} from '@fetivi/domain/settings-vocabulary';
 import type { GapTopic } from '@fetivi/domain/suggestion-vocabulary';
 import type {
   Amenity,
@@ -834,7 +838,11 @@ export const admin = {
   settings: () => api<PlatformSettings>('/api/admin/settings'),
   saveSettings: (settings: { dailyMessageCap: number }) =>
     put<PlatformSettings>('/api/admin/settings', settings),
-  saveLlmKey: (key: string) => put<LlmKeyStatus>('/api/admin/settings/llm-key', { key }),
+  checkLlmKey: (key: string) =>
+    post<LlmKeyCheckResult>('/api/admin/settings/llm-key/check', { key }),
+  /** A new key with its model, or only a new model for the saved key. */
+  saveLlmKey: (body: { key?: string; model: string }) =>
+    put<LlmKeyStatus>('/api/admin/settings/llm-key', body),
   removeLlmKey: () => api<LlmKeyStatus>('/api/admin/settings/llm-key', { method: 'DELETE' }),
   testLlmKey: () => post<LlmKeyCheckResult>('/api/admin/settings/llm-key/test'),
   usage: () => api<UsageEstimate>('/api/admin/usage'),
@@ -868,9 +876,13 @@ export interface PlatformSettings {
   llmKey: LlmKeyStatus;
 }
 
-/** Where the Anthropic key in use comes from; never the key itself (68). */
+/** The model setting in use: where the key comes from, never the key itself (68, 71). */
 export interface LlmKeyStatus {
   source: LlmKeySource;
+  /** The environment key is always Anthropic's; null with no key. */
+  provider: LlmProvider | null;
+  /** The one model for every task; null = each task's default Anthropic model. */
+  model: string | null;
   last4: string | null;
   /** When the admin last set or removed the key. */
   updatedAt: string | null;
@@ -878,7 +890,9 @@ export interface LlmKeyStatus {
   updatedBy: string | null;
 }
 
-export type LlmKeyCheckResult = { ok: true } | { ok: false; error: LlmKeyCheckError };
+export type LlmKeyCheckResult =
+  | { ok: true; provider: LlmProvider; models: string[] }
+  | { ok: false; error: LlmKeyCheckError };
 
 /** One row of the admin's Orders list. */
 export interface AdminOrderRow {

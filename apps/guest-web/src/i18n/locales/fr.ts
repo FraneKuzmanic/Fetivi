@@ -265,7 +265,7 @@ export const fr: Messages = {
     invalid: 'Ce lien ne fonctionne pas. Vous pouvez désactiver les conseils dans les Réglages.',
   },
   recovery: {
-    ask: 'Vous avez déjà utilisé Fetivi dans ce logement ? Reprenez la conversation là où vous l\'aviez laissée.',
+    ask: "Vous avez déjà utilisé Fetivi dans ce logement ? Reprenez la conversation là où vous l'aviez laissée.",
     label: 'Votre e-mail',
     send: 'Envoyer le lien',
     sending: 'Envoi…',

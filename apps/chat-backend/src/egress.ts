@@ -1,4 +1,5 @@
 import { VOYAGE_HOST } from '@fetivi/domain/embeddings-vocabulary';
+import { LLM_PROVIDER_HOSTS } from '@fetivi/domain/settings-vocabulary';
 import { createEgress } from '@fetivi/egress';
 
 // Hosts this process may call. Later tickets add entries.
@@ -7,7 +8,8 @@ import { createEgress } from '@fetivi/egress';
 // Ferryhopper: the external ferry server (V1 only).
 // Voyage AI: embeddings of the guest's search words for V0's catalog search (61).
 export const EGRESS_ALLOWLIST: readonly string[] = [
-  'api.anthropic.com',
+  // The language model providers the admin can choose (71).
+  ...Object.values(LLM_PROVIDER_HOSTS),
   'vrijeme.hr',
   'meteo.hr',
   'api.met.no',

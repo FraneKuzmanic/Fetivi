@@ -1,18 +1,13 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import type { Egress } from '@fetivi/egress';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../db/client';
 import { handoffMessages } from '../db/schema/handoff';
 import type { JobQueue } from '../jobs/queue';
-import { type ModelUsage, usageOf } from '../metrics/usage';
+import type { ModelUsage } from '../metrics/usage';
 import type { GuestLanguage } from '../property/vocabulary';
-import {
-  type ApiKeySource,
-  anthropicClientCache,
-  NOT_CONFIGURED_DETAIL,
-} from '../settings/llm-key';
+import type { LlmSource } from '../settings/llm-key';
+import { createStructuredCaller } from '../settings/llm-model';
 import { TRANSLATION_MODEL_ID } from '../translation/prompt';
 import { deliverReply } from './inbox';
 
@@ -51,44 +46,24 @@ export interface HandoffTranslator {
   translate(input: { text: string; to: GuestLanguage }): Promise<HandoffTranslation>;
 }
 
-/** Sonnet 5.5 with structured output, like the block translation; short texts, so not streamed. */
-export function createAnthropicHandoffTranslator(opts: {
-  /** Resolved on every call, so a key changed in the admin settings applies without a restart (68). */
-  apiKey: ApiKeySource;
+/** Structured output on the model in the settings, like the block translation; Sonnet 5.5 by default. */
+export function createHandoffTranslator(opts: {
+  llm: LlmSource;
   fetch: Egress['fetch'];
-  /** Gets each successful response's tokens (a failed call has none and reports nothing). */
   onUsage?: (usage: ModelUsage) => void;
 }): HandoffTranslator {
-  const clientFor = anthropicClientCache(opts.fetch);
+  const call = createStructuredCaller(opts);
   return {
     async translate(input) {
-      // Outside the try: a settings read failure is thrown (the job retries), not a model error.
-      const apiKey = await opts.apiKey();
-      if (!apiKey) return { ok: false, error: 'not-configured', detail: NOT_CONFIGURED_DETAIL };
-      const client = clientFor(apiKey);
-      try {
-        const message = await client.messages.parse({
-          model: TRANSLATION_MODEL_ID,
-          max_tokens: 4000,
-          system: HANDOFF_TRANSLATION_SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: buildHandoffUserMessage(input) }],
-          output_config: { effort: 'low', format: zodOutputFormat(HandoffTranslationOutput) },
-        });
-        opts.onUsage?.(usageOf(TRANSLATION_MODEL_ID, message.usage));
-        if (message.stop_reason !== 'end_turn') {
-          return { ok: false, error: 'model-error', detail: `stop_reason ${message.stop_reason}` };
-        }
-        if (message.parsed_output == null) {
-          return { ok: false, error: 'model-error', detail: 'no parsed output' };
-        }
-        return { ok: true, text: message.parsed_output.text };
-      } catch (error) {
-        if (error instanceof Anthropic.AnthropicError) {
-          const status = error instanceof Anthropic.APIError ? `${error.status ?? '-'} ` : '';
-          return { ok: false, error: 'model-error', detail: `${status}${error.message}` };
-        }
-        throw error;
-      }
+      const result = await call({
+        defaultModel: TRANSLATION_MODEL_ID,
+        effort: 'low',
+        maxOutputTokens: 4000,
+        system: HANDOFF_TRANSLATION_SYSTEM_PROMPT,
+        prompt: buildHandoffUserMessage(input),
+        schema: HandoffTranslationOutput,
+      });
+      return result.ok ? { ok: true, text: result.output.text } : result;
     },
   };
 }

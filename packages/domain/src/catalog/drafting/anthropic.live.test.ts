@@ -1,7 +1,7 @@
 import { createEgress } from '@fetivi/egress';
 import { describe, expect, it } from 'vitest';
 import { fixedKey } from '../../settings/llm-key';
-import { createAnthropicDraftingModel } from './model';
+import { createDraftingModel } from './model';
 import { pageText } from './page-text';
 import type { DraftingPage } from './prompt';
 import { readRecordedPage } from './testing';
@@ -20,8 +20,8 @@ const page = (file: string, url: string): DraftingPage => {
 
 describe.skipIf(!live)('Anthropic drafting model (live)', () => {
   it('drafts from the pages it was given and ignores the injected instructions', async () => {
-    const model = createAnthropicDraftingModel({
-      apiKey: fixedKey(process.env.ANTHROPIC_API_KEY),
+    const model = createDraftingModel({
+      llm: fixedKey(process.env.ANTHROPIC_API_KEY),
       fetch: createEgress({ allowlist: ['api.anthropic.com'] }).fetch,
     });
     const result = await model.extract({

@@ -1,26 +1,41 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
-import Anthropic, { type ClientOptions } from '@anthropic-ai/sdk';
-import type { Egress } from '@fetivi/egress';
 import { eq } from 'drizzle-orm';
 import type { Executor } from '../db/client';
 import { accounts } from '../db/schema/accounts';
 import { platformSettings } from '../db/schema/settings';
-import { DEFAULT_DAILY_MESSAGE_CAP, LLM_KEY_LIMITS, type LlmKeySource } from './vocabulary';
+import {
+  DEFAULT_DAILY_MESSAGE_CAP,
+  LLM_KEY_LIMITS,
+  type LlmKeySource,
+  type LlmProvider,
+} from './vocabulary';
 
-// The Anthropic key lives encrypted on the settings row and wins over ANTHROPIC_API_KEY, which
-// stays as the fallback (68, ADR 0032). Every model caller resolves it per call through a source.
+// The model key lives encrypted on the settings row with its provider and model, and wins over
+// ANTHROPIC_API_KEY, which stays as the fallback (68, 71, ADR 0032). Every model caller
+// resolves it per call through a source.
 
-/** Resolves the Anthropic key to use now; undefined = not configured. */
-export type ApiKeySource = () => Promise<string | undefined>;
+/**
+ * The model setting in use: one provider, key and model for every task (71). `model` is null
+ * for the environment key and for a key saved before 71: each task then uses its own default
+ * Anthropic model.
+ */
+export interface LlmConfig {
+  provider: LlmProvider;
+  key: string;
+  model: string | null;
+}
 
-/** A source that always gives `key` (tests, live tests, the evaluation harness). */
+/** Resolves the model setting to use now; undefined = not configured. */
+export type LlmSource = () => Promise<LlmConfig | undefined>;
+
+/** A source that always gives the Anthropic `key` with each task's default model (tests, evals). */
 export const fixedKey =
-  (key: string | undefined): ApiKeySource =>
+  (key: string | undefined): LlmSource =>
   async () =>
-    key || undefined;
+    key ? { provider: 'anthropic', key, model: null } : undefined;
 
 export const NOT_CONFIGURED_DETAIL =
-  'no Anthropic API key: set one in the admin settings or ANTHROPIC_API_KEY';
+  'no model API key: set one in the admin settings or ANTHROPIC_API_KEY';
 
 const IV_BYTES = 12;
 
@@ -54,31 +69,14 @@ export function decryptLlmKey(stored: string, secret: string): string | null {
   }
 }
 
-/** An Anthropic client per key, rebuilt only when the key changes. */
-export function anthropicClientCache(fetch: Egress['fetch']): (key: string) => Anthropic {
-  let last: { key: string; client: Anthropic } | undefined;
-  return (key) => {
-    if (last?.key !== key) {
-      // The SDK only ever passes a URL string, which the egress fetch accepts.
-      const client = new Anthropic({
-        apiKey: key,
-        fetch: fetch as ClientOptions['fetch'],
-        maxRetries: 3,
-      });
-      last = { key, client };
-    }
-    return last.client;
-  };
-}
-
 export interface LlmKeySourceHandle {
-  get: ApiKeySource;
+  get: LlmSource;
   /** Drops the cached key, so the next `get` reads the settings row. */
   invalidate(): void;
 }
 
 const UNREADABLE_WARNING =
-  'The stored Anthropic key does not decrypt with LLM_KEY_SECRET: using ANTHROPIC_API_KEY';
+  'The stored model key does not decrypt with LLM_KEY_SECRET: using ANTHROPIC_API_KEY';
 
 /**
  * The settings key, else `envKey`, else undefined; cached per process for `ttlMs`, so a change
@@ -96,20 +94,24 @@ export function createLlmKeySource(opts: {
   const ttlMs = opts.ttlMs ?? 30_000;
   const now = opts.now ?? Date.now;
   const envKey = opts.envKey || undefined;
-  let cached: { value: string | undefined; until: number } | undefined;
-  let inFlight: Promise<string | undefined> | undefined;
+  let cached: { value: LlmConfig | undefined; until: number } | undefined;
+  let inFlight: Promise<LlmConfig | undefined> | undefined;
   let generation = 0;
 
-  const read = async (): Promise<string | undefined> => {
+  const read = async (): Promise<LlmConfig | undefined> => {
     const [row] = await opts.db
-      .select({ ciphertext: platformSettings.llmKeyCiphertext })
+      .select({
+        ciphertext: platformSettings.llmKeyCiphertext,
+        provider: platformSettings.llmProvider,
+        model: platformSettings.llmModel,
+      })
       .from(platformSettings);
-    if (row?.ciphertext) {
+    if (row?.ciphertext && row.provider) {
       const key = decryptLlmKey(row.ciphertext, opts.secret);
-      if (key !== null) return key;
+      if (key !== null) return { provider: row.provider, key, model: row.model };
       opts.warn?.(UNREADABLE_WARNING);
     }
-    return envKey;
+    return envKey ? { provider: 'anthropic', key: envKey, model: null } : undefined;
   };
 
   return {
@@ -144,20 +146,32 @@ function validKey(key: string): string {
     trimmed.length > LLM_KEY_LIMITS.max ||
     !/^\S+$/.test(trimmed)
   ) {
-    throw new RangeError('invalid Anthropic key');
+    throw new RangeError('invalid model key');
   }
   return trimmed;
 }
 
-/** Saves the admin's key encrypted; never touches the message cap. */
+/**
+ * Saves the admin's key encrypted with its provider and the chosen model (the caller has checked
+ * both with the provider); never touches the message cap.
+ */
 export async function setLlmKey(
   db: Executor,
-  opts: { key: string; secret: string; accountId: string; now: Date },
+  opts: {
+    key: string;
+    provider: LlmProvider;
+    model: string;
+    secret: string;
+    accountId: string;
+    now: Date;
+  },
 ): Promise<void> {
   const key = validKey(opts.key);
   const fields = {
     llmKeyCiphertext: encryptLlmKey(key, opts.secret),
     llmKeyLast4: key.slice(-4),
+    llmProvider: opts.provider,
+    llmModel: opts.model,
     llmKeyUpdatedAt: opts.now,
     llmKeyUpdatedBy: opts.accountId,
   };
@@ -165,6 +179,16 @@ export async function setLlmKey(
     .insert(platformSettings)
     .values({ id: 1, dailyMessageCap: DEFAULT_DAILY_MESSAGE_CAP, updatedAt: opts.now, ...fields })
     .onConflictDoUpdate({ target: platformSettings.id, set: fields });
+}
+
+/** Changes the model of the saved key (the caller has checked it is the provider's). */
+export async function setLlmModel(
+  db: Executor,
+  opts: { model: string; accountId: string; now: Date },
+): Promise<void> {
+  await db
+    .update(platformSettings)
+    .set({ llmModel: opts.model, llmKeyUpdatedAt: opts.now, llmKeyUpdatedBy: opts.accountId });
 }
 
 /** Clears the admin's key (the processes fall back to ANTHROPIC_API_KEY); keeps who and when. */
@@ -175,6 +199,8 @@ export async function removeLlmKey(
   const fields = {
     llmKeyCiphertext: null,
     llmKeyLast4: null,
+    llmProvider: null,
+    llmModel: null,
     llmKeyUpdatedAt: opts.now,
     llmKeyUpdatedBy: opts.accountId,
   };
@@ -186,6 +212,10 @@ export async function removeLlmKey(
 
 export interface LlmKeyStatus {
   source: LlmKeySource;
+  /** The key's provider; the environment key is always Anthropic's. Null with no key. */
+  provider: LlmProvider | null;
+  /** The one model for every task; null = each task's default Anthropic model. */
+  model: string | null;
   last4: string | null;
   updatedAt: Date | null;
   /** The email of the account that last changed the key; null if never changed or deleted. */
@@ -205,6 +235,8 @@ export async function getLlmKeyStatus(
     .select({
       ciphertext: platformSettings.llmKeyCiphertext,
       last4: platformSettings.llmKeyLast4,
+      provider: platformSettings.llmProvider,
+      model: platformSettings.llmModel,
       updatedAt: platformSettings.llmKeyUpdatedAt,
       updatedBy: accounts.email,
     })
@@ -212,8 +244,22 @@ export async function getLlmKeyStatus(
     .leftJoin(accounts, eq(accounts.id, platformSettings.llmKeyUpdatedBy));
   const changed = { updatedAt: row?.updatedAt ?? null, updatedBy: row?.updatedBy ?? null };
   if (row?.ciphertext && row.last4 && decryptLlmKey(row.ciphertext, secret) !== null) {
-    return { source: 'settings', last4: row.last4, ...changed };
+    return {
+      source: 'settings',
+      provider: row.provider,
+      model: row.model,
+      last4: row.last4,
+      ...changed,
+    };
   }
-  if (envKey) return { source: 'environment', last4: envKey.slice(-4), ...changed };
-  return { source: 'none', last4: null, ...changed };
+  if (envKey) {
+    return {
+      source: 'environment',
+      provider: 'anthropic',
+      model: null,
+      last4: envKey.slice(-4),
+      ...changed,
+    };
+  }
+  return { source: 'none', provider: null, model: null, last4: null, ...changed };
 }

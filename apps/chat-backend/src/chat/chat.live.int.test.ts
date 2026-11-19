@@ -1,10 +1,10 @@
-import { findConversation, turnMetrics } from '@fetivi/domain';
+import { findConversation, fixedKey, turnMetrics } from '@fetivi/domain';
 import { seedGuestUnit } from '@fetivi/domain/testing';
 import { createEgress } from '@fetivi/egress';
 import { asc, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type ChatTestApp, createChatTestApp, enterSpace, readStream, write } from '../testing';
-import { createChatModel } from './model';
+import { chatModelSource } from './model';
 
 // Six real Sonnet 5.5 turns on the seeded unit, about $0.10. Opt-in only (vitest does not load
 // the root .env):
@@ -17,10 +17,10 @@ describe.skipIf(!live)('live chat turn (Sonnet 5.5)', () => {
 
   beforeAll(async () => {
     t = await createChatTestApp({
-      model: createChatModel({
-        apiKey,
-        fetch: createEgress({ allowlist: ['api.anthropic.com'] }).fetch,
-      }),
+      model: await chatModelSource(
+        fixedKey(apiKey),
+        createEgress({ allowlist: ['api.anthropic.com'] }).fetch,
+      )(),
     });
   });
 

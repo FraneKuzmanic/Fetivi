@@ -1,7 +1,7 @@
 import { createEgress } from '@fetivi/egress';
 import { describe, expect, it } from 'vitest';
 import { fixedKey } from '../../settings/llm-key';
-import { createAnthropicManualImportModel } from './model';
+import { createManualImportModel } from './model';
 import { SAMPLE_MANUAL } from './sample-manual';
 import { SECRET_COLUMNS } from './schema';
 import { scrubSecrets } from './scrub';
@@ -12,8 +12,8 @@ const live = process.env.FETIVI_LIVE_TESTS === '1' && Boolean(process.env.ANTHRO
 
 describe.skipIf(!live)('Anthropic manual import model (live)', () => {
   it('maps the sample manual onto fields, typed blocks and unmapped content', async () => {
-    const model = createAnthropicManualImportModel({
-      apiKey: fixedKey(process.env.ANTHROPIC_API_KEY),
+    const model = createManualImportModel({
+      llm: fixedKey(process.env.ANTHROPIC_API_KEY),
       fetch: createEgress({ allowlist: ['api.anthropic.com'] }).fetch,
     });
     const result = await model.extract(SAMPLE_MANUAL);
