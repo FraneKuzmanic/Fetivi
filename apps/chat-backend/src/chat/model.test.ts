@@ -1,8 +1,9 @@
+import { fixedKey } from '@fetivi/domain';
 import type { Egress } from '@fetivi/egress';
 import { type ModelMessage, streamText } from 'ai';
 import { expect, it } from 'vitest';
 import { systemInstructions } from '../prompt/prompt';
-import { CHAT_PROVIDER_OPTIONS, chatModelSource, createChatModel } from './model';
+import { CHAT_PROVIDER_OPTIONS, chatModelSource } from './model';
 
 /** Every `cache_control` value anywhere in the request body. */
 function cacheControls(value: unknown): unknown[] {
@@ -23,7 +24,7 @@ it('sends the system breakpoint and the automatic history breakpoint, nothing on
       { status: 400, headers: { 'content-type': 'application/json' } },
     );
   }) as Egress['fetch'];
-  const model = createChatModel({ apiKey: 'test', fetch: stub });
+  const model = await chatModelSource(fixedKey('test'), stub)();
   if (!model) throw new Error('no model');
   const messages: ModelMessage[] = [
     { role: 'user', content: 'Wi-Fi?' },
@@ -57,7 +58,10 @@ it('sends the system breakpoint and the automatic history breakpoint, nothing on
 
 it('builds the chat model per key: null without one, reused while the key stays (68)', async () => {
   let key: string | undefined;
-  const source = chatModelSource(async () => key, (async () => new Response()) as Egress['fetch']);
+  const source = chatModelSource(
+    () => fixedKey(key)(),
+    (async () => new Response()) as Egress['fetch'],
+  );
   await expect(source()).resolves.toBeNull();
   key = 'key-one';
   const first = await source();
@@ -67,4 +71,13 @@ it('builds the chat model per key: null without one, reused while the key stays 
   const second = await source();
   expect(second).not.toBeNull();
   expect(second).not.toBe(first);
+});
+
+it("uses the admin's provider and model when the setting names one (71)", async () => {
+  const source = chatModelSource(
+    async () => ({ provider: 'openai', key: 'sk-test', model: 'gpt-5' }),
+    (async () => new Response()) as Egress['fetch'],
+  );
+  const model = await source();
+  expect(model).toMatchObject({ provider: expect.stringContaining('openai'), modelId: 'gpt-5' });
 });

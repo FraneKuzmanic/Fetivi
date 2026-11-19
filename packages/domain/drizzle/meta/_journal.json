@@ -442,6 +442,13 @@
       "when": 1795010562751,
       "tag": "0062_schema_naming_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1795096744960,
+      "tag": "0063_llm_provider_and_model",
+      "breakpoints": true
     }
   ]
 }

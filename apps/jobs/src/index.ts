@@ -1,13 +1,13 @@
 import {
   backfillFieldTexts,
-  createAnthropicDraftingModel,
-  createAnthropicHandoffTranslator,
-  createAnthropicTranslationModel,
   createDb,
+  createDraftingModel,
+  createHandoffTranslator,
   createJobQueue,
   createLlmKeySource,
   createMailer,
   createStripeGateway,
+  createTranslationModel,
   createVoyageEmbedder,
   createWeatherSource,
   createWebPushSender,
@@ -29,18 +29,18 @@ const llmKeys = createLlmKeySource({
   secret: config.LLM_KEY_SECRET,
   warn: console.warn,
 });
-const model = createAnthropicTranslationModel({
-  apiKey: llmKeys.get,
+const model = createTranslationModel({
+  llm: llmKeys.get,
   fetch: egress.fetch,
   onUsage: usageRecorder(db, 'translation'),
 });
-const handoffTranslator = createAnthropicHandoffTranslator({
-  apiKey: llmKeys.get,
+const handoffTranslator = createHandoffTranslator({
+  llm: llmKeys.get,
   fetch: egress.fetch,
   onUsage: usageRecorder(db, 'handoff_translation'),
 });
-const draftingModel = createAnthropicDraftingModel({
-  apiKey: llmKeys.get,
+const draftingModel = createDraftingModel({
+  llm: llmKeys.get,
   fetch: egress.fetch,
   onUsage: usageRecorder(db, 'drafting'),
 });

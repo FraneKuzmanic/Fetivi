@@ -12,6 +12,7 @@ import {
   loadSituation,
   type MessagePart,
   type MessageRow,
+  modelIdOf,
   type ResolvedSpace,
   recordTurnMetrics,
   type SpaceContext,
@@ -52,7 +53,7 @@ import {
 import { presentationTools } from '../stream/presentation';
 import { type TurnResults, turnResults } from '../stream/results';
 import type { ToolBinding, TurnTools } from '../tools/registry';
-import { CHAT_MODEL_ID, type ChatModelSource } from './model';
+import type { ChatModelSource } from './model';
 
 export interface ChatDeps {
   db: Db;
@@ -267,7 +268,7 @@ async function recordMetrics(
 ): Promise<void> {
   await recordTurnMetrics(deps.db, {
     conversationId,
-    model: CHAT_MODEL_ID,
+    model: modelIdOf(turn.model),
     startedAt: turn.startedAt,
     wallMs: Math.round(performance.now() - turn.t0),
     toolMs: Math.round(turn.turnTools.ms),

@@ -116,7 +116,10 @@ export async function createTestApp(
     llmKeySecret: TEST_LLM_KEY_SECRET,
     checkLlmKey:
       options.checkLlmKey ??
-      (async (key) => (key ? { ok: true } : { ok: false, error: 'not-configured' })),
+      (async (key) =>
+        key
+          ? { ok: true, provider: 'anthropic', models: ['claude-sonnet-5-5'] }
+          : { ok: false, error: 'not-configured' }),
     resendWebhookSecret: options.resendWebhookSecret,
     vapidPublicKey: options.vapidPublicKey,
     stripe: options.stripe,

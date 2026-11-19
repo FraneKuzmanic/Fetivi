@@ -1,6 +1,6 @@
 # 0032: The Anthropic key lives encrypted in the settings and wins over the environment
 
-**Status:** accepted, 2026-11-17 (ticket 68)
+**Status:** accepted, 2026-11-17 (ticket 68); amended by ADR 0033: the key may be any provider's and comes with one model for every task.
 
 ## Context
 

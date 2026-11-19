@@ -5,11 +5,13 @@ import { VOYAGE_HOST } from '@fetivi/domain/embeddings-vocabulary';
 import { HOST_PUSH_HOSTS } from '@fetivi/domain/host-notification-vocabulary';
 import { PUSH_HOSTS } from '@fetivi/domain/notification-vocabulary';
 import { SEEDING_HOSTS } from '@fetivi/domain/seeding-vocabulary';
+import { LLM_PROVIDER_HOSTS } from '@fetivi/domain/settings-vocabulary';
 import { createEgress } from '@fetivi/egress';
 
 // Hosts this process may call, with the Jadrolinija feed off. Later tickets add entries.
 export const EGRESS_ALLOWLIST: readonly string[] = [
-  'api.anthropic.com',
+  // The language model providers the admin can choose (71).
+  ...Object.values(LLM_PROVIDER_HOSTS),
   ...CALENDAR_HOSTS,
   'api.resend.com',
   // Guest and host push services; hosts add Apple's for iPhone Home Screen apps.

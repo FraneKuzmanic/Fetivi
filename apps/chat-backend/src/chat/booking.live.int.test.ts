@@ -1,4 +1,4 @@
-import { fromLocalDateTime, orders, providers } from '@fetivi/domain';
+import { fixedKey, fromLocalDateTime, orders, providers } from '@fetivi/domain';
 import {
   publishOffer,
   seedDestination,
@@ -11,7 +11,7 @@ import type { UIMessageChunk } from 'ai';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type ChatTestApp, createChatTestApp, enterSpace, readStream, write } from '../testing';
-import { createChatModel } from './model';
+import { chatModelSource } from './model';
 
 // The booking flow with real Sonnet 5.5: three or four turns, about $0.05. Opt-in only (vitest
 // does not load the root .env):
@@ -29,10 +29,10 @@ describe.skipIf(!live)('live booking (Sonnet 5.5)', () => {
 
   beforeAll(async () => {
     t = await createChatTestApp({
-      model: createChatModel({
-        apiKey,
-        fetch: createEgress({ allowlist: ['api.anthropic.com'] }).fetch,
-      }),
+      model: await chatModelSource(
+        fixedKey(apiKey),
+        createEgress({ allowlist: ['api.anthropic.com'] }).fetch,
+      )(),
     });
     destinationId = await seedDestination(t.db);
   });

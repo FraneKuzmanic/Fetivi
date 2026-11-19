@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { decryptLlmKey, encryptLlmKey, fixedKey } from './llm-key';
-import { checkAnthropicKey } from './llm-key-check';
 
 const SECRET = 'unit-test-llm-key-secret-of-32-chars-plus';
 const KEY = 'sk-ant-api03-unit-test-key-abcd';
@@ -43,51 +42,6 @@ describe('fixedKey', () => {
   it('treats an empty key as not configured', async () => {
     expect(await fixedKey('')()).toBeUndefined();
     expect(await fixedKey(undefined)()).toBeUndefined();
-    expect(await fixedKey('k')()).toBe('k');
-  });
-});
-
-describe('checkAnthropicKey', () => {
-  const reply = (body: unknown, status: number) =>
-    vi.fn(
-      async (_url: string | URL) =>
-        new Response(JSON.stringify(body), {
-          status,
-          headers: { 'content-type': 'application/json' },
-        }),
-    );
-
-  it('is not configured without a key, and calls nothing', async () => {
-    const fetch = vi.fn();
-    expect(await checkAnthropicKey(undefined, fetch)).toEqual({
-      ok: false,
-      error: 'not-configured',
-    });
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it('accepts a key the models list answers for', async () => {
-    const fetch = reply({ data: [], has_more: false, first_id: null, last_id: null }, 200);
-    expect(await checkAnthropicKey(KEY, fetch)).toEqual({ ok: true });
-    expect(String(fetch.mock.calls[0]?.[0])).toContain('/v1/models');
-  });
-
-  it('reports a 401 or 403 as rejected', async () => {
-    const error = { type: 'error', error: { type: 'authentication_error', message: 'bad key' } };
-    expect(await checkAnthropicKey(KEY, reply(error, 401))).toEqual({
-      ok: false,
-      error: 'rejected',
-    });
-    expect(await checkAnthropicKey(KEY, reply(error, 403))).toEqual({
-      ok: false,
-      error: 'rejected',
-    });
-  });
-
-  it('reports a network failure as unreachable', async () => {
-    const fetch = vi.fn(async () => {
-      throw new TypeError('fetch failed');
-    });
-    expect(await checkAnthropicKey(KEY, fetch)).toEqual({ ok: false, error: 'unreachable' });
+    expect(await fixedKey('k')()).toEqual({ provider: 'anthropic', key: 'k', model: null });
   });
 });

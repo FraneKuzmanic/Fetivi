@@ -185,7 +185,8 @@ describe('POST /api/chat', () => {
       .where(eq(turnMetrics.conversationId, conversation.id));
     expect(metrics).toHaveLength(1);
     expect(metrics[0]).toMatchObject({
-      model: 'claude-sonnet-5-5',
+      // The model that answered: the test's mock, not a fixed id (71).
+      model: 'mock-model-id',
       steps: 2,
       toolCalls: 1,
       toolNames: ['probe_situation'],

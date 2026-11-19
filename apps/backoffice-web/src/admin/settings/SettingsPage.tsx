@@ -9,8 +9,8 @@ import { LlmKeySection } from './LlmKeySection';
 import { UsageSection } from './UsageSection';
 
 /**
- * Platform-wide settings: the soft daily message cap per Space (45 AC 5), the Anthropic key (68)
- * and the Anthropic usage estimate (52 AC 5).
+ * Platform-wide settings: the soft daily message cap per Space (45 AC 5), the model setting (68, 71)
+ * and the model usage estimate (52 AC 5).
  */
 export function SettingsPage() {
   const { t } = useTranslation(['admin', 'common', 'host']);

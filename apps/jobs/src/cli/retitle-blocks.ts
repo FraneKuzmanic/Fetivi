@@ -1,9 +1,9 @@
 import { pathToFileURL } from 'node:url';
 import {
-  createAnthropicTranslationModel,
   createDb,
   createJobQueue,
   createLlmKeySource,
+  createTranslationModel,
   ensureQueues,
   retitleBlocks,
   usageRecorder,
@@ -28,16 +28,16 @@ async function main(): Promise<void> {
     secret: config.LLM_KEY_SECRET,
     warn: console.warn,
   });
-  let apiKey: string | undefined;
+  let llm: Awaited<ReturnType<typeof llmKeys.get>>;
   try {
-    apiKey = await llmKeys.get();
+    llm = await llmKeys.get();
   } catch (error) {
     await pool.end();
     throw error;
   }
-  if (!apiKey) {
+  if (!llm) {
     console.error(
-      'No Anthropic key in the admin settings or ANTHROPIC_API_KEY: nothing to translate with',
+      'No model key in the admin settings or ANTHROPIC_API_KEY: nothing to translate with',
     );
     process.exitCode = 1;
     await pool.end();
@@ -52,8 +52,8 @@ async function main(): Promise<void> {
   try {
     await boss.start();
     await ensureQueues(boss);
-    const model = createAnthropicTranslationModel({
-      apiKey: llmKeys.get,
+    const model = createTranslationModel({
+      llm: llmKeys.get,
       fetch: egress.fetch,
       onUsage: usageRecorder(db, 'translation'),
     });
