@@ -50,7 +50,7 @@ export function GuideTab() {
       <UnitGate state={state} reload={reload}>
         {(unit) => (
           <>
-            <MascotSays>{t('guide.greeting', { name: unit.property.name })}</MascotSays>
+            <MascotSays>{t('guide.greeting', { name: unit.unit.name })}</MascotSays>
             <nav aria-label={t('guide.sectionsLabel')} className="guide-nav">
               {GUIDE_GROUPS.map((group) => (
                 <div key={group} className="guide-group">

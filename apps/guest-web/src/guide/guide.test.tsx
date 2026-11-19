@@ -158,10 +158,11 @@ const button = (name: string) => {
 };
 
 describe('Guide index', () => {
-  it('greets with the property name and lists the seven sections in order', async () => {
+  it('greets with the unit name and lists the seven sections in order', async () => {
     stubApi(unit(false));
     await mount('/guide');
-    expect(host.textContent).toContain('Welcome to Villa Mare!');
+    expect(host.textContent).toContain('Welcome to A1!');
+    expect(host.textContent).not.toContain('Villa Mare');
     const links = [...host.querySelectorAll('nav a')];
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
       '/guide/arrival',
