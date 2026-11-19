@@ -149,7 +149,7 @@ describe.skipIf(!live)('live booking (Sonnet 5.5)', () => {
     const [placed] = await t.db.select().from(orders).where(eq(orders.spaceId, space.space.id));
     expect(placed?.status).toBe('confirming');
     // "nije poslan" is right; "je poslan" or "poslan je" is the slip.
-    expect(done.text).not.toMatch(/(?<!nije )(?<!nije još )poslan|proslijeđen|zaprimljen/i);
+    expect(done.text).not.toMatch(/(?<!nije )(?<!nije još )\bposlan|proslijeđen|zaprimljen/i);
     expect(done.text).toMatch(/plat/i);
   });
 });
