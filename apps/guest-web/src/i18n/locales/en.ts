@@ -257,7 +257,7 @@ export const en = {
     invalid: "This link doesn't work. You can turn the tips off in Settings.",
   },
   recovery: {
-    ask: 'Used Fetivi on another phone? Move your chat here',
+    ask: 'Already used Fetivi in this unit? Pick up where you left off.',
     label: 'Your email',
     send: 'Send link',
     sending: 'Sending…',

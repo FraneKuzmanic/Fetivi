@@ -268,7 +268,7 @@ export const de: Messages = {
       'Dieser Link funktioniert nicht. Sie können die Tipps in den Einstellungen abschalten.',
   },
   recovery: {
-    ask: 'Fetivi schon auf einem anderen Handy genutzt? Holen Sie Ihren Chat hierher',
+    ask: 'Fetivi in dieser Unterkunft schon genutzt? Machen Sie dort weiter, wo Sie aufgehört haben.',
     label: 'Ihre E-Mail',
     send: 'Link senden',
     sending: 'Wird gesendet…',

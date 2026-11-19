@@ -261,7 +261,7 @@ export const pl: Messages = {
     invalid: 'Ten link nie działa. Wskazówki możesz wyłączyć w Ustawieniach.',
   },
   recovery: {
-    ask: 'Używasz już Fetivi na innym telefonie? Przenieś tu swój czat',
+    ask: 'Korzystasz już z Fetivi w tym obiekcie? Wróć do rozmowy od miejsca, w którym ją przerwano.',
     label: 'Twój e-mail',
     send: 'Wyślij link',
     sending: 'Wysyłanie…',

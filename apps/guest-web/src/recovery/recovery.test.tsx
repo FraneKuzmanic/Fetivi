@@ -90,8 +90,8 @@ describe('RecoveryRequest', () => {
   it('opens into only an email field with its send arrow inside', async () => {
     server({});
     await mount(<RecoveryRequest slug="abc" />, '/u/abc');
-    await act(async () => button('Move your chat here')?.click());
-    expect(host.textContent).not.toContain('Move your chat here');
+    await act(async () => button('Pick up where you left off')?.click());
+    expect(host.textContent).not.toContain('Pick up where you left off');
     const form = host.querySelector('form') as HTMLFormElement;
     expect(form.querySelectorAll('input')).toHaveLength(1);
     expect(form.querySelectorAll('button')).toHaveLength(1);
@@ -103,7 +103,7 @@ describe('RecoveryRequest', () => {
   it('sends the email for the unit and always shows the same message', async () => {
     const calls = server({});
     await mount(<RecoveryRequest slug="abc" />, '/u/abc');
-    await act(async () => button('Move your chat here')?.click());
+    await act(async () => button('Pick up where you left off')?.click());
     type(host.querySelector('input[name="email"]') as HTMLInputElement, 'ana@example.test');
     await act(async () => sendButton()?.click());
     expect(calls).toEqual([
@@ -117,7 +117,7 @@ describe('RecoveryRequest', () => {
   it('sends on Enter too', async () => {
     const calls = server({});
     await mount(<RecoveryRequest slug="abc" />, '/u/abc');
-    await act(async () => button('Move your chat here')?.click());
+    await act(async () => button('Pick up where you left off')?.click());
     type(host.querySelector('input[name="email"]') as HTMLInputElement, 'ana@example.test');
     await act(async () => (host.querySelector('form') as HTMLFormElement).requestSubmit());
     expect(calls).toHaveLength(1);
@@ -130,7 +130,7 @@ describe('RecoveryRequest', () => {
   ])('says what went wrong on a %i', async (status, message) => {
     server({ '/api/access/abc/recovery': () => json({ error: 'x' }, status) });
     await mount(<RecoveryRequest slug="abc" />, '/u/abc');
-    await act(async () => button('Move your chat here')?.click());
+    await act(async () => button('Pick up where you left off')?.click());
     type(host.querySelector('input[name="email"]') as HTMLInputElement, 'ana@example.test');
     await act(async () => sendButton()?.click());
     expect(host.querySelector('.message')?.textContent).toBe(message);
@@ -140,14 +140,14 @@ describe('RecoveryRequest', () => {
     server({});
     const onOpen = vi.fn();
     await mount(<RecoveryRequest slug="abc" onOpen={onOpen} />, '/u/abc');
-    await act(async () => button('Move your chat here')?.click());
+    await act(async () => button('Pick up where you left off')?.click());
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
   it('rests the field and arrow once sent, so it cannot send twice', async () => {
     const calls = server({});
     await mount(<RecoveryRequest slug="abc" />, '/u/abc');
-    await act(async () => button('Move your chat here')?.click());
+    await act(async () => button('Pick up where you left off')?.click());
     const input = host.querySelector('input[name="email"]') as HTMLInputElement;
     type(input, 'ana@example.test');
     await act(async () => sendButton()?.click());
@@ -159,7 +159,7 @@ describe('RecoveryRequest', () => {
   it('keeps the field open for another try after an error', async () => {
     const calls = server({ '/api/access/abc/recovery': () => json({ error: 'x' }, 500) });
     await mount(<RecoveryRequest slug="abc" />, '/u/abc');
-    await act(async () => button('Move your chat here')?.click());
+    await act(async () => button('Pick up where you left off')?.click());
     const input = host.querySelector('input[name="email"]') as HTMLInputElement;
     type(input, 'ana@example.test');
     await act(async () => sendButton()?.click());

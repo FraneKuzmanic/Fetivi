@@ -262,7 +262,7 @@ export const hu: Messages = {
     invalid: 'Ez a link nem működik. A tippeket a Beállításokban kapcsolhatod ki.',
   },
   recovery: {
-    ask: 'Használtad már a Fetivit egy másik telefonon? Hozd át ide a csevegést',
+    ask: 'Használtad már a Fetivit ezen a szálláson? Folytasd ott, ahol abbahagytad.',
     label: 'Az e-mail-címed',
     send: 'Link küldése',
     sending: 'Küldés…',

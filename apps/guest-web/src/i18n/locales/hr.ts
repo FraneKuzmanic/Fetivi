@@ -258,7 +258,7 @@ export const hr: Messages = {
     invalid: 'Ova poveznica ne radi. Savjete možete isključiti u Postavkama.',
   },
   recovery: {
-    ask: 'Koristili ste Fetivi na drugom mobitelu? Prebacite razgovor ovamo',
+    ask: 'Već ste koristili Fetivi u ovoj jedinici? Nastavite gdje ste stali.',
     label: 'Vaša e-pošta',
     send: 'Pošalji poveznicu',
     sending: 'Šaljem…',

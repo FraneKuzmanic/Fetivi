@@ -262,7 +262,7 @@ export const it: Messages = {
     invalid: 'Questo link non funziona. Puoi disattivare i consigli nelle Impostazioni.',
   },
   recovery: {
-    ask: 'Hai già usato Fetivi su un altro telefono? Sposta qui la tua chat',
+    ask: 'Hai già usato Fetivi in questo alloggio? Riprendi da dove avevi lasciato.',
     label: 'La tua email',
     send: 'Invia link',
     sending: 'Invio…',
