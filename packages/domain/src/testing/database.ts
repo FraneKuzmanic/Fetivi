@@ -68,7 +68,19 @@ export async function createTestDatabase(): Promise<TestDatabase> {
     pool,
     async drop() {
       await pool.end();
-      await withAdmin((client) => client.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`));
+      await withAdmin(async (client) => {
+        // `pool.end()` resolves before the server has closed the connections. FORCE on one still
+        // closing reaches its client as an uncaught 57P01, so wait for them first (seen in CI).
+        for (let waited = 0; waited < 5000; waited += 50) {
+          const { rows } = await client.query<{ n: number }>(
+            'SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = $1',
+            [name],
+          );
+          if (rows[0]?.n === 0) break;
+          await sleep(50);
+        }
+        await client.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
+      });
     },
   };
 }
