@@ -112,6 +112,13 @@ git pull && bash deploy/deploy.sh
 
 The services restart, so expect a few seconds of downtime. Re-running without changes is safe: the migrations are a no-op and no second base backup is taken.
 
+**From CI.** A push to `main` runs `.github/workflows/ci.yml`; when typecheck, lint and tests pass, its deploy job connects over SSH with a key that may only run `deploy/remote-deploy.sh`. That script moves the checkout to `origin/main`, runs `deploy.sh`, keeps the full log in `~/deploy-logs/` and prints only the step lines. Setup, once:
+
+1. Make a key for CI: `ssh-keygen -t ed25519 -N '' -C fetivi-ci-deploy -f fetivi-ci-deploy`.
+2. On the server, add its public key to `~/.ssh/authorized_keys` as one line: `command="bash $HOME/fetivi/deploy/remote-deploy.sh",no-pty,no-port-forwarding,no-agent-forwarding,no-X11-forwarding ssh-ed25519 AAAA... fetivi-ci-deploy`. Put `FETIVI_OVERLAY=...` in front of `bash` if the server needs an overlay.
+3. In GitHub, Settings → Secrets and variables → Actions, add `DEPLOY_HOST` (the server's IP), `DEPLOY_SSH_KEY` (the private key file) and `DEPLOY_KNOWN_HOSTS` (`ssh-keyscan -t ed25519 <IP>`, checked against the server's own `/etc/ssh/ssh_host_ed25519_key.pub`).
+4. Check out `main` on the server once: `git fetch origin main && git checkout -B main origin/main`.
+
 Rollback (no automation; migrations only go forward):
 
 - **No migration in the bad release:** `git checkout <previous commit> && bash deploy/deploy.sh`.
